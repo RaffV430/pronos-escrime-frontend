@@ -12,7 +12,7 @@ export default function PodiumPrediction({ tournamentId, activeMatchesCount }) {
   // État pour stocker les podiums de tous les utilisateurs
   const [allPredictions, setAllPredictions] = useState([]);
 
-  const isLocked = activeMatchesCount < 16
+  const isLocked = activeMatchesCount < 16;
 
   // Récupérer son propre pronostic
   useEffect(() => {
@@ -71,7 +71,9 @@ export default function PodiumPrediction({ tournamentId, activeMatchesCount }) {
         setMessage('Pronostic de podium enregistré avec succès ! 🤺');
       }
     } catch (err) {
-      setMessage(err.response?.data?.error || 'Erreur lors de l’enregistrement');
+      // 🛡️ S'assure qu'on extrait bien une chaîne de caractères et non un objet brut
+      const errorMsg = err.response?.data?.error || err.response?.data?.message || err.message || 'Erreur lors de l’enregistrement';
+      setMessage(typeof errorMsg === 'string' ? errorMsg : JSON.stringify(errorMsg));
     } finally {
       setLoading(false);
     }
