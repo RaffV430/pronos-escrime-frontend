@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import API from '../api';
+import PodiumPrediction from './PodiumPrediction';
 
 export default function Dashboard({ user, onLogout }) {
   const [matches, setMatches] = useState([]);
@@ -80,7 +81,7 @@ export default function Dashboard({ user, onLogout }) {
         score2: parseInt(scoreData.score2, 10),
       });
       setMessage('🏆 Résultat validé ! Les points ont été calculés.');
-      loadData(); // Rafraîchit les matchs et le classement automatiquement !
+      loadData();
     } catch (err) {
       setMessage('❌ Erreur lors de la validation du résultat.');
     }
@@ -103,7 +104,10 @@ export default function Dashboard({ user, onLogout }) {
         </div>
       )}
 
-      <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '30px' }}>
+      {/* 🏆 Bloc Pronostic Podium placé bien en vue en haut du dashboard */}
+      <PodiumPrediction tournamentId={1} />
+
+      <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '30px', marginTop: '20px' }}>
         
         {/* Liste des matchs */}
         <section>
@@ -128,15 +132,13 @@ export default function Dashboard({ user, onLogout }) {
                     type="number"
                     placeholder="Score 1"
                     style={{ width: '70px', padding: '5px' }}
-                    onChange={(e) => handleScoreChange(match.id, 'score1', e.target.value)}
-                  />
+                    onChange={(e) => handleScoreChange(match.id, 'score1', e.target.value)} />
                   <span>-</span>
                   <input
                     type="number"
                     placeholder="Score 2"
                     style={{ width: '70px', padding: '5px' }}
-                    onChange={(e) => handleScoreChange(match.id, 'score2', e.target.value)}
-                  />
+                    onChange={(e) => handleScoreChange(match.id, 'score2', e.target.value)} />
                   <button onClick={() => submitPrediction(match.id)} style={{ padding: '6px 12px', cursor: 'pointer' }}>
                     Parier
                   </button>
