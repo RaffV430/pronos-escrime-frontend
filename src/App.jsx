@@ -61,7 +61,7 @@ export default function App() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
-    const endpoint = isRegister ? '/auth/register' : '/auth/login';
+    const endpoint = isRegister ? '/api/auth/register' : '/api/auth/login';
 
     try {
       const res = await API.post(endpoint, formData);
@@ -72,7 +72,6 @@ export default function App() {
       setUser(res.data.user);
       fetchMatches(); 
     } catch (err) {
-      // 🛡️ CORRECTION ICI : On s'assure d'extraire du texte et non un objet brut
       const errorMsg = err.response?.data?.error || err.response?.data?.message || err.message || 'Une erreur est survenue';
       setError(typeof errorMsg === 'string' ? errorMsg : JSON.stringify(errorMsg));
     }
@@ -163,7 +162,6 @@ export default function App() {
 
     return (
       <div style={{ padding: '20px', fontFamily: 'sans-serif', maxWidth: '800px', margin: '0 auto' }}>
-        {/* En-tête de l'application */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <h2>Bienvenue, {user.username || 'Utilisateur'} ! {user.isAdmin && '👑'} 🤺</h2>
           <button onClick={handleLogout} style={{ padding: '8px 12px', background: '#dc3545', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>
@@ -173,7 +171,6 @@ export default function App() {
 
         <hr style={{ margin: '20px 0' }} />
 
-        {/* Panneau de contrôle administrateur / synchronisation */}
         <div style={{ marginBottom: '20px', padding: '15px', background: '#f8f9fa', borderRadius: '8px', border: '1px solid #ddd' }}>
           <h3>Panneau de contrôle</h3>
           <p style={{ fontSize: '0.9em', color: '#555', marginBottom: '15px' }}>
@@ -189,10 +186,8 @@ export default function App() {
           {syncMessage && <p style={{ marginTop: '10px', fontWeight: 'bold' }}>{syncMessage}</p>}
         </div>
 
-        {/* 🏆 Blocs de pronostic du podium */}
         <PodiumPrediction tournamentId={1} user={user} />
 
-        {/* Historique des matchs terminés */}
         {finishedMatches.length > 0 && (
           <details style={{ marginBottom: '25px', border: '1px solid #c3e6cb', borderRadius: '8px', background: '#f8fff9', overflow: 'hidden' }}>
             <summary style={{ padding: '12px 15px', cursor: 'pointer', background: '#d4edda', fontWeight: 'bold', color: '#155724', fontSize: '1.05em' }}>
@@ -225,7 +220,6 @@ export default function App() {
           </details>
         )}
 
-        {/* Liste des matchs actifs à pronostiquer */}
         <div>
           <h3>Matchs à pronostiquer ({activeMatches.length})</h3>
           {activeMatches.length === 0 ? (
@@ -308,11 +302,9 @@ export default function App() {
     );
   }
 
-  // Écran de Connexion / Inscription si l'utilisateur n'est pas connecté
   return (
     <div style={{ maxWidth: '400px', margin: '50px auto', padding: '20px', border: '1px solid #ddd', borderRadius: '8px', fontFamily: 'sans-serif' }}>
       <h2>{isRegister ? 'Inscription' : 'Connexion'}</h2>
-      {/* 🛡️ CORRECTION ICI AUSSI : On s'assure de l'affichage sécurisé */}
       {error && <div style={{ color: 'red', marginBottom: '10px', fontWeight: 'bold' }}>{error}</div>}
       <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
         {isRegister && (
