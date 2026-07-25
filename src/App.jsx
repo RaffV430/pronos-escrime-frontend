@@ -72,7 +72,9 @@ export default function App() {
       setUser(res.data.user);
       fetchMatches(); 
     } catch (err) {
-      setError(err.response?.data?.error || 'Une erreur est survenue');
+      // 🛡️ CORRECTION ICI : On s'assure d'extraire du texte et non un objet brut
+      const errorMsg = err.response?.data?.error || err.response?.data?.message || err.message || 'Une erreur est survenue';
+      setError(typeof errorMsg === 'string' ? errorMsg : JSON.stringify(errorMsg));
     }
   };
 
@@ -310,7 +312,8 @@ export default function App() {
   return (
     <div style={{ maxWidth: '400px', margin: '50px auto', padding: '20px', border: '1px solid #ddd', borderRadius: '8px', fontFamily: 'sans-serif' }}>
       <h2>{isRegister ? 'Inscription' : 'Connexion'}</h2>
-      {error && <div style={{ color: 'red', marginBottom: '10px' }}>{error}</div>}
+      {/* 🛡️ CORRECTION ICI AUSSI : On s'assure de l'affichage sécurisé */}
+      {error && <div style={{ color: 'red', marginBottom: '10px', fontWeight: 'bold' }}>{error}</div>}
       <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
         {isRegister && (
           <input type="text" placeholder="Nom d'utilisateur" required value={formData.username} onChange={(e) => setFormData({ ...formData, username: e.target.value })} style={{ padding: '8px' }} />
