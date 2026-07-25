@@ -16,7 +16,7 @@ export default function PodiumPrediction({ tournamentId, user }) {
   const [isLocked, setIsLocked] = useState(false);
 
   // -----------------------------------------------------------------
-  // 🔒 NOUVEAU : Récupérer le statut de verrouillage via la route mise à jour
+  // 🔒 CORRIGÉ : Récupérer le statut de verrouillage via la bonne route
   // -----------------------------------------------------------------
   useEffect(() => {
     const fetchTournamentStatus = async () => {
