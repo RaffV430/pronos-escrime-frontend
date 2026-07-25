@@ -12,8 +12,25 @@ export default function PodiumPrediction({ tournamentId, user }) {
   
   const [allPredictions, setAllPredictions] = useState([]);
 
-  // 🔒 NOUVEAU : État de verrouillage géré par l'Admin (par défaut ouvert jusqu'à vérification)
+  // 🔒 État de verrouillage géré par l'Admin (par défaut ouvert jusqu'à vérification)
   const [isLocked, setIsLocked] = useState(false);
+
+  // -----------------------------------------------------------------
+  // 🔒 NOUVEAU : Récupérer le statut de verrouillage du tournoi au chargement
+  // -----------------------------------------------------------------
+  useEffect(() => {
+    const fetchTournamentStatus = async () => {
+      try {
+        const res = await API.get(`/podium/status/${tournamentId}`);
+        if (res.data) {
+          setIsLocked(res.data.isLocked);
+        }
+      } catch (err) {
+        console.error("Erreur récupération statut tournoi", err);
+      }
+    };
+    fetchTournamentStatus();
+  }, [tournamentId]);
 
   // 1. Récupérer son propre pronostic
   useEffect(() => {
@@ -83,7 +100,7 @@ export default function PodiumPrediction({ tournamentId, user }) {
     }
   };
 
-  // 👑 4. NOUVEAU : Fonction réservée à l'Admin pour actionner l'interrupteur
+  // 👑 4. Fonction réservée à l'Admin pour actionner l'interrupteur
   const toggleLock = async () => {
     try {
       const res = await API.put(`/podium/${tournamentId}/toggle-lock`, { isLocked: !isLocked });
