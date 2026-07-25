@@ -61,7 +61,8 @@ export default function App() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
-    const endpoint = isRegister ? '/api/auth/register' : '/api/auth/login';
+    // On enlève le /api d'ici car l'instance api.js le rajoute déjà automatiquement
+    const endpoint = isRegister ? '/auth/register' : '/auth/login';
 
     try {
       const res = await API.post(endpoint, formData);
