@@ -188,7 +188,7 @@ export default function App() {
         </div>
 
         {/* 🏆 Blocs de pronostic du podium */}
-        <PodiumPrediction tournamentId={1} activeMatchesCount={activeMatches.length} />
+        <PodiumPrediction tournamentId={1} user={user} />
 
         {/* Historique des matchs terminés */}
         {finishedMatches.length > 0 && (

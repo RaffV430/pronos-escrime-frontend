@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import API from '../api';
 
-export default function PodiumPrediction({ tournamentId, activeMatchesCount }) {
+// ⚠️ IMPORTANT : J'ai ajouté 'user' dans les paramètres pour que le composant sache si tu es Admin.
+export default function PodiumPrediction({ tournamentId, user }) {
   const [gold, setGold] = useState('');
   const [silver, setSilver] = useState('');
   const [bronze1, setBronze1] = useState('');
@@ -9,12 +10,12 @@ export default function PodiumPrediction({ tournamentId, activeMatchesCount }) {
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(false);
   
-  // État pour stocker les podiums de tous les utilisateurs
   const [allPredictions, setAllPredictions] = useState([]);
 
-  const isLocked = activeMatchesCount < 16;
+  // 🔒 NOUVEAU : État de verrouillage géré par l'Admin (par défaut ouvert jusqu'à vérification)
+  const [isLocked, setIsLocked] = useState(false);
 
-  // Récupérer son propre pronostic
+  // 1. Récupérer son propre pronostic
   useEffect(() => {
     const fetchPodium = async () => {
       try {
@@ -32,10 +33,9 @@ export default function PodiumPrediction({ tournamentId, activeMatchesCount }) {
     fetchPodium();
   }, [tournamentId]);
 
-  // Récupérer les pronostics de TOUT LE MONDE uniquement si c'est verrouillé
+  // 2. Récupérer les pronostics de TOUT LE MONDE (affichés uniquement si le tournoi est verrouillé)
   useEffect(() => {
     const fetchAllPodiums = async () => {
-      if (!isLocked) return; 
       try {
         const res = await API.get(`/podium/all/${tournamentId}`);
         if (res.data) {
@@ -46,12 +46,13 @@ export default function PodiumPrediction({ tournamentId, activeMatchesCount }) {
       }
     };
     fetchAllPodiums();
-  }, [tournamentId, isLocked]);
+  }, [tournamentId]);
 
+  // 3. Soumettre son pronostic (Joueur)
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (isLocked) {
-      setMessage('❌ Il est trop tard pour modifier le podium (moins de 16 matchs restants).');
+      setMessage('❌ Il est trop tard pour modifier le podium.');
       return;
     }
 
@@ -71,11 +72,26 @@ export default function PodiumPrediction({ tournamentId, activeMatchesCount }) {
         setMessage('Pronostic de podium enregistré avec succès ! 🤺');
       }
     } catch (err) {
-      // 🛡️ S'assure qu'on extrait bien une chaîne de caractères et non un objet brut
+      // 🛡️ Si le backend te dit que c'est verrouillé (Erreur 403), on bloque l'interface immédiatement
+      if (err.response?.status === 403) {
+        setIsLocked(true);
+      }
       const errorMsg = err.response?.data?.error || err.response?.data?.message || err.message || 'Erreur lors de l’enregistrement';
       setMessage(typeof errorMsg === 'string' ? errorMsg : JSON.stringify(errorMsg));
     } finally {
       setLoading(false);
+    }
+  };
+
+  // 👑 4. NOUVEAU : Fonction réservée à l'Admin pour actionner l'interrupteur
+  const toggleLock = async () => {
+    try {
+      const res = await API.put(`/podium/${tournamentId}/toggle-lock`, { isLocked: !isLocked });
+      setIsLocked(res.data.tournament.isPodiumLocked);
+      setMessage(res.data.message);
+    } catch (err) {
+      console.error(err);
+      setMessage("Erreur lors de la modification du verrouillage.");
     }
   };
 
@@ -93,9 +109,30 @@ export default function PodiumPrediction({ tournamentId, activeMatchesCount }) {
     <div style={{ background: '#f9f9f9', padding: '20px', borderRadius: '8px', margin: '20px 0', border: '1px solid #ddd', color: '#333' }}>
       <h3 style={{ marginTop: '0' }}>🏆 Pronostic Podium</h3>
       
+      {/* Bouton d'administration (Visible uniquement par toi) */}
+      {user?.isAdmin && (
+        <button 
+          onClick={toggleLock} 
+          type="button"
+          style={{ 
+            width: '100%', 
+            padding: '10px', 
+            background: isLocked ? '#28a745' : '#dc3545', 
+            color: 'white', 
+            border: 'none', 
+            borderRadius: '4px', 
+            cursor: 'pointer', 
+            fontWeight: 'bold', 
+            marginBottom: '15px' 
+          }}
+        >
+          {isLocked ? '🔓 Déverrouiller les pronostics (Admin)' : '🔒 Verrouiller les pronostics (Admin)'}
+        </button>
+      )}
+
       {isLocked && (
         <div style={{ padding: '10px', background: '#f8d7da', color: '#721c24', borderRadius: '4px', marginBottom: '15px', fontWeight: 'bold' }}>
-          🔒 Les pronostics de podium sont verrouillés (moins de 16 matchs restants).
+          🔒 Les pronostics de podium sont clos pour cette compétition.
         </div>
       )}
 
@@ -123,7 +160,8 @@ export default function PodiumPrediction({ tournamentId, activeMatchesCount }) {
           </button>
         )}
       </form>
-      {message && <p style={{ marginTop: '10px', fontWeight: 'bold', color: message.includes('succès') ? 'green' : 'red' }}>{message}</p>}
+      
+      {message && <p style={{ marginTop: '10px', fontWeight: 'bold', color: message.includes('succès') || message.includes('ouverts') ? 'green' : 'red' }}>{message}</p>}
 
       {/* Affichage des pronostics de tout le monde si verrouillé */}
       {isLocked && (
@@ -135,7 +173,7 @@ export default function PodiumPrediction({ tournamentId, activeMatchesCount }) {
             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginTop: '10px' }}>
               {allPredictions.map((pred) => (
                 <div key={pred.id} style={{ background: '#fff', padding: '12px', borderRadius: '6px', border: '1px solid #ccc' }}>
-                  <strong>{pred.user?.username || 'Utilisateur'}</strong>
+                  <strong>{pred.user?.name || 'Utilisateur'}</strong>
                   <ul style={{ margin: '5px 0 0 20px', padding: 0, fontSize: '14px' }}>
                     <li>🥇 Or : {pred.gold}</li>
                     <li>🥈 Argent : {pred.silver}</li>
