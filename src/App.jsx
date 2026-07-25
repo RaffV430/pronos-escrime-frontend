@@ -163,7 +163,7 @@ export default function App() {
       <div style={{ padding: '20px', fontFamily: 'sans-serif', maxWidth: '800px', margin: '0 auto' }}>
         {/* En-tête de l'application */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <h2>Bienvenue, {user.name} ! {user.isAdmin && '👑'} 🤺</h2>
+          <h2>Bienvenue, {user.username || 'Utilisateur'} ! {user.isAdmin && '👑'} 🤺</h2>
           <button onClick={handleLogout} style={{ padding: '8px 12px', background: '#dc3545', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>
             Déconnexion
           </button>
@@ -187,7 +187,7 @@ export default function App() {
           {syncMessage && <p style={{ marginTop: '10px', fontWeight: 'bold' }}>{syncMessage}</p>}
         </div>
 
-        {/* 🏆 Blocs de pronostic du podium avec transmission du nombre de matchs actifs */}
+        {/* 🏆 Blocs de pronostic du podium */}
         <PodiumPrediction tournamentId={1} activeMatchesCount={activeMatches.length} />
 
         {/* Historique des matchs terminés */}
@@ -204,7 +204,6 @@ export default function App() {
                   <div key={match.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 12px', background: '#f9f9f9', borderRadius: '6px', border: '1px solid #eee', fontSize: '0.95em' }}>
                     <div>
                       <span style={{ fontWeight: 'bold', marginRight: '10px', color: '#666' }}>#{match.id}</span>
-                      {/* Affichage des noms des tireurs (historique) */}
                       <span>{match.player1}</span> 
                       <span style={{ margin: '0 6px', color: '#888' }}>vs</span> 
                       <span>{match.player2}</span>
@@ -242,7 +241,6 @@ export default function App() {
                     <div style={{ padding: '12px 15px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                       <div>
                         <span style={{ fontWeight: 'bold', marginRight: '10px', color: '#555' }}>#{match.id}</span>
-                        {/* Affichage des noms des tireurs (match actif) */}
                         <span>{match.player1}</span> 
                         <span style={{ margin: '0 8px', color: '#888', fontWeight: 'bold' }}>vs</span> 
                         <span>{match.player2}</span>
@@ -260,7 +258,6 @@ export default function App() {
                     <div style={{ background: '#f4f6f8', padding: '10px 15px', borderTop: '1px solid #ddd', display: 'flex', alignItems: 'center', gap: '15px' }}>
                       <span style={{ fontSize: '0.9em', fontWeight: 'bold', color: '#333' }}>🎯 Mon pronostic :</span>
                       
-                      {/* Affichage de la case de score pour le tireur 1 */}
                       <input 
                         id={`input-${match.id}-1`}
                         type="number" min="0" max="15" placeholder="0"
@@ -271,7 +268,6 @@ export default function App() {
                       />
                       <span style={{ color: '#666', fontWeight: 'bold' }}>-</span>
                       
-                      {/* Affichage de la case de score pour le tireur 2 */}
                       <input 
                         id={`input-${match.id}-2`}
                         type="number" min="0" max="15" placeholder="0"
@@ -281,7 +277,6 @@ export default function App() {
                         style={{ width: '60px', padding: '6px', textAlign: 'center', borderRadius: '4px', border: '1px solid #ccc' }}
                       />
                       
-                      {/* Affichage du bouton de validation du pronostic */}
                       <button 
                         onClick={() => submitPrediction(match.id)}
                         style={{ padding: '6px 15px', background: '#007bff', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}
@@ -289,7 +284,6 @@ export default function App() {
                         Valider
                       </button>
 
-                      {/* Affichage du bouton de suppression du pronostic existant */}
                       {myPrediction && (
                         <button 
                           onClick={() => deletePrediction(match.id)}
