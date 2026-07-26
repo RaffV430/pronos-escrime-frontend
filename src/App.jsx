@@ -66,6 +66,9 @@ export default function App() {
     if (selectedCompetitionId) {
       fetchMatches(selectedCompetitionId);
       setSyncMessage(''); 
+      // 👇 On vide les brouillons et les messages d'erreur au changement d'arme !
+      setPredictionInputs({});
+      setSubmitMessages({});
     }
   }, [selectedCompetitionId]);
 
