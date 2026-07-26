@@ -13,48 +13,59 @@ export default function App() {
   const [syncMessage, setSyncMessage] = useState('');
   
   // Gestion des compétitions et tournoi actif
-  const tournamentId = 1; // ID du tournoi principal pour l'instant
+  const tournamentId = 1; 
   const [competitions, setCompetitions] = useState([]);
   const [selectedCompetitionId, setSelectedCompetitionId] = useState(null);
 
   const [matches, setMatches] = useState([]);
   const [predictionInputs, setPredictionInputs] = useState({});
   const [submitMessages, setSubmitMessages] = useState({});
+  
+  // VRAI Classement Général
+  const [globalLeaderboard, setGlobalLeaderboard] = useState([]);
 
   // 1. Charger la liste des compétitions du tournoi
   useEffect(() => {
     const fetchCompetitions = async () => {
-      // On bloque la requête tant que l'utilisateur n'est pas connecté et identifié
       if (!user) return; 
-
       try {
         const res = await API.get(`/podium/competitions/${tournamentId}`);
         if (res.data && res.data.length > 0) {
           setCompetitions(res.data);
-          setSelectedCompetitionId(res.data[0].id); // Sélectionne la première par défaut
+          setSelectedCompetitionId(res.data[0].id);
         }
       } catch (err) {
         console.error('Erreur chargement compétitions :', err);
       }
     };
     fetchCompetitions();
-  }, [tournamentId, user]); // On ajoute 'user' ici pour que la fonction se déclenche dès que l'utilisateur est reconnu
+  }, [tournamentId, user]);
 
-  // 2. Charger les matchs en fonction de la compétition sélectionnée
+  // 2. Charger les matchs en fonction de la compétition
   const fetchMatches = async (compId) => {
     if (!compId) return;
     try {
       const res = await API.get(`/matches?competitionId=${compId}`);
       setMatches(res.data);
     } catch (err) {
-      console.error('Erreur lors du chargement des matchs :', err);
+      console.error('Erreur chargement matchs :', err);
+    }
+  };
+
+  // 3. Charger le Classement Général Global
+  const fetchGlobalLeaderboard = async () => {
+    try {
+      const res = await API.get('/matches/leaderboard');
+      setGlobalLeaderboard(res.data);
+    } catch (err) {
+      console.error('Erreur chargement classement global :', err);
     }
   };
 
   useEffect(() => {
     if (selectedCompetitionId) {
       fetchMatches(selectedCompetitionId);
-      setSyncMessage(''); // On efface le message de synchro quand on change d'arme
+      setSyncMessage(''); 
     }
   }, [selectedCompetitionId]);
 
@@ -66,6 +77,7 @@ export default function App() {
           API.defaults.headers.common['Authorization'] = `Bearer ${token}`;
           const res = await API.get('/auth/me');
           setUser(res.data);
+          fetchGlobalLeaderboard(); // Charge le classement dès la connexion
         } catch (err) {
           localStorage.removeItem('token');
           delete API.defaults.headers.common['Authorization'];
@@ -89,6 +101,7 @@ export default function App() {
       const res = await API.post('/matches/sync-sheet', { competitionId: selectedCompetitionId });
       setSyncMessage(`✅ Succès : ${res.data.details?.count || 0} matchs mis à jour !`);
       fetchMatches(selectedCompetitionId);
+      fetchGlobalLeaderboard(); // Met à jour les points immédiatement après la synchro
     } catch (err) {
       setSyncMessage(`❌ ${err.response?.data?.error || 'Erreur lors de la synchronisation.'}`);
     } finally {
@@ -109,6 +122,7 @@ export default function App() {
       API.defaults.headers.common['Authorization'] = `Bearer ${token}`;
       setUser(res.data.user);
       if (selectedCompetitionId) fetchMatches(selectedCompetitionId);
+      fetchGlobalLeaderboard();
     } catch (err) {
       const errorMsg = err.response?.data?.error || err.response?.data?.message || err.message || 'Une erreur est survenue';
       setError(typeof errorMsg === 'string' ? errorMsg : JSON.stringify(errorMsg));
@@ -120,15 +134,13 @@ export default function App() {
     delete API.defaults.headers.common['Authorization'];
     setUser(null);
     setMatches([]);
+    setGlobalLeaderboard([]);
   };
 
   const handleScoreChange = (matchId, playerNum, value) => {
     setPredictionInputs(prev => ({
       ...prev,
-      [matchId]: {
-        ...prev[matchId],
-        [`score${playerNum}`]: value
-      }
+      [matchId]: { ...prev[matchId], [`score${playerNum}`]: value }
     }));
   };
 
@@ -161,20 +173,18 @@ export default function App() {
       setSubmitMessages(prev => ({ ...prev, [matchId]: { type: 'success', text: '🗑️ Supprimé !' }}));
       if (selectedCompetitionId) fetchMatches(selectedCompetitionId);
     } catch (err) {
-      setSubmitMessages(prev => ({ ...prev, [matchId]: { type: 'error', text: '❌ Erreur suppression' }}));
+      setSubmitMessages(prev => ({ ...prev, [matchId]: { type: 'error', text: '❌ Erreur' }}));
     }
   };
 
   const handleKeyDown = (e, matchId, playerNum, index, activeMatches) => {
     if (e.key === 'Enter') {
       e.preventDefault(); 
-
       if (playerNum === 1) {
         document.getElementById(`input-${matchId}-2`)?.focus();
       } 
       else if (playerNum === 2) {
         submitPrediction(matchId);
-        
         const currentIndex = activeMatches.findIndex(m => m.id === matchId);
         if (currentIndex !== -1 && currentIndex + 1 < activeMatches.length) {
           const nextMatchId = activeMatches[currentIndex + 1].id;
@@ -199,10 +209,10 @@ export default function App() {
     const activeMatches = validMatches.filter(m => !m.isFinished);
 
     return (
-      <div style={{ padding: '20px', fontFamily: 'sans-serif', maxWidth: '800px', margin: '0 auto' }}>
+      <div style={{ padding: '20px', fontFamily: 'sans-serif', maxWidth: '800px', margin: '0 auto', color: '#333' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <h2>Bienvenue, {user.username || user.name || 'Utilisateur'} ! {user.isAdmin && '👑'} 🤺</h2>
-          <button onClick={handleLogout} style={{ padding: '8px 12px', background: '#dc3545', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>
+          <button onClick={handleLogout} style={{ padding: '8px 12px', background: '#dc3545', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}>
             Déconnexion
           </button>
         </div>
@@ -212,7 +222,7 @@ export default function App() {
         {/* Sélecteur Global de Compétition */}
         {competitions.length > 0 && (
           <div style={{ marginBottom: '20px', padding: '15px', background: '#e9ecef', borderRadius: '8px', border: '1px solid #ced4da' }}>
-            <label style={{ display: 'block', fontWeight: 'bold', marginBottom: '8px', color: '#333' }}>⚔️ Choisir l'épreuve / compétition :</label>
+            <label style={{ display: 'block', fontWeight: 'bold', marginBottom: '8px' }}>⚔️ Choisir l'épreuve / compétition :</label>
             <select 
               value={selectedCompetitionId || ''} 
               onChange={(e) => setSelectedCompetitionId(Number(e.target.value))}
@@ -247,10 +257,43 @@ export default function App() {
         {/* Bloc Podium Prediction */}
         <PodiumPrediction tournamentId={tournamentId} selectedCompetitionId={selectedCompetitionId} user={user} />
 
+        {/* --- LE VRAI CLASSEMENT GÉNÉRAL (Matchs + Podiums) --- */}
+        <div style={{ margin: '30px 0', padding: '20px', background: '#fff', borderRadius: '8px', border: '2px solid #007bff', boxShadow: '0 4px 6px rgba(0,0,0,0.1)' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '2px solid #eee', paddingBottom: '10px', marginBottom: '15px' }}>
+            <h3 style={{ margin: 0, color: '#007bff' }}>🌍 Classement Général Absolu</h3>
+            <button onClick={fetchGlobalLeaderboard} style={{ fontSize: '0.85em', padding: '6px 12px', cursor: 'pointer', background: '#28a745', color: '#fff', border: 'none', borderRadius: '4px', fontWeight: 'bold' }}>
+              🔄 Actualiser
+            </button>
+          </div>
+          
+          {globalLeaderboard.length === 0 ? (
+            <p style={{ fontStyle: 'italic', color: '#666' }}>Aucun point distribué pour le moment.</p>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              {globalLeaderboard.map((u, index) => (
+                <div key={u.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#f8f9fa', padding: '12px 15px', borderRadius: '6px', border: '1px solid #ddd' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <span style={{ fontWeight: 'bold', fontSize: '1.2em', width: '30px' }}>{index === 0 ? '👑' : `#${index + 1}`}</span>
+                    <span style={{ fontWeight: 'bold', fontSize: '1.1em' }}>{u.name || 'Utilisateur'}</span>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+                    <span style={{ fontSize: '0.85em', color: '#666', background: '#e9ecef', padding: '4px 8px', borderRadius: '4px' }}>
+                      🤺 Matchs: {u.matchPoints} | 🏆 Podiums: {u.podiumPoints}
+                    </span>
+                    <span style={{ background: '#007bff', color: '#fff', padding: '6px 12px', borderRadius: '4px', fontWeight: 'bold', fontSize: '1.1em' }}>
+                      {u.totalPoints} pts
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
         {finishedMatches.length > 0 && (
           <details style={{ marginBottom: '25px', border: '1px solid #c3e6cb', borderRadius: '8px', background: '#f8fff9', overflow: 'hidden' }}>
             <summary style={{ padding: '12px 15px', cursor: 'pointer', background: '#d4edda', fontWeight: 'bold', color: '#155724', fontSize: '1.05em' }}>
-              📁 Historique des matchs terminés ({finishedMatches.length}) - Cliquer pour voir les résultats et vos pronos
+              📁 Historique des matchs terminés ({finishedMatches.length}) - Cliquer pour voir les résultats
             </summary>
             
             <div style={{ padding: '15px', display: 'flex', flexDirection: 'column', gap: '10px', background: '#fff' }}>
@@ -260,9 +303,7 @@ export default function App() {
                   <div key={match.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 12px', background: '#f9f9f9', borderRadius: '6px', border: '1px solid #eee', fontSize: '0.95em' }}>
                     <div>
                       <span style={{ fontWeight: 'bold', marginRight: '10px', color: '#666' }}>#{match.id}</span>
-                      <span>{match.player1}</span> 
-                      <span style={{ margin: '0 6px', color: '#888' }}>vs</span> 
-                      <span>{match.player2}</span>
+                      <span>{match.player1}</span> <span style={{ margin: '0 6px', color: '#888' }}>vs</span> <span>{match.player2}</span>
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
                       <span style={{ background: '#e2e3e5', padding: '2px 8px', borderRadius: '4px', fontWeight: 'bold' }}>
@@ -292,26 +333,19 @@ export default function App() {
 
                 return (
                   <div key={match.id} style={{ border: '1px solid #ddd', borderRadius: '8px', background: '#fff', overflow: 'hidden' }}>
-                    
                     <div style={{ padding: '12px 15px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                       <div>
                         <span style={{ fontWeight: 'bold', marginRight: '10px', color: '#555' }}>#{match.id}</span>
-                        <span>{match.player1}</span> 
-                        <span style={{ margin: '0 8px', color: '#888', fontWeight: 'bold' }}>vs</span> 
-                        <span>{match.player2}</span>
+                        <span>{match.player1}</span> <span style={{ margin: '0 8px', color: '#888', fontWeight: 'bold' }}>vs</span> <span>{match.player2}</span>
                       </div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
-                        <span style={{ fontSize: '1.2em', fontWeight: 'bold', background: '#eee', padding: '4px 10px', borderRadius: '4px' }}>
-                          - : -
-                        </span>
-                        <span style={{ fontSize: '0.85em', padding: '4px 8px', borderRadius: '4px', backgroundColor: '#fff3cd', color: '#856404' }}>
-                          En cours
-                        </span>
+                        <span style={{ fontSize: '1.2em', fontWeight: 'bold', background: '#eee', padding: '4px 10px', borderRadius: '4px' }}>- : -</span>
+                        <span style={{ fontSize: '0.85em', padding: '4px 8px', borderRadius: '4px', backgroundColor: '#fff3cd', color: '#856404' }}>En cours</span>
                       </div>
                     </div>
 
                     <div style={{ background: '#f4f6f8', padding: '10px 15px', borderTop: '1px solid #ddd', display: 'flex', alignItems: 'center', gap: '15px' }}>
-                      <span style={{ fontSize: '0.9em', fontWeight: 'bold', color: '#333' }}>🎯 Mon pronostic :</span>
+                      <span style={{ fontSize: '0.9em', fontWeight: 'bold' }}>🎯 Mon pronostic :</span>
                       
                       <input 
                         id={`input-${match.id}-1`}
@@ -322,7 +356,6 @@ export default function App() {
                         style={{ width: '60px', padding: '6px', textAlign: 'center', borderRadius: '4px', border: '1px solid #ccc' }}
                       />
                       <span style={{ color: '#666', fontWeight: 'bold' }}>-</span>
-                      
                       <input 
                         id={`input-${match.id}-2`}
                         type="number" min="0" max="15" placeholder="0"
@@ -332,25 +365,10 @@ export default function App() {
                         style={{ width: '60px', padding: '6px', textAlign: 'center', borderRadius: '4px', border: '1px solid #ccc' }}
                       />
                       
-                      <button 
-                        onClick={() => submitPrediction(match.id)}
-                        style={{ padding: '6px 15px', background: '#007bff', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}
-                      >
-                        Valider
-                      </button>
-
-                      {myPrediction && (
-                        <button 
-                          onClick={() => deletePrediction(match.id)}
-                          style={{ padding: '6px 10px', background: '#dc3545', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}
-                        >
-                          Supprimer
-                        </button>
-                      )}
-                      
+                      <button onClick={() => submitPrediction(match.id)} style={{ padding: '6px 15px', background: '#007bff', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}>Valider</button>
+                      {myPrediction && <button onClick={() => deletePrediction(match.id)} style={{ padding: '6px 10px', background: '#dc3545', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}>Supprimer</button>}
                       {msg && <span style={{ color: msg.type === 'error' ? '#dc3545' : '#28a745', fontSize: '0.85em', fontWeight: 'bold' }}>{msg.text}</span>}
                     </div>
-
                   </div>
                 );
               })}
@@ -366,20 +384,14 @@ export default function App() {
       <h2>{isRegister ? 'Inscription' : 'Connexion'}</h2>
       {error && <div style={{ color: 'red', marginBottom: '10px', fontWeight: 'bold' }}>{error}</div>}
       <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-        {isRegister && (
-          <input type="text" placeholder="Nom d'utilisateur" required value={formData.username} onChange={(e) => setFormData({ ...formData, username: e.target.value })} style={{ padding: '8px' }} />
-        )}
+        {isRegister && <input type="text" placeholder="Nom d'utilisateur" required value={formData.username} onChange={(e) => setFormData({ ...formData, username: e.target.value })} style={{ padding: '8px' }} />}
         <input type="text" placeholder={isRegister ? "Email" : "Identifiant"} required value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })} style={{ padding: '8px' }} />
         <input type="password" placeholder="Mot de passe" required value={formData.password} onChange={(e) => setFormData({ ...formData, password: e.target.value })} style={{ padding: '8px' }} />
-        <button type="submit" style={{ padding: '10px', background: '#007bff', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>
-          {isRegister ? "S'inscrire" : 'Se connecter'}
-        </button>
+        <button type="submit" style={{ padding: '10px', background: '#007bff', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>{isRegister ? "S'inscrire" : 'Se connecter'}</button>
       </form>
       <p style={{ marginTop: '15px', fontSize: '0.9em' }}>
         {isRegister ? 'Déjà un compte ?' : "Pas encore de compte ?"} {' '}
-        <button onClick={() => setIsRegister(!isRegister)} style={{ background: 'none', border: 'none', color: '#007bff', textDecoration: 'underline', cursor: 'pointer' }}>
-          {isRegister ? 'Se connecter' : "S'inscrire"}
-        </button>
+        <button onClick={() => setIsRegister(!isRegister)} style={{ background: 'none', border: 'none', color: '#007bff', textDecoration: 'underline', cursor: 'pointer' }}>{isRegister ? 'Se connecter' : "S'inscrire"}</button>
       </p>
     </div>
   );
