@@ -11,18 +11,49 @@ export default function App() {
 
   const [isSyncing, setIsSyncing] = useState(false);
   const [syncMessage, setSyncMessage] = useState('');
+  
+  // Gestion des compétitions et tournoi actif
+  const tournamentId = 1; // ID du tournoi principal pour l'instant
+  const [competitions, setCompetitions] = useState([]);
+  const [selectedCompetitionId, setSelectedCompetitionId] = useState(null);
+
   const [matches, setMatches] = useState([]);
   const [predictionInputs, setPredictionInputs] = useState({});
   const [submitMessages, setSubmitMessages] = useState({});
 
-  const fetchMatches = async () => {
+  // 1. Charger la liste des compétitions du tournoi
+  useEffect(() => {
+    const fetchCompetitions = async () => {
+      try {
+        const res = await API.get(`/podium/competitions/${tournamentId}`);
+        if (res.data && res.data.length > 0) {
+          setCompetitions(res.data);
+          setSelectedCompetitionId(res.data[0].id); // Sélectionne la première par défaut
+        }
+      } catch (err) {
+        console.error('Erreur chargement compétitions :', err);
+      }
+    };
+    fetchCompetitions();
+  }, [tournamentId]);
+
+  // 2. Charger les matchs en fonction de la compétition sélectionnée
+  const fetchMatches = async (compId) => {
+    if (!compId) return;
     try {
-      const res = await API.get('/matches');
+      const res = await API.get(`/matches?competitionId=${compId}`);
       setMatches(res.data);
     } catch (err) {
       console.error('Erreur lors du chargement des matchs :', err);
     }
   };
+
+  useEffect(() => {
+    if (selectedCompetitionId) {
+      fetchMatches(selectedCompetitionId);
+      setSyncMessage(''); // On efface le message de synchro quand on change d'arme
+    }
+  }, [selectedCompetitionId]);
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -32,7 +63,6 @@ export default function App() {
           API.defaults.headers.common['Authorization'] = `Bearer ${token}`;
           const res = await API.get('/auth/me');
           setUser(res.data);
-          fetchMatches();
         } catch (err) {
           localStorage.removeItem('token');
           delete API.defaults.headers.common['Authorization'];
@@ -45,14 +75,19 @@ export default function App() {
   }, []);
 
   const handleSyncSheet = async () => {
+    if (!selectedCompetitionId) {
+      setSyncMessage('❌ Veuillez sélectionner une compétition.');
+      return;
+    }
+    
     setIsSyncing(true);
     setSyncMessage('Synchronisation en cours...');
     try {
-      const res = await API.post('/matches/sync-sheet');
+      const res = await API.post('/matches/sync-sheet', { competitionId: selectedCompetitionId });
       setSyncMessage(`✅ Succès : ${res.data.details?.count || 0} matchs mis à jour !`);
-      fetchMatches();
+      fetchMatches(selectedCompetitionId);
     } catch (err) {
-      setSyncMessage('❌ Erreur lors de la synchronisation.');
+      setSyncMessage(`❌ ${err.response?.data?.error || 'Erreur lors de la synchronisation.'}`);
     } finally {
       setIsSyncing(false);
     }
@@ -61,7 +96,6 @@ export default function App() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
-    // On enlève le /api d'ici car l'instance api.js le rajoute déjà automatiquement
     const endpoint = isRegister ? '/auth/register' : '/auth/login';
 
     try {
@@ -71,7 +105,7 @@ export default function App() {
       localStorage.setItem('token', token);
       API.defaults.headers.common['Authorization'] = `Bearer ${token}`;
       setUser(res.data.user);
-      fetchMatches(); 
+      if (selectedCompetitionId) fetchMatches(selectedCompetitionId);
     } catch (err) {
       const errorMsg = err.response?.data?.error || err.response?.data?.message || err.message || 'Une erreur est survenue';
       setError(typeof errorMsg === 'string' ? errorMsg : JSON.stringify(errorMsg));
@@ -108,7 +142,7 @@ export default function App() {
         predictedScore2: parseInt(p.score2)
       });
       setSubmitMessages(prev => ({ ...prev, [matchId]: { type: 'success', text: '✅ Enregistré !' }}));
-      fetchMatches(); 
+      if (selectedCompetitionId) fetchMatches(selectedCompetitionId);
     } catch (err) {
       setSubmitMessages(prev => ({ ...prev, [matchId]: { type: 'error', text: '❌ Erreur' }}));
     }
@@ -122,7 +156,7 @@ export default function App() {
         [matchId]: { score1: '', score2: '' }
       }));
       setSubmitMessages(prev => ({ ...prev, [matchId]: { type: 'success', text: '🗑️ Supprimé !' }}));
-      fetchMatches(); 
+      if (selectedCompetitionId) fetchMatches(selectedCompetitionId);
     } catch (err) {
       setSubmitMessages(prev => ({ ...prev, [matchId]: { type: 'error', text: '❌ Erreur suppression' }}));
     }
@@ -164,7 +198,7 @@ export default function App() {
     return (
       <div style={{ padding: '20px', fontFamily: 'sans-serif', maxWidth: '800px', margin: '0 auto' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <h2>Bienvenue, {user.username || 'Utilisateur'} ! {user.isAdmin && '👑'} 🤺</h2>
+          <h2>Bienvenue, {user.username || user.name || 'Utilisateur'} ! {user.isAdmin && '👑'} 🤺</h2>
           <button onClick={handleLogout} style={{ padding: '8px 12px', background: '#dc3545', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>
             Déconnexion
           </button>
@@ -172,22 +206,43 @@ export default function App() {
 
         <hr style={{ margin: '20px 0' }} />
 
-        <div style={{ marginBottom: '20px', padding: '15px', background: '#f8f9fa', borderRadius: '8px', border: '1px solid #ddd' }}>
-          <h3>Panneau de contrôle</h3>
-          <p style={{ fontSize: '0.9em', color: '#555', marginBottom: '15px' }}>
-            Mettez à jour les matchs et les scores depuis votre fichier Google Sheets.
-          </p>
-          <button 
-            onClick={handleSyncSheet} 
-            disabled={isSyncing}
-            style={{ padding: '10px 20px', background: '#28a745', color: 'white', border: 'none', borderRadius: '4px', cursor: isSyncing ? 'not-allowed' : 'pointer', fontWeight: 'bold' }}
-          >
-            {isSyncing ? 'Chargement...' : '🔄 Synchroniser Google Sheets'}
-          </button>
-          {syncMessage && <p style={{ marginTop: '10px', fontWeight: 'bold' }}>{syncMessage}</p>}
-        </div>
+        {/* Sélecteur Global de Compétition */}
+        {competitions.length > 0 && (
+          <div style={{ marginBottom: '20px', padding: '15px', background: '#e9ecef', borderRadius: '8px', border: '1px solid #ced4da' }}>
+            <label style={{ display: 'block', fontWeight: 'bold', marginBottom: '8px', color: '#333' }}>⚔️ Choisir l'épreuve / compétition :</label>
+            <select 
+              value={selectedCompetitionId || ''} 
+              onChange={(e) => setSelectedCompetitionId(Number(e.target.value))}
+              style={{ width: '100%', padding: '10px', borderRadius: '4px', border: '1px solid #ccc', fontWeight: 'bold', fontSize: '1em' }}
+            >
+              {competitions.map((comp) => (
+                <option key={comp.id} value={comp.id}>
+                  {comp.name} {comp.isPodiumLocked ? '🔒' : '🔓'}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
 
-        <PodiumPrediction tournamentId={1} user={user} />
+        {user.isAdmin && (
+          <div style={{ marginBottom: '20px', padding: '15px', background: '#f8f9fa', borderRadius: '8px', border: '1px solid #ddd' }}>
+            <h3>Panneau de contrôle</h3>
+            <p style={{ fontSize: '0.9em', color: '#555', marginBottom: '15px' }}>
+              Mettez à jour les matchs de <strong>cette épreuve</strong> depuis votre fichier Google Sheets.
+            </p>
+            <button 
+              onClick={handleSyncSheet} 
+              disabled={isSyncing}
+              style={{ padding: '10px 20px', background: '#28a745', color: 'white', border: 'none', borderRadius: '4px', cursor: isSyncing ? 'not-allowed' : 'pointer', fontWeight: 'bold' }}
+            >
+              {isSyncing ? 'Chargement...' : '🔄 Synchroniser Google Sheets'}
+            </button>
+            {syncMessage && <p style={{ marginTop: '10px', fontWeight: 'bold' }}>{syncMessage}</p>}
+          </div>
+        )}
+
+        {/* Bloc Podium Prediction */}
+        <PodiumPrediction tournamentId={tournamentId} selectedCompetitionId={selectedCompetitionId} user={user} />
 
         {finishedMatches.length > 0 && (
           <details style={{ marginBottom: '25px', border: '1px solid #c3e6cb', borderRadius: '8px', background: '#f8fff9', overflow: 'hidden' }}>
