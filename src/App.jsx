@@ -24,6 +24,9 @@ export default function App() {
   // 1. Charger la liste des compétitions du tournoi
   useEffect(() => {
     const fetchCompetitions = async () => {
+      // On bloque la requête tant que l'utilisateur n'est pas connecté et identifié
+      if (!user) return; 
+
       try {
         const res = await API.get(`/podium/competitions/${tournamentId}`);
         if (res.data && res.data.length > 0) {
@@ -35,7 +38,7 @@ export default function App() {
       }
     };
     fetchCompetitions();
-  }, [tournamentId]);
+  }, [tournamentId, user]); // On ajoute 'user' ici pour que la fonction se déclenche dès que l'utilisateur est reconnu
 
   // 2. Charger les matchs en fonction de la compétition sélectionnée
   const fetchMatches = async (compId) => {
