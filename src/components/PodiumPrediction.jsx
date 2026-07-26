@@ -9,12 +9,29 @@ export default function PodiumPrediction({ tournamentId, selectedCompetitionId, 
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(false);
   
+  // États pour le formulaire de validation Admin
+  const [offGold, setOffGold] = useState('');
+  const [offSilver, setOffSilver] = useState('');
+  const [offBronze1, setOffBronze1] = useState('');
+  const [offBronze2, setOffBronze2] = useState('');
+  const [adminMessage, setAdminMessage] = useState('');
+  const [isResolving, setIsResolving] = useState(false);
+
   const [allPredictions, setAllPredictions] = useState([]);
   const [leaderboard, setLeaderboard] = useState([]);
   const [activeTab, setActiveTab] = useState('prediction');
   const [isLocked, setIsLocked] = useState(false);
 
-  // 1. Charger les données du podium et le statut lorsque la compétition change
+  // Recharger le classement (utile après la validation admin)
+  const fetchLeaderboard = async () => {
+    try {
+      const res = await API.get(`/podium/leaderboard/${tournamentId}`);
+      if (res.data) setLeaderboard(res.data);
+    } catch (err) {
+      console.error("Erreur classement", err);
+    }
+  };
+
   useEffect(() => {
     if (!selectedCompetitionId) return;
 
@@ -34,9 +51,8 @@ export default function PodiumPrediction({ tournamentId, selectedCompetitionId, 
         }
 
         const allRes = await API.get(`/podium/all/competition/${selectedCompetitionId}`);
-        if (allRes.data) {
-          setAllPredictions(allRes.data);
-        }
+        if (allRes.data) setAllPredictions(allRes.data);
+        
       } catch (err) {
         console.error("Erreur chargement données", err);
       }
@@ -45,18 +61,9 @@ export default function PodiumPrediction({ tournamentId, selectedCompetitionId, 
     fetchCompetitionData();
   }, [selectedCompetitionId]);
 
-  // 2. Charger le classement général du tournoi
   useEffect(() => {
-    const fetchLeaderboard = async () => {
-      try {
-        const res = await API.get(`/podium/leaderboard/${tournamentId}`);
-        if (res.data) setLeaderboard(res.data);
-      } catch (err) {
-        console.error("Erreur classement", err);
-      }
-    };
     fetchLeaderboard();
-  }, [tournamentId]);
+  }, [tournamentId, selectedCompetitionId]); // On recharge le classement quand l'épreuve change
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -81,10 +88,28 @@ export default function PodiumPrediction({ tournamentId, selectedCompetitionId, 
     try {
       const res = await API.put(`/podium/competition/${selectedCompetitionId}/toggle-lock`, { isLocked: !isLocked });
       setIsLocked(res.data.competition.isPodiumLocked);
-      setMessage(res.data.message);
+      setAdminMessage(res.data.message);
     } catch (err) {
-      console.error(err);
-      setMessage("Erreur lors de la modification du verrouillage.");
+      setAdminMessage("Erreur lors de la modification du verrouillage.");
+    }
+  };
+
+  // Nouvelle fonction pour soumettre le résultat OFFICIEL
+  const handleResolvePodium = async (e) => {
+    e.preventDefault();
+    setIsResolving(true);
+    setAdminMessage('');
+    try {
+      const res = await API.post(`/podium/competition/${selectedCompetitionId}/resolve`, {
+        gold: offGold, silver: offSilver, bronze1: offBronze1, bronze2: offBronze2
+      });
+      setAdminMessage(res.data.message);
+      setIsLocked(true); // Ça verrouille automatiquement
+      fetchLeaderboard(); // Recharge les points en direct !
+    } catch (err) {
+      setAdminMessage("❌ Erreur : " + (err.response?.data?.error || err.message));
+    } finally {
+      setIsResolving(false);
     }
   };
 
@@ -110,20 +135,35 @@ export default function PodiumPrediction({ tournamentId, selectedCompetitionId, 
         <>
           {/* Espace Administrateur */}
           {user && user.isAdmin && (
-            <div style={{ marginBottom: '20px', maxWidth: '400px', background: '#fff3cd', padding: '10px', borderRadius: '4px', border: '1px solid #ffeeba' }}>
-              <p style={{ margin: '0 0 10px 0', fontSize: '0.85em', fontWeight: 'bold', color: '#856404' }}>🛠️ Espace Administrateur (cette compétition)</p>
-              <button 
-                onClick={toggleLock} 
-                type="button"
-                style={{ width: '100%', padding: '10px', background: isLocked ? '#28a745' : '#dc3545', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}
-              >
-                {isLocked ? '🔓 Déverrouiller cette compétition' : '🔒 Verrouiller cette compétition'}
+            <div style={{ marginBottom: '25px', background: '#fff3cd', padding: '15px', borderRadius: '6px', border: '1px solid #ffeeba' }}>
+              <p style={{ margin: '0 0 15px 0', fontSize: '0.9em', fontWeight: 'bold', color: '#856404' }}>👑 ESPACE ADMIN - VALIDER L'ÉPREUVE</p>
+              
+              <button onClick={toggleLock} type="button" style={{ width: '100%', padding: '8px', background: isLocked ? '#28a745' : '#dc3545', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold', marginBottom: '15px' }}>
+                {isLocked ? '🔓 Déverrouiller la saisie aux joueurs' : '🔒 Bloquer la saisie aux joueurs'}
               </button>
+
+              <form onSubmit={handleResolvePodium} style={{ display: 'flex', flexDirection: 'column', gap: '8px', borderTop: '1px dashed #d39e00', paddingTop: '15px' }}>
+                <p style={{ margin: 0, fontSize: '0.85em', fontWeight: 'bold', color: '#856404' }}>Entrez le podium officiel pour calculer les points :</p>
+                <div style={{ display: 'flex', gap: '5px' }}>
+                  <input type="text" placeholder="🥇 Or" required value={offGold} onChange={(e) => setOffGold(e.target.value)} style={{ padding: '6px', flex: 1, borderRadius: '4px', border: '1px solid #ccc' }} />
+                  <input type="text" placeholder="🥈 Argent" required value={offSilver} onChange={(e) => setOffSilver(e.target.value)} style={{ padding: '6px', flex: 1, borderRadius: '4px', border: '1px solid #ccc' }} />
+                </div>
+                <div style={{ display: 'flex', gap: '5px' }}>
+                  <input type="text" placeholder="🥉 Bronze 1" required value={offBronze1} onChange={(e) => setOffBronze1(e.target.value)} style={{ padding: '6px', flex: 1, borderRadius: '4px', border: '1px solid #ccc' }} />
+                  <input type="text" placeholder="🥉 Bronze 2" required value={offBronze2} onChange={(e) => setOffBronze2(e.target.value)} style={{ padding: '6px', flex: 1, borderRadius: '4px', border: '1px solid #ccc' }} />
+                </div>
+                <button type="submit" disabled={isResolving} style={{ padding: '10px', background: '#d39e00', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold', marginTop: '5px' }}>
+                  {isResolving ? 'Calcul en cours...' : '🏁 Valider le podium et distribuer les points'}
+                </button>
+              </form>
+
+              {adminMessage && <p style={{ marginTop: '10px', fontWeight: 'bold', color: '#856404', fontSize: '0.9em' }}>{adminMessage}</p>}
             </div>
           )}
 
           {isLocked && <div style={{ padding: '10px', background: '#f8d7da', color: '#721c24', borderRadius: '4px', marginBottom: '15px', fontWeight: 'bold', maxWidth: '400px' }}>🔒 Les pronostics sont clos pour cette compétition.</div>}
 
+          {/* Formulaire Joueur */}
           <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '10px', maxWidth: '400px' }}>
             <div><label style={{ display: 'block', fontWeight: 'bold', marginBottom: '5px' }}>🥇 Or : </label><input type="text" value={gold} onChange={(e) => setGold(e.target.value)} disabled={isLocked} required placeholder="Nom du tireur" style={inputStyle} /></div>
             <div><label style={{ display: 'block', fontWeight: 'bold', marginBottom: '5px' }}>🥈 Argent : </label><input type="text" value={silver} onChange={(e) => setSilver(e.target.value)} disabled={isLocked} required placeholder="Nom du tireur" style={inputStyle} /></div>
@@ -132,20 +172,23 @@ export default function PodiumPrediction({ tournamentId, selectedCompetitionId, 
             {!isLocked && <button type="submit" disabled={loading} style={{ padding: '10px', background: '#007bff', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold', marginTop: '5px' }}>{loading ? 'Enregistrement...' : 'Valider mon podium'}</button>}
           </form>
           
-          {message && <p style={{ marginTop: '10px', fontWeight: 'bold', color: message.includes('succès') || message.includes('ouverts') ? 'green' : 'red' }}>{message}</p>}
+          {message && <p style={{ marginTop: '10px', fontWeight: 'bold', color: message.includes('succès') ? 'green' : 'red' }}>{message}</p>}
 
           {isLocked && (
             <div style={{ marginTop: '30px', borderTop: '2px solid #ddd', paddingTop: '20px' }}>
-              <h4>📊 Pronostics de tous les participants (cette compétition)</h4>
+              <h4>📊 Pronostics de tous les participants</h4>
               {allPredictions.length === 0 ? <p style={{ fontStyle: 'italic' }}>Aucun pronostic enregistré.</p> : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginTop: '10px', maxWidth: '400px' }}>
                   {allPredictions.map((pred) => (
                     <div key={pred.id} style={{ background: '#fff', padding: '12px', borderRadius: '6px', border: '1px solid #ccc' }}>
-                      <strong>{pred.user?.name || 'Utilisateur'}</strong>
-                      <ul style={{ margin: '5px 0 0 20px', padding: 0, fontSize: '14px' }}>
-                        <li>🥇 Or : {pred.gold}</li>
-                        <li>🥈 Argent : {pred.silver}</li>
-                        <li>🥉 Bronze : {pred.bronze1} / {pred.bronze2}</li>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <strong>{pred.user?.name || 'Utilisateur'}</strong>
+                        <span style={{ background: '#28a745', color: 'white', padding: '2px 6px', borderRadius: '4px', fontSize: '0.85em', fontWeight: 'bold' }}>{pred.pointsEarned || 0} pts</span>
+                      </div>
+                      <ul style={{ margin: '8px 0 0 20px', padding: 0, fontSize: '14px', color: '#555' }}>
+                        <li>🥇 {pred.gold}</li>
+                        <li>🥈 {pred.silver}</li>
+                        <li>🥉 {pred.bronze1} / {pred.bronze2}</li>
                       </ul>
                     </div>
                   ))}
@@ -156,7 +199,7 @@ export default function PodiumPrediction({ tournamentId, selectedCompetitionId, 
         </>
       ) : (
         <div>
-          <h4>🏆 Classement Général du Tournoi</h4>
+          <h4>🏆 Classement Général (Épreuves Podiums)</h4>
           {leaderboard.length === 0 ? <p style={{ fontStyle: 'italic' }}>Aucun point attribué pour le moment.</p> : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxWidth: '500px', marginTop: '15px' }}>
               {leaderboard.map((entry, index) => (
@@ -166,7 +209,7 @@ export default function PodiumPrediction({ tournamentId, selectedCompetitionId, 
                     <span style={{ fontWeight: '600' }}>{entry.user.name}</span>
                   </div>
                   <div style={{ display: 'flex', gap: '15px', alignItems: 'center' }}>
-                    <span style={{ fontSize: '0.85em', color: '#666' }}>({entry.podiumsCount} podiums pronostiqués)</span>
+                    <span style={{ fontSize: '0.85em', color: '#666' }}>({entry.podiumsCount} grille(s))</span>
                     <span style={{ background: '#28a745', color: '#fff', padding: '4px 10px', borderRadius: '4px', fontWeight: 'bold' }}>{entry.totalPoints} pts</span>
                   </div>
                 </div>
