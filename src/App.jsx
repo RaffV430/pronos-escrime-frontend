@@ -64,11 +64,15 @@ export default function App() {
 
   useEffect(() => {
     if (selectedCompetitionId) {
-      fetchMatches(selectedCompetitionId);
-      setSyncMessage(''); 
-      // 👇 On vide les brouillons et les messages d'erreur au changement d'arme !
+      // 1. On efface IMMÉDIATEMENT les anciens matchs de l'écran
+      setMatches([]); 
+      // 2. On nettoie tous les brouillons et messages
       setPredictionInputs({});
       setSubmitMessages({});
+      setSyncMessage(''); 
+      
+      // 3. On va chercher les nouveaux matchs proprement
+      fetchMatches(selectedCompetitionId);
     }
   }, [selectedCompetitionId]);
 
