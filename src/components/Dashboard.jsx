@@ -9,6 +9,14 @@ export default function Dashboard({ user, onLogout }) {
   const [adminScores, setAdminScores] = useState({});
   const [message, setMessage] = useState('');
 
+  // Nouveaux states pour l'ajustement manuel des points
+  const [adjustUserId, setAdjustUserId] = useState('');
+  const [adjustPoints, setAdjustPoints] = useState('');
+  const [adjustReason, setAdjustReason] = useState('');
+  const [adjustTournamentId, setAdjustTournamentId] = useState('');
+  const [adjustCompetitionId, setAdjustCompetitionId] = useState('');
+  const [adjustMessage, setAdjustMessage] = useState('');
+
   useEffect(() => {
     loadData();
   }, []);
@@ -87,6 +95,38 @@ export default function Dashboard({ user, onLogout }) {
     }
   };
 
+  // --- Gestion ADMIN : Ajustement manuel des points ---
+  const handleAdjustPoints = async (e) => {
+    e.preventDefault();
+    setAdjustMessage('');
+
+    if (!adjustUserId || !adjustPoints) {
+      setAdjustMessage('⚠️ Veuillez sélectionner un joueur et un nombre de points.');
+      return;
+    }
+
+    try {
+      const res = await API.post('/admin/adjust-points', {
+        userId: adjustUserId,
+        points: adjustPoints,
+        reason: adjustReason,
+        tournamentId: adjustTournamentId,
+        competitionId: adjustCompetitionId
+      });
+      
+      if (res.data.success) {
+        setAdjustMessage('✅ Points ajustés avec succès !');
+        // On réinitialise les champs spécifiques à l'ajustement
+        setAdjustPoints('');
+        setAdjustReason('');
+        loadData(); // On recharge les données pour mettre à jour le classement
+      }
+    } catch (error) {
+      console.error(error);
+      setAdjustMessage("❌ Erreur lors de l'ajustement.");
+    }
+  };
+
   return (
     <div style={{ maxWidth: '1000px', margin: '0 auto', padding: '20px', fontFamily: 'sans-serif' }}>
       {/* En-tête */}
@@ -101,6 +141,76 @@ export default function Dashboard({ user, onLogout }) {
       {message && (
         <div style={{ padding: '10px', backgroundColor: '#e0f7fa', borderRadius: '5px', marginBottom: '20px' }}>
           {message}
+        </div>
+      )}
+
+      {/* 👑 PANNEAU D'AJUSTEMENT MANUEL DES POINTS (Visible uniquement par l'admin) */}
+      {user.isAdmin && (
+        <div style={{ marginBottom: '30px', padding: '20px', border: '2px solid #ff9800', borderRadius: '8px', background: '#fff3e0' }}>
+          <h3 style={{ color: '#e65100', marginTop: '0' }}>🛠️ Ajustement manuel des points</h3>
+          
+          {adjustMessage && <p style={{ fontWeight: 'bold' }}>{adjustMessage}</p>}
+          
+          <form onSubmit={handleAdjustPoints} style={{ display: 'flex', flexDirection: 'column', gap: '10px', maxWidth: '400px' }}>
+            <label>
+              ID du joueur :
+              <input 
+                type="number" 
+                value={adjustUserId} 
+                onChange={(e) => setAdjustUserId(e.target.value)} 
+                placeholder="Ex: 3"
+                style={{ marginLeft: '10px', padding: '5px' }}
+              />
+            </label>
+
+            <label>
+              Points à ajouter/retirer :
+              <input 
+                type="number" 
+                value={adjustPoints} 
+                onChange={(e) => setAdjustPoints(e.target.value)} 
+                placeholder="Ex: 12 ou -2"
+                style={{ marginLeft: '10px', padding: '5px' }}
+              />
+            </label>
+
+            <label>
+              Raison (optionnel) :
+              <input 
+                type="text" 
+                value={adjustReason} 
+                onChange={(e) => setAdjustReason(e.target.value)} 
+                placeholder="Ex: Rattrapage Fleuret Homme"
+                style={{ marginLeft: '10px', padding: '5px' }}
+              />
+            </label>
+
+            <label>
+              ID du Tournoi (optionnel) :
+              <input 
+                type="number" 
+                value={adjustTournamentId} 
+                onChange={(e) => setAdjustTournamentId(e.target.value)} 
+                placeholder="Ex: 1"
+                style={{ marginLeft: '10px', padding: '5px' }}
+              />
+            </label>
+
+            <label>
+              ID de la Compétition (optionnel) :
+              <input 
+                type="number" 
+                value={adjustCompetitionId} 
+                onChange={(e) => setAdjustCompetitionId(e.target.value)} 
+                placeholder="Ex: 2"
+                style={{ marginLeft: '10px', padding: '5px' }}
+              />
+            </label>
+
+            <button type="submit" style={{ background: '#ff9800', color: 'white', padding: '10px', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold', marginTop: '10px' }}>
+              Attribuer les points
+            </button>
+          </form>
         </div>
       )}
 

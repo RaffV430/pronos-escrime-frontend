@@ -124,11 +124,11 @@ export default function PodiumPrediction({ tournamentId, selectedCompetitionId, 
 
   return (
     <div style={{ background: '#f9f9f9', padding: '20px', borderRadius: '8px', margin: '20px 0', border: '1px solid #ddd', color: '#333' }}>
-      <h3 style={{ marginTop: '0' }}>🏆 Pronostics & Classement du Tournoi</h3>
+      <h3 style={{ marginTop: '0' }}>🏆 Pronostics et Classement Podium</h3>
 
       <div style={{ display: 'flex', gap: '10px', marginBottom: '20px', borderBottom: '2px solid #ddd', paddingBottom: '10px' }}>
         <button onClick={() => setActiveTab('prediction')} style={{ padding: '8px 15px', background: activeTab === 'prediction' ? '#007bff' : '#e2e3e5', color: activeTab === 'prediction' ? '#fff' : '#333', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}>🎯 Pronostics Podium</button>
-        <button onClick={() => setActiveTab('leaderboard')} style={{ padding: '8px 15px', background: activeTab === 'leaderboard' ? '#28a745' : '#e2e3e5', color: activeTab === 'leaderboard' ? '#fff' : '#333', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}>📊 Classement Général</button>
+        <button onClick={() => setActiveTab('leaderboard')} style={{ padding: '8px 15px', background: activeTab === 'leaderboard' ? '#28a745' : '#e2e3e5', color: activeTab === 'leaderboard' ? '#fff' : '#333', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}>📊 Classement Pronos Podium</button>
       </div>
 
       {activeTab === 'prediction' ? (
@@ -176,7 +176,7 @@ export default function PodiumPrediction({ tournamentId, selectedCompetitionId, 
 
           {isLocked && (
             <div style={{ marginTop: '30px', borderTop: '2px solid #ddd', paddingTop: '20px' }}>
-              <h4>📊 Pronostics de tous les participants</h4>
+              <h4>📊 Pronostics podium de tous les participants</h4>
               {allPredictions.length === 0 ? <p style={{ fontStyle: 'italic' }}>Aucun pronostic enregistré.</p> : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginTop: '10px', maxWidth: '400px' }}>
                   {allPredictions.map((pred) => (
@@ -199,7 +199,7 @@ export default function PodiumPrediction({ tournamentId, selectedCompetitionId, 
         </>
       ) : (
         <div>
-          <h4>🏆 Classement Général (Épreuves Podiums)</h4>
+          <h4>🏆 Classement pronos podium </h4>
           {leaderboard.length === 0 ? <p style={{ fontStyle: 'italic' }}>Aucun point attribué pour le moment.</p> : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxWidth: '500px', marginTop: '15px' }}>
               {leaderboard.map((entry, index) => (
