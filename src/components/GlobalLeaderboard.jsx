@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useCallback, useState, useEffect } from 'react';
 import API from '../api';
 
 export default function GlobalLeaderboard() {
@@ -17,13 +17,13 @@ export default function GlobalLeaderboard() {
       try {
         // --- NOUVEAU CODE DYNAMIQUE ---
         const tourRes = await API.get('/tournaments');
-        setTournaments(tourRes.data);
-        // ------------------------------
+        const tournamentList = tourRes.data || [];
+        setTournaments(tournamentList);
 
-        const compRes = await API.get(`/podium/competitions/1`); // On récupère celles du tournoi 1
-        if (compRes.data) {
-          setCompetitions(compRes.data);
-        }
+        const competitionResponses = await Promise.all(
+          tournamentList.map((tournament) => API.get(`/podium/competitions/${tournament.id}`)),
+        );
+        setCompetitions(competitionResponses.flatMap((response) => response.data || []));
       } catch (err) {
         console.error('Erreur chargement des filtres :', err);
       }
@@ -32,8 +32,7 @@ export default function GlobalLeaderboard() {
   }, []);
 
   // 2. Charger le classement en fonction du filtre choisi
-  const fetchGlobalLeaderboard = async () => {
-    setLoading(true);
+  const fetchGlobalLeaderboard = useCallback(async () => {
     try {
       let url = '/matches/leaderboard';
       
@@ -52,11 +51,11 @@ export default function GlobalLeaderboard() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [selectedFilter]);
 
   useEffect(() => {
     fetchGlobalLeaderboard();
-  }, [selectedFilter]);
+  }, [fetchGlobalLeaderboard]);
 
   return (
     <div style={{ margin: '30px 0', padding: '20px', background: '#fff', borderRadius: '8px', border: '2px solid #007bff', boxShadow: '0 4px 6px rgba(0,0,0,0.1)' }}>

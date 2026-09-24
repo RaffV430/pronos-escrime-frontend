@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import API from './api';
 import PodiumPrediction from './components/PodiumPrediction';
 import GlobalLeaderboard from './components/GlobalLeaderboard';
@@ -62,17 +62,7 @@ export default function App() {
   };
 
   useEffect(() => {
-    if (selectedCompetitionId) {
-      // 1. On efface IMMÉDIATEMENT les anciens matchs de l'écran
-      setMatches([]); 
-      // 2. On nettoie tous les brouillons et messages
-      setPredictionInputs({});
-      setSubmitMessages({});
-      setSyncMessage(''); 
-      
-      // 3. On va chercher les nouveaux matchs proprement
-      fetchMatches(selectedCompetitionId);
-    }
+    if (selectedCompetitionId) fetchMatches(selectedCompetitionId);
   }, [selectedCompetitionId]);
 
   useEffect(() => {
@@ -83,7 +73,7 @@ export default function App() {
           API.defaults.headers.common['Authorization'] = `Bearer ${token}`;
           const res = await API.get('/auth/me');
           setUser(res.data);
-        } catch (err) {
+        } catch {
           localStorage.removeItem('token');
           delete API.defaults.headers.common['Authorization'];
           setUser(null);
@@ -161,7 +151,7 @@ export default function App() {
       setSubmitMessages(prev => ({ ...prev, [matchId]: { type: 'success', text: '✅ Enregistré !' }}));
       if (selectedCompetitionId) fetchMatches(selectedCompetitionId);
     } catch (err) {
-      setSubmitMessages(prev => ({ ...prev, [matchId]: { type: 'error', text: '❌ Erreur' }}));
+      setSubmitMessages(prev => ({ ...prev, [matchId]: { type: 'error', text: err.response?.data?.error || '❌ Erreur' }}));
     }
   };
 
@@ -175,7 +165,7 @@ export default function App() {
       setSubmitMessages(prev => ({ ...prev, [matchId]: { type: 'success', text: '🗑️ Supprimé !' }}));
       if (selectedCompetitionId) fetchMatches(selectedCompetitionId);
     } catch (err) {
-      setSubmitMessages(prev => ({ ...prev, [matchId]: { type: 'error', text: '❌ Erreur' }}));
+      setSubmitMessages(prev => ({ ...prev, [matchId]: { type: 'error', text: err.response?.data?.error || '❌ Erreur' }}));
     }
   };
 
@@ -224,6 +214,14 @@ export default function App() {
         }
       }
     }
+  };
+
+  const selectCompetition = (competitionId) => {
+    setMatches([]);
+    setPredictionInputs({});
+    setSubmitMessages({});
+    setSyncMessage('');
+    setSelectedCompetitionId(competitionId);
   };
 
   if (loading) {
@@ -277,7 +275,7 @@ export default function App() {
                 <label style={{ display: 'block', fontWeight: 'bold', marginBottom: '8px' }}>⚔️ Choisir l'épreuve / compétition :</label>
                 <select 
                   value={selectedCompetitionId || ''} 
-                  onChange={(e) => setSelectedCompetitionId(Number(e.target.value))}
+                  onChange={(e) => selectCompetition(Number(e.target.value))}
                   style={{ width: '100%', padding: '10px', borderRadius: '4px', border: '1px solid #ccc', fontWeight: 'bold', fontSize: '1em' }}
                 >
                   {competitions.map((comp) => (

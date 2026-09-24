@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useCallback, useState, useEffect } from 'react';
 import API from '../api';
 
 export default function PodiumPrediction({ tournamentId, selectedCompetitionId, user }) {
@@ -23,14 +23,14 @@ export default function PodiumPrediction({ tournamentId, selectedCompetitionId, 
   const [isLocked, setIsLocked] = useState(false);
 
   // Recharger le classement (utile après la validation admin)
-  const fetchLeaderboard = async () => {
+  const fetchLeaderboard = useCallback(async () => {
     try {
       const res = await API.get(`/podium/leaderboard/${tournamentId}`);
       if (res.data) setLeaderboard(res.data);
     } catch (err) {
       console.error("Erreur classement", err);
     }
-  };
+  }, [tournamentId]);
 
   useEffect(() => {
     if (!selectedCompetitionId) return;
@@ -50,8 +50,12 @@ export default function PodiumPrediction({ tournamentId, selectedCompetitionId, 
           setGold(''); setSilver(''); setBronze1(''); setBronze2('');
         }
 
-        const allRes = await API.get(`/podium/all/competition/${selectedCompetitionId}`);
-        if (allRes.data) setAllPredictions(allRes.data);
+        if (statusRes.data.isLocked || user?.isAdmin) {
+          const allRes = await API.get(`/podium/all/competition/${selectedCompetitionId}`);
+          if (allRes.data) setAllPredictions(allRes.data);
+        } else {
+          setAllPredictions([]);
+        }
         
       } catch (err) {
         console.error("Erreur chargement données", err);
@@ -59,11 +63,11 @@ export default function PodiumPrediction({ tournamentId, selectedCompetitionId, 
     };
 
     fetchCompetitionData();
-  }, [selectedCompetitionId]);
+  }, [selectedCompetitionId, user?.isAdmin]);
 
   useEffect(() => {
     fetchLeaderboard();
-  }, [tournamentId, selectedCompetitionId]); // On recharge le classement quand l'épreuve change
+  }, [fetchLeaderboard, selectedCompetitionId]); // On recharge le classement quand l'épreuve change
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -89,7 +93,7 @@ export default function PodiumPrediction({ tournamentId, selectedCompetitionId, 
       const res = await API.put(`/podium/competition/${selectedCompetitionId}/toggle-lock`, { isLocked: !isLocked });
       setIsLocked(res.data.competition.isPodiumLocked);
       setAdminMessage(res.data.message);
-    } catch (err) {
+    } catch {
       setAdminMessage("Erreur lors de la modification du verrouillage.");
     }
   };

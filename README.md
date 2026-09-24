@@ -1,16 +1,17 @@
-# React + Vite
+# Pronos Escrime — Frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Interface React/Vite de l'application Pronos Escrime.
 
-Currently, two official plugins are available:
+## Développement
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+1. Copier `.env.example` vers `.env`.
+2. Renseigner `VITE_API_URL` avec l'URL de l'API, suffixe `/api` inclus.
+3. Installer avec `npm ci` puis lancer `npm run dev`.
 
-## React Compiler
+`npm run check` exécute le lint et le build de production.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## Déploiement Vercel
 
-## Expanding the ESLint configuration
+Configurer `VITE_API_URL=https://<backend>/api` dans les variables du projet. Le domaine Vercel exact doit également figurer dans `CORS_ORIGINS` sur le backend.
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+La configuration `vercel.json` redirige les routes du navigateur vers `index.html`.
