@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import ScoringRules from './ScoringRules';
 import API from '../api';
 import './PoolPredictions.css';
 
@@ -149,7 +150,7 @@ export default function PoolPredictions({ selectedCompetitionId, user }) {
   return <section className="pool-section" aria-labelledby="pool-title">
     <h2 id="pool-title">Pronostics de poules</h2>
     <p>Pour chaque tireur, prévoyez son bilan et son indice : touches données − touches reçues.</p>
-    <details className="pool-rules"><summary>Barème · jusqu’à 8 points par tireur</summary><p>Victoires : exact = 3 pts ; écart de 1 = 1 pt ; au-delà = 0. Défaites : 0 pt.</p><p>Indice : exact = 5 pts ; écart de 1 à 3 = 3 pts ; de 4 à 5 = 1 pt ; au-delà = 0. Les paliers ne se cumulent pas.</p></details>
+    <ScoringRules />
     {selectedCompetitionId ? <PoolList key={`${user.id}-${selectedCompetitionId}`} competitionId={selectedCompetitionId} user={user} /> : <p>Aucune épreuve sélectionnée.</p>}
   </section>;
 }

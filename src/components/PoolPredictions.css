@@ -1,35 +1,27 @@
-.pool-section { text-align:left; color:#243347; }
-.pool-section p { line-height:1.55; margin:8px 0; }
-.pool-section h2 { color:#17365d; font-weight:750; margin-bottom:12px; }
+.pool-section { text-align:left; color:var(--text); }
 .pool-section h3, .pool-section h4 { margin:0; }
-.pool-section input, .pool-section select, .pool-section textarea { box-sizing:border-box; color:#172b45; background:#fff; border:1px solid #abb9ca; border-radius:7px; padding:10px; font:inherit; width:100%; }
-.pool-section input:focus, .pool-section select:focus, .pool-section textarea:focus { outline:3px solid #b4d8ff; outline-offset:1px; }
-.pool-section input:disabled, .pool-section input:read-only { background:#eef2f6; color:#55647a; }
-.pool-section label { display:grid; gap:6px; font-size:14px; font-weight:650; }
-.pool-section small { font-size:12px; font-weight:400; }
-.pool-section button { background:#1763ae; color:white; padding:10px 14px; border:1px solid transparent; border-radius:7px; cursor:pointer; font:inherit; font-size:14px; font-weight:650; }
-.pool-section button:disabled { opacity:.55; cursor:default; }
-.pool-section .pool-secondary { background:white; border-color:#a5b5c8; color:#204b79; }
 .pool-select { margin:22px 0 12px; }
-.pool-rules, .pool-admin { background:#f2f6fb; border:1px solid #d5dfeb; padding:14px; border-radius:8px; margin:16px 0; }
-.pool-section summary { cursor:pointer; font-weight:650; }
 .pool-toolbar, .pool-card header { display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; }
 .pool-toolbar { margin:16px 0; }
-.pool-card { background:white; border:1px solid #cdd8e5; border-radius:12px; padding:20px; margin:20px 0; }
+.pool-card { background:white; border:1px solid var(--border); border-radius:12px; padding:20px; margin:20px 0; }
 .pool-badge { background:#e4f3e9; color:#17643c; border-radius:20px; padding:6px 10px; font-size:12px; font-weight:700; }
 .pool-badge.closed { background:#edf0f5; color:#4a576a; }
-.pool-deadline { font-size:14px; color:#526177; }
+.pool-deadline { font-size:14px; color:var(--muted); }
 .pool-roster { list-style:none; padding:0; margin:0; }
-.pool-fencer { border-top:1px solid #e0e7ef; padding:18px 0; }
+.pool-fencer { border-top:1px solid var(--border); padding:18px 0; }
 .pool-fencer h4 { display:flex; gap:10px; align-items:center; margin-bottom:14px; font-size:16px; }
-.pool-position { display:inline-grid; place-items:center; width:26px; height:26px; border-radius:50%; background:#eaf0f8; font-size:12px; flex-shrink:0; }
+.pool-position { display:inline-grid; place-items:center; width:26px; height:26px; border-radius:50%; background:var(--soft); font-size:12px; flex-shrink:0; }
 .pool-fields { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:12px; }
 .pool-actions { grid-column:1/-1; display:flex; gap:8px; }
-.pool-saved { color:#386447; font-size:13px; }
+.pool-saved { color:var(--success); font-size:13px; }
 .pool-result { padding:10px 14px; border-radius:8px; background:#eaf3ff; font-size:14px; }
-.pool-error { color:#a01c2e; }
-.pool-empty { padding:20px; background:#f2f6fb; border-radius:8px; }
+.pool-error { color:var(--danger); }
+.pool-empty { padding:20px; background:var(--soft); border-radius:8px; }
 .pool-create { display:grid; gap:14px; }
 .pool-official { display:grid; grid-template-columns:2fr 1fr 1fr; gap:10px; align-items:center; padding:10px 0; }
 @media(max-width:480px) { .pool-card { padding:12px; } .pool-fields { gap:8px; } .pool-official { grid-template-columns:1fr 1fr; } .pool-official strong { grid-column:1/-1; } }
 .pool-fields { align-items:start; }
+
+.pool-admin { background:var(--soft); border:1px solid var(--border); padding:16px; border-radius:var(--radius); margin:16px 0; }
+.pool-section label { display:grid; gap:6px; }
+.pool-section small { font-size:.75rem; font-weight:400; }

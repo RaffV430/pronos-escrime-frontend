@@ -58,24 +58,24 @@ export default function GlobalLeaderboard() {
   }, [fetchGlobalLeaderboard]);
 
   return (
-    <div style={{ margin: '30px 0', padding: '20px', background: '#fff', borderRadius: '8px', border: '2px solid #007bff', boxShadow: '0 4px 6px rgba(0,0,0,0.1)' }}>
+    <div style={{ margin: '30px 0', padding: '20px', background: 'var(--surface)', borderRadius: 'var(--radius)', border: '1px solid var(--border)', boxShadow: '0 4px 6px rgba(0,0,0,0.1)' }}>
       
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '2px solid #eee', paddingBottom: '10px', marginBottom: '15px' }}>
-        <h3 style={{ margin: 0, color: '#007bff' }}>🌍 Classement</h3>
-        <button onClick={fetchGlobalLeaderboard} style={{ fontSize: '0.85em', padding: '6px 12px', cursor: 'pointer', background: '#28a745', color: '#fff', border: 'none', borderRadius: '4px', fontWeight: 'bold' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--border)', paddingBottom: '10px', marginBottom: '15px' }}>
+        <h3 style={{ margin: 0, color: 'var(--primary)' }}>🌍 Classement</h3>
+        <button onClick={fetchGlobalLeaderboard} >
           🔄 Actualiser
         </button>
       </div>
       
       {/* --- MENU DÉROULANT DES FILTRES --- */}
-      <div style={{ marginBottom: '20px', padding: '15px', background: '#f8f9fa', borderRadius: '8px', border: '1px solid #ddd' }}>
-        <label style={{ display: 'block', fontWeight: 'bold', marginBottom: '8px', color: '#333' }}>
+      <div style={{ marginBottom: '20px', padding: '15px', background: 'var(--soft)', borderRadius: 'var(--radius)', border: '1px solid var(--border)' }}>
+        <label style={{ display: 'block', marginBottom: '8px', color: 'var(--text)' }}>
           🎯 Filtrer le classement :
         </label>
         <select 
           value={selectedFilter} 
           onChange={(e) => setSelectedFilter(e.target.value)}
-          style={{ width: '100%', padding: '10px', borderRadius: '4px', border: '1px solid #ccc', fontWeight: 'bold', fontSize: '1em' }}
+          style={{ width: '100%' }}
         >
           <option value="all">🌍 Classement Général Absolu (Toute la saison)</option>
           
@@ -99,23 +99,23 @@ export default function GlobalLeaderboard() {
 
       {/* Affichage des résultats */}
       {loading ? (
-        <p style={{ textAlign: 'center', color: '#666' }}>Chargement du classement...</p>
+        <p style={{ textAlign: 'center', color: 'var(--muted)' }}>Chargement du classement...</p>
       ) : leaderboard.length === 0 ? (
-        <p style={{ fontStyle: 'italic', color: '#666' }}>Aucun point distribué pour cette sélection.</p>
+        <p style={{ fontStyle: 'italic', color: 'var(--muted)' }}>Aucun point distribué pour cette sélection.</p>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
           {leaderboard.map((u, index) => (
-            <div key={u.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#f8f9fa', padding: '12px 15px', borderRadius: '6px', border: '1px solid #ddd' }}>
+            <div key={u.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--soft)', padding: '12px 15px', borderRadius: 'var(--radius)', border: '1px solid var(--border)' }}>
               
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <span style={{ fontWeight: 'bold', fontSize: '1.2em', width: '30px', textAlign: 'center' }}>
+                <span style={{ width: '30px', textAlign: 'center' }}>
                   {index === 0 ? '👑' : index === 1 ? '🥈' : index === 2 ? '🥉' : `#${index + 1}`}
                 </span>
-                <span style={{ fontWeight: 'bold', fontSize: '1.1em' }}>{u.name || 'Utilisateur'}</span>
+                <span >{u.name || 'Utilisateur'}</span>
               </div>
 
               <div style={{ display: 'flex', alignItems: 'center', gap: '15px', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
-                <div style={{ display: 'flex', gap: '10px', fontSize: '0.85em', color: '#555', background: '#e9ecef', padding: '4px 8px', borderRadius: '4px' }}>
+                <div style={{ display: 'flex', gap: '10px', color: 'var(--muted)', background: 'var(--soft)', padding: '4px 8px', borderRadius: 'var(--radius)' }}>
                   <span title="Points obtenus via les pronostics de matchs">
                     🤺 Matchs: <strong>{u.matchPoints}</strong>
                   </span>
@@ -127,14 +127,14 @@ export default function GlobalLeaderboard() {
                   {u.adjustmentPoints !== 0 && (
                     <>
                       <span style={{ color: '#ccc' }}>|</span>
-                      <span title="Ajustements manuels (Bonus/Malus)" style={{ color: u.adjustmentPoints > 0 ? '#28a745' : '#dc3545', fontWeight: 'bold' }}>
+                      <span title="Ajustements manuels (Bonus/Malus)" style={{ color: u.adjustmentPoints > 0 ? 'var(--success)' : 'var(--danger)' }}>
                         🛠️ {u.adjustmentPoints > 0 ? `+${u.adjustmentPoints}` : u.adjustmentPoints}
                       </span>
                     </>
                   )}
                 </div>
 
-                <span style={{ background: '#007bff', color: '#fff', padding: '6px 15px', borderRadius: '4px', fontWeight: 'bold', fontSize: '1.1em', minWidth: '70px', textAlign: 'center' }}>
+                <span style={{ background: 'var(--primary)', color: 'var(--surface)', padding: '6px 15px', borderRadius: 'var(--radius)', minWidth: '70px', textAlign: 'center' }}>
                   {u.totalPoints} pts
                 </span>
               </div>

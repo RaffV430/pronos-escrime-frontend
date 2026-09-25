@@ -117,79 +117,76 @@ export default function PodiumPrediction({ tournamentId, selectedCompetitionId, 
     }
   };
 
-  const inputStyle = {
-    width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid #ccc',
-    backgroundColor: isLocked ? '#e9ecef' : '#fff', color: isLocked ? '#495057' : '#000', fontWeight: '500'
-  };
+
 
   if (!selectedCompetitionId) {
-    return <div style={{ background: '#f9f9f9', padding: '20px', borderRadius: '8px', margin: '20px 0' }}>Veuillez sélectionner une compétition.</div>;
+    return <div style={{ background: 'var(--surface)', padding: '20px', borderRadius: 'var(--radius)', margin: '20px 0' }}>Veuillez sélectionner une compétition.</div>;
   }
 
   return (
-    <div style={{ background: '#f9f9f9', padding: '20px', borderRadius: '8px', margin: '20px 0', border: '1px solid #ddd', color: '#333' }}>
+    <div style={{ background: 'var(--surface)', padding: '20px', borderRadius: 'var(--radius)', margin: '20px 0', border: '1px solid var(--border)', color: 'var(--text)' }}>
       <h3 style={{ marginTop: '0' }}>🏆 Pronostics et Classement Podium</h3>
 
-      <div style={{ display: 'flex', gap: '10px', marginBottom: '20px', borderBottom: '2px solid #ddd', paddingBottom: '10px' }}>
-        <button onClick={() => setActiveTab('prediction')} style={{ padding: '8px 15px', background: activeTab === 'prediction' ? '#007bff' : '#e2e3e5', color: activeTab === 'prediction' ? '#fff' : '#333', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}>🎯 Pronostics Podium</button>
-        <button onClick={() => setActiveTab('leaderboard')} style={{ padding: '8px 15px', background: activeTab === 'leaderboard' ? '#28a745' : '#e2e3e5', color: activeTab === 'leaderboard' ? '#fff' : '#333', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}>📊 Classement Pronos Podium</button>
+      <div style={{ display: 'flex', gap: '10px', marginBottom: '20px', borderBottom: '1px solid var(--border)', paddingBottom: '10px' }}>
+        <button aria-pressed={activeTab === 'prediction'} onClick={() => setActiveTab('prediction')} >🎯 Pronostics Podium</button>
+        <button aria-pressed={activeTab === 'leaderboard'} onClick={() => setActiveTab('leaderboard')} >📊 Classement Pronos Podium</button>
       </div>
 
       {activeTab === 'prediction' ? (
         <>
           {/* Espace Administrateur */}
           {user && user.isAdmin && (
-            <div style={{ marginBottom: '25px', background: '#fff3cd', padding: '15px', borderRadius: '6px', border: '1px solid #ffeeba' }}>
-              <p style={{ margin: '0 0 15px 0', fontSize: '0.9em', fontWeight: 'bold', color: '#856404' }}>👑 ESPACE ADMIN - VALIDER L'ÉPREUVE</p>
+            <div style={{ marginBottom: '25px', background: 'var(--warning-soft)', padding: '15px', borderRadius: 'var(--radius)', border: '1px solid var(--border)' }}>
+              <p style={{ margin: '0 0 15px 0', color: 'var(--warning)' }}>👑 ESPACE ADMIN - VALIDER L'ÉPREUVE</p>
               
-              <button onClick={toggleLock} type="button" style={{ width: '100%', padding: '8px', background: isLocked ? '#28a745' : '#dc3545', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold', marginBottom: '15px' }}>
+              <button onClick={toggleLock} type="button" style={{ width: '100%', marginBottom: '15px' }}>
                 {isLocked ? '🔓 Déverrouiller la saisie aux joueurs' : '🔒 Bloquer la saisie aux joueurs'}
               </button>
 
               <form onSubmit={handleResolvePodium} style={{ display: 'flex', flexDirection: 'column', gap: '8px', borderTop: '1px dashed #d39e00', paddingTop: '15px' }}>
-                <p style={{ margin: 0, fontSize: '0.85em', fontWeight: 'bold', color: '#856404' }}>Entrez le podium officiel pour calculer les points :</p>
+                <p style={{ margin: 0, color: 'var(--warning)' }}>Entrez le podium officiel pour calculer les points :</p>
                 <div style={{ display: 'flex', gap: '5px' }}>
-                  <input type="text" placeholder="🥇 Or" required value={offGold} onChange={(e) => setOffGold(e.target.value)} style={{ padding: '6px', flex: 1, borderRadius: '4px', border: '1px solid #ccc' }} />
-                  <input type="text" placeholder="🥈 Argent" required value={offSilver} onChange={(e) => setOffSilver(e.target.value)} style={{ padding: '6px', flex: 1, borderRadius: '4px', border: '1px solid #ccc' }} />
+                  <input type="text" placeholder="🥇 Or" required value={offGold} onChange={(e) => setOffGold(e.target.value)} style={{ flex: 1 }} />
+                  <input type="text" placeholder="🥈 Argent" required value={offSilver} onChange={(e) => setOffSilver(e.target.value)} style={{ flex: 1 }} />
                 </div>
                 <div style={{ display: 'flex', gap: '5px' }}>
-                  <input type="text" placeholder="🥉 Bronze 1" required value={offBronze1} onChange={(e) => setOffBronze1(e.target.value)} style={{ padding: '6px', flex: 1, borderRadius: '4px', border: '1px solid #ccc' }} />
-                  <input type="text" placeholder="🥉 Bronze 2" required value={offBronze2} onChange={(e) => setOffBronze2(e.target.value)} style={{ padding: '6px', flex: 1, borderRadius: '4px', border: '1px solid #ccc' }} />
+                  <input type="text" placeholder="🥉 Bronze 1" required value={offBronze1} onChange={(e) => setOffBronze1(e.target.value)} style={{ flex: 1 }} />
+                  <input type="text" placeholder="🥉 Bronze 2" required value={offBronze2} onChange={(e) => setOffBronze2(e.target.value)} style={{ flex: 1 }} />
                 </div>
-                <button type="submit" disabled={isResolving} style={{ padding: '10px', background: '#d39e00', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold', marginTop: '5px' }}>
+                <button type="submit" disabled={isResolving} style={{ marginTop: '5px' }}>
                   {isResolving ? 'Calcul en cours...' : '🏁 Valider le podium et distribuer les points'}
                 </button>
               </form>
 
-              {adminMessage && <p style={{ marginTop: '10px', fontWeight: 'bold', color: '#856404', fontSize: '0.9em' }}>{adminMessage}</p>}
+              {adminMessage && <p style={{ marginTop: '10px', color: 'var(--warning)' }}>{adminMessage}</p>}
             </div>
           )}
 
-          {isLocked && <div style={{ padding: '10px', background: '#f8d7da', color: '#721c24', borderRadius: '4px', marginBottom: '15px', fontWeight: 'bold', maxWidth: '400px' }}>🔒 Les pronostics sont clos pour cette compétition.</div>}
+          {isLocked && <div style={{ padding: '10px', background: 'var(--danger-soft)', color: 'var(--danger)', borderRadius: 'var(--radius)', marginBottom: '15px', maxWidth: '400px' }}>🔒 Les pronostics sont clos pour cette compétition.</div>}
 
           {/* Formulaire Joueur */}
           <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '10px', maxWidth: '400px' }}>
-            <div><label style={{ display: 'block', fontWeight: 'bold', marginBottom: '5px' }}>🥇 Or : </label><input type="text" value={gold} onChange={(e) => setGold(e.target.value)} disabled={isLocked} required placeholder="Nom du tireur" style={inputStyle} /></div>
-            <div><label style={{ display: 'block', fontWeight: 'bold', marginBottom: '5px' }}>🥈 Argent : </label><input type="text" value={silver} onChange={(e) => setSilver(e.target.value)} disabled={isLocked} required placeholder="Nom du tireur" style={inputStyle} /></div>
-            <div><label style={{ display: 'block', fontWeight: 'bold', marginBottom: '5px' }}>🥉 Bronze 1 : </label><input type="text" value={bronze1} onChange={(e) => setBronze1(e.target.value)} disabled={isLocked} required placeholder="Nom du tireur" style={inputStyle} /></div>
-            <div><label style={{ display: 'block', fontWeight: 'bold', marginBottom: '5px' }}>🥉 Bronze 2 : </label><input type="text" value={bronze2} onChange={(e) => setBronze2(e.target.value)} disabled={isLocked} required placeholder="Nom du tireur" style={inputStyle} /></div>
-            {!isLocked && <button type="submit" disabled={loading} style={{ padding: '10px', background: '#007bff', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold', marginTop: '5px' }}>{loading ? 'Enregistrement...' : 'Valider mon podium'}</button>}
+            <div><label style={{ display: 'block', marginBottom: '5px' }}>🥇 Or : </label><input type="text" value={gold} onChange={(e) => setGold(e.target.value)} disabled={isLocked} required placeholder="Nom du tireur"  /></div>
+            <div><label style={{ display: 'block', marginBottom: '5px' }}>🥈 Argent : </label><input type="text" value={silver} onChange={(e) => setSilver(e.target.value)} disabled={isLocked} required placeholder="Nom du tireur"  /></div>
+            <div><label style={{ display: 'block', marginBottom: '5px' }}>🥉 Bronze 1 : </label><input type="text" value={bronze1} onChange={(e) => setBronze1(e.target.value)} disabled={isLocked} required placeholder="Nom du tireur"  /></div>
+            <div><label style={{ display: 'block', marginBottom: '5px' }}>🥉 Bronze 2 : </label><input type="text" value={bronze2} onChange={(e) => setBronze2(e.target.value)} disabled={isLocked} required placeholder="Nom du tireur"  /></div>
+            {!isLocked && <button type="submit" disabled={loading} style={{ marginTop: '5px' }}>{loading ? 'Enregistrement...' : 'Valider mon podium'}</button>}
           </form>
           
-          {message && <p style={{ marginTop: '10px', fontWeight: 'bold', color: message.includes('succès') ? 'green' : 'red' }}>{message}</p>}
+          {message && <p style={{ marginTop: '10px', color: message.includes('succès') ? 'green' : 'red' }}>{message}</p>}
 
           {isLocked && (
-            <div style={{ marginTop: '30px', borderTop: '2px solid #ddd', paddingTop: '20px' }}>
+            <div style={{ marginTop: '30px', borderTop: '1px solid var(--border)', paddingTop: '20px' }}>
               <h4>📊 Pronostics podium de tous les participants</h4>
               {allPredictions.length === 0 ? <p style={{ fontStyle: 'italic' }}>Aucun pronostic enregistré.</p> : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginTop: '10px', maxWidth: '400px' }}>
                   {allPredictions.map((pred) => (
-                    <div key={pred.id} style={{ background: '#fff', padding: '12px', borderRadius: '6px', border: '1px solid #ccc' }}>
+                    <div key={pred.id} style={{ background: 'var(--surface)', padding: '12px', borderRadius: 'var(--radius)', border: '1px solid var(--border)' }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                         <strong>{pred.user?.name || 'Utilisateur'}</strong>
-                        <span style={{ background: '#28a745', color: 'white', padding: '2px 6px', borderRadius: '4px', fontSize: '0.85em', fontWeight: 'bold' }}>{pred.pointsEarned || 0} pts</span>
+                        <span style={{ background: 'var(--success)', color: 'white', padding: '2px 6px', borderRadius: 'var(--radius)' }}>{pred.pointsEarned || 0} pts</span>
                       </div>
-                      <ul style={{ margin: '8px 0 0 20px', padding: 0, fontSize: '14px', color: '#555' }}>
+                      <ul style={{ margin: '8px 0 0 20px', padding: 0, color: 'var(--muted)' }}>
                         <li>🥇 {pred.gold}</li>
                         <li>🥈 {pred.silver}</li>
                         <li>🥉 {pred.bronze1} / {pred.bronze2}</li>
@@ -207,14 +204,14 @@ export default function PodiumPrediction({ tournamentId, selectedCompetitionId, 
           {leaderboard.length === 0 ? <p style={{ fontStyle: 'italic' }}>Aucun point attribué pour le moment.</p> : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxWidth: '500px', marginTop: '15px' }}>
               {leaderboard.map((entry, index) => (
-                <div key={entry.user.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#fff', padding: '12px 15px', borderRadius: '6px', border: '1px solid #ccc' }}>
+                <div key={entry.user.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--surface)', padding: '12px 15px', borderRadius: 'var(--radius)', border: '1px solid var(--border)' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                    <span style={{ fontWeight: 'bold', fontSize: '1.1em', width: '25px' }}>{index === 0 ? '👑' : `#${index + 1}`}</span>
-                    <span style={{ fontWeight: '600' }}>{entry.user.name}</span>
+                    <span style={{ width: '25px' }}>{index === 0 ? '👑' : `#${index + 1}`}</span>
+                    <span >{entry.user.name}</span>
                   </div>
                   <div style={{ display: 'flex', gap: '15px', alignItems: 'center' }}>
-                    <span style={{ fontSize: '0.85em', color: '#666' }}>({entry.podiumsCount} grille(s))</span>
-                    <span style={{ background: '#28a745', color: '#fff', padding: '4px 10px', borderRadius: '4px', fontWeight: 'bold' }}>{entry.totalPoints} pts</span>
+                    <span style={{ color: 'var(--muted)' }}>({entry.podiumsCount} grille(s))</span>
+                    <span style={{ background: 'var(--success)', color: 'var(--surface)', padding: '4px 10px', borderRadius: 'var(--radius)' }}>{entry.totalPoints} pts</span>
                   </div>
                 </div>
               ))}

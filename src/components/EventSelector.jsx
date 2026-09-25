@@ -28,9 +28,9 @@ export default function EventSelector({ onSelect, onReset }) {
   }, [tournamentId, retry]);
 
   function reset() { setConfirmed(false); onReset(); }
-  const field = { display: 'grid', gap: '8px', flex: '1 1 240px', fontWeight: 'bold' };
-  const select = { padding: '12px', borderRadius: '6px', border: '1px solid #bbc7d4', width: '100%', fontSize: '1rem' };
-  return <section aria-labelledby="event-choice" style={{ background: '#f2f6fb', border: '1px solid #cbd9e8', borderRadius: '12px', padding: '20px', marginBottom: '24px' }}>
+  const field = { display: 'grid', gap: '8px', flex: '1 1 240px' };
+  const select = { width: '100%' };
+  return <section aria-labelledby="event-choice" style={{ background: '#f2f6fb', border: '1px solid var(--border)', borderRadius: '12px', padding: '20px', marginBottom: '24px' }}>
     <h2 id="event-choice" style={{ marginTop: 0 }}>Choisissez vos pronostics</h2>
     <p>Sélectionnez une compétition, puis l’épreuve sur laquelle vous souhaitez pronostiquer.</p>
     <form onSubmit={e => { e.preventDefault(); if (tournamentId && eventId && !loading && !error) { onSelect(Number(tournamentId), Number(eventId)); setConfirmed(true); } }}>
@@ -48,7 +48,7 @@ export default function EventSelector({ onSelect, onReset }) {
       {error && <p role="alert">{error} <button type="button" onClick={() => setRetry(n => n + 1)}>Réessayer</button></p>}
       {!loading && !error && !tournaments.length && <p>Aucune compétition disponible pour le moment.</p>}
       {!loading && !error && tournamentId && !events.length && <p>Aucune épreuve disponible pour cette compétition.</p>}
-      {!confirmed && <button type="submit" disabled={!eventId || loading || !!error} style={{ marginTop: '16px', padding: '12px 18px', border: 0, borderRadius: '6px', background: !eventId || loading || error ? '#d3dae3' : '#1763ae', color: !eventId || loading || error ? '#475569' : 'white', fontWeight: 'bold' }}>Accéder aux pronostics</button>}
+      {!confirmed && <button type="submit" disabled={!eventId || loading || !!error} style={{ marginTop: '16px' }}>Accéder aux pronostics</button>}
     </form>
   </section>;
 }

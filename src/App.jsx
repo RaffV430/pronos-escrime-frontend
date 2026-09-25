@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import API from './api';
+import ScoringRules from './components/ScoringRules';
 import EventSelector from './components/EventSelector';
 import PodiumPrediction from './components/PodiumPrediction';
 import PoolPredictions from './components/PoolPredictions';
@@ -216,7 +217,7 @@ export default function App() {
   };
 
   if (loading) {
-    return <div style={{ textAlign: 'center', marginTop: '100px', fontFamily: 'sans-serif' }}>Chargement de la session...</div>;
+    return <div style={{ textAlign: 'center', marginTop: '100px' }}>Chargement de la session...</div>;
   }
 
   if (user) {
@@ -230,31 +231,31 @@ export default function App() {
     const activeMatches = validMatches.filter(m => !m.isFinished);
 
     return (
-      <div style={{ padding: '20px', fontFamily: 'sans-serif', maxWidth: '800px', margin: '0 auto', color: '#333' }}>
+      <div className="app-shell">
         
         {/* En-tête Global */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
+        <header className="app-header">
           <h2>Bienvenue, {user.username || user.name || 'Utilisateur'} ! {user.isAdmin && '👑'} 🤺</h2>
-          <button onClick={handleLogout} style={{ padding: '8px 12px', background: '#dc3545', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}>
+          <button className="button-secondary" onClick={handleLogout} >
             Déconnexion
           </button>
-        </div>
+        </header>
 
         <EventSelector key={user.id} onReset={() => { setTournamentId(null); selectCompetition(null); }} onSelect={(tId, cId) => { setTournamentId(tId); selectCompetition(cId); setMainTab('pools'); }} />
 
         {selectedCompetitionId && <>
         {/* --- NOUVEAU MENU DE NAVIGATION --- */}
-        <div style={{ display: 'flex', gap: '15px', flexWrap: 'wrap', marginBottom: '25px', borderBottom: '2px solid #ddd', paddingBottom: '10px' }}>
-          <button onClick={() => setMainTab('pools')} aria-pressed={mainTab === 'pools'} style={{ padding: '10px 20px', background: mainTab === 'pools' ? '#1763ae' : '#e2e3e5', color: mainTab === 'pools' ? '#fff' : '#333', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}>Poules</button>
+        <div className="app-tabs" role="group" aria-label="Sections des pronostics">
+          <button onClick={() => setMainTab('pools')} aria-pressed={mainTab === 'pools'} >Poules</button>
           <button 
-            onClick={() => setMainTab('play')} 
-            style={{ padding: '10px 20px', background: mainTab === 'play' ? '#007bff' : '#e2e3e5', color: mainTab === 'play' ? '#fff' : '#333', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold', fontSize: '1.05em' }}
+            onClick={() => setMainTab('play')} aria-pressed={mainTab === 'play'} 
+            
           >
             Élimination directe
           </button>
           <button 
-            onClick={() => setMainTab('leaderboard')} 
-            style={{ padding: '10px 20px', background: mainTab === 'leaderboard' ? '#ff9800' : '#e2e3e5', color: mainTab === 'leaderboard' ? '#fff' : '#333', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold', fontSize: '1.05em' }}
+            onClick={() => setMainTab('leaderboard')} aria-pressed={mainTab === 'leaderboard'} 
+            
           >
             🏆 Classement Général
           </button>
@@ -263,62 +264,65 @@ export default function App() {
         {/* --- CONTENU DE L'ONGLET SÉLECTIONNÉ --- */}
         
         {mainTab === 'play' && (
-          <div>
+          <section className="direct-section">
+            <h2>Élimination directe</h2>
+            <p className="muted">Pronostiquez le vainqueur et le score de chaque match.</p>
+            <ScoringRules type="matches" />
             {/* ESPACE ADMINISTRATEUR */}
             {user.isAdmin && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', marginBottom: '20px' }}>
                 
                 {/* Panneau de contrôle existant */}
-                <div style={{ padding: '15px', background: '#f8f9fa', borderRadius: '8px', border: '1px solid #ddd' }}>
+                <div style={{ padding: '15px', background: 'var(--soft)', borderRadius: 'var(--radius)', border: '1px solid var(--border)' }}>
                   <h3>Panneau de contrôle</h3>
-                  <p style={{ fontSize: '0.9em', color: '#555', marginBottom: '15px' }}>
+                  <p style={{ color: 'var(--muted)', marginBottom: '15px' }}>
                     Mettez à jour les matchs de <strong>cette épreuve</strong> depuis votre fichier Google Sheets.
                   </p>
                   <button 
                     onClick={handleSyncSheet} 
                     disabled={isSyncing}
-                    style={{ padding: '10px 20px', background: '#28a745', color: 'white', border: 'none', borderRadius: '4px', cursor: isSyncing ? 'not-allowed' : 'pointer', fontWeight: 'bold' }}
+                    
                   >
                     {isSyncing ? 'Chargement...' : '🔄 Synchroniser Google Sheets'}
                   </button>
-                  {syncMessage && <p style={{ marginTop: '10px', fontWeight: 'bold' }}>{syncMessage}</p>}
+                  {syncMessage && <p style={{ marginTop: '10px' }}>{syncMessage}</p>}
                 </div>
 
                 {/* Panneau d'ajustement manuel */}
-                <div style={{ padding: '15px', background: '#fff3e0', borderRadius: '8px', border: '2px solid #ff9800' }}>
-                  <h3 style={{ color: '#e65100', marginTop: '0', marginBottom: '15px' }}>🛠️ Ajustement Manuel des Points</h3>
+                <div style={{ padding: '15px', background: 'var(--warning-soft)', borderRadius: 'var(--radius)', border: '1px solid var(--border)' }}>
+                  <h3 style={{ color: 'var(--warning)', marginTop: '0', marginBottom: '15px' }}>🛠️ Ajustement Manuel des Points</h3>
                   <form onSubmit={handleAdjustPoints} style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', alignItems: 'flex-end' }}>
                     
                     <div style={{ display: 'flex', flexDirection: 'column', width: '100px' }}>
-                      <label style={{ fontSize: '0.85em', fontWeight: 'bold', marginBottom: '4px' }}>ID Joueur</label>
-                      <input type="number" value={adjustUserId} onChange={(e) => setAdjustUserId(e.target.value)} placeholder="Ex: 3" style={{ padding: '8px', borderRadius: '4px', border: '1px solid #ccc' }} />
+                      <label style={{ marginBottom: '4px' }}>ID Joueur</label>
+                      <input type="number" value={adjustUserId} onChange={(e) => setAdjustUserId(e.target.value)} placeholder="Ex: 3"  />
                     </div>
 
                     <div style={{ display: 'flex', flexDirection: 'column', width: '100px' }}>
-                      <label style={{ fontSize: '0.85em', fontWeight: 'bold', marginBottom: '4px' }}>Points (+/-)</label>
-                      <input type="number" value={adjustPoints} onChange={(e) => setAdjustPoints(e.target.value)} placeholder="Ex: 12" style={{ padding: '8px', borderRadius: '4px', border: '1px solid #ccc' }} />
+                      <label style={{ marginBottom: '4px' }}>Points (+/-)</label>
+                      <input type="number" value={adjustPoints} onChange={(e) => setAdjustPoints(e.target.value)} placeholder="Ex: 12"  />
                     </div>
 
                     <div style={{ display: 'flex', flexDirection: 'column', width: '150px' }}>
-                      <label style={{ fontSize: '0.85em', fontWeight: 'bold', marginBottom: '4px' }}>Raison (opt.)</label>
-                      <input type="text" value={adjustReason} onChange={(e) => setAdjustReason(e.target.value)} placeholder="Ex: Oubli" style={{ padding: '8px', borderRadius: '4px', border: '1px solid #ccc' }} />
+                      <label style={{ marginBottom: '4px' }}>Raison (opt.)</label>
+                      <input type="text" value={adjustReason} onChange={(e) => setAdjustReason(e.target.value)} placeholder="Ex: Oubli"  />
                     </div>
 
                     <div style={{ display: 'flex', flexDirection: 'column', width: '100px' }}>
-                      <label style={{ fontSize: '0.85em', fontWeight: 'bold', marginBottom: '4px' }}>ID Tournoi</label>
-                      <input type="number" value={adjustTournamentId} onChange={(e) => setAdjustTournamentId(e.target.value)} placeholder={tournamentId} style={{ padding: '8px', borderRadius: '4px', border: '1px solid #ccc' }} />
+                      <label style={{ marginBottom: '4px' }}>ID Tournoi</label>
+                      <input type="number" value={adjustTournamentId} onChange={(e) => setAdjustTournamentId(e.target.value)} placeholder={tournamentId}  />
                     </div>
 
                     <div style={{ display: 'flex', flexDirection: 'column', width: '100px' }}>
-                      <label style={{ fontSize: '0.85em', fontWeight: 'bold', marginBottom: '4px' }}>ID Compét.</label>
-                      <input type="number" value={adjustCompetitionId} onChange={(e) => setAdjustCompetitionId(e.target.value)} placeholder={selectedCompetitionId} style={{ padding: '8px', borderRadius: '4px', border: '1px solid #ccc' }} />
+                      <label style={{ marginBottom: '4px' }}>ID Compét.</label>
+                      <input type="number" value={adjustCompetitionId} onChange={(e) => setAdjustCompetitionId(e.target.value)} placeholder={selectedCompetitionId}  />
                     </div>
 
-                    <button type="submit" style={{ padding: '9px 15px', background: '#ff9800', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold', height: 'fit-content' }}>
+                    <button type="submit" style={{ height: 'fit-content' }}>
                       Attribuer
                     </button>
                   </form>
-                  {adjustMessage && <p style={{ marginTop: '10px', fontWeight: 'bold', color: adjustMessage.includes('✅') ? 'green' : 'red' }}>{adjustMessage}</p>}
+                  {adjustMessage && <p style={{ marginTop: '10px', color: adjustMessage.includes('✅') ? 'green' : 'red' }}>{adjustMessage}</p>}
                 </div>
 
               </div>
@@ -328,25 +332,25 @@ export default function App() {
             <PodiumPrediction key={selectedCompetitionId} tournamentId={tournamentId} selectedCompetitionId={selectedCompetitionId} user={user} />
 
             {finishedMatches.length > 0 && (
-              <details style={{ marginBottom: '25px', border: '1px solid #c3e6cb', borderRadius: '8px', background: '#f8fff9', overflow: 'hidden' }}>
-                <summary style={{ padding: '12px 15px', cursor: 'pointer', background: '#d4edda', fontWeight: 'bold', color: '#155724', fontSize: '1.05em' }}>
+              <details style={{ marginBottom: '25px', border: '1px solid var(--border)', borderRadius: 'var(--radius)', background: 'var(--surface)', overflow: 'hidden' }}>
+                <summary style={{ padding: '12px 15px', cursor: 'pointer', background: 'var(--success-soft)', color: 'var(--success)' }}>
                   📁 Historique des matchs terminés ({finishedMatches.length}) - Cliquer pour voir les résultats
                 </summary>
                 
-                <div style={{ padding: '15px', display: 'flex', flexDirection: 'column', gap: '10px', background: '#fff' }}>
+                <div style={{ padding: '15px', display: 'flex', flexDirection: 'column', gap: '10px', background: 'var(--surface)' }}>
                   {finishedMatches.map((match) => {
                     const myPrediction = match.predictions?.find(p => p.userId === user.id);
                     return (
-                      <div key={match.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 12px', background: '#f9f9f9', borderRadius: '6px', border: '1px solid #eee', fontSize: '0.95em' }}>
+                      <div key={match.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 12px', background: 'var(--surface)', borderRadius: 'var(--radius)', border: '1px solid var(--border)' }}>
                         <div>
-                          <span style={{ fontWeight: 'bold', marginRight: '10px', color: '#666' }}>#{match.id}</span>
-                          <span>{match.player1}</span> <span style={{ margin: '0 6px', color: '#888' }}>vs</span> <span>{match.player2}</span>
+                          <span style={{ marginRight: '10px', color: 'var(--muted)' }}>#{match.id}</span>
+                          <span>{match.player1}</span> <span style={{ margin: '0 6px', color: 'var(--muted)' }}>vs</span> <span>{match.player2}</span>
                         </div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
-                          <span style={{ background: '#e2e3e5', padding: '2px 8px', borderRadius: '4px', fontWeight: 'bold' }}>
+                          <span style={{ background: 'var(--soft)', padding: '2px 8px', borderRadius: 'var(--radius)' }}>
                             Score : {match.score1} - {match.score2}
                           </span>
-                          <span style={{ color: '#155724', fontStyle: 'italic', fontSize: '0.9em' }}>
+                          <span style={{ color: 'var(--success)', fontStyle: 'italic' }}>
                             {myPrediction ? `Mon prono : ${myPrediction.predictedScore1} - ${myPrediction.predictedScore2}` : "Pas de prono"}
                           </span>
                         </div>
@@ -360,7 +364,7 @@ export default function App() {
             <div>
               <h3>Matchs à pronostiquer ({activeMatches.length})</h3>
               {activeMatches.length === 0 ? (
-                <p style={{ color: '#777', fontStyle: 'italic' }}>Aucun match actif pour le moment (en attente des résultats précédents).</p>
+                <p style={{ color: 'var(--muted)', fontStyle: 'italic' }}>Aucun match actif pour le moment (en attente des résultats précédents).</p>
               ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
                   {activeMatches.map((match, index) => {
@@ -369,42 +373,42 @@ export default function App() {
                     const msg = submitMessages[match.id];
 
                     return (
-                      <div key={match.id} style={{ border: '1px solid #ddd', borderRadius: '8px', background: '#fff', overflow: 'hidden' }}>
+                      <div key={match.id} style={{ border: '1px solid var(--border)', borderRadius: 'var(--radius)', background: 'var(--surface)', overflow: 'hidden' }}>
                         <div style={{ padding: '12px 15px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                           <div>
-                            <span style={{ fontWeight: 'bold', marginRight: '10px', color: '#555' }}>#{match.id}</span>
-                            <span>{match.player1}</span> <span style={{ margin: '0 8px', color: '#888', fontWeight: 'bold' }}>vs</span> <span>{match.player2}</span>
+                            <span style={{ marginRight: '10px', color: 'var(--muted)' }}>#{match.id}</span>
+                            <span>{match.player1}</span> <span style={{ margin: '0 8px', color: 'var(--muted)' }}>vs</span> <span>{match.player2}</span>
                           </div>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
-                            <span style={{ fontSize: '1.2em', fontWeight: 'bold', background: '#eee', padding: '4px 10px', borderRadius: '4px' }}>- : -</span>
-                            <span style={{ fontSize: '0.85em', padding: '4px 8px', borderRadius: '4px', backgroundColor: '#fff3cd', color: '#856404' }}>En cours</span>
+                            <span style={{ background: 'var(--soft)', padding: '4px 10px', borderRadius: 'var(--radius)' }}>- : -</span>
+                            <span style={{ padding: '4px 8px', borderRadius: 'var(--radius)', backgroundColor: 'var(--warning-soft)', color: 'var(--warning)' }}>En cours</span>
                           </div>
                         </div>
 
-                        <div style={{ background: '#f4f6f8', padding: '10px 15px', borderTop: '1px solid #ddd', display: 'flex', alignItems: 'center', gap: '15px' }}>
-                          <span style={{ fontSize: '0.9em', fontWeight: 'bold' }}>🎯 Mon pronostic :</span>
+                        <div style={{ background: 'var(--soft)', padding: '10px 15px', borderTop: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: '15px' }}>
+                          <span >🎯 Mon pronostic :</span>
                           
                           <input 
-                            id={`input-${match.id}-1`}
+                            aria-label={`Score prévu de ${match.player1}`} id={`input-${match.id}-1`}
                             type="number" min="0" max="15" placeholder="0"
                             value={inputs.score1 !== undefined ? inputs.score1 : (myPrediction?.predictedScore1 ?? '')}
                             onChange={(e) => handleScoreChange(match.id, 1, e.target.value)}
                             onKeyDown={(e) => handleKeyDown(e, match.id, 1, index, activeMatches)}
-                            style={{ width: '60px', padding: '6px', textAlign: 'center', borderRadius: '4px', border: '1px solid #ccc' }}
+                            style={{ width: '60px', textAlign: 'center' }}
                           />
-                          <span style={{ color: '#666', fontWeight: 'bold' }}>-</span>
+                          <span style={{ color: 'var(--muted)' }}>-</span>
                           <input 
-                            id={`input-${match.id}-2`}
+                            aria-label={`Score prévu de ${match.player2}`} id={`input-${match.id}-2`}
                             type="number" min="0" max="15" placeholder="0"
                             value={inputs.score2 !== undefined ? inputs.score2 : (myPrediction?.predictedScore2 ?? '')}
                             onChange={(e) => handleScoreChange(match.id, 2, e.target.value)}
                             onKeyDown={(e) => handleKeyDown(e, match.id, 2, index, activeMatches)}
-                            style={{ width: '60px', padding: '6px', textAlign: 'center', borderRadius: '4px', border: '1px solid #ccc' }}
+                            style={{ width: '60px', textAlign: 'center' }}
                           />
                           
-                          <button onClick={() => submitPrediction(match.id)} style={{ padding: '6px 15px', background: '#007bff', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}>Valider</button>
-                          {myPrediction && <button onClick={() => deletePrediction(match.id)} style={{ padding: '6px 10px', background: '#dc3545', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}>Supprimer</button>}
-                          {msg && <span style={{ color: msg.type === 'error' ? '#dc3545' : '#28a745', fontSize: '0.85em', fontWeight: 'bold' }}>{msg.text}</span>}
+                          <button onClick={() => submitPrediction(match.id)} >Valider</button>
+                          {myPrediction && <button className="button-danger" onClick={() => deletePrediction(match.id)} >Supprimer</button>}
+                          {msg && <span style={{ color: msg.type === 'error' ? 'var(--danger)' : 'var(--success)' }}>{msg.text}</span>}
                         </div>
                       </div>
                     );
@@ -412,7 +416,7 @@ export default function App() {
                 </div>
               )}
             </div>
-          </div>
+          </section>
         )}
 
         {mainTab === 'pools' && <PoolPredictions selectedCompetitionId={selectedCompetitionId} user={user} />}
@@ -427,18 +431,18 @@ export default function App() {
   }
 
   return (
-    <div style={{ maxWidth: '400px', margin: '50px auto', padding: '20px', border: '1px solid #ddd', borderRadius: '8px', fontFamily: 'sans-serif' }}>
+    <div className="auth-card">
       <h2>{isRegister ? 'Inscription' : 'Connexion'}</h2>
-      {error && <div style={{ color: 'red', marginBottom: '10px', fontWeight: 'bold' }}>{error}</div>}
+      {error && <div style={{ color: 'red', marginBottom: '10px' }}>{error}</div>}
       <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-        {isRegister && <input type="text" placeholder="Nom d'utilisateur" required value={formData.username} onChange={(e) => setFormData({ ...formData, username: e.target.value })} style={{ padding: '8px' }} />}
-        <input type="text" placeholder={isRegister ? "Email" : "Identifiant"} required value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })} style={{ padding: '8px' }} />
-        <input type="password" placeholder="Mot de passe" required value={formData.password} onChange={(e) => setFormData({ ...formData, password: e.target.value })} style={{ padding: '8px' }} />
-        <button type="submit" style={{ padding: '10px', background: '#007bff', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>{isRegister ? "S'inscrire" : 'Se connecter'}</button>
+        {isRegister && <input type="text" placeholder="Nom d'utilisateur" required value={formData.username} onChange={(e) => setFormData({ ...formData, username: e.target.value })}  />}
+        <input type="text" placeholder={isRegister ? "Email" : "Identifiant"} required value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })}  />
+        <input type="password" placeholder="Mot de passe" required value={formData.password} onChange={(e) => setFormData({ ...formData, password: e.target.value })}  />
+        <button type="submit" >{isRegister ? "S'inscrire" : 'Se connecter'}</button>
       </form>
-      <p style={{ marginTop: '15px', fontSize: '0.9em' }}>
+      <p style={{ marginTop: '15px' }}>
         {isRegister ? 'Déjà un compte ?' : "Pas encore de compte ?"} {' '}
-        <button onClick={() => setIsRegister(!isRegister)} style={{ background: 'none', border: 'none', color: '#007bff', textDecoration: 'underline', cursor: 'pointer' }}>{isRegister ? 'Se connecter' : "S'inscrire"}</button>
+        <button className="button-link" onClick={() => setIsRegister(!isRegister)} style={{ textDecoration: 'underline' }}>{isRegister ? 'Se connecter' : "S'inscrire"}</button>
       </p>
     </div>
   );
