@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import API from './api';
 import PodiumPrediction from './components/PodiumPrediction';
+import PoolPredictions from './components/PoolPredictions';
 import GlobalLeaderboard from './components/GlobalLeaderboard';
 
 export default function App() {
@@ -250,13 +251,14 @@ export default function App() {
         </div>
 
         {/* --- NOUVEAU MENU DE NAVIGATION --- */}
-        <div style={{ display: 'flex', gap: '15px', marginBottom: '25px', borderBottom: '2px solid #ddd', paddingBottom: '10px' }}>
+        <div style={{ display: 'flex', gap: '15px', flexWrap: 'wrap', marginBottom: '25px', borderBottom: '2px solid #ddd', paddingBottom: '10px' }}>
           <button 
             onClick={() => setMainTab('play')} 
             style={{ padding: '10px 20px', background: mainTab === 'play' ? '#007bff' : '#e2e3e5', color: mainTab === 'play' ? '#fff' : '#333', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold', fontSize: '1.05em' }}
           >
             🎮 Phase de Jeu
           </button>
+          <button onClick={() => setMainTab('pools')} aria-pressed={mainTab === 'pools'} style={{ padding: '10px 20px', background: mainTab === 'pools' ? '#1763ae' : '#e2e3e5', color: mainTab === 'pools' ? '#fff' : '#333', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}>Poules</button>
           <button 
             onClick={() => setMainTab('leaderboard')} 
             style={{ padding: '10px 20px', background: mainTab === 'leaderboard' ? '#ff9800' : '#e2e3e5', color: mainTab === 'leaderboard' ? '#fff' : '#333', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold', fontSize: '1.05em' }}
@@ -437,6 +439,8 @@ export default function App() {
             </div>
           </div>
         )}
+
+        {mainTab === 'pools' && <PoolPredictions competitions={competitions} selectedCompetitionId={selectedCompetitionId} onSelectCompetition={selectCompetition} user={user} />}
 
         {mainTab === 'leaderboard' && (
           <GlobalLeaderboard />

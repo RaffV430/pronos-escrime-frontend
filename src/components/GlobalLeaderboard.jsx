@@ -123,6 +123,7 @@ export default function GlobalLeaderboard() {
                   <span title="Points obtenus via les pronostics de podiums">
                     🏆 Podiums: <strong>{u.podiumPoints}</strong>
                   </span>
+                  <span title="Points obtenus via les pronostics de poules">Poules : <strong>{u.poolPoints ?? 0}</strong></span>
                   {u.adjustmentPoints !== 0 && (
                     <>
                       <span style={{ color: '#ccc' }}>|</span>
