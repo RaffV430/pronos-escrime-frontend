@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import API from './api';
+import EventSelector from './components/EventSelector';
 import PodiumPrediction from './components/PodiumPrediction';
 import PoolPredictions from './components/PoolPredictions';
 import GlobalLeaderboard from './components/GlobalLeaderboard';
@@ -15,11 +16,10 @@ export default function App() {
   const [syncMessage, setSyncMessage] = useState('');
   
   // Navigation principale
-  const [mainTab, setMainTab] = useState('play'); // 'play' ou 'leaderboard'
+  const [mainTab, setMainTab] = useState('pools');
 
   // Gestion des compétitions et tournoi actif
-  const tournamentId = 1; 
-  const [competitions, setCompetitions] = useState([]);
+  const [tournamentId, setTournamentId] = useState(null);
   const [selectedCompetitionId, setSelectedCompetitionId] = useState(null);
 
   const [matches, setMatches] = useState([]);
@@ -34,23 +34,6 @@ export default function App() {
   const [adjustCompetitionId, setAdjustCompetitionId] = useState('');
   const [adjustMessage, setAdjustMessage] = useState('');
 
-  // 1. Charger la liste des compétitions du tournoi
-  useEffect(() => {
-    const fetchCompetitions = async () => {
-      if (!user) return; 
-      try {
-        const res = await API.get(`/podium/competitions/${tournamentId}`);
-        if (res.data && res.data.length > 0) {
-          setCompetitions(res.data);
-          setSelectedCompetitionId(res.data[0].id);
-        }
-      } catch (err) {
-        console.error('Erreur chargement compétitions :', err);
-      }
-    };
-    fetchCompetitions();
-  }, [tournamentId, user]);
-
   // 2. Charger les matchs en fonction de la compétition
   const fetchMatches = async (compId) => {
     if (!compId) return;
@@ -63,7 +46,12 @@ export default function App() {
   };
 
   useEffect(() => {
-    if (selectedCompetitionId) fetchMatches(selectedCompetitionId);
+    if (!selectedCompetitionId) return;
+    const controller = new AbortController();
+    API.get(`/matches?competitionId=${selectedCompetitionId}`, { signal: controller.signal })
+      .then(({ data }) => { if (!controller.signal.aborted) setMatches(data); })
+      .catch(err => { if (!controller.signal.aborted) console.error('Erreur chargement matchs :', err); });
+    return () => controller.abort();
   }, [selectedCompetitionId]);
 
   useEffect(() => {
@@ -127,7 +115,9 @@ export default function App() {
     localStorage.removeItem('token');
     delete API.defaults.headers.common['Authorization'];
     setUser(null);
-    setMatches([]);
+    setTournamentId(null);
+    selectCompetition(null);
+    setMainTab('pools');
   };
 
   const handleScoreChange = (matchId, playerNum, value) => {
@@ -250,15 +240,18 @@ export default function App() {
           </button>
         </div>
 
+        <EventSelector key={user.id} onReset={() => { setTournamentId(null); selectCompetition(null); }} onSelect={(tId, cId) => { setTournamentId(tId); selectCompetition(cId); setMainTab('pools'); }} />
+
+        {selectedCompetitionId && <>
         {/* --- NOUVEAU MENU DE NAVIGATION --- */}
         <div style={{ display: 'flex', gap: '15px', flexWrap: 'wrap', marginBottom: '25px', borderBottom: '2px solid #ddd', paddingBottom: '10px' }}>
+          <button onClick={() => setMainTab('pools')} aria-pressed={mainTab === 'pools'} style={{ padding: '10px 20px', background: mainTab === 'pools' ? '#1763ae' : '#e2e3e5', color: mainTab === 'pools' ? '#fff' : '#333', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}>Poules</button>
           <button 
             onClick={() => setMainTab('play')} 
             style={{ padding: '10px 20px', background: mainTab === 'play' ? '#007bff' : '#e2e3e5', color: mainTab === 'play' ? '#fff' : '#333', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold', fontSize: '1.05em' }}
           >
-            🎮 Phase de Jeu
+            Élimination directe
           </button>
-          <button onClick={() => setMainTab('pools')} aria-pressed={mainTab === 'pools'} style={{ padding: '10px 20px', background: mainTab === 'pools' ? '#1763ae' : '#e2e3e5', color: mainTab === 'pools' ? '#fff' : '#333', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}>Poules</button>
           <button 
             onClick={() => setMainTab('leaderboard')} 
             style={{ padding: '10px 20px', background: mainTab === 'leaderboard' ? '#ff9800' : '#e2e3e5', color: mainTab === 'leaderboard' ? '#fff' : '#333', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold', fontSize: '1.05em' }}
@@ -271,24 +264,6 @@ export default function App() {
         
         {mainTab === 'play' && (
           <div>
-            {/* Sélecteur Global de Compétition */}
-            {competitions.length > 0 && (
-              <div style={{ marginBottom: '20px', padding: '15px', background: '#e9ecef', borderRadius: '8px', border: '1px solid #ced4da' }}>
-                <label style={{ display: 'block', fontWeight: 'bold', marginBottom: '8px' }}>⚔️ Choisir l'épreuve / compétition :</label>
-                <select 
-                  value={selectedCompetitionId || ''} 
-                  onChange={(e) => selectCompetition(Number(e.target.value))}
-                  style={{ width: '100%', padding: '10px', borderRadius: '4px', border: '1px solid #ccc', fontWeight: 'bold', fontSize: '1em' }}
-                >
-                  {competitions.map((comp) => (
-                    <option key={comp.id} value={comp.id}>
-                      {comp.name} {comp.isPodiumLocked ? '🔒' : '🔓'}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            )}
-
             {/* ESPACE ADMINISTRATEUR */}
             {user.isAdmin && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', marginBottom: '20px' }}>
@@ -350,7 +325,7 @@ export default function App() {
             )}
 
             {/* Bloc Podium Prediction */}
-            <PodiumPrediction tournamentId={tournamentId} selectedCompetitionId={selectedCompetitionId} user={user} />
+            <PodiumPrediction key={selectedCompetitionId} tournamentId={tournamentId} selectedCompetitionId={selectedCompetitionId} user={user} />
 
             {finishedMatches.length > 0 && (
               <details style={{ marginBottom: '25px', border: '1px solid #c3e6cb', borderRadius: '8px', background: '#f8fff9', overflow: 'hidden' }}>
@@ -440,11 +415,12 @@ export default function App() {
           </div>
         )}
 
-        {mainTab === 'pools' && <PoolPredictions competitions={competitions} selectedCompetitionId={selectedCompetitionId} onSelectCompetition={selectCompetition} user={user} />}
+        {mainTab === 'pools' && <PoolPredictions selectedCompetitionId={selectedCompetitionId} user={user} />}
 
         {mainTab === 'leaderboard' && (
           <GlobalLeaderboard />
         )}
+        </>}
 
       </div>
     );
