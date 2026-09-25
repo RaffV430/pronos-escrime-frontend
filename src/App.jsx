@@ -10,6 +10,7 @@ export default function App() {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [isRegister, setIsRegister] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const [formData, setFormData] = useState({ username: '', email: '', password: '' });
   const [error, setError] = useState('');
 
@@ -437,12 +438,15 @@ export default function App() {
       <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
         {isRegister && <input type="text" placeholder="Nom d'utilisateur" required value={formData.username} onChange={(e) => setFormData({ ...formData, username: e.target.value })}  />}
         <input type="text" placeholder={isRegister ? "Email" : "Identifiant"} required value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })}  />
-        <input type="password" placeholder="Mot de passe" required value={formData.password} onChange={(e) => setFormData({ ...formData, password: e.target.value })}  />
+        <div className="password-field">
+          <input id="auth-password" aria-label="Mot de passe" type={showPassword ? 'text' : 'password'} autoComplete={isRegister ? 'new-password' : 'current-password'} placeholder="Mot de passe" required value={formData.password} onChange={(e) => setFormData({ ...formData, password: e.target.value })} />
+          <button type="button" className="button-secondary" aria-controls="auth-password" aria-label={showPassword ? 'Masquer le mot de passe' : 'Afficher le mot de passe'} onClick={() => setShowPassword(visible => !visible)}>{showPassword ? 'Masquer' : 'Afficher'}</button>
+        </div>
         <button type="submit" >{isRegister ? "S'inscrire" : 'Se connecter'}</button>
       </form>
       <p style={{ marginTop: '15px' }}>
         {isRegister ? 'Déjà un compte ?' : "Pas encore de compte ?"} {' '}
-        <button className="button-link" onClick={() => setIsRegister(!isRegister)} style={{ textDecoration: 'underline' }}>{isRegister ? 'Se connecter' : "S'inscrire"}</button>
+        <button className="button-link" onClick={() => { setIsRegister(!isRegister); setShowPassword(false); }} style={{ textDecoration: 'underline' }}>{isRegister ? 'Se connecter' : "S'inscrire"}</button>
       </p>
     </div>
   );

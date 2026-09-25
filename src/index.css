@@ -60,6 +60,9 @@ summary { cursor: pointer; font-weight: 650; }
 .scoring-rules summary { color: var(--primary); }
 .scoring-rules p { font-size: .9rem; margin: 12px 0 0; }
 .auth-card { width: calc(100% - 32px); max-width: 440px; margin: 64px auto; padding: 28px; background: var(--surface); border: 1px solid var(--border); border-radius: 16px; box-shadow: 0 8px 28px #20324a0a; }
+.password-field { display: flex; align-items: stretch; gap: 8px; }
+.password-field input { flex: 1; }
+.password-field button { flex: 0 0 auto; }
 /* Layout-only inline flex groups also wrap on narrow screens. */
 .app-shell div[style*="display: flex"] { flex-wrap: wrap; min-width: 0; }
 .app-shell [style*="box-shadow"] { box-shadow: 0 4px 16px #20324a08 !important; }
