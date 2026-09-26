@@ -6,6 +6,8 @@ import PodiumPrediction from './components/PodiumPrediction';
 import PoolPredictions from './components/PoolPredictions';
 import GlobalLeaderboard from './components/GlobalLeaderboard';
 
+const SHOW_SHEET_SYNC = false;
+
 export default function App() {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -30,6 +32,7 @@ export default function App() {
 
   // --- NOUVEAUX STATES POUR L'AJUSTEMENT MANUEL DES POINTS ---
   const [adjustUserId, setAdjustUserId] = useState('');
+  const [adjustBy, setAdjustBy] = useState('id');
   const [adjustPoints, setAdjustPoints] = useState('');
   const [adjustReason, setAdjustReason] = useState('');
   const [adjustTournamentId, setAdjustTournamentId] = useState('');
@@ -178,7 +181,7 @@ export default function App() {
 
     try {
       const res = await API.post('/admin/adjust-points', {
-        userId: adjustUserId,
+        ...(adjustBy === 'id' ? { userId: adjustUserId } : { name: adjustUserId }),
         points: adjustPoints,
         reason: adjustReason,
         tournamentId: adjustTournamentId,
@@ -277,8 +280,8 @@ export default function App() {
             {user.isAdmin && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', marginBottom: '20px' }}>
                 
-                {/* Panneau de contrôle existant */}
-                <div style={{ padding: '15px', background: 'var(--soft)', borderRadius: 'var(--radius)', border: '1px solid var(--border)' }}>
+                {/* Synchronisation conservée, panneau masqué temporairement. */}
+                {SHOW_SHEET_SYNC && <div style={{ padding: '15px', background: 'var(--soft)', borderRadius: 'var(--radius)', border: '1px solid var(--border)' }}>
                   <h3>Panneau de contrôle</h3>
                   <p style={{ color: 'var(--muted)', marginBottom: '15px' }}>
                     Mettez à jour les matchs de <strong>cette épreuve</strong> depuis votre fichier Google Sheets.
@@ -291,7 +294,7 @@ export default function App() {
                     {isSyncing ? 'Chargement...' : '🔄 Synchroniser Google Sheets'}
                   </button>
                   {syncMessage && <p style={{ marginTop: '10px' }}>{syncMessage}</p>}
-                </div>
+                </div>}
 
                 {/* Panneau d'ajustement manuel */}
                 <div style={{ padding: '15px', background: 'var(--warning-soft)', borderRadius: 'var(--radius)', border: '1px solid var(--border)' }}>
@@ -299,8 +302,9 @@ export default function App() {
                   <form onSubmit={handleAdjustPoints} style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', alignItems: 'flex-end' }}>
                     
                     <div style={{ display: 'flex', flexDirection: 'column', width: '100px' }}>
-                      <label style={{ marginBottom: '4px' }}>ID Joueur</label>
-                      <input type="number" value={adjustUserId} onChange={(e) => setAdjustUserId(e.target.value)} placeholder="Ex: 3"  />
+                      <label style={{ marginBottom: '4px' }}>Joueur</label>
+                      <select aria-label="Rechercher le joueur par" value={adjustBy} onChange={e => { setAdjustBy(e.target.value); setAdjustUserId(''); }}><option value="id">ID</option><option value="name">Nom</option></select>
+                      <input aria-label="ID ou nom du joueur" type={adjustBy === 'id' ? 'number' : 'text'} value={adjustUserId} onChange={(e) => setAdjustUserId(e.target.value)} placeholder="Ex: 3"  />
                     </div>
 
                     <div style={{ display: 'flex', flexDirection: 'column', width: '100px' }}>
@@ -353,7 +357,7 @@ export default function App() {
                         </div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
                           <span style={{ background: 'var(--soft)', padding: '2px 8px', borderRadius: 'var(--radius)' }}>
-                            Score : {match.score1} - {match.score2}
+                            {match.resultType === 'MEDICAL_WITHDRAWAL' ? `Retrait médical · Vainqueur : ${match.winnerName}` : `Score : ${match.score1} - ${match.score2}`}
                           </span>
                           <span style={{ color: 'var(--success)', fontStyle: 'italic' }}>
                             {myPrediction ? `Mon prono : ${myPrediction.predictedScore1} - ${myPrediction.predictedScore2}` : "Pas de prono"}
@@ -376,7 +380,7 @@ export default function App() {
                     const myPrediction = match.predictions?.find(p => p.userId === user.id);
                     const inputs = predictionInputs[match.id] || {};
                     const msg = submitMessages[match.id];
-                    const closed = match.isClosed || match.isLocked || (match.sourceUrl && (!match.sourceCheckedAt || matchNow - new Date(match.sourceCheckedAt).getTime() > 300000));
+                    const closed = match.isFinished || (!match.manualUnlock && (match.isLocked || (match.closesAt && matchNow >= Date.parse(match.closesAt))));
 
                     return (
                       <div key={match.id} style={{ border: '1px solid var(--border)', borderRadius: 'var(--radius)', background: 'var(--surface)', overflow: 'hidden' }}>
@@ -387,10 +391,15 @@ export default function App() {
                           </div>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
                             <span style={{ background: 'var(--soft)', padding: '4px 10px', borderRadius: 'var(--radius)' }}>{match.score1 ?? '—'} : {match.score2 ?? '—'}</span>
-                            <span style={{ padding: '4px 8px', borderRadius: 'var(--radius)', backgroundColor: 'var(--warning-soft)', color: 'var(--warning)' }}>{closed ? 'Pronostics clos / en attente' : 'Pronostics ouverts'}</span>
+                            <span style={{ padding: '4px 8px', borderRadius: 'var(--radius)', backgroundColor: 'var(--warning-soft)', color: 'var(--warning)' }}>{closed ? 'Pronostics clos' : 'Pronostics ouverts'}</span>
                           </div>
                         </div>
 
+                        {match.closesAt && <p className="muted">Clôture prévue : {new Date(match.closesAt).toLocaleString('fr-FR')}</p>}
+                        {user.isAdmin && <button type="button" onClick={async () => {
+                          try { await API.put(`/matches/${match.id}/lock`, { isLocked: !closed }); await fetchMatches(selectedCompetitionId); }
+                          catch (err) { setSubmitMessages(prev => ({ ...prev, [match.id]: { type: 'error', text: err.response?.data?.error || 'Modification impossible.' } })); }
+                        }}>{closed ? 'Déverrouiller les pronostics' : 'Verrouiller les pronostics'}</button>}
                         <div style={{ background: 'var(--soft)', padding: '10px 15px', borderTop: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: '15px' }}>
                           <span >🎯 Mon pronostic :</span>
                           

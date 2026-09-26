@@ -9,6 +9,7 @@ export default function ScoringRules({ type = 'pools' }) {
     </> : <>
       <p><strong>Score exact :</strong> 3 points si les deux scores sont corrects.</p>
       <p><strong>Bon vainqueur :</strong> 1 point.</p>
+      <p><strong>Retrait médical :</strong> 1 point pour le tireur officiellement qualifié, sans bonus de score.</p>
       <p><strong>Mauvais vainqueur ou égalité pronostiquée :</strong> 0 point.</p>
       <p className="muted">Les deux critères sont cumulables : 3 + 1 = 4 points maximum par match. Ce barème concerne les matchs, pas les pronostics de podium.</p>
     </>}

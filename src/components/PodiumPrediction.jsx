@@ -88,14 +88,24 @@ export default function PodiumPrediction({ tournamentId, selectedCompetitionId, 
     }
   };
 
+  const [lockBusy, setLockBusy] = useState(false);
+  useEffect(() => {
+    if (!selectedCompetitionId) return;
+    const controller = new AbortController();
+    const timer = setInterval(() => API.get(`/podium/competition-status/${selectedCompetitionId}`, { signal: controller.signal }).then(({ data }) => { if (!controller.signal.aborted) setIsLocked(data.isLocked); }).catch(() => {}), 10000);
+    return () => { controller.abort(); clearInterval(timer); };
+  }, [selectedCompetitionId]);
+
   const toggleLock = async () => {
+    if (lockBusy) return;
+    setLockBusy(true);
     try {
       const res = await API.put(`/podium/competition/${selectedCompetitionId}/toggle-lock`, { isLocked: !isLocked });
       setIsLocked(res.data.competition.isPodiumLocked);
       setAdminMessage(res.data.message);
-    } catch {
-      setAdminMessage("Erreur lors de la modification du verrouillage.");
-    }
+    } catch (err) {
+      setAdminMessage(err.response?.data?.error || "Erreur lors de la modification du verrouillage.");
+    } finally { setLockBusy(false); }
   };
 
   // Nouvelle fonction pour soumettre le résultat OFFICIEL
@@ -139,7 +149,7 @@ export default function PodiumPrediction({ tournamentId, selectedCompetitionId, 
             <div style={{ marginBottom: '25px', background: 'var(--warning-soft)', padding: '15px', borderRadius: 'var(--radius)', border: '1px solid var(--border)' }}>
               <p style={{ margin: '0 0 15px 0', color: 'var(--warning)' }}>👑 ESPACE ADMIN - VALIDER L'ÉPREUVE</p>
               
-              <button onClick={toggleLock} type="button" style={{ width: '100%', marginBottom: '15px' }}>
+              <button disabled={lockBusy} onClick={toggleLock} type="button" style={{ width: '100%', marginBottom: '15px' }}>
                 {isLocked ? '🔓 Déverrouiller la saisie aux joueurs' : '🔒 Bloquer la saisie aux joueurs'}
               </button>
 
