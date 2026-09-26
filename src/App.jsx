@@ -406,7 +406,7 @@ export default function App() {
                           <input 
                             disabled={closed}
                             aria-label={`Score prévu de ${match.player1}`} id={`input-${match.id}-1`}
-                            type="number" min="0" max="15" placeholder="0"
+                            type="number" min="0" max={match.maxScore || 15} placeholder="0"
                             value={inputs.score1 !== undefined ? inputs.score1 : (myPrediction?.predictedScore1 ?? '')}
                             onChange={(e) => handleScoreChange(match.id, 1, e.target.value)}
                             onKeyDown={(e) => handleKeyDown(e, match.id, 1, index, activeMatches)}
@@ -416,7 +416,7 @@ export default function App() {
                           <input 
                             disabled={closed}
                             aria-label={`Score prévu de ${match.player2}`} id={`input-${match.id}-2`}
-                            type="number" min="0" max="15" placeholder="0"
+                            type="number" min="0" max={match.maxScore || 15} placeholder="0"
                             value={inputs.score2 !== undefined ? inputs.score2 : (myPrediction?.predictedScore2 ?? '')}
                             onChange={(e) => handleScoreChange(match.id, 2, e.target.value)}
                             onKeyDown={(e) => handleKeyDown(e, match.id, 2, index, activeMatches)}
