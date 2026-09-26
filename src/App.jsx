@@ -8,6 +8,7 @@ import GlobalLeaderboard from './components/GlobalLeaderboard';
 import MyPredictions from './components/MyPredictions';
 import Community from './components/Community';
 import AdminPanel from './components/AdminPanel';
+import FtlControl from './components/FtlControl';
 import MatchBoard from './components/MatchBoard';
 import './interface.css';
 
@@ -149,7 +150,7 @@ export default function App() {
       <nav className="primary-nav" aria-label="Navigation principale">{[['play','◎','Pronostiquer'],['mine','▤','Mes pronostics'],['leaderboard','↗','Classements'],['community','♧','Communauté']].map(([id,icon,label])=><button key={id} aria-pressed={mainTab===id} onClick={()=>navigate(id)}><span aria-hidden="true">{icon}</span>{label}</button>)}</nav>
       <EventSelector key={user.id} userId={user.id} beforeChange={runNavigation} onReset={()=>{setTournamentId(null);selectCompetition(null);setCompetition(null);}} onSelect={(tId,cId,entry)=>{setTournamentId(tId);selectCompetition(cId);setCompetition(entry);setPlayTab(entry?.podiumFormat==='TEAM'?'tableau':'pools');setMainTab('play');}}/>
       {selectedCompetitionId&&<>
-        {mainTab==='play'&&<><div className="page-heading"><p className="eyebrow">À VOUS DE JOUER</p><h1>Faites la différence.</h1><p>Vos favoris, vos scores, votre compétition.</p></div><nav className="secondary-nav" aria-label="Type de pronostic">{[['podium','Podium'],...(!team?[['pools','Poules']]:[]),['tableau','Tableau']].map(([id,label])=><button key={id} aria-pressed={playTab===id} onClick={()=>runNavigation(()=>{setDirty(false);setPlayTab(id);})}>{label}</button>)}</nav>
+        {mainTab==='play'&&<><div className="page-heading"><p className="eyebrow">À VOUS DE JOUER</p><h1>Faites la différence.</h1><p>Vos favoris, vos scores, votre compétition.</p></div>{user.isAdmin&&<FtlControl key={`ftl-${selectedCompetitionId}`} competitionId={selectedCompetitionId} onRefresh={()=>fetchMatches(selectedCompetitionId)}/>}<nav className="secondary-nav" aria-label="Type de pronostic">{[['podium','Podium'],...(!team?[['pools','Poules']]:[]),['tableau','Tableau']].map(([id,label])=><button key={id} aria-pressed={playTab===id} onClick={()=>runNavigation(()=>{setDirty(false);setPlayTab(id);})}>{label}</button>)}</nav>
         {playTab==='podium'&&<PodiumPrediction key={selectedCompetitionId} tournamentId={tournamentId} selectedCompetitionId={selectedCompetitionId} user={{...user,isAdmin:false}} onDirtyChange={setDirty}/>}
         {playTab==='pools'&&<PoolPredictions key={selectedCompetitionId} tournamentId={tournamentId} selectedCompetitionId={selectedCompetitionId} user={{...user,isAdmin:false}} onDirtyChange={setDirty}/>}
         {playTab==='tableau'&&<><ScoringRules type="matches"/><MatchBoard key={selectedCompetitionId} matches={matches} userId={user.id} now={matchNow} ready={matchesReady} error={matchesError} onRefresh={()=>fetchMatches(selectedCompetitionId)} onDirtyChange={setDirty}/></>}
