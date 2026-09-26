@@ -1,0 +1,67 @@
+.pool-section { text-align:left; color:var(--text); }
+.pool-section h3, .pool-section h4 { margin:0; }
+.pool-select { margin:22px 0 12px; }
+.pool-toolbar, .pool-card header { display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; }
+.pool-toolbar { margin:16px 0; }
+.pool-card { background:white; border:1px solid var(--border); border-radius:12px; padding:20px; margin:20px 0; }
+.pool-badge { background:#e4f3e9; color:#17643c; border-radius:20px; padding:6px 10px; font-size:12px; font-weight:700; }
+.pool-badge.closed { background:#edf0f5; color:#4a576a; }
+.pool-deadline { font-size:14px; color:var(--muted); }
+.pool-roster { list-style:none; padding:0; margin:0; }
+.pool-fencer { border-top:1px solid var(--border); padding:18px 0; }
+.pool-fencer h4 { display:flex; gap:10px; align-items:center; margin-bottom:14px; font-size:16px; }
+.pool-position { display:inline-grid; place-items:center; width:26px; height:26px; border-radius:50%; background:var(--soft); font-size:12px; flex-shrink:0; }
+.pool-fields { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:12px; }
+.pool-actions { grid-column:1/-1; display:flex; gap:8px; }
+.pool-saved { color:var(--success); font-size:13px; }
+.pool-result { padding:10px 14px; border-radius:8px; background:#eaf3ff; font-size:14px; }
+.pool-error { color:var(--danger); }
+.pool-empty { padding:20px; background:var(--soft); border-radius:8px; }
+.pool-create { display:grid; gap:14px; }
+.pool-official { display:grid; grid-template-columns:2fr 1fr 1fr; gap:10px; align-items:center; padding:10px 0; }
+@media(max-width:480px) { .pool-card { padding:12px; } .pool-fields { gap:8px; } .pool-official { grid-template-columns:1fr 1fr; } .pool-official strong { grid-column:1/-1; } }
+.pool-fields { align-items:start; }
+
+.pool-admin { background:var(--soft); border:1px solid var(--border); padding:16px; border-radius:var(--radius); margin:16px 0; }
+.pool-section label { display:grid; gap:6px; }
+.pool-section small { font-size:.75rem; font-weight:400; }
+.pool-group { margin-top:28px; }
+.pool-group + .pool-group { border-top:1px solid var(--border); padding-top:24px; }
+.pool-group-title { display:flex; align-items:center; gap:10px; }
+.pool-group-count { display:inline-grid; place-items:center; min-width:28px; padding:2px 8px; border-radius:20px; background:var(--soft); color:var(--muted); font-size:.85rem; }
+
+.pool-group > summary { cursor: pointer; color: var(--primary); padding: 12px 0; }
+.pool-group > summary .pool-group-title { display: inline-flex; margin: 0; vertical-align: middle; }
+.pool-group > summary:focus-visible { outline: 2px solid var(--primary); outline-offset: 4px; border-radius: 6px; }
+
+.pool-fencer h4 { flex-wrap: wrap; }
+.pool-fencer-info { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 6px; font-size: .75rem; font-weight: 600; }
+.pool-country, .pool-ranking { padding: 3px 7px; border-radius: 6px; background: var(--soft); color: var(--muted); }
+.pool-country { color: var(--primary); letter-spacing: .04em; }
+
+.pool-table-scroll { overflow-x:auto; max-width:100%; margin-top:16px; border:1px solid var(--border); border-radius:10px; }
+.pool-table-scroll:focus-visible { outline:2px solid var(--primary); outline-offset:3px; }
+.pool-table { width:100%; min-width:780px; border-collapse:separate; border-spacing:0; font-size:.875rem; }
+.pool-table caption { text-align:left; padding:12px; color:var(--muted); font-size:.8rem; }
+.pool-table th, .pool-table td { padding:12px 10px; border-top:1px solid var(--border); vertical-align:middle; text-align:left; }
+.pool-table thead th { background:var(--soft); font-weight:700; white-space:nowrap; }
+.pool-table .pool-name-cell { position:sticky; left:0; z-index:1; background:white; min-width:175px; max-width:230px; box-shadow:1px 0 0 var(--border); }
+.pool-table thead th:first-child { position:sticky; left:0; z-index:2; box-shadow:1px 0 0 var(--border); }
+.pool-table tbody tr:nth-child(even), .pool-table tbody tr:nth-child(even) .pool-name-cell { background:#f8fafc; }
+.pool-table .pool-number-cell { min-width:85px; text-align:center; }
+.pool-table input { width:76px; min-width:0; margin:0; padding:9px 7px; text-align:center; font-variant-numeric:tabular-nums; }
+.pool-table input[readonly] { background:var(--soft); color:var(--muted); }
+.pool-table .pool-fencer-info { min-width:115px; }
+.pool-state-cell { min-width:175px; }
+.pool-row-state, .pool-row-feedback, .pool-state-cell small { display:block; font-size:.75rem; }
+.pool-row-state { color:var(--muted); margin-bottom:6px; }
+.pool-row-actions { display:flex; flex-wrap:wrap; gap:6px; }
+.pool-row-actions:empty, .pool-row-feedback:empty { display:none; }
+.pool-row-actions button { font-size:.75rem; padding:7px 10px; }
+.pool-row-feedback { margin-top:6px; }
+.pool-predicted, .pool-actual { display:block; font-variant-numeric:tabular-nums; }
+.pool-predicted { color:var(--muted); font-size:.8rem; margin-bottom:5px; }
+.pool-actual { color:var(--primary); }
+.pool-points-cell { white-space:nowrap; }
+@media(max-width:600px) { .pool-table .pool-name-cell { min-width:130px; max-width:150px; font-size:.8rem; } .pool-table th, .pool-table td { padding:10px 8px; } .pool-table .pool-position { width:20px; height:20px; } }
+@media(max-width:700px){.pool-table-scroll{overflow:visible;border:0}.pool-table{display:block;min-width:0;width:100%}.pool-table caption{display:block}.pool-table thead{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}.pool-table tbody{display:grid;gap:16px}.pool-table tr{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));background:white!important;border:1px solid var(--border);border-radius:12px;padding:12px}.pool-table .pool-name-cell{position:static;grid-column:1/-1;max-width:none;min-width:0;box-shadow:none;background:transparent!important;font-size:14px}.pool-table td{min-width:0;border:0;padding:10px 5px}.pool-table td::before{content:attr(data-label);display:block;font-size:10px;color:var(--muted);margin-bottom:6px}.pool-table td[data-label="Nationalité · classement"],.pool-table .pool-state-cell{grid-column:1/-1}.pool-table input{width:100%}.pool-table .pool-number-cell{min-width:0}.pool-table .pool-points-cell{grid-column:1/-1}.pool-name-cell{border:0!important}.pool-table .pool-fencer-info{min-width:0}}
