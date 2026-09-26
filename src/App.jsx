@@ -36,6 +36,8 @@ export default function App() {
   const [adjustCompetitionId, setAdjustCompetitionId] = useState('');
   const [adjustMessage, setAdjustMessage] = useState('');
 
+  const [matchNow, setMatchNow] = useState(Date.now);
+  useEffect(() => { const timer = setInterval(() => setMatchNow(Date.now()), 1000); return () => clearInterval(timer); }, []);
   // 2. Charger les matchs en fonction de la compétition
   const fetchMatches = async (compId) => {
     if (!compId) return;
@@ -50,10 +52,12 @@ export default function App() {
   useEffect(() => {
     if (!selectedCompetitionId) return;
     const controller = new AbortController();
-    API.get(`/matches?competitionId=${selectedCompetitionId}`, { signal: controller.signal })
+    const refreshMatches = () => API.get(`/matches?competitionId=${selectedCompetitionId}`, { signal: controller.signal })
       .then(({ data }) => { if (!controller.signal.aborted) setMatches(data); })
       .catch(err => { if (!controller.signal.aborted) console.error('Erreur chargement matchs :', err); });
-    return () => controller.abort();
+    refreshMatches();
+    const timer = setInterval(refreshMatches, 30000);
+    return () => { controller.abort(); clearInterval(timer); };
   }, [selectedCompetitionId]);
 
   useEffect(() => {
@@ -372,17 +376,18 @@ export default function App() {
                     const myPrediction = match.predictions?.find(p => p.userId === user.id);
                     const inputs = predictionInputs[match.id] || {};
                     const msg = submitMessages[match.id];
+                    const closed = match.isClosed || match.isLocked || (match.sourceUrl && (!match.sourceCheckedAt || matchNow - new Date(match.sourceCheckedAt).getTime() > 300000));
 
                     return (
                       <div key={match.id} style={{ border: '1px solid var(--border)', borderRadius: 'var(--radius)', background: 'var(--surface)', overflow: 'hidden' }}>
                         <div style={{ padding: '12px 15px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                           <div>
                             <span style={{ marginRight: '10px', color: 'var(--muted)' }}>#{match.id}</span>
-                            <span>{match.player1}</span> <span style={{ margin: '0 8px', color: 'var(--muted)' }}>vs</span> <span>{match.player2}</span>
+                            {match.round && <small>{match.round} · </small>}<span>{match.player1}</span> <span style={{ margin: '0 8px', color: 'var(--muted)' }}>vs</span> <span>{match.player2}</span>
                           </div>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
-                            <span style={{ background: 'var(--soft)', padding: '4px 10px', borderRadius: 'var(--radius)' }}>- : -</span>
-                            <span style={{ padding: '4px 8px', borderRadius: 'var(--radius)', backgroundColor: 'var(--warning-soft)', color: 'var(--warning)' }}>En cours</span>
+                            <span style={{ background: 'var(--soft)', padding: '4px 10px', borderRadius: 'var(--radius)' }}>{match.score1 ?? '—'} : {match.score2 ?? '—'}</span>
+                            <span style={{ padding: '4px 8px', borderRadius: 'var(--radius)', backgroundColor: 'var(--warning-soft)', color: 'var(--warning)' }}>{closed ? 'Pronostics clos / en attente' : 'Pronostics ouverts'}</span>
                           </div>
                         </div>
 
@@ -390,6 +395,7 @@ export default function App() {
                           <span >🎯 Mon pronostic :</span>
                           
                           <input 
+                            disabled={closed}
                             aria-label={`Score prévu de ${match.player1}`} id={`input-${match.id}-1`}
                             type="number" min="0" max="15" placeholder="0"
                             value={inputs.score1 !== undefined ? inputs.score1 : (myPrediction?.predictedScore1 ?? '')}
@@ -407,8 +413,8 @@ export default function App() {
                             style={{ width: '60px', textAlign: 'center' }}
                           />
                           
-                          <button onClick={() => submitPrediction(match.id)} >Valider</button>
-                          {myPrediction && <button className="button-danger" onClick={() => deletePrediction(match.id)} >Supprimer</button>}
+                          <button disabled={closed} onClick={() => submitPrediction(match.id)} >Valider</button>
+                          {myPrediction && <button disabled={closed} className="button-danger" onClick={() => deletePrediction(match.id)} >Supprimer</button>}
                           {msg && <span style={{ color: msg.type === 'error' ? 'var(--danger)' : 'var(--success)' }}>{msg.text}</span>}
                         </div>
                       </div>
