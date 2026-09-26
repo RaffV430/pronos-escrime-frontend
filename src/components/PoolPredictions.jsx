@@ -33,26 +33,27 @@ function PredictionRow({ pool, fencer, closed, onRefresh }) {
     } catch (error) { setFeedback(message(error)); }
     finally { setBusy(false); }
   }
-  return <li className="pool-fencer">
-    <h4><span className="pool-position">{fencer.position}</span><span>{fencer.name}</span><span className="pool-fencer-info">
-      {fencer.countryCode && <span className="pool-country" title="Nationalité · code ISO à trois lettres">{fencer.countryCode}</span>}
+  const formId = `pool-prediction-${pool.id}-${fencer.id}`;
+  const lockReason = pool.isFinal ? 'Résultats publiés' : fencer.firstResultAt ? 'Premier résultat publié' : pool.isClosed ? 'Poule fermée' : closed ? (pool.lockMode === 'FIRST_RESULT' ? 'Vérification en attente' : 'Clôture atteinte') : 'Pronostic ouvert';
+  const resultCell = (predicted, actual, isIndicator = false) => <><span className="pool-predicted">{predicted == null ? '—' : isIndicator ? signed(predicted) : predicted}</span><strong className="pool-actual">{actual == null ? '—' : isIndicator ? signed(actual) : actual}</strong></>;
+  return <tr className={closed ? 'pool-table-row is-closed' : 'pool-table-row'}>
+    <th scope="row" className="pool-name-cell"><span className="pool-position">{fencer.position}</span> <span>{fencer.name}</span></th>
+    <td><div className="pool-fencer-info">
+      <span className="pool-country" title="Nationalité · code ISO à trois lettres">{fencer.countryCode || '—'}</span>
       {pool.rankingSystem && <span className="pool-ranking" title="Classement de la liste d’engagement de l’épreuve">{pool.rankingSystem === 'NATIONAL' ? 'National' : pool.rankingSystem} · {Number.isInteger(fencer.ranking) && fencer.ranking > 0 ? fencer.ranking : 'non renseigné'}</span>}
-    </span></h4>
-    {!pool.isFinal && pool.lockMode === 'FIRST_RESULT' && <p className="pool-deadline">{fencer.firstResultAt ? 'Pronostic clos : premier résultat publié.' : pool.isClosed ? 'Pronostics fermés par l’administrateur.' : closed ? 'Vérification FencingTimeLive en attente…' : 'Pronostic ouvert jusqu’au premier résultat de ce tireur.'}</p>}
-    <form onSubmit={save} className="pool-fields">
-      <label>Victoires<input aria-label={`Victoires de ${fencer.name}`} type="number" min="0" max={bouts} step="1" required value={wins} onChange={e => setWins(e.target.value)} disabled={closed || busy} /></label>
-      <label>Défaites<input aria-label={`Défaites de ${fencer.name}`} type="number" value={losses} readOnly tabIndex={-1} /><small>Calcul automatique</small></label>
-      <label>Indice<input aria-label={`Indice de ${fencer.name}`} type="number" min={minimum} max={maximum} step="1" required placeholder="Ex. +8" value={indicator} onChange={e => setIndicator(e.target.value)} disabled={closed || busy} /></label>
-      {!closed && <div className="pool-actions"><button disabled={busy} type="submit">{busy ? 'Enregistrement…' : 'Enregistrer'}</button>{fencer.prediction && <button disabled={busy} type="button" className="pool-secondary" onClick={remove}>Supprimer</button>}</div>}
-    </form>
-    {fencer.prediction && <p className="pool-saved">Enregistré : {fencer.prediction.wins} V · {fencer.prediction.losses} D · indice {signed(fencer.prediction.indicator)}</p>}
-    {closed && !fencer.prediction && <p>Aucun pronostic enregistré.</p>}
-    {pool.isFinal && <div className="pool-result">
-      <p>Résultat : <strong>{fencer.wins} V · {fencer.losses} D · indice {signed(fencer.indicator)}</strong></p>
-      {fencer.comparison && <p><strong>{fencer.comparison.points.total} / 8 points</strong> — victoires : {fencer.comparison.points.winsPoints} pts ; indice : {fencer.comparison.points.indicatorPoints} pts (écart {Math.abs(fencer.comparison.indicatorDifference)}).</p>}
-    </div>}
-    <p role="status">{feedback}</p>
-  </li>;
+    </div></td>
+    <td className="pool-number-cell">{pool.isFinal ? resultCell(fencer.prediction?.wins, fencer.wins) : <input form={formId} aria-label={`Victoires de ${fencer.name}`} type="number" min="0" max={bouts} step="1" required value={wins} onChange={e => setWins(e.target.value)} disabled={closed || busy} />}</td>
+    <td className="pool-number-cell">{pool.isFinal ? resultCell(fencer.prediction?.losses, fencer.losses) : <input aria-label={`Défaites de ${fencer.name} (calcul automatique)`} title="Calcul automatique" type="number" value={losses} readOnly tabIndex={-1} />}</td>
+    <td className="pool-number-cell">{pool.isFinal ? resultCell(fencer.prediction?.indicator, fencer.indicator, true) : <input form={formId} aria-label={`Indice de ${fencer.name}`} type="number" min={minimum} max={maximum} step="1" required placeholder="+8" value={indicator} onChange={e => setIndicator(e.target.value)} disabled={closed || busy} />}</td>
+    {pool.isFinal && <td className="pool-points-cell">{fencer.comparison ? <strong title={`Victoires : ${fencer.comparison.points.winsPoints} pts ; indice : ${fencer.comparison.points.indicatorPoints} pts`}>{fencer.comparison.points.total} / 8</strong> : '—'}</td>}
+    <td className="pool-state-cell">
+      <span className="pool-row-state" title={lockReason}>{closed ? '🔒 ' : ''}{lockReason}</span>
+      {!pool.isFinal && <form id={formId} onSubmit={save} className="pool-row-actions">{!closed && <><button disabled={busy} type="submit" aria-label={`Enregistrer le pronostic de ${fencer.name}`}>{busy ? 'Enregistrement…' : 'Enregistrer'}</button>{fencer.prediction && <button disabled={busy} type="button" className="pool-secondary" aria-label={`Supprimer le pronostic de ${fencer.name}`} onClick={remove}>Supprimer</button>}</>}</form>}
+      {fencer.prediction && !pool.isFinal && <small className="pool-saved">Enregistré : {fencer.prediction.wins} V · {fencer.prediction.losses} D · {signed(fencer.prediction.indicator)}</small>}
+      {closed && !fencer.prediction && <small>Aucun pronostic enregistré</small>}
+      <span role="status" className="pool-row-feedback">{feedback}</span>
+    </td>
+  </tr>;
 }
 
 function PoolAdmin({ pool, closed, onRefresh }) {
@@ -161,7 +162,7 @@ function PoolList({ competitionId, user }) {
         <header><div><h3>{pool.name}</h3><p>{pool.fencers.length} tireurs · {pool.fencers.length - 1} matchs par tireur</p></div><span className={`pool-badge ${closed ? 'closed' : ''}`}>{pool.isFinal ? 'Résultats publiés' : closed ? 'Pronostics clos' : pool.lockMode === 'FIRST_RESULT' ? 'Blocage par tireur' : 'Pronostics ouverts'}</span></header>
         <p className="pool-deadline">{pool.lockMode === 'FIRST_RESULT' ? 'Clôture individuelle au premier résultat détecté sur FencingTimeLive.' : <>Clôture : {new Date(pool.closesAt).toLocaleString('fr-FR', { dateStyle: 'medium', timeStyle: 'short' })}</>}</p>
         {pool.rankingSourceUrl && <p className="pool-deadline"><a href={pool.rankingSourceUrl} target="_blank" rel="noreferrer">Liste d’engagement · nationalités et classements</a></p>}
-        <ol className="pool-roster">{pool.fencers.map(fencer => <PredictionRow key={`${fencer.id}-${fencer.prediction?.updatedAt || 'none'}`} pool={pool} fencer={fencer} closed={closed || Boolean(fencer.firstResultAt) || sourcePending} onRefresh={reload} />)}</ol>
+        <div className="pool-table-scroll" role="region" aria-label={`Tableau de ${pool.name}`} tabIndex={0}><table className="pool-table"><caption>{pool.isFinal ? 'Pour chaque valeur : votre pronostic, puis le résultat réel en gras.' : 'Saisissez les victoires et l’indice, puis enregistrez chaque ligne. Les défaites sont calculées automatiquement.'}</caption><thead><tr><th scope="col">Tireur / tireuse</th><th scope="col">Nationalité · classement</th><th scope="col">Victoires</th><th scope="col">Défaites</th><th scope="col">Indice</th>{pool.isFinal && <th scope="col">Points</th>}<th scope="col">{pool.isFinal ? 'État' : 'Pronostic'}</th></tr></thead><tbody>{pool.fencers.map(fencer => <PredictionRow key={`${fencer.id}-${fencer.prediction?.updatedAt || 'none'}`} pool={pool} fencer={fencer} closed={pool.isFinal || closed || Boolean(fencer.firstResultAt) || sourcePending} onRefresh={reload} />)}</tbody></table></div>
         {user.isAdmin && <PoolAdmin pool={pool} closed={closed} onRefresh={reload} />}
       </article>;
       })}

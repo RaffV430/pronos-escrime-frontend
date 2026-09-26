@@ -38,3 +38,29 @@
 .pool-fencer-info { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 6px; font-size: .75rem; font-weight: 600; }
 .pool-country, .pool-ranking { padding: 3px 7px; border-radius: 6px; background: var(--soft); color: var(--muted); }
 .pool-country { color: var(--primary); letter-spacing: .04em; }
+
+.pool-table-scroll { overflow-x:auto; max-width:100%; margin-top:16px; border:1px solid var(--border); border-radius:10px; }
+.pool-table-scroll:focus-visible { outline:2px solid var(--primary); outline-offset:3px; }
+.pool-table { width:100%; min-width:780px; border-collapse:separate; border-spacing:0; font-size:.875rem; }
+.pool-table caption { text-align:left; padding:12px; color:var(--muted); font-size:.8rem; }
+.pool-table th, .pool-table td { padding:12px 10px; border-top:1px solid var(--border); vertical-align:middle; text-align:left; }
+.pool-table thead th { background:var(--soft); font-weight:700; white-space:nowrap; }
+.pool-table .pool-name-cell { position:sticky; left:0; z-index:1; background:white; min-width:175px; max-width:230px; box-shadow:1px 0 0 var(--border); }
+.pool-table thead th:first-child { position:sticky; left:0; z-index:2; box-shadow:1px 0 0 var(--border); }
+.pool-table tbody tr:nth-child(even), .pool-table tbody tr:nth-child(even) .pool-name-cell { background:#f8fafc; }
+.pool-table .pool-number-cell { min-width:85px; text-align:center; }
+.pool-table input { width:76px; min-width:0; margin:0; padding:9px 7px; text-align:center; font-variant-numeric:tabular-nums; }
+.pool-table input[readonly] { background:var(--soft); color:var(--muted); }
+.pool-table .pool-fencer-info { min-width:115px; }
+.pool-state-cell { min-width:175px; }
+.pool-row-state, .pool-row-feedback, .pool-state-cell small { display:block; font-size:.75rem; }
+.pool-row-state { color:var(--muted); margin-bottom:6px; }
+.pool-row-actions { display:flex; flex-wrap:wrap; gap:6px; }
+.pool-row-actions:empty, .pool-row-feedback:empty { display:none; }
+.pool-row-actions button { font-size:.75rem; padding:7px 10px; }
+.pool-row-feedback { margin-top:6px; }
+.pool-predicted, .pool-actual { display:block; font-variant-numeric:tabular-nums; }
+.pool-predicted { color:var(--muted); font-size:.8rem; margin-bottom:5px; }
+.pool-actual { color:var(--primary); }
+.pool-points-cell { white-space:nowrap; }
+@media(max-width:600px) { .pool-table .pool-name-cell { min-width:130px; max-width:150px; font-size:.8rem; } .pool-table th, .pool-table td { padding:10px 8px; } .pool-table .pool-position { width:20px; height:20px; } }
