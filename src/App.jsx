@@ -5,12 +5,18 @@ import EventSelector from './components/EventSelector';
 import PodiumPrediction from './components/PodiumPrediction';
 import PoolPredictions from './components/PoolPredictions';
 import GlobalLeaderboard from './components/GlobalLeaderboard';
+import MyPredictions from './components/MyPredictions';
+import Community from './components/Community';
+import AdminPanel from './components/AdminPanel';
+import MatchTiming from './components/MatchTiming';
 
 const SHOW_SHEET_SYNC = false;
 
 export default function App() {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [sessionError, setSessionError] = useState(false);
+  const [sessionRetry, setSessionRetry] = useState(0);
   const [isRegister, setIsRegister] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [formData, setFormData] = useState({ username: '', email: '', password: '' });
@@ -29,15 +35,6 @@ export default function App() {
   const [matches, setMatches] = useState([]);
   const [predictionInputs, setPredictionInputs] = useState({});
   const [submitMessages, setSubmitMessages] = useState({});
-
-  // --- NOUVEAUX STATES POUR L'AJUSTEMENT MANUEL DES POINTS ---
-  const [adjustUserId, setAdjustUserId] = useState('');
-  const [adjustBy, setAdjustBy] = useState('id');
-  const [adjustPoints, setAdjustPoints] = useState('');
-  const [adjustReason, setAdjustReason] = useState('');
-  const [adjustTournamentId, setAdjustTournamentId] = useState('');
-  const [adjustCompetitionId, setAdjustCompetitionId] = useState('');
-  const [adjustMessage, setAdjustMessage] = useState('');
 
   const [matchNow, setMatchNow] = useState(Date.now);
   useEffect(() => { const timer = setInterval(() => setMatchNow(Date.now()), 1000); return () => clearInterval(timer); }, []);
@@ -71,7 +68,8 @@ export default function App() {
           API.defaults.headers.common['Authorization'] = `Bearer ${token}`;
           const res = await API.get('/auth/me');
           setUser(res.data);
-        } catch {
+        } catch (err) {
+          if (![401,403,404].includes(err.response?.status)) { setSessionError(true); setLoading(false); return; }
           localStorage.removeItem('token');
           delete API.defaults.headers.common['Authorization'];
           setUser(null);
@@ -79,8 +77,8 @@ export default function App() {
       }
       setLoading(false);
     };
-    checkAuth();
-  }, []);
+    setSessionError(false); setLoading(true); checkAuth();
+  }, [sessionRetry]);
 
   const handleSyncSheet = async () => {
     if (!selectedCompetitionId) {
@@ -137,7 +135,8 @@ export default function App() {
   };
 
   const submitPrediction = async (matchId) => {
-    const p = predictionInputs[matchId];
+    const existing = matches.find(m => m.id === matchId)?.predictions?.find(p => p.userId === user.id);
+    const p = { score1: existing?.predictedScore1, score2: existing?.predictedScore2, ...predictionInputs[matchId] };
     if (!p || p.score1 === undefined || p.score2 === undefined || p.score1 === '' || p.score2 === '') {
       setSubmitMessages(prev => ({ ...prev, [matchId]: { type: 'error', text: 'Remplissez les 2 scores' }}));
       return;
@@ -145,8 +144,8 @@ export default function App() {
 
     try {
       await API.post(`/matches/${matchId}/predict`, {
-        predictedScore1: parseInt(p.score1),
-        predictedScore2: parseInt(p.score2)
+        predictedScore1: Number(p.score1),
+        predictedScore2: Number(p.score2)
       });
       setSubmitMessages(prev => ({ ...prev, [matchId]: { type: 'success', text: '✅ Enregistré !' }}));
       if (selectedCompetitionId) fetchMatches(selectedCompetitionId);
@@ -166,36 +165,6 @@ export default function App() {
       if (selectedCompetitionId) fetchMatches(selectedCompetitionId);
     } catch (err) {
       setSubmitMessages(prev => ({ ...prev, [matchId]: { type: 'error', text: err.response?.data?.error || '❌ Erreur' }}));
-    }
-  };
-
-  // --- NOUVELLE FONCTION POUR L'AJUSTEMENT MANUEL ---
-  const handleAdjustPoints = async (e) => {
-    e.preventDefault();
-    setAdjustMessage('');
-
-    if (!adjustUserId || !adjustPoints) {
-      setAdjustMessage('⚠️ Veuillez sélectionner un joueur et un nombre de points.');
-      return;
-    }
-
-    try {
-      const res = await API.post('/admin/adjust-points', {
-        ...(adjustBy === 'id' ? { userId: adjustUserId } : { name: adjustUserId }),
-        points: adjustPoints,
-        reason: adjustReason,
-        tournamentId: adjustTournamentId,
-        competitionId: adjustCompetitionId
-      });
-      
-      if (res.data.success) {
-        setAdjustMessage('✅ Points ajustés avec succès !');
-        setAdjustPoints('');
-        setAdjustReason('');
-      }
-    } catch (error) {
-      console.error(error);
-      setAdjustMessage("❌ Erreur lors de l'ajustement.");
     }
   };
 
@@ -224,6 +193,7 @@ export default function App() {
     setSelectedCompetitionId(competitionId);
   };
 
+  if (sessionError) return <main className="auth-card"><h2>Connexion temporairement indisponible</h2><p>Votre session est conservée. Vérifiez votre connexion puis réessayez.</p><button onClick={() => setSessionRetry(n=>n+1)}>Réessayer</button></main>;
   if (loading) {
     return <div style={{ textAlign: 'center', marginTop: '100px' }}>Chargement de la session...</div>;
   }
@@ -267,6 +237,9 @@ export default function App() {
           >
             🏆 Classement Général
           </button>
+          <button onClick={()=>setMainTab('mine')} aria-pressed={mainTab==='mine'}>Mes pronostics</button>
+          <button onClick={()=>setMainTab('community')} aria-pressed={mainTab==='community'}>Amis, clubs et défis</button>
+          {user.isAdmin&&<button onClick={()=>setMainTab('admin')} aria-pressed={mainTab==='admin'}>Administration</button>}
         </div>
 
         {/* --- CONTENU DE L'ONGLET SÉLECTIONNÉ --- */}
@@ -296,49 +269,12 @@ export default function App() {
                   {syncMessage && <p style={{ marginTop: '10px' }}>{syncMessage}</p>}
                 </div>}
 
-                {/* Panneau d'ajustement manuel */}
-                <div style={{ padding: '15px', background: 'var(--warning-soft)', borderRadius: 'var(--radius)', border: '1px solid var(--border)' }}>
-                  <h3 style={{ color: 'var(--warning)', marginTop: '0', marginBottom: '15px' }}>🛠️ Ajustement Manuel des Points</h3>
-                  <form onSubmit={handleAdjustPoints} style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', alignItems: 'flex-end' }}>
-                    
-                    <div style={{ display: 'flex', flexDirection: 'column', width: '100px' }}>
-                      <label style={{ marginBottom: '4px' }}>Joueur</label>
-                      <select aria-label="Rechercher le joueur par" value={adjustBy} onChange={e => { setAdjustBy(e.target.value); setAdjustUserId(''); }}><option value="id">ID</option><option value="name">Nom</option></select>
-                      <input aria-label="ID ou nom du joueur" type={adjustBy === 'id' ? 'number' : 'text'} value={adjustUserId} onChange={(e) => setAdjustUserId(e.target.value)} placeholder="Ex: 3"  />
-                    </div>
-
-                    <div style={{ display: 'flex', flexDirection: 'column', width: '100px' }}>
-                      <label style={{ marginBottom: '4px' }}>Points (+/-)</label>
-                      <input type="number" value={adjustPoints} onChange={(e) => setAdjustPoints(e.target.value)} placeholder="Ex: 12"  />
-                    </div>
-
-                    <div style={{ display: 'flex', flexDirection: 'column', width: '150px' }}>
-                      <label style={{ marginBottom: '4px' }}>Raison (opt.)</label>
-                      <input type="text" value={adjustReason} onChange={(e) => setAdjustReason(e.target.value)} placeholder="Ex: Oubli"  />
-                    </div>
-
-                    <div style={{ display: 'flex', flexDirection: 'column', width: '100px' }}>
-                      <label style={{ marginBottom: '4px' }}>ID Tournoi</label>
-                      <input type="number" value={adjustTournamentId} onChange={(e) => setAdjustTournamentId(e.target.value)} placeholder={tournamentId}  />
-                    </div>
-
-                    <div style={{ display: 'flex', flexDirection: 'column', width: '100px' }}>
-                      <label style={{ marginBottom: '4px' }}>ID Compét.</label>
-                      <input type="number" value={adjustCompetitionId} onChange={(e) => setAdjustCompetitionId(e.target.value)} placeholder={selectedCompetitionId}  />
-                    </div>
-
-                    <button type="submit" style={{ height: 'fit-content' }}>
-                      Attribuer
-                    </button>
-                  </form>
-                  {adjustMessage && <p style={{ marginTop: '10px', color: adjustMessage.includes('✅') ? 'green' : 'red' }}>{adjustMessage}</p>}
-                </div>
 
               </div>
             )}
 
             {/* Bloc Podium Prediction */}
-            <PodiumPrediction key={selectedCompetitionId} tournamentId={tournamentId} selectedCompetitionId={selectedCompetitionId} user={user} />
+            <PodiumPrediction key={selectedCompetitionId} tournamentId={tournamentId} selectedCompetitionId={selectedCompetitionId} user={{...user,isAdmin:false}} />
 
             {finishedMatches.length > 0 && (
               <details style={{ marginBottom: '25px', border: '1px solid var(--border)', borderRadius: 'var(--radius)', background: 'var(--surface)', overflow: 'hidden' }}>
@@ -350,7 +286,7 @@ export default function App() {
                   {finishedMatches.map((match) => {
                     const myPrediction = match.predictions?.find(p => p.userId === user.id);
                     return (
-                      <div key={match.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 12px', background: 'var(--surface)', borderRadius: 'var(--radius)', border: '1px solid var(--border)' }}>
+                      <div id={`match-${match.id}`} key={match.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 12px', background: 'var(--surface)', borderRadius: 'var(--radius)', border: '1px solid var(--border)' }}>
                         <div>
                           <span style={{ marginRight: '10px', color: 'var(--muted)' }}>#{match.id}</span>
                           <span>{match.player1}</span> <span style={{ margin: '0 6px', color: 'var(--muted)' }}>vs</span> <span>{match.player2}</span>
@@ -383,7 +319,7 @@ export default function App() {
                     const closed = match.isFinished || (!match.manualUnlock && (match.isLocked || (match.closesAt && matchNow >= Date.parse(match.closesAt))));
 
                     return (
-                      <div key={match.id} style={{ border: '1px solid var(--border)', borderRadius: 'var(--radius)', background: 'var(--surface)', overflow: 'hidden' }}>
+                      <div id={`match-${match.id}`} key={match.id} style={{ border: '1px solid var(--border)', borderRadius: 'var(--radius)', background: 'var(--surface)', overflow: 'hidden' }}>
                         <div style={{ padding: '12px 15px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                           <div>
                             <span style={{ marginRight: '10px', color: 'var(--muted)' }}>#{match.id}</span>
@@ -395,11 +331,7 @@ export default function App() {
                           </div>
                         </div>
 
-                        {match.closesAt && <p className="muted">Clôture prévue : {new Date(match.closesAt).toLocaleString('fr-FR')}</p>}
-                        {user.isAdmin && <button type="button" onClick={async () => {
-                          try { await API.put(`/matches/${match.id}/lock`, { isLocked: !closed }); await fetchMatches(selectedCompetitionId); }
-                          catch (err) { setSubmitMessages(prev => ({ ...prev, [match.id]: { type: 'error', text: err.response?.data?.error || 'Modification impossible.' } })); }
-                        }}>{closed ? 'Déverrouiller les pronostics' : 'Verrouiller les pronostics'}</button>}
+                        <MatchTiming match={match} now={matchNow} />
                         <div style={{ background: 'var(--soft)', padding: '10px 15px', borderTop: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: '15px' }}>
                           <span >🎯 Mon pronostic :</span>
                           
@@ -436,7 +368,10 @@ export default function App() {
           </section>
         )}
 
-        {mainTab === 'pools' && <PoolPredictions selectedCompetitionId={selectedCompetitionId} user={user} />}
+        {mainTab==='mine'&&<MyPredictions key={selectedCompetitionId} competitionId={selectedCompetitionId} tournamentId={tournamentId} userId={user.id} onNavigate={(tab,id)=>{setMainTab(tab);let attempts=0;const reveal=()=>{const target=document.getElementById(id);if(!target&&attempts++<40){setTimeout(reveal,250);return;}const detail=target?.closest('details');if(detail)detail.open=true;target?.scrollIntoView({behavior:'smooth',block:'center'});};setTimeout(reveal,0);}}/>}
+        {mainTab==='community'&&<Community key={selectedCompetitionId} competitionId={selectedCompetitionId} tournamentId={tournamentId} userId={user.id}/>}
+        {mainTab==='admin'&&user.isAdmin&&<AdminPanel key={selectedCompetitionId} competitionId={selectedCompetitionId} tournamentId={tournamentId} user={user} matches={matches} now={matchNow} onRefresh={()=>fetchMatches(selectedCompetitionId)}/>}
+        {mainTab === 'pools'  && <PoolPredictions selectedCompetitionId={selectedCompetitionId} user={{...user,isAdmin:false}} />}
 
         {mainTab === 'leaderboard' && (
           <GlobalLeaderboard />

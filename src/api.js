@@ -5,7 +5,7 @@ const rawConfiguredUrl = import.meta.env.VITE_API_URL?.trim();
 // Accept legacy values pasted as Markdown links in the hosting settings.
 const configuredUrl = rawConfiguredUrl?.match(/^\[[^\]]*\]\((https?:\/\/[^\s)]+)\)$/)?.[1] || rawConfiguredUrl;
 const baseURL = configuredUrl || (isLocal
-  ? 'http://localhost:5000/api'
+  ? `http://${window.location.hostname}:5000/api`
   : 'https://pronos-escrime.onrender.com/api');
 
 const API = axios.create({

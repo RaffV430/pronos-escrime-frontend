@@ -36,7 +36,7 @@ function PredictionRow({ pool, fencer, closed, onRefresh }) {
   const formId = `pool-prediction-${pool.id}-${fencer.id}`;
   const lockReason = pool.isFinal ? 'Résultats publiés' : fencer.firstResultAt ? 'Premier résultat publié' : pool.isClosed ? 'Poule fermée' : closed ? (pool.lockMode === 'FIRST_RESULT' ? 'Vérification en attente' : 'Clôture atteinte') : 'Pronostic ouvert';
   const resultCell = (predicted, actual, isIndicator = false) => <><span className="pool-predicted">{predicted == null ? '—' : isIndicator ? signed(predicted) : predicted}</span><strong className="pool-actual">{actual == null ? '—' : isIndicator ? signed(actual) : actual}</strong></>;
-  return <tr className={closed ? 'pool-table-row is-closed' : 'pool-table-row'}>
+  return <tr id={`pool-${fencer.id}`} className={closed ? 'pool-table-row is-closed' : 'pool-table-row'}>
     <th scope="row" className="pool-name-cell"><span className="pool-position">{fencer.position}</span> <span>{fencer.name}</span></th>
     <td><div className="pool-fencer-info">
       <span className="pool-country" title="Nationalité · code ISO à trois lettres">{fencer.countryCode || '—'}</span>

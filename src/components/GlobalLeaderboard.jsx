@@ -109,7 +109,7 @@ export default function GlobalLeaderboard() {
               
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                 <span style={{ width: '30px', textAlign: 'center' }}>
-                  {index === 0 ? '👑' : index === 1 ? '🥈' : index === 2 ? '🥉' : `#${index + 1}`}
+                  {(u.rank || index+1) === 1 ? '👑' : `#${u.rank || index+1}`}
                 </span>
                 <span >{u.name || 'Utilisateur'}</span>
               </div>
@@ -124,6 +124,7 @@ export default function GlobalLeaderboard() {
                     🏆 Podiums: <strong>{u.podiumPoints}</strong>
                   </span>
                   <span title="Points obtenus via les pronostics de poules">Poules : <strong>{u.poolPoints ?? 0}</strong></span>
+                  <span>Défis : <strong>{u.challengePoints??0}</strong></span>
                   {u.adjustmentPoints !== 0 && (
                     <>
                       <span style={{ color: '#ccc' }}>|</span>
