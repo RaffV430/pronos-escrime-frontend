@@ -405,6 +405,7 @@ export default function App() {
                           />
                           <span style={{ color: 'var(--muted)' }}>-</span>
                           <input 
+                            disabled={closed}
                             aria-label={`Score prévu de ${match.player2}`} id={`input-${match.id}-2`}
                             type="number" min="0" max="15" placeholder="0"
                             value={inputs.score2 !== undefined ? inputs.score2 : (myPrediction?.predictedScore2 ?? '')}
