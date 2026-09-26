@@ -1,5 +1,7 @@
 export function isMatchClosed(match, now) {
-  return Boolean(match.isFinished || (!match.manualUnlock && (match.isLocked || (match.closesAt && now >= Date.parse(match.closesAt)))));
+  if (match.isFinished) return true;
+  if (match.manualUnlockUntil) return now >= Date.parse(match.manualUnlockUntil);
+  return Boolean(match.timingUnverified || match.isLocked || (!match.awaitingPreviousRound && match.closesAt && now >= Date.parse(match.closesAt)));
 }
 export function validateScores(values, maxScore = 15) {
   const scores = [values.score1, values.score2];
