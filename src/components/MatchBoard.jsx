@@ -1,32 +1,11 @@
 import {useEffect,useRef,useState} from 'react';
 import API from '../api';
 import MatchTiming from './MatchTiming';
-import {entryRank,bracketLayout,groupMatches,isMatchClosed,validateScores} from './matchPresentation';
+import {groupMatches,isMatchClosed,validateScores} from './matchPresentation';
 
 export default function MatchBoard({matches,userId,now,ready,error,onRefresh,onDirtyChange}) {
  const [drafts,setDrafts]=useState({}),[messages,setMessages]=useState({}),[busy,setBusy]=useState(false),[filter,setFilter]=useState('Tous'),[view,setView]=useState('Liste');
- const [roster,setRoster]=useState({competitionId:null,entries:[]});
- const competitionId=matches[0]?.competitionId;
- useEffect(()=>{
-  if(!competitionId)return;
-  const controller=new AbortController();
-  API.get(`/podium/options/${competitionId}`,{signal:controller.signal}).then(({data})=>{
-   if(!controller.signal.aborted)setRoster({competitionId,entries:Array.isArray(data.entries)?data.entries:[]});
-  }).catch(()=>{if(!controller.signal.aborted)setRoster({competitionId,entries:[]});});
-  return ()=>controller.abort();
- },[competitionId]);
- const rankFor=name=>entryRank(roster.competitionId===competitionId?roster.entries:[],name);
  const saving=useRef(false);
- const bracketRef=useRef(null);
- const [pitch,setPitch]=useState(360);
- useEffect(()=>{
-  if(view!=='Arbre'||!ready||!bracketRef.current)return;
-  const cards=[...bracketRef.current.querySelectorAll('.match-card')];
-  const measure=()=>{const height=Math.ceil(Math.max(0,...cards.map(card=>card.getBoundingClientRect().height)))+28;if(height>28)setPitch(old=>old===height?old:height);};
-  const observer=new ResizeObserver(measure);
-  cards.forEach(card=>observer.observe(card));measure();
-  return ()=>observer.disconnect();
- },[view,ready,matches,filter]);
  const valid=matches.filter(m=>m.player1?.trim()&&m.player2?.trim()&&m.player1!=='En attente...'&&m.player2!=='En attente...');
  const mine=m=>m.predictions?.find(p=>p.userId===userId);
  const dirty=Object.keys(drafts).length>0;
@@ -54,7 +33,7 @@ export default function MatchBoard({matches,userId,now,ready,error,onRefresh,onD
  const checked=[...new Set(valid.map(m=>m.sourceCheckedAt).filter(Boolean))];
  const card=m=>{const p=mine(m),v=values(m),closed=isMatchClosed(m,now),status=!ready||error?'Vérification…':m.isFinished?'Résultat publié':closed?'Clos':drafts[m.id]?'Non enregistré':p?'Enregistré':'À compléter';return <article id={`match-${m.id}`} className="match-card" key={m.id}>
   <div className="match-meta"><span>{m.sourceKey?`Match ${m.sourceKey.split(':').pop()}`:`#${m.id}`} · {m.round}</span><span className={`status-pill ${p&&!drafts[m.id]?'saved':''}`}>{status}</span></div>
-  {[m.player1,m.player2].map((name,i)=><label className="opponent-row" key={i}><strong>{name}{rankFor(name)!==null&&<span className="entry-rank" title="Classement d’entrée dans la compétition — liste officielle des engagés" aria-label={`Classement d’entrée : ${rankFor(name)}`}>Rang {rankFor(name)}</span>}</strong><input id={`input-${m.id}-${i+1}`} aria-label={`Score prévu de ${name}`} inputMode="numeric" type="number" min="0" max={m.maxScore||15} step="1" placeholder="—" value={v[`score${i+1}`]} disabled={closed||busy||!ready||!!error} onChange={e=>setDrafts(old=>({...old,[m.id]:{...old[m.id],[`score${i+1}`]:e.target.value}}))} onKeyDown={e=>{if(e.key==='Enter'){e.preventDefault();if(i===0)document.getElementById(`input-${m.id}-2`)?.focus();else save([m.id]);}}}/></label>)}
+  {[m.player1,m.player2].map((name,i)=><label className="opponent-row" key={i}><strong>{name}</strong><input id={`input-${m.id}-${i+1}`} aria-label={`Score prévu de ${name}`} inputMode="numeric" type="number" min="0" max={m.maxScore||15} step="1" placeholder="—" value={v[`score${i+1}`]} disabled={closed||busy||!ready||!!error} onChange={e=>setDrafts(old=>({...old,[m.id]:{...old[m.id],[`score${i+1}`]:e.target.value}}))} onKeyDown={e=>{if(e.key==='Enter'){e.preventDefault();if(i===0)document.getElementById(`input-${m.id}-2`)?.focus();else save([m.id]);}}}/></label>)}
   {m.isFinished?<div className="official-result"><p>{m.resultType==='MEDICAL_WITHDRAWAL'?`Retrait médical · Victoire ${m.winnerName}`:`Résultat : ${m.score1} – ${m.score2}`}</p>{p&&<strong>{p.pointsEarned??0} {(p.pointsEarned??0)===1?'point':'points'}</strong>}</div>:<MatchTiming match={m} now={now} hideChecked={checked.length===1}/>}
   {!m.isFinished&&<div className="match-actions"><button disabled={closed||busy||!drafts[m.id]||!ready||!!error} onClick={()=>save([m.id])}>{busy?'Enregistrement…':'Enregistrer'}</button>{p&&<button className="button-link" disabled={closed||busy||!ready||!!error} onClick={()=>remove(m)}>Supprimer</button>}{drafts[m.id]&&<button className="button-link" disabled={busy} onClick={()=>setDrafts(old=>{const next={...old};delete next[m.id];return next})}>Annuler la saisie</button>}</div>}
   {messages[m.id]&&<p role={messages[m.id].failed?'alert':'status'} className={messages[m.id].failed?'pool-error':'pool-saved'}>{messages[m.id].text}</p>}
@@ -63,9 +42,8 @@ export default function MatchBoard({matches,userId,now,ready,error,onRefresh,onD
  {!ready&&!error&&<p role="status">Vérification des matchs…</p>}{error&&<p role="alert">{error} <button onClick={onRefresh}>Réessayer</button></p>}
  {ready&&<><div className="overview"><div><strong>{valid.filter(m=>mine(m)).length} / {valid.length}</strong><span>pronostics enregistrés</span></div><div><strong>{valid.filter(m=>!mine(m)&&!isMatchClosed(m,now)).length}</strong><span>à compléter</span></div><div><strong>Début prévu + 30 min</strong><span>Clôture par match, sauf réouverture manuelle</span></div></div><div className="board-toolbar"><div className="filter-row">{['Tous','À compléter','Ferment bientôt','Résultats publiés'].map(x=><button key={x} aria-pressed={filter===x} onClick={()=>setFilter(x)}>{x}</button>)}</div><div className="filter-row">{['Liste','Arbre'].map(x=><button key={x} aria-pressed={view===x} onClick={()=>setView(x)}>{x}</button>)}</div></div>
  <div className="feature-heading"><p className="muted">{checked.length===1?`Dernière vérification officielle : ${new Date(checked[0]).toLocaleString('fr-FR')}`:'Les dates de vérification figurent sur les rencontres.'}</p><button className="button-link" onClick={next} disabled={!valid.some(m=>!mine(m)&&!isMatchClosed(m,now))}>Pronostic suivant →</button></div>
- {view==='Arbre'&&<p className="muted">Tours du tableau · faites défiler horizontalement sur mobile. Seules les rencontres avec deux adversaires connus sont affichées ; les emplacements libres conservent les exemptions et les rencontres à venir.</p>}
- {view==='Arbre'?<div className="bracket-board" ref={bracketRef} style={{'--bracket-pitch':`${pitch}px`}}>{bracketLayout(groups).map(({round,items,slots,aligned,rows})=><section className="round-column" key={round}><h2>{round} <span className="round-count">{items.filter(m=>mine(m)).length}/{items.length}</span></h2><div className={aligned?'bracket-cards bracket-aligned':'bracket-cards'} style={aligned?{gridTemplateRows:`repeat(${rows}, calc(var(--bracket-pitch) / 2))`}:undefined}>{slots.filter(({match})=>visible(match)).map(({match,start,span})=><div className="bracket-slot" key={match.id} style={aligned?{gridRow:`${start} / span ${span}`}:undefined}>{card(match)}</div>)}</div></section>)}</div>:<div className="rounds">{groups.map(({round,items})=><section className="round-column" key={round}><h2>{round} <span className="round-count">{items.filter(m=>mine(m)).length}/{items.length}</span></h2><div className="match-grid">{items.filter(visible).map(card)}</div></section>)}</div>}
-
+ {view==='Arbre'&&<p className="muted">Tours du tableau · faites défiler horizontalement sur mobile. Seules les rencontres avec deux adversaires connus sont affichées ; le numéro officiel conserve leur position.</p>}
+ <div className={view==='Arbre'?'bracket-board':'rounds'}>{groups.map(({round,items})=><section className="round-column" key={round}><h2>{round} <span className="round-count">{items.filter(m=>mine(m)).length}/{items.length}</span></h2><div className={view==='Arbre'?'bracket-cards':'match-grid'}>{items.filter(visible).map(card)}</div></section>)}</div>
  {!valid.some(visible)&&<p className="pool-empty">{valid.length?'Aucune rencontre ne correspond à ce filtre.':'Les rencontres apparaîtront après publication et import du tableau officiel.'}</p>}
  </>}{dirty&&<div className="save-dock"><span>{Object.keys(drafts).length} saisie(s) non enregistrée(s)</span><button disabled={busy||!ready||!!error} onClick={()=>save(Object.keys(drafts))}>{busy?'Enregistrement…':'Tout enregistrer'}</button></div>}
  </section>;
