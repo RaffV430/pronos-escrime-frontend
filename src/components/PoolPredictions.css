@@ -29,3 +29,7 @@
 .pool-group + .pool-group { border-top:1px solid var(--border); padding-top:24px; }
 .pool-group-title { display:flex; align-items:center; gap:10px; }
 .pool-group-count { display:inline-grid; place-items:center; min-width:28px; padding:2px 8px; border-radius:20px; background:var(--soft); color:var(--muted); font-size:.85rem; }
+
+.pool-group > summary { cursor: pointer; color: var(--primary); padding: 12px 0; }
+.pool-group > summary .pool-group-title { display: inline-flex; margin: 0; vertical-align: middle; }
+.pool-group > summary:focus-visible { outline: 2px solid var(--primary); outline-offset: 4px; border-radius: 6px; }

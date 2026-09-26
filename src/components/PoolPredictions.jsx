@@ -145,8 +145,8 @@ function PoolList({ competitionId, user }) {
     {!loading && !error && pools.length > 0 && [
       { key: 'pending', title: 'Poules à compléter', items: pools.filter(pool => !pool.isFinal).sort((a, b) => a.name.localeCompare(b.name, 'fr', { numeric: true })), empty: 'Toutes les poules disponibles ont un résultat publié.' },
       { key: 'published', title: 'Résultats publiés', items: pools.filter(pool => pool.isFinal).sort((a, b) => a.name.localeCompare(b.name, 'fr', { numeric: true })), empty: 'Aucun résultat de poule publié pour le moment.' },
-    ].map(group => <section className="pool-group" key={group.key} aria-labelledby={`pool-group-${group.key}`}>
-      <h3 className="pool-group-title" id={`pool-group-${group.key}`}>{group.title} <span className="pool-group-count">{group.items.length}</span></h3>
+    ].map(group => <details className="pool-group" key={group.key} open={group.key === 'pending'}>
+      <summary><h3 className="pool-group-title">{group.title} <span className="pool-group-count">{group.items.length}</span></h3></summary>
       {group.items.length === 0 && <p className="pool-empty">{group.empty}</p>}
       {group.items.map(pool => {
       const closed = pool.isClosed || (pool.lockMode !== 'FIRST_RESULT' && new Date(pool.closesAt).getTime() <= now);
@@ -158,7 +158,7 @@ function PoolList({ competitionId, user }) {
         {user.isAdmin && <PoolAdmin pool={pool} closed={closed} onRefresh={reload} />}
       </article>;
       })}
-    </section>)}
+    </details>)}
     {user.isAdmin && <CreatePool competitionId={competitionId} onRefresh={reload} />}
   </>;
 }
