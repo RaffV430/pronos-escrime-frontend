@@ -9,6 +9,8 @@ import MyPredictions from './components/MyPredictions';
 import Community from './components/Community';
 import AdminPanel from './components/AdminPanel';
 import FtlControl from './components/FtlControl';
+import ClosingCountdown from './components/ClosingCountdown';
+import InstallApp from './components/InstallApp';
 import MatchBoard from './components/MatchBoard';
 import './interface.css';
 
@@ -35,6 +37,7 @@ export default function App() {
   const [selectedCompetitionId, setSelectedCompetitionId] = useState(null);
 
   const [matches, setMatches] = useState([]);
+  const [resultsVersion,setResultsVersion]=useState(0);
   const [competition, setCompetition] = useState(null);
   const [playTab, setPlayTab] = useState('tableau');
   const [dirty, setDirty] = useState(false);
@@ -148,12 +151,12 @@ export default function App() {
     return <div className="app-shell redesigned">
       <header className="app-header"><div className="brand"><span className="brand-mark">↗</span>pronos<span>escrime</span></div><div className="account-actions"><span>{user.name||user.username}</span>{user.isAdmin&&<button className="button-secondary" onClick={()=>navigate('admin')}>Administration</button>}<button className="button-link" onClick={()=>runNavigation(handleLogout)}>Déconnexion</button></div></header>
       <nav className="primary-nav" aria-label="Navigation principale">{[['play','◎','Pronostiquer'],['mine','▤','Mes pronostics'],['leaderboard','↗','Classements'],['community','♧','Communauté']].map(([id,icon,label])=><button key={id} aria-pressed={mainTab===id} onClick={()=>navigate(id)}><span aria-hidden="true">{icon}</span>{label}</button>)}</nav>
-      <EventSelector key={user.id} userId={user.id} beforeChange={runNavigation} onReset={()=>{setTournamentId(null);selectCompetition(null);setCompetition(null);}} onSelect={(tId,cId,entry)=>{setTournamentId(tId);selectCompetition(cId);setCompetition(entry);setPlayTab(entry?.podiumFormat==='TEAM'?'tableau':'pools');setMainTab('play');}}/>
+      <InstallApp/><EventSelector key={user.id} userId={user.id} beforeChange={runNavigation} onReset={()=>{setTournamentId(null);selectCompetition(null);setCompetition(null);}} onSelect={(tId,cId,entry)=>{setTournamentId(tId);selectCompetition(cId);setCompetition(entry);setPlayTab(entry?.podiumFormat==='TEAM'?'tableau':'pools');setMainTab('play');}}/>
       {selectedCompetitionId&&<>
-        {mainTab==='play'&&<><div className="page-heading"><p className="eyebrow">À VOUS DE JOUER</p><h1>Faites la différence.</h1><p>Vos favoris, vos scores, votre compétition.</p></div>{user.isAdmin&&<FtlControl key={`ftl-${selectedCompetitionId}`} competitionId={selectedCompetitionId} onRefresh={()=>fetchMatches(selectedCompetitionId)}/>}<nav className="secondary-nav" aria-label="Type de pronostic">{[['podium','Podium'],...(!team?[['pools','Poules']]:[]),['tableau','Tableau']].map(([id,label])=><button key={id} aria-pressed={playTab===id} onClick={()=>runNavigation(()=>{setDirty(false);setPlayTab(id);})}>{label}</button>)}</nav>
+        {mainTab==='play'&&<><div className="page-heading"><p className="eyebrow">À VOUS DE JOUER</p><h1>Faites la différence.</h1><p>Vos favoris, vos scores, votre compétition.</p></div>{user.isAdmin&&<FtlControl key={`ftl-${selectedCompetitionId}`} competitionId={selectedCompetitionId} onRefresh={()=>{setResultsVersion(v=>v+1);return fetchMatches(selectedCompetitionId);}}/>}<ClosingCountdown matches={matches} now={matchNow}/><nav className="secondary-nav" aria-label="Type de pronostic">{[['podium','Podium'],...(!team?[['pools','Poules']]:[]),['tableau','Tableau']].map(([id,label])=><button key={id} aria-pressed={playTab===id} onClick={()=>runNavigation(()=>{setDirty(false);setPlayTab(id);})}>{label}</button>)}</nav>
         {playTab==='podium'&&<PodiumPrediction key={selectedCompetitionId} tournamentId={tournamentId} selectedCompetitionId={selectedCompetitionId} user={{...user,isAdmin:false}} onDirtyChange={setDirty}/>}
-        {playTab==='pools'&&<PoolPredictions key={selectedCompetitionId} tournamentId={tournamentId} selectedCompetitionId={selectedCompetitionId} user={{...user,isAdmin:false}} onDirtyChange={setDirty}/>}
-        {playTab==='tableau'&&<><ScoringRules type="matches"/><MatchBoard key={selectedCompetitionId} matches={matches} userId={user.id} now={matchNow} ready={matchesReady} error={matchesError} onRefresh={()=>fetchMatches(selectedCompetitionId)} onDirtyChange={setDirty}/></>}
+        {playTab==='pools'&&<PoolPredictions refreshVersion={resultsVersion} key={selectedCompetitionId} tournamentId={tournamentId} selectedCompetitionId={selectedCompetitionId} user={{...user,isAdmin:false}} onDirtyChange={setDirty}/>}
+        {playTab==='tableau'&&<><ScoringRules type="matches"/><MatchBoard competitionId={selectedCompetitionId} key={selectedCompetitionId} matches={matches} userId={user.id} now={matchNow} ready={matchesReady} error={matchesError} onRefresh={()=>fetchMatches(selectedCompetitionId)} onDirtyChange={setDirty}/></>}
         {user.isAdmin&&SHOW_SHEET_SYNC&&<div><button disabled={isSyncing} onClick={handleSyncSheet}>Synchroniser Google Sheets</button><p>{syncMessage}</p></div>}
         </>}
         {mainTab==='mine'&&<MyPredictions key={selectedCompetitionId} competitionId={selectedCompetitionId} tournamentId={tournamentId} userId={user.id} onNavigate={(tab,id)=>{setMainTab('play');setPlayTab(tab==='pools'?'pools':id==='podium'?'podium':'tableau');let attempts=0;const reveal=()=>{const target=document.getElementById(id);if(!target&&attempts++<40){setTimeout(reveal,250);return;}const detail=target?.closest('details');if(detail)detail.open=true;target?.scrollIntoView({behavior:'smooth',block:'center'});};setTimeout(reveal,0);}}/>}

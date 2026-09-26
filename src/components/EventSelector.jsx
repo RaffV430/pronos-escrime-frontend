@@ -65,7 +65,7 @@ export default function EventSelector({ userId, onSelect, onReset, beforeChange 
 
   function reset() { pendingRestore.current = null; setConfirmed(false); onReset(); }
   if (confirmed) return <><section className="compact-event"><div><p className="eyebrow">{tournaments.find(t=>String(t.id)===tournamentId)?.name}</p><strong>{events.find(e=>String(e.id)===eventId)?.name}</strong><p>{events.find(e=>String(e.id)===eventId)?.podiumFormat==='TEAM'?'Par équipes · trois médailles':'Individuel · deux médailles de bronze'}</p></div><button className="button-secondary" onClick={()=>setChooserOpen(true)}>Changer ⌄</button></section>
-    {chooserOpen && <EventChooser tournaments={tournaments} currentTournamentId={tournamentId} currentEventId={eventId} currentEvents={events} onClose={()=>setChooserOpen(false)} onChoose={(chosenTournamentId, event, entries)=>{
+    {chooserOpen && <EventChooser userId={userId} tournaments={tournaments} currentTournamentId={tournamentId} currentEventId={eventId} currentEvents={events} onClose={()=>setChooserOpen(false)} onChoose={(chosenTournamentId, event, entries)=>{
       setChooserOpen(false);
       if (String(event.id)===eventId && chosenTournamentId===tournamentId) return;
       beforeChange(()=>{
@@ -101,7 +101,7 @@ export default function EventSelector({ userId, onSelect, onReset, beforeChange 
   </section>;
 }
 
-function EventChooser({tournaments,currentTournamentId,currentEventId,currentEvents,onChoose,onClose}) {
+function EventChooser({userId,tournaments,currentTournamentId,currentEventId,currentEvents,onChoose,onClose}) {
   const dialog=useRef(null);
   const [view,setView]=useState('events');
   const [chosenTournamentId,setChosenTournamentId]=useState(currentTournamentId);
@@ -118,7 +118,6 @@ function EventChooser({tournaments,currentTournamentId,currentEventId,currentEve
     return ()=>{element.close();document.body.style.overflow=overflow;previous?.focus();};
   },[]);
   useEffect(()=>{
-    if(chosenTournamentId===currentTournamentId){setEntries(currentEvents);setLoading(false);setError('');return;}
     const controller=new AbortController();
     setLoading(true);setError('');setEntries([]);
     API.get(`/podium/competitions/${chosenTournamentId}`,{signal:controller.signal}).then(({data})=>{
@@ -137,7 +136,7 @@ function EventChooser({tournaments,currentTournamentId,currentEventId,currentEve
         {loading&&<p role="status">Chargement des épreuves…</p>}
         {error&&<p role="alert">{error} <button onClick={()=>setRetry(n=>n+1)}>Réessayer</button></p>}
         {!loading&&!error&&!entries.length&&<p>Aucune épreuve disponible pour ce tournoi.</p>}
-        {!loading&&!error&&entries.map(event=><button key={event.id} className="event-choice-card" aria-current={chosenTournamentId===currentTournamentId&&String(event.id)===currentEventId?'true':undefined} onClick={()=>onChoose(chosenTournamentId,event,entries)}><strong>{event.name}</strong><span>{event.podiumFormat==='TEAM'?'Par équipes':'Individuel'}{chosenTournamentId===currentTournamentId&&String(event.id)===currentEventId?' · Épreuve actuelle':''}</span></button>)}
+        {!loading&&!error&&entries.map(event=><button key={event.id} className="event-choice-card" aria-current={chosenTournamentId===currentTournamentId&&String(event.id)===currentEventId?'true':undefined} onClick={()=>onChoose(chosenTournamentId,event,entries)}><strong>{event.name}</strong>{newCount(event,userId)>0&&<span className="status-pill saved">{newCount(event,userId)} nouvelle(s) rencontre(s)</span>}<span>{event.podiumFormat==='TEAM'?'Par équipes':'Individuel'}{chosenTournamentId===currentTournamentId&&String(event.id)===currentEventId?' · Épreuve actuelle':''}</span></button>)}
       </div>
     </>:<>
       <p className="event-chooser-context">Sélectionnez un tournoi pour retrouver ses épreuves.</p>
@@ -146,3 +145,5 @@ function EventChooser({tournaments,currentTournamentId,currentEventId,currentEve
     </>}
   </dialog>;
 }
+
+function newCount(event,userId){try{const seen=JSON.parse(localStorage.getItem(`pronos:seen-matches:${userId}:${event.id}`)||'null');return Array.isArray(seen)?(event.matches||[]).filter(m=>!seen.includes(m.id)).length:0;}catch{return 0;}}

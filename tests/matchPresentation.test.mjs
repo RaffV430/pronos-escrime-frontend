@@ -44,3 +44,14 @@ test('round override expires and pending previous results do not close early',()
  assert.equal(isMatchClosed({awaitingPreviousRound:true,closesAt:new Date(1).toISOString()},10000),false);
  assert.equal(isMatchClosed({timingUnverified:true},10000),true);
 });
+
+import {remainingSeconds} from '../src/components/matchPresentation.js';
+test('countdown uses effective deadline, never schedule alone, and honors reopening',()=>{
+ const now=Date.parse('2026-09-27T06:00:00Z'),at=n=>new Date(now+n*1000).toISOString();
+ assert.equal(remainingSeconds({startsAt:at(10),awaitingPreviousRound:true},now),null);
+ assert.equal(remainingSeconds({closesAt:at(900)},now),900);
+ assert.equal(remainingSeconds({closesAt:at(900.1)},now),901);
+ assert.equal(remainingSeconds({closesAt:at(0)},now),null);
+ assert.equal(remainingSeconds({isLocked:true,manualUnlockUntil:at(600),closesAt:at(-50)},now),600);
+ assert.equal(remainingSeconds({isFinished:true,manualUnlockUntil:at(600)},now),null);
+});

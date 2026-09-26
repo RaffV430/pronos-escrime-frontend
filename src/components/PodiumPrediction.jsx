@@ -1,7 +1,10 @@
 import { useCallback, useState, useEffect } from 'react';
 import API from '../api';
+import useLocalDraft,{draftKey} from './useLocalDraft';
+import DraftNotice from './DraftNotice';
 
 export default function PodiumPrediction({ tournamentId, selectedCompetitionId, user, adminOnly = false, onDirtyChange = () => {} }) {
+  const localDraft=useLocalDraft(draftKey(user?.id,selectedCompetitionId,'podium'));
   const [dirty, setDirty] = useState(false);
   useEffect(()=>{onDirtyChange(dirty); const leave=e=>{if(dirty){e.preventDefault();e.returnValue=''}};window.addEventListener('beforeunload',leave);return()=>{window.removeEventListener('beforeunload',leave);onDirtyChange(false)}},[dirty,onDirtyChange]);
   const [options, setOptions] = useState(null);
@@ -81,7 +84,7 @@ export default function PodiumPrediction({ tournamentId, selectedCompetitionId, 
     try {
       const ids = Object.fromEntries(slots.map(k => [k, selected[k]]));
       await API.post('/podium', { competitionId: selectedCompetitionId, selectionIds: ids });
-      setDirty(false); setMessage('Pronostic enregistré avec succès !');
+      localDraft.discard(); setDirty(false); setMessage('Pronostic enregistré avec succès !');
     } catch (err) {
       if (err.response?.status === 403) setIsLocked(true);
       setMessage(err.response?.data?.error || 'Erreur lors de l’enregistrement.');
@@ -129,10 +132,10 @@ export default function PodiumPrediction({ tournamentId, selectedCompetitionId, 
         {adminMessage && <p role="status">{adminMessage}</p>}
       </div>}
       {!adminOnly&&<>{options && isLocked && <p>🔒 Les pronostics sont clos pour cette épreuve.</p>}{!options&&!error&&<p role="status">Vérification de la disponibilité…</p>}
-      {options ? <form onSubmit={submit} className="podium-form">
+      {options ? <form onSubmit={submit} className="podium-form">{!isLocked&&<DraftNotice draft={localDraft} onRestore={value=>{setSelected(Object.fromEntries(Object.entries(value).filter(([k,id])=>slots.includes(k)&&options.entries.some(e=>e.id===id&&e.active!==false))));setDirty(true);}}/>}
         {!isLocked && <label>Rechercher un nom, prénom ou pays<input type="search" value={search} onChange={e=>setSearch(e.target.value)} /></label>}
         {slots.map(k=><label key={k}>{labels[k]}
-          <select aria-label={labels[k]} required value={selected[k] || ''} disabled={isLocked || busy} onChange={e=>{setDirty(true);setSelected(prev=>({...prev,[k]:e.target.value}));}} style={{ display:'block', width:'100%', marginTop:5 }}>
+          <select aria-label={labels[k]} required value={selected[k] || ''} disabled={isLocked || busy} onChange={e=>{setDirty(true);setSelected(prev=>{const next={...prev,[k]:e.target.value};localDraft.persist(next);return next;});}} style={{ display:'block', width:'100%', marginTop:5 }}>
             <option value="">{legacy[k] && !selected[k] ? `Ancien choix : ${legacy[k]} — sélectionner l’engagé` : team ? 'Choisir une équipe' : 'Choisir un athlète'}</option>
             {options.entries.filter(entry=>Object.values(selected).includes(entry.id) || `${entry.name} ${entry.country}`.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().includes(search.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase())).sort((a,b)=>a.name.localeCompare(b.name,'fr')).map(entry=><option key={entry.id} value={entry.id} disabled={entry.active===false || slots.some(other=>other!==k && selected[other]===entry.id)}>{entryLabel(entry)}</option>)}
           </select>

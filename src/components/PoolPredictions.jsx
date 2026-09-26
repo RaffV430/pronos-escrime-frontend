@@ -1,12 +1,15 @@
 import { useCallback, useEffect, useState } from 'react';
 import ScoringRules from './ScoringRules';
 import API from '../api';
+import useLocalDraft,{draftKey} from './useLocalDraft';
+import DraftNotice from './DraftNotice';
 import './PoolPredictions.css';
 
 const message = error => error.response?.data?.error || 'Connexion impossible. Réessayez.';
 const signed = value => value > 0 ? `+${value}` : String(value);
 
-function PredictionRow({ pool, fencer, closed, onRefresh, reportDirty }) {
+function PredictionRow({ userId,pool, fencer, closed, onRefresh, reportDirty }) {
+  const localDraft=useLocalDraft(draftKey(userId,pool.competitionId,`pool-${fencer.id}`));
   const [wins, setWins] = useState(fencer.prediction?.wins ?? '');
   const [indicator, setIndicator] = useState(fencer.prediction?.indicator ?? '');
   const [busy, setBusy] = useState(false);
@@ -22,7 +25,7 @@ function PredictionRow({ pool, fencer, closed, onRefresh, reportDirty }) {
     setBusy(true); setFeedback('');
     try {
       await API.put(`/pools/${pool.id}/fencers/${fencer.id}/prediction`, { wins: Number(wins), losses, indicator: Number(indicator) });
-      setDirty(false); setFeedback('Pronostic enregistré.');
+      localDraft.discard(); setDirty(false); setFeedback('Pronostic enregistré.');
       onRefresh();
     } catch (error) { setFeedback(message(error)); }
     finally { setBusy(false); }
@@ -31,7 +34,7 @@ function PredictionRow({ pool, fencer, closed, onRefresh, reportDirty }) {
     setBusy(true); setFeedback('');
     try {
       await API.delete(`/pools/${pool.id}/fencers/${fencer.id}/prediction`);
-      setDirty(false); setWins(''); setIndicator(''); setFeedback('Pronostic supprimé.'); onRefresh();
+      localDraft.discard(); setDirty(false); setWins(''); setIndicator(''); setFeedback('Pronostic supprimé.'); onRefresh();
     } catch (error) { setFeedback(message(error)); }
     finally { setBusy(false); }
   }
@@ -44,16 +47,16 @@ function PredictionRow({ pool, fencer, closed, onRefresh, reportDirty }) {
       <span className="pool-country" title="Nationalité · code ISO à trois lettres">{fencer.countryCode || '—'}</span>
       {pool.rankingSystem && <span className="pool-ranking" title="Classement de la liste d’engagement de l’épreuve">{pool.rankingSystem === 'NATIONAL' ? 'National' : pool.rankingSystem} · {Number.isInteger(fencer.ranking) && fencer.ranking > 0 ? fencer.ranking : 'non renseigné'}</span>}
     </div></td>
-    <td data-label="Victoires" className="pool-number-cell">{pool.isFinal ? resultCell(fencer.prediction?.wins, fencer.wins) : <input form={formId} aria-label={`Victoires de ${fencer.name}`} type="number" min="0" max={bouts} step="1" required value={wins} onChange={e => {setDirty(true);setWins(e.target.value);}} disabled={closed || busy} />}</td>
+    <td data-label="Victoires" className="pool-number-cell">{pool.isFinal ? resultCell(fencer.prediction?.wins, fencer.wins) : <input form={formId} aria-label={`Victoires de ${fencer.name}`} type="number" min="0" max={bouts} step="1" required value={wins} onChange={e => {setDirty(true);setWins(e.target.value);localDraft.persist({wins:e.target.value,indicator});}} disabled={closed || busy} />}</td>
     <td data-label="Défaites" className="pool-number-cell">{pool.isFinal ? resultCell(fencer.prediction?.losses, fencer.losses) : <input aria-label={`Défaites de ${fencer.name} (calcul automatique)`} title="Calcul automatique" type="number" value={losses} readOnly tabIndex={-1} />}</td>
-    <td data-label="Indice" className="pool-number-cell">{pool.isFinal ? resultCell(fencer.prediction?.indicator, fencer.indicator, true) : <input form={formId} aria-label={`Indice de ${fencer.name}`} type="number" min={minimum} max={maximum} step="1" required placeholder="+8" value={indicator} onChange={e => {setDirty(true);setIndicator(e.target.value);}} disabled={closed || busy} />}</td>
+    <td data-label="Indice" className="pool-number-cell">{pool.isFinal ? resultCell(fencer.prediction?.indicator, fencer.indicator, true) : <input form={formId} aria-label={`Indice de ${fencer.name}`} type="number" min={minimum} max={maximum} step="1" required placeholder="+8" value={indicator} onChange={e => {setDirty(true);setIndicator(e.target.value);localDraft.persist({wins,indicator:e.target.value});}} disabled={closed || busy} />}</td>
     {pool.isFinal && <td data-label="Points gagnés" className="pool-points-cell">{fencer.comparison ? <strong title={`Victoires : ${fencer.comparison.points.winsPoints} pts ; indice : ${fencer.comparison.points.indicatorPoints} pts`}>{fencer.comparison.points.total}</strong> : '—'}</td>}
     <td data-label="Pronostic" className="pool-state-cell">
       <span className="pool-row-state" title={lockReason}>{closed ? '🔒 ' : ''}{lockReason}</span>
       {!pool.isFinal && <form id={formId} onSubmit={save} className="pool-row-actions">{!closed && <><button disabled={busy} type="submit" aria-label={`Enregistrer le pronostic de ${fencer.name}`}>{busy ? 'Enregistrement…' : 'Enregistrer'}</button>{fencer.prediction && <button disabled={busy} type="button" className="pool-secondary" aria-label={`Supprimer le pronostic de ${fencer.name}`} onClick={remove}>Supprimer</button>}</>}</form>}
       {fencer.prediction && !pool.isFinal && <small className="pool-saved">Enregistré : {fencer.prediction.wins} V · {fencer.prediction.losses} D · {signed(fencer.prediction.indicator)}</small>}
       {closed && !fencer.prediction && <small>Aucun pronostic enregistré</small>}
-      <span role="status" className="pool-row-feedback">{feedback}</span>
+      {!closed&&<DraftNotice draft={localDraft} onRestore={value=>{setWins(value.wins??'');setIndicator(value.indicator??'');setDirty(true);}}/>}<span role="status" className="pool-row-feedback">{feedback}</span>
     </td>
   </tr>;
 }
@@ -122,7 +125,7 @@ function CreatePool({ competitionId, onRefresh }) {
   </form></details>;
 }
 
-function PoolList({ competitionId, user, onDirtyChange }) {
+function PoolList({ competitionId, user, onDirtyChange, refreshVersion }) {
   const [dirtyRows,setDirtyRows]=useState({});
   const reportDirty=useCallback((id,value)=>setDirtyRows(old=>{if(Boolean(old[id])===value)return old;const next={...old};if(value)next[id]=true;else delete next[id];return next}),[]);
   const dirty=Object.keys(dirtyRows).length>0;
@@ -142,7 +145,7 @@ function PoolList({ competitionId, user, onDirtyChange }) {
       .catch(err => { if (!controller.signal.aborted) setError(message(err)); })
       .finally(() => { if (!controller.signal.aborted) setLoading(false); });
     return () => controller.abort();
-  }, [competitionId, refresh]);
+  }, [competitionId, refresh, refreshVersion]);
   useEffect(() => {
     const timer = setInterval(reload, 30000);
     return () => clearInterval(timer);
@@ -168,7 +171,7 @@ function PoolList({ competitionId, user, onDirtyChange }) {
         <header><div><h3>{pool.name}</h3><p>{pool.fencers.length} tireurs · {pool.fencers.length - 1} matchs par tireur</p></div><span className={`pool-badge ${closed ? 'closed' : ''}`}>{pool.isFinal ? 'Résultats publiés' : closed ? 'Pronostics clos' : pool.lockMode === 'FIRST_RESULT' ? 'Blocage par tireur' : 'Pronostics ouverts'}</span></header>
         <p className="pool-deadline">{pool.lockMode === 'FIRST_RESULT' ? 'Clôture individuelle au premier résultat détecté sur FencingTimeLive.' : <>Clôture : {new Date(pool.closesAt).toLocaleString('fr-FR', { dateStyle: 'medium', timeStyle: 'short' })}</>}</p>
         {pool.rankingSourceUrl && <p className="pool-deadline"><a href={pool.rankingSourceUrl} target="_blank" rel="noreferrer">Liste d’engagement · nationalités et classements</a></p>}
-        <div className="pool-table-scroll" role="region" aria-label={`Tableau de ${pool.name}`} tabIndex={0}><table className="pool-table"><caption>{pool.isFinal ? 'Pour chaque valeur : votre pronostic, puis le résultat réel en gras.' : 'Saisissez les victoires et l’indice, puis enregistrez chaque ligne. Les défaites sont calculées automatiquement.'}</caption><thead><tr><th scope="col">Tireur / tireuse</th><th scope="col">Nationalité · classement</th><th scope="col">Victoires</th><th scope="col">Défaites</th><th scope="col">Indice</th>{pool.isFinal && <th scope="col">Points</th>}<th scope="col">{pool.isFinal ? 'État' : 'Pronostic'}</th></tr></thead><tbody>{pool.fencers.map(fencer => <PredictionRow key={`${fencer.id}-${fencer.prediction?.updatedAt || 'none'}`} reportDirty={reportDirty} pool={pool} fencer={fencer} closed={pool.isFinal || closed || Boolean(fencer.firstResultAt) || sourcePending} onRefresh={reload} />)}</tbody></table></div>
+        <div className="pool-table-scroll" role="region" aria-label={`Tableau de ${pool.name}`} tabIndex={0}><table className="pool-table"><caption>{pool.isFinal ? 'Pour chaque valeur : votre pronostic, puis le résultat réel en gras.' : 'Saisissez les victoires et l’indice, puis enregistrez chaque ligne. Les défaites sont calculées automatiquement.'}</caption><thead><tr><th scope="col">Tireur / tireuse</th><th scope="col">Nationalité · classement</th><th scope="col">Victoires</th><th scope="col">Défaites</th><th scope="col">Indice</th>{pool.isFinal && <th scope="col">Points</th>}<th scope="col">{pool.isFinal ? 'État' : 'Pronostic'}</th></tr></thead><tbody>{pool.fencers.map(fencer => <PredictionRow userId={user.id} key={`${fencer.id}-${fencer.prediction?.updatedAt || 'none'}`} reportDirty={reportDirty} pool={pool} fencer={fencer} closed={pool.isFinal || closed || Boolean(fencer.firstResultAt) || sourcePending} onRefresh={reload} />)}</tbody></table></div>
         {user.isAdmin && <PoolAdmin pool={pool} closed={closed} onRefresh={reload} />}
       </article>;
       })}
@@ -177,11 +180,11 @@ function PoolList({ competitionId, user, onDirtyChange }) {
   </>;
 }
 
-export default function PoolPredictions({ selectedCompetitionId, user, onDirtyChange }) {
+export default function PoolPredictions({ selectedCompetitionId, user, onDirtyChange, refreshVersion }) {
   return <section className="pool-section" aria-labelledby="pool-title">
     <h2 id="pool-title">Pronostics de poules</h2>
     <p>Pour chaque tireur, prévoyez son bilan et son indice : touches données − touches reçues.</p>
     <ScoringRules />
-    {selectedCompetitionId ? <PoolList key={`${user.id}-${selectedCompetitionId}`} competitionId={selectedCompetitionId} user={user} onDirtyChange={onDirtyChange} /> : <p>Aucune épreuve sélectionnée.</p>}
+    {selectedCompetitionId ? <PoolList refreshVersion={refreshVersion} key={`${user.id}-${selectedCompetitionId}`} competitionId={selectedCompetitionId} user={user} onDirtyChange={onDirtyChange} /> : <p>Aucune épreuve sélectionnée.</p>}
   </section>;
 }

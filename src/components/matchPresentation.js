@@ -40,3 +40,9 @@ export function entryRank(entries, name) {
  const found=entries.filter(e=>normalize(e.name)===normalize(name));
  return found.length===1&&Number.isSafeInteger(found[0].entryRanking)&&found[0].entryRanking>0?found[0].entryRanking:null;
 }
+
+export function remainingSeconds(match,now){
+ if(isMatchClosed(match,now))return null;
+ const at=Date.parse(match.manualUnlockUntil||match.closesAt||'');
+ return Number.isFinite(at)?Math.max(0,Math.ceil((at-now)/1000)):null;
+}
