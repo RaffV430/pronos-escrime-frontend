@@ -242,7 +242,7 @@ export default function App() {
           </button>
         </header>
 
-        <EventSelector key={user.id} onReset={() => { setTournamentId(null); selectCompetition(null); }} onSelect={(tId, cId) => { setTournamentId(tId); selectCompetition(cId); setMainTab('pools'); }} />
+        <EventSelector key={user.id} userId={user.id} onReset={() => { setTournamentId(null); selectCompetition(null); }} onSelect={(tId, cId) => { setTournamentId(tId); selectCompetition(cId); setMainTab('pools'); }} />
 
         {selectedCompetitionId && <>
         {/* --- NOUVEAU MENU DE NAVIGATION --- */}

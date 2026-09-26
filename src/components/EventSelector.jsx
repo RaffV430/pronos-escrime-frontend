@@ -1,7 +1,21 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import API from '../api';
 
-export default function EventSelector({ onSelect, onReset }) {
+const readSelection = key => {
+  try {
+    const value = JSON.parse(localStorage.getItem(key));
+    return Number.isSafeInteger(value?.tournamentId) && value.tournamentId > 0 && Number.isSafeInteger(value?.eventId) && value.eventId > 0 ? value : null;
+  } catch { return null; }
+};
+
+export default function EventSelector({ userId, onSelect, onReset }) {
+  const storageKey = 'pronos:last-event:' + userId;
+  const pendingRestore = useRef(readSelection(storageKey));
+  const onSelectRef = useRef(onSelect);
+  useEffect(() => { onSelectRef.current = onSelect; }, [onSelect]);
+  const remember = (selection) => {
+    try { localStorage.setItem(storageKey, JSON.stringify(selection)); } catch { /* Navigation still works when storage is unavailable. */ }
+  };
   const [tournaments, setTournaments] = useState([]);
   const [events, setEvents] = useState([]);
   const [tournamentId, setTournamentId] = useState('');
@@ -18,22 +32,43 @@ export default function EventSelector({ onSelect, onReset }) {
     API.get(url, { signal: controller.signal }).then(({ data }) => {
       if (!Array.isArray(data)) throw new Error('Invalid list');
       if (!controller.signal.aborted) {
-        if (tournamentId) setEvents(data);
-        else setTournaments(data);
+        const saved = pendingRestore.current;
+        if (tournamentId) {
+          setEvents(data);
+          if (saved && String(saved.tournamentId) === tournamentId) {
+            pendingRestore.current = null;
+            if (data.some(event => Number(event.id) === saved.eventId)) {
+              setEventId(String(saved.eventId));
+              setConfirmed(true);
+              onSelectRef.current(saved.tournamentId, saved.eventId);
+            } else {
+              try { localStorage.removeItem(storageKey); } catch { /* Optional preference. */ }
+            }
+          }
+        } else {
+          setTournaments(data);
+          if (saved) {
+            if (data.some(t => Number(t.id) === saved.tournamentId)) setTournamentId(String(saved.tournamentId));
+            else {
+              pendingRestore.current = null;
+              try { localStorage.removeItem(storageKey); } catch { /* Optional preference. */ }
+            }
+          }
+        }
       }
     }).catch(() => {
       if (!controller.signal.aborted) setError('Impossible de charger les compétitions. Réessayez.');
     }).finally(() => { if (!controller.signal.aborted) setLoading(false); });
     return () => controller.abort();
-  }, [tournamentId, retry]);
+  }, [tournamentId, retry, storageKey]);
 
-  function reset() { setConfirmed(false); onReset(); }
+  function reset() { pendingRestore.current = null; setConfirmed(false); onReset(); }
   const field = { display: 'grid', gap: '8px', flex: '1 1 240px' };
   const select = { width: '100%' };
   return <section aria-labelledby="event-choice" style={{ background: '#f2f6fb', border: '1px solid var(--border)', borderRadius: '12px', padding: '20px', marginBottom: '24px' }}>
     <h2 id="event-choice" style={{ marginTop: 0 }}>Choisissez vos pronostics</h2>
     <p>Sélectionnez une compétition, puis l’épreuve sur laquelle vous souhaitez pronostiquer.</p>
-    <form onSubmit={e => { e.preventDefault(); if (tournamentId && eventId && !loading && !error) { onSelect(Number(tournamentId), Number(eventId)); setConfirmed(true); } }}>
+    <form onSubmit={e => { e.preventDefault(); if (tournamentId && eventId && !loading && !error) { remember({ tournamentId: Number(tournamentId), eventId: Number(eventId) }); onSelect(Number(tournamentId), Number(eventId)); setConfirmed(true); } }}>
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '16px' }}>
         <label style={field}>Compétition<select style={select} required value={tournamentId} disabled={loading && !tournamentId} onChange={e => { reset(); setTournamentId(e.target.value); setEventId(''); setEvents([]); }}>
           <option value="">Choisir une compétition</option>
