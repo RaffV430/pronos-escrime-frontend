@@ -116,6 +116,7 @@ function CreatePool({ competitionId, onRefresh }) {
 
 function PoolList({ competitionId, user }) {
   const [pools, setPools] = useState([]);
+  const [expandedGroups, setExpandedGroups] = useState({ pending: true, published: false });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [refresh, setRefresh] = useState(0);
@@ -145,7 +146,7 @@ function PoolList({ competitionId, user }) {
     {!loading && !error && pools.length > 0 && [
       { key: 'pending', title: 'Poules à compléter', items: pools.filter(pool => !pool.isFinal).sort((a, b) => a.name.localeCompare(b.name, 'fr', { numeric: true })), empty: 'Toutes les poules disponibles ont un résultat publié.' },
       { key: 'published', title: 'Résultats publiés', items: pools.filter(pool => pool.isFinal).sort((a, b) => a.name.localeCompare(b.name, 'fr', { numeric: true })), empty: 'Aucun résultat de poule publié pour le moment.' },
-    ].map(group => <details className="pool-group" key={group.key} open={group.key === 'pending'}>
+    ].map(group => <details className="pool-group" key={group.key} open={expandedGroups[group.key]} onToggle={event => { const open = event.currentTarget.open; setExpandedGroups(previous => previous[group.key] === open ? previous : { ...previous, [group.key]: open }); }}>
       <summary><h3 className="pool-group-title">{group.title} <span className="pool-group-count">{group.items.length}</span></h3></summary>
       {group.items.length === 0 && <p className="pool-empty">{group.empty}</p>}
       {group.items.map(pool => {
