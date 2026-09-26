@@ -133,7 +133,13 @@ function PoolList({ competitionId, user }) {
     <div className="pool-toolbar"><button className="pool-secondary" onClick={reload} disabled={loading}>Actualiser</button><span role="status">{loading ? 'Chargement des poules…' : `${pools.length} poule(s)`}</span></div>
     {error && <p role="alert" className="pool-error">{error}</p>}
     {!loading && !error && pools.length === 0 && <p className="pool-empty">Aucune poule disponible pour cette épreuve. Les tireurs apparaîtront dès la création des poules par l’administrateur.</p>}
-    {pools.map(pool => {
+    {!loading && !error && pools.length > 0 && [
+      { key: 'pending', title: 'Poules à compléter', items: pools.filter(pool => !pool.isFinal), empty: 'Toutes les poules disponibles ont un résultat publié.' },
+      { key: 'published', title: 'Résultats publiés', items: pools.filter(pool => pool.isFinal), empty: 'Aucun résultat de poule publié pour le moment.' },
+    ].map(group => <section className="pool-group" key={group.key} aria-labelledby={`pool-group-${group.key}`}>
+      <h3 className="pool-group-title" id={`pool-group-${group.key}`}>{group.title} <span className="pool-group-count">{group.items.length}</span></h3>
+      {group.items.length === 0 && <p className="pool-empty">{group.empty}</p>}
+      {group.items.map(pool => {
       const closed = pool.isClosed || new Date(pool.closesAt).getTime() <= now;
       return <article className="pool-card" key={pool.id}>
         <header><div><h3>{pool.name}</h3><p>{pool.fencers.length} tireurs · {pool.fencers.length - 1} matchs par tireur</p></div><span className={`pool-badge ${closed ? 'closed' : ''}`}>{pool.isFinal ? 'Résultats publiés' : closed ? 'Pronostics clos' : 'Pronostics ouverts'}</span></header>
@@ -141,7 +147,8 @@ function PoolList({ competitionId, user }) {
         <ol className="pool-roster">{pool.fencers.map(fencer => <PredictionRow key={`${fencer.id}-${fencer.prediction?.updatedAt || 'none'}`} pool={pool} fencer={fencer} closed={closed} onRefresh={reload} />)}</ol>
         {user.isAdmin && <PoolAdmin pool={pool} closed={closed} onRefresh={reload} />}
       </article>;
-    })}
+      })}
+    </section>)}
     {user.isAdmin && <CreatePool competitionId={competitionId} onRefresh={reload} />}
   </>;
 }
