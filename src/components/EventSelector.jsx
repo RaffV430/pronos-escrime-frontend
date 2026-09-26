@@ -8,7 +8,7 @@ const readSelection = key => {
   } catch { return null; }
 };
 
-export default function EventSelector({ userId, onSelect, onReset }) {
+export default function EventSelector({ userId, onSelect, onReset, beforeChange = action => action() }) {
   const storageKey = 'pronos:last-event:' + userId;
   const pendingRestore = useRef(readSelection(storageKey));
   const onSelectRef = useRef(onSelect);
@@ -40,7 +40,7 @@ export default function EventSelector({ userId, onSelect, onReset }) {
             if (data.some(event => Number(event.id) === saved.eventId)) {
               setEventId(String(saved.eventId));
               setConfirmed(true);
-              onSelectRef.current(saved.tournamentId, saved.eventId);
+              onSelectRef.current(saved.tournamentId, saved.eventId, data.find(event=>Number(event.id)===saved.eventId));
             } else {
               try { localStorage.removeItem(storageKey); } catch { /* Optional preference. */ }
             }
@@ -63,12 +63,13 @@ export default function EventSelector({ userId, onSelect, onReset }) {
   }, [tournamentId, retry, storageKey]);
 
   function reset() { pendingRestore.current = null; setConfirmed(false); onReset(); }
+  if (confirmed) return <section className="compact-event"><div><p className="eyebrow">{tournaments.find(t=>String(t.id)===tournamentId)?.name}</p><strong>{events.find(e=>String(e.id)===eventId)?.name}</strong><p>{events.find(e=>String(e.id)===eventId)?.podiumFormat==='TEAM'?'Par équipes · trois médailles':'Individuel · deux médailles de bronze'}</p></div><button className="button-secondary" onClick={()=>beforeChange(reset)}>Changer ⌄</button></section>;
   const field = { display: 'grid', gap: '8px', flex: '1 1 240px' };
   const select = { width: '100%' };
   return <section aria-labelledby="event-choice" style={{ background: '#f2f6fb', border: '1px solid var(--border)', borderRadius: '12px', padding: '20px', marginBottom: '24px' }}>
     <h2 id="event-choice" style={{ marginTop: 0 }}>Choisissez vos pronostics</h2>
     <p>Sélectionnez une compétition, puis l’épreuve sur laquelle vous souhaitez pronostiquer.</p>
-    <form onSubmit={e => { e.preventDefault(); if (tournamentId && eventId && !loading && !error) { remember({ tournamentId: Number(tournamentId), eventId: Number(eventId) }); onSelect(Number(tournamentId), Number(eventId)); setConfirmed(true); } }}>
+    <form onSubmit={e => { e.preventDefault(); if (tournamentId && eventId && !loading && !error) { remember({ tournamentId: Number(tournamentId), eventId: Number(eventId) }); onSelect(Number(tournamentId), Number(eventId), events.find(event=>String(event.id)===eventId)); setConfirmed(true); } }}>
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '16px' }}>
         <label style={field}>Compétition<select style={select} required value={tournamentId} disabled={loading && !tournamentId} onChange={e => { reset(); setTournamentId(e.target.value); setEventId(''); setEvents([]); }}>
           <option value="">Choisir une compétition</option>

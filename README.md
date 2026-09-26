@@ -38,3 +38,13 @@ Les ligues privées sont sur invitation et reprennent tous les points du tournoi
 Un défi ponctuel porte sur un match : bon vainqueur +3 points bonus, sinon 0. Création avant le début prévu, barème immuable, clôture au début prévu (ou avant si le résultat est publié), points uniquement après résultat final. Le bonus est séparé des 4 points du pronostic normal et recalculé à la lecture en cas de correction officielle.
 
 Base : appliquer seulement `prisma/changes/20260926-community.sql` pour ces ajouts, puis générer le client Prisma. Ne pas lancer les anciennes migrations en production. Cette évolution ne redémarre aucune planification FencingTimeLive.
+
+## Interface responsive validée — 26 septembre 2026
+
+Navigation Pronostiquer / Mes pronostics / Classements / Communauté, avec administration séparée. Le sélecteur d’épreuve se replie après validation et utilise toutes les épreuves fournies par l’API. Les équipes accèdent directement au tableau. Les listes du podium viennent exclusivement de la liste d’engagement officielle, jamais des seuls matchs du premier tour.
+
+Les vues Liste et Arbre partagent les mêmes saisies et endpoints. L’arbre affiche les tours disponibles et les numéros officiels des rencontres, sans inventer d’adversaires ou de liens d’avancement ; la petite finale reste un tour distinct lorsqu’elle est importée. L’enregistrement groupé conserve chaque saisie refusée par le serveur. Une confirmation protège les changements de rubrique/épreuve avec des scores non enregistrés. Les résultats et points restent issus de l’API, sans données de démonstration.
+
+Classements général, tournoi, épreuve, position personnelle et écart au rang précédent. Poules sous forme de cartes sur mobile, podiums par format, invitations copiables et partageables. Rafraîchir l’affichage ne lance jamais une collecte FencingTimeLive. Aucun changement de schéma ou de backend requis. Les automatismes restent en pause.
+
+Validation : `npm run check` (lint, tests des limites/verrous/positions officielles, build). Tests navigateur avec API locale isolée pour les écritures : sauvegarde depuis arbre visible en liste, enregistrement groupé avec refus partiel, protection des saisies, résultats médicaux et points simples. Ne pas déployer `work/interface-preview` ni l’API de test locale.

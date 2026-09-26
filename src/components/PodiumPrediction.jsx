@@ -1,7 +1,9 @@
 import { useCallback, useState, useEffect } from 'react';
 import API from '../api';
 
-export default function PodiumPrediction({ tournamentId, selectedCompetitionId, user, adminOnly = false }) {
+export default function PodiumPrediction({ tournamentId, selectedCompetitionId, user, adminOnly = false, onDirtyChange = () => {} }) {
+  const [dirty, setDirty] = useState(false);
+  useEffect(()=>{onDirtyChange(dirty); const leave=e=>{if(dirty){e.preventDefault();e.returnValue=''}};window.addEventListener('beforeunload',leave);return()=>{window.removeEventListener('beforeunload',leave);onDirtyChange(false)}},[dirty,onDirtyChange]);
   const [options, setOptions] = useState(null);
   const [selected, setSelected] = useState({});
   const [search, setSearch] = useState('');
@@ -79,7 +81,7 @@ export default function PodiumPrediction({ tournamentId, selectedCompetitionId, 
     try {
       const ids = Object.fromEntries(slots.map(k => [k, selected[k]]));
       await API.post('/podium', { competitionId: selectedCompetitionId, selectionIds: ids });
-      setMessage('Pronostic enregistré avec succès !');
+      setDirty(false); setMessage('Pronostic enregistré avec succès !');
     } catch (err) {
       if (err.response?.status === 403) setIsLocked(true);
       setMessage(err.response?.data?.error || 'Erreur lors de l’enregistrement.');
@@ -106,7 +108,7 @@ export default function PodiumPrediction({ tournamentId, selectedCompetitionId, 
   };
 
   return <section id="podium" style={{ background:'var(--surface)', padding:20, borderRadius:'var(--radius)', margin:'20px 0', border:'1px solid var(--border)' }}>
-    <h3>{adminOnly?"Administration du podium":"🏆 Pronostics et Classement Podium"}</h3>
+    <h3>{adminOnly?"Administration du podium":"Qui montera sur le podium ?"}</h3>
     {!adminOnly&&<div style={{ display:'flex', gap:10, marginBottom:20 }}>
       <button aria-pressed={activeTab==='prediction'} onClick={()=>setActiveTab('prediction')}>🎯 Pronostics Podium</button>
       <button aria-pressed={activeTab==='leaderboard'} onClick={()=>setActiveTab('leaderboard')}>📊 Classement Pronos Podium</button>
@@ -114,7 +116,7 @@ export default function PodiumPrediction({ tournamentId, selectedCompetitionId, 
     {error && <p role="alert">{error}</p>}
     {activeTab==='prediction' ? <>
       {options && <>
-        <p>{team ? 'Par équipes : or, argent et un bronze, attribué au vainqueur de la petite finale.' : 'En individuel : or, argent et deux bronzes ex æquo. L’ordre des deux bronzes est indifférent.'}</p>
+        <p className="muted">{options.entries.length} engagés · liste complète, y compris les exemptions du premier tour.</p><p>{team ? 'Par équipes : or, argent et un bronze, attribué au vainqueur de la petite finale.' : 'En individuel : or, argent et deux bronzes ex æquo. L’ordre des deux bronzes est indifférent.'}</p>
         <details><summary>Barème podium · jusqu’à {team ? 45 : 60} points</summary><p>15 points par médaille correcte ; 5 points si l’engagé est médaillé à une autre place. Les paliers ne se cumulent pas.</p></details>
       </>}
       {user?.isAdmin && <div style={{ padding:15, margin:'20px 0', background:'var(--warning-soft)', borderRadius:'var(--radius)' }}>
@@ -126,13 +128,13 @@ export default function PodiumPrediction({ tournamentId, selectedCompetitionId, 
         <button type="button" disabled={busy || !options?.official} onClick={resolve}>{options?.resolvedAt ? 'Recalculer les points du podium officiel' : 'Valider les points du podium officiel'}</button>
         {adminMessage && <p role="status">{adminMessage}</p>}
       </div>}
-      {!adminOnly&&<>{isLocked && <p>🔒 Les pronostics sont clos pour cette épreuve.</p>}
-      {options ? <form onSubmit={submit} style={{ display:'grid', gap:12, maxWidth:540 }}>
+      {!adminOnly&&<>{options && isLocked && <p>🔒 Les pronostics sont clos pour cette épreuve.</p>}{!options&&!error&&<p role="status">Vérification de la disponibilité…</p>}
+      {options ? <form onSubmit={submit} className="podium-form">
         {!isLocked && <label>Rechercher un nom, prénom ou pays<input type="search" value={search} onChange={e=>setSearch(e.target.value)} /></label>}
         {slots.map(k=><label key={k}>{labels[k]}
-          <select aria-label={labels[k]} required value={selected[k] || ''} disabled={isLocked || busy} onChange={e=>setSelected(prev=>({...prev,[k]:e.target.value}))} style={{ display:'block', width:'100%', marginTop:5 }}>
+          <select aria-label={labels[k]} required value={selected[k] || ''} disabled={isLocked || busy} onChange={e=>{setDirty(true);setSelected(prev=>({...prev,[k]:e.target.value}));}} style={{ display:'block', width:'100%', marginTop:5 }}>
             <option value="">{legacy[k] && !selected[k] ? `Ancien choix : ${legacy[k]} — sélectionner l’engagé` : team ? 'Choisir une équipe' : 'Choisir un athlète'}</option>
-            {options.entries.filter(entry=>Object.values(selected).includes(entry.id) || `${entry.name} ${entry.country}`.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().includes(search.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase())).map(entry=><option key={entry.id} value={entry.id} disabled={entry.active===false || slots.some(other=>other!==k && selected[other]===entry.id)}>{entryLabel(entry)}</option>)}
+            {options.entries.filter(entry=>Object.values(selected).includes(entry.id) || `${entry.name} ${entry.country}`.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().includes(search.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase())).sort((a,b)=>a.name.localeCompare(b.name,'fr')).map(entry=><option key={entry.id} value={entry.id} disabled={entry.active===false || slots.some(other=>other!==k && selected[other]===entry.id)}>{entryLabel(entry)}</option>)}
           </select>
         </label>)}
         {!isLocked && <button type="submit" disabled={busy}>{busy ? 'Enregistrement…' : 'Valider mon podium'}</button>}
