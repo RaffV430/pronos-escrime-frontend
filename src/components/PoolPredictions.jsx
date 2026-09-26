@@ -34,7 +34,10 @@ function PredictionRow({ pool, fencer, closed, onRefresh }) {
     finally { setBusy(false); }
   }
   return <li className="pool-fencer">
-    <h4><span className="pool-position">{fencer.position}</span>{fencer.name}</h4>
+    <h4><span className="pool-position">{fencer.position}</span><span>{fencer.name}</span><span className="pool-fencer-info">
+      {fencer.countryCode && <span className="pool-country" title="Nationalité · code ISO à trois lettres">{fencer.countryCode}</span>}
+      {pool.rankingSystem && <span className="pool-ranking" title="Classement de la liste d’engagement de l’épreuve">{pool.rankingSystem === 'NATIONAL' ? 'National' : pool.rankingSystem} · {Number.isInteger(fencer.ranking) && fencer.ranking > 0 ? fencer.ranking : 'non renseigné'}</span>}
+    </span></h4>
     {!pool.isFinal && pool.lockMode === 'FIRST_RESULT' && <p className="pool-deadline">{fencer.firstResultAt ? 'Pronostic clos : premier résultat publié.' : pool.isClosed ? 'Pronostics fermés par l’administrateur.' : closed ? 'Vérification FencingTimeLive en attente…' : 'Pronostic ouvert jusqu’au premier résultat de ce tireur.'}</p>}
     <form onSubmit={save} className="pool-fields">
       <label>Victoires<input aria-label={`Victoires de ${fencer.name}`} type="number" min="0" max={bouts} step="1" required value={wins} onChange={e => setWins(e.target.value)} disabled={closed || busy} /></label>
@@ -93,13 +96,14 @@ function CreatePool({ competitionId, onRefresh }) {
   const [lockMode, setLockMode] = useState('FIRST_RESULT');
   const [sourceUrl, setSourceUrl] = useState('');
   const [sourcePoolNumber, setSourcePoolNumber] = useState('');
+  const [rankingSystem, setRankingSystem] = useState('');
   const [roster, setRoster] = useState('');
   const [feedback, setFeedback] = useState('');
   const [busy, setBusy] = useState(false);
   async function create(event) {
     event.preventDefault(); setFeedback(''); setBusy(true);
     try {
-      await API.post('/pools', { competitionId, name, lockMode, ...(lockMode === 'FIRST_RESULT' ? { sourceUrl, sourcePoolNumber: Number(sourcePoolNumber) } : { closesAt: new Date(closesAt).toISOString() }), fencers: roster.split('\n').map(n => n.trim()).filter(Boolean) });
+      await API.post('/pools', { competitionId, name, lockMode, rankingSystem: rankingSystem || null, ...(lockMode === 'FIRST_RESULT' ? { sourceUrl, sourcePoolNumber: Number(sourcePoolNumber) } : { closesAt: new Date(closesAt).toISOString() }), fencers: roster.split('\n').map(n => n.trim()).filter(Boolean) });
       setName(''); setRoster(''); setFeedback('Poule créée.'); onRefresh();
     } catch (error) { setFeedback(message(error)); }
     finally { setBusy(false); }
@@ -109,6 +113,7 @@ function CreatePool({ competitionId, onRefresh }) {
     <label>Nom de la poule<input required maxLength="100" placeholder="Poule 1" value={name} onChange={e => setName(e.target.value)} /></label>
     <label>Blocage des pronostics<select value={lockMode} onChange={e => setLockMode(e.target.value)}><option value="FIRST_RESULT">Premier résultat de chaque tireur sur FencingTimeLive</option><option value="TIME">Horaire fixe pour toute la poule</option></select></label>
     {lockMode === 'FIRST_RESULT' ? <><label>Lien des poules FencingTimeLive<input required type="url" value={sourceUrl} onChange={e => setSourceUrl(e.target.value)} placeholder="https://www.fencingtimelive.com/pools/scores/…" /></label><label>Numéro de poule sur FencingTimeLive<input required type="number" min="1" max="1000" value={sourcePoolNumber} onChange={e => setSourcePoolNumber(e.target.value)} /></label><p>Chaque tireur est bloqué indépendamment au premier résultat détecté, victoire ou défaite. Contrôle chaque minute. En cas de contrôle indisponible, les saisies sont temporairement suspendues.</p></> : <label>Clôture des pronostics<input required type="datetime-local" value={closesAt} onChange={e => setClosesAt(e.target.value)} /><small>Heure locale de votre appareil ({Intl.DateTimeFormat().resolvedOptions().timeZone}), à fixer avant le début de la poule.</small></label>}
+    <label>Classement de référence<select value={rankingSystem} onChange={e => setRankingSystem(e.target.value)}><option value="">Non précisé</option><option value="FIE">FIE · Coupe du monde, Mondiaux, JO</option><option value="EFC">EFC · Circuit européen</option><option value="NATIONAL">National · Épreuve nationale</option></select><small>Utiliser le classement de la liste d’engagement, dans la catégorie et l’arme de l’épreuve.</small></label>
     <label>Tireurs<textarea required rows="7" placeholder={'Prénom Nom\nPrénom Nom'} value={roster} onChange={e => setRoster(e.target.value)} /></label>
     <button disabled={busy}>{busy ? 'Création…' : 'Créer la poule'}</button><p role="status">{feedback}</p>
   </form></details>;
@@ -155,6 +160,7 @@ function PoolList({ competitionId, user }) {
       return <article className="pool-card" key={pool.id}>
         <header><div><h3>{pool.name}</h3><p>{pool.fencers.length} tireurs · {pool.fencers.length - 1} matchs par tireur</p></div><span className={`pool-badge ${closed ? 'closed' : ''}`}>{pool.isFinal ? 'Résultats publiés' : closed ? 'Pronostics clos' : pool.lockMode === 'FIRST_RESULT' ? 'Blocage par tireur' : 'Pronostics ouverts'}</span></header>
         <p className="pool-deadline">{pool.lockMode === 'FIRST_RESULT' ? 'Clôture individuelle au premier résultat détecté sur FencingTimeLive.' : <>Clôture : {new Date(pool.closesAt).toLocaleString('fr-FR', { dateStyle: 'medium', timeStyle: 'short' })}</>}</p>
+        {pool.rankingSourceUrl && <p className="pool-deadline"><a href={pool.rankingSourceUrl} target="_blank" rel="noreferrer">Liste d’engagement · nationalités et classements</a></p>}
         <ol className="pool-roster">{pool.fencers.map(fencer => <PredictionRow key={`${fencer.id}-${fencer.prediction?.updatedAt || 'none'}`} pool={pool} fencer={fencer} closed={closed || Boolean(fencer.firstResultAt) || sourcePending} onRefresh={reload} />)}</ol>
         {user.isAdmin && <PoolAdmin pool={pool} closed={closed} onRefresh={reload} />}
       </article>;
