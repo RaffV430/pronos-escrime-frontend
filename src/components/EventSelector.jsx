@@ -24,6 +24,7 @@ export default function EventSelector({ userId, onSelect, onReset, beforeChange 
   const [error, setError] = useState('');
   const [retry, setRetry] = useState(0);
   const [confirmed, setConfirmed] = useState(false);
+  const [chooserOpen, setChooserOpen] = useState(false);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -63,7 +64,18 @@ export default function EventSelector({ userId, onSelect, onReset, beforeChange 
   }, [tournamentId, retry, storageKey]);
 
   function reset() { pendingRestore.current = null; setConfirmed(false); onReset(); }
-  if (confirmed) return <section className="compact-event"><div><p className="eyebrow">{tournaments.find(t=>String(t.id)===tournamentId)?.name}</p><strong>{events.find(e=>String(e.id)===eventId)?.name}</strong><p>{events.find(e=>String(e.id)===eventId)?.podiumFormat==='TEAM'?'Par équipes · trois médailles':'Individuel · deux médailles de bronze'}</p></div><button className="button-secondary" onClick={()=>beforeChange(reset)}>Changer ⌄</button></section>;
+  if (confirmed) return <><section className="compact-event"><div><p className="eyebrow">{tournaments.find(t=>String(t.id)===tournamentId)?.name}</p><strong>{events.find(e=>String(e.id)===eventId)?.name}</strong><p>{events.find(e=>String(e.id)===eventId)?.podiumFormat==='TEAM'?'Par équipes · trois médailles':'Individuel · deux médailles de bronze'}</p></div><button className="button-secondary" onClick={()=>setChooserOpen(true)}>Changer ⌄</button></section>
+    {chooserOpen && <EventChooser tournaments={tournaments} currentTournamentId={tournamentId} currentEventId={eventId} currentEvents={events} onClose={()=>setChooserOpen(false)} onChoose={(chosenTournamentId, event, entries)=>{
+      setChooserOpen(false);
+      if (String(event.id)===eventId && chosenTournamentId===tournamentId) return;
+      beforeChange(()=>{
+        pendingRestore.current=null;
+        setTournamentId(chosenTournamentId); setEvents(entries); setEventId(String(event.id));
+        remember({tournamentId:Number(chosenTournamentId),eventId:Number(event.id)});
+        onSelect(Number(chosenTournamentId),Number(event.id),event);
+      });
+    }}/>}</>;
+
   const field = { display: 'grid', gap: '8px', flex: '1 1 240px' };
   const select = { width: '100%' };
   return <section aria-labelledby="event-choice" style={{ background: '#f2f6fb', border: '1px solid var(--border)', borderRadius: '12px', padding: '20px', marginBottom: '24px' }}>
@@ -87,4 +99,50 @@ export default function EventSelector({ userId, onSelect, onReset, beforeChange 
       {!confirmed && <button type="submit" disabled={!eventId || loading || !!error} style={{ marginTop: '16px' }}>Accéder aux pronostics</button>}
     </form>
   </section>;
+}
+
+function EventChooser({tournaments,currentTournamentId,currentEventId,currentEvents,onChoose,onClose}) {
+  const dialog=useRef(null);
+  const [view,setView]=useState('events');
+  const [chosenTournamentId,setChosenTournamentId]=useState(currentTournamentId);
+  const [entries,setEntries]=useState(currentEvents);
+  const [loading,setLoading]=useState(false);
+  const [error,setError]=useState('');
+  const [retry,setRetry]=useState(0);
+  useEffect(()=>{
+    const element=dialog.current;
+    const previous=document.activeElement;
+    const overflow=document.body.style.overflow;
+    document.body.style.overflow='hidden';
+    element.showModal();
+    return ()=>{element.close();document.body.style.overflow=overflow;previous?.focus();};
+  },[]);
+  useEffect(()=>{
+    if(chosenTournamentId===currentTournamentId){setEntries(currentEvents);setLoading(false);setError('');return;}
+    const controller=new AbortController();
+    setLoading(true);setError('');setEntries([]);
+    API.get(`/podium/competitions/${chosenTournamentId}`,{signal:controller.signal}).then(({data})=>{
+      if(!Array.isArray(data))throw new Error('Invalid list');
+      if(!controller.signal.aborted)setEntries(data);
+    }).catch(()=>{if(!controller.signal.aborted)setError('Impossible de charger les épreuves.');})
+      .finally(()=>{if(!controller.signal.aborted)setLoading(false);});
+    return ()=>controller.abort();
+  },[chosenTournamentId,currentTournamentId,currentEvents,retry]);
+  return <dialog ref={dialog} className="event-chooser" aria-labelledby="event-chooser-title" onCancel={onClose}>
+    <header><h2 id="event-chooser-title">{view==='events'?'Choisir une épreuve':'Choisir un tournoi'}</h2><button className="button-link event-chooser-close" aria-label="Fermer" onClick={onClose}>×</button></header>
+    {view==='events'?<>
+      <p className="event-chooser-context">{tournaments.find(t=>String(t.id)===chosenTournamentId)?.name}</p>
+      <button className="button-link event-chooser-back" onClick={()=>setView('tournaments')}>← Changer de tournoi</button>
+      <div className="event-chooser-list">
+        {loading&&<p role="status">Chargement des épreuves…</p>}
+        {error&&<p role="alert">{error} <button onClick={()=>setRetry(n=>n+1)}>Réessayer</button></p>}
+        {!loading&&!error&&!entries.length&&<p>Aucune épreuve disponible pour ce tournoi.</p>}
+        {!loading&&!error&&entries.map(event=><button key={event.id} className="event-choice-card" aria-current={chosenTournamentId===currentTournamentId&&String(event.id)===currentEventId?'true':undefined} onClick={()=>onChoose(chosenTournamentId,event,entries)}><strong>{event.name}</strong><span>{event.podiumFormat==='TEAM'?'Par équipes':'Individuel'}{chosenTournamentId===currentTournamentId&&String(event.id)===currentEventId?' · Épreuve actuelle':''}</span></button>)}
+      </div>
+    </>:<>
+      <p className="event-chooser-context">Sélectionnez un tournoi pour retrouver ses épreuves.</p>
+      <button className="button-link event-chooser-back" onClick={()=>setView('events')}>← Retour aux épreuves</button>
+      <div className="event-chooser-list">{tournaments.map(t=><button key={t.id} className="event-choice-card" onClick={()=>{setChosenTournamentId(String(t.id));setView('events');}}><strong>{t.name}</strong>{String(t.id)===currentTournamentId&&<span>Tournoi actuel</span>}</button>)}</div>
+    </>}
+  </dialog>;
 }
