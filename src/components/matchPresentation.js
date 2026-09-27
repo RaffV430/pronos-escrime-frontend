@@ -1,5 +1,5 @@
 export function isMatchClosed(match, now) {
-  if (match.isFinished) return true;
+  if (match.isFinished || match.syncIssue) return true;
   if (match.manualUnlockUntil) return now >= Date.parse(match.manualUnlockUntil);
   return Boolean(match.timingUnverified || match.isLocked || (!match.awaitingPreviousRound && match.closesAt && now >= Date.parse(match.closesAt)));
 }
