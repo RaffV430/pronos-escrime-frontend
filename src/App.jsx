@@ -11,6 +11,9 @@ import AdminPanel from './components/AdminPanel';
 import FtlControl from './components/FtlControl';
 import ClosingCountdown from './components/ClosingCountdown';
 import InstallApp from './components/InstallApp';
+import NotificationSettings from './components/NotificationSettings';
+import FtlTournamentSetup from './components/FtlTournamentSetup';
+import {disableThisDevice} from './lib/notifications';
 import MatchBoard from './components/MatchBoard';
 import './interface.css';
 
@@ -34,6 +37,7 @@ export default function App() {
 
   // Gestion des compétitions et tournoi actif
   const [tournamentId, setTournamentId] = useState(null);
+  const [eventListVersion,setEventListVersion]=useState(0);
   const [selectedCompetitionId, setSelectedCompetitionId] = useState(null);
 
   const [matches, setMatches] = useState([]);
@@ -126,7 +130,8 @@ export default function App() {
     }
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    try{await disableThisDevice();}catch{setError('Déconnexion impossible : les alertes de cet appareil n’ont pas pu être désactivées. Réessayez.');return;}
     localStorage.removeItem('token');
     setUser(null);
     setTournamentId(null);
@@ -151,9 +156,9 @@ export default function App() {
     return <div className="app-shell redesigned">
       <header className="app-header"><div className="brand"><span className="brand-mark">↗</span>pronos<span>escrime</span></div><div className="account-actions"><span>{user.name||user.username}</span>{user.isAdmin&&<button className="button-secondary" onClick={()=>navigate('admin')}>Administration</button>}<button className="button-link" onClick={()=>runNavigation(handleLogout)}>Déconnexion</button></div></header>
       <nav className="primary-nav" aria-label="Navigation principale">{[['play','◎','Pronostiquer'],['mine','▤','Mes pronostics'],['leaderboard','↗','Classements'],['community','♧','Communauté']].map(([id,icon,label])=><button key={id} aria-pressed={mainTab===id} onClick={()=>navigate(id)}><span aria-hidden="true">{icon}</span>{label}</button>)}</nav>
-      <InstallApp/><EventSelector key={user.id} userId={user.id} beforeChange={runNavigation} onReset={()=>{setTournamentId(null);selectCompetition(null);setCompetition(null);}} onSelect={(tId,cId,entry)=>{setTournamentId(tId);selectCompetition(cId);setCompetition(entry);setPlayTab(entry?.podiumFormat==='TEAM'?'tableau':'pools');setMainTab('play');}}/>
+      <InstallApp/><NotificationSettings key={user.id} userId={user.id}/>{error&&<p role="alert">{error}</p>}{mainTab==='admin'&&user.isAdmin&&<FtlTournamentSetup onConfigured={()=>setEventListVersion(v=>v+1)}/>}<EventSelector key={`${user.id}:${eventListVersion}`} userId={user.id} beforeChange={runNavigation} onReset={()=>{setTournamentId(null);selectCompetition(null);setCompetition(null);}} onSelect={(tId,cId,entry)=>{setTournamentId(tId);selectCompetition(cId);setCompetition(entry);setPlayTab(new URLSearchParams(location.search).get('new')==='1'||entry?.podiumFormat==='TEAM'?'tableau':'pools');setMainTab(current=>current==='admin'?'admin':'play');}}/>
       {selectedCompetitionId&&<>
-        {mainTab==='play'&&<><div className="page-heading"><p className="eyebrow">À VOUS DE JOUER</p><h1>Faites la différence.</h1><p>Vos favoris, vos scores, votre compétition.</p></div>{user.isAdmin&&<FtlControl key={`ftl-${selectedCompetitionId}`} competitionId={selectedCompetitionId} onRefresh={()=>{setResultsVersion(v=>v+1);return fetchMatches(selectedCompetitionId);}}/>}<ClosingCountdown matches={matches} now={matchNow}/><nav className="secondary-nav" aria-label="Type de pronostic">{[['podium','Podium'],...(!team?[['pools','Poules']]:[]),['tableau','Tableau']].map(([id,label])=><button key={id} aria-pressed={playTab===id} onClick={()=>runNavigation(()=>{setDirty(false);setPlayTab(id);})}>{label}</button>)}</nav>
+        {mainTab==='play'&&<><div className="page-heading"><p className="eyebrow">À VOUS DE JOUER</p><h1>Faites la différence.</h1><p>Vos favoris, vos scores, votre compétition.</p></div>{user.isAdmin&&<FtlControl key={`ftl-${selectedCompetitionId}`} competitionId={selectedCompetitionId} onRefresh={()=>{setResultsVersion(v=>v+1);return fetchMatches(selectedCompetitionId);}}/>}<ClosingCountdown matches={matches} now={matchNow} userId={user.id}/><nav className="secondary-nav" aria-label="Type de pronostic">{[['podium','Podium'],...(!team?[['pools','Poules']]:[]),['tableau','Tableau']].map(([id,label])=><button key={id} aria-pressed={playTab===id} onClick={()=>runNavigation(()=>{setDirty(false);setPlayTab(id);})}>{label}</button>)}</nav>
         {playTab==='podium'&&<PodiumPrediction key={selectedCompetitionId} tournamentId={tournamentId} selectedCompetitionId={selectedCompetitionId} user={{...user,isAdmin:false}} onDirtyChange={setDirty}/>}
         {playTab==='pools'&&<PoolPredictions refreshVersion={resultsVersion} key={selectedCompetitionId} tournamentId={tournamentId} selectedCompetitionId={selectedCompetitionId} user={{...user,isAdmin:false}} onDirtyChange={setDirty}/>}
         {playTab==='tableau'&&<><ScoringRules type="matches"/><MatchBoard competitionId={selectedCompetitionId} key={selectedCompetitionId} matches={matches} userId={user.id} now={matchNow} ready={matchesReady} error={matchesError} onRefresh={()=>fetchMatches(selectedCompetitionId)} onDirtyChange={setDirty}/></>}

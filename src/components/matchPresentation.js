@@ -46,3 +46,10 @@ export function remainingSeconds(match,now){
  const at=Date.parse(match.manualUnlockUntil||match.closesAt||'');
  return Number.isFinite(at)?Math.max(0,Math.ceil((at-now)/1000)):null;
 }
+
+export function nextClosingGroup(matches,now){
+ const upcoming=matches.map(match=>({match,at:Date.parse(match.manualUnlockUntil||match.closesAt||''),seconds:remainingSeconds(match,now)})).filter(x=>x.seconds>0&&x.seconds<=900).sort((a,b)=>a.at-b.at);
+ if(!upcoming.length)return null;
+ const {at,seconds}=upcoming[0],affected=upcoming.filter(x=>x.at===at).map(x=>x.match);
+ return {seconds,matches:affected,rounds:[...new Set(affected.map(m=>m.round||'Rencontres'))]};
+}

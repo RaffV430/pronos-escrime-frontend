@@ -6,15 +6,18 @@ import MatchTiming from './MatchTiming';
 import {groupMatches,isMatchClosed,validateScores} from './matchPresentation';
 
 export default function MatchBoard({matches,userId,competitionId,now,ready,error,onRefresh,onDirtyChange}) {
- const [drafts,setDrafts]=useState({}),[messages,setMessages]=useState({}),[busy,setBusy]=useState(false),[filter,setFilter]=useState('Tous'),[view,setView]=useState('Liste');
+ const deepLink=new URLSearchParams(location.search);
+ const linkedIds=Number(deepLink.get('event'))===Number(competitionId)?(deepLink.get('matches')||'').split(',').map(Number).filter(n=>Number.isSafeInteger(n)&&n>0):[];
+ const [linkedNew,setLinkedNew]=useState(linkedIds);
+ const [drafts,setDrafts]=useState({}),[messages,setMessages]=useState({}),[busy,setBusy]=useState(false),[filter,setFilter]=useState(linkedIds.length?'Nouveaux':'Tous'),[view,setView]=useState('Liste');
  const localDraft=useLocalDraft(draftKey(userId,competitionId,'matches'));
  const saveDrafts=update=>setDrafts(old=>{const next=typeof update==='function'?update(old):update;localDraft.persist(Object.keys(next).length?next:null);return next;});
  const seenKey=`pronos:seen-matches:${userId}:${competitionId}`;
  const [seen,setSeen]=useState(()=>{try{return JSON.parse(localStorage.getItem(seenKey)||'null');}catch{return null;}});
  useEffect(()=>{if(ready&&seen===null){const ids=matches.map(m=>m.id);setSeen(ids);try{localStorage.setItem(seenKey,JSON.stringify(ids));}catch{/* Optional device preference. */}}},[ready,seen,matches,seenKey]);
- const newMatches=seen===null?[]:matches.filter(m=>!seen.includes(m.id));
+ const newMatches=matches.filter(m=>linkedNew.includes(m.id)||(seen!==null&&!seen.includes(m.id)));
  const showNew=()=>{setFilter('Nouveaux');};
- const markSeen=()=>{const ids=matches.map(m=>m.id);setSeen(ids);try{localStorage.setItem(seenKey,JSON.stringify(ids));}catch{/* Optional device preference. */}setFilter('Tous');};
+ const markSeen=()=>{setLinkedNew([]);const ids=matches.map(m=>m.id);setSeen(ids);try{localStorage.setItem(seenKey,JSON.stringify(ids));}catch{/* Optional device preference. */}setFilter('Tous');};
  const saving=useRef(false);
  const valid=matches.filter(m=>m.player1?.trim()&&m.player2?.trim()&&m.player1!=='En attente...'&&m.player2!=='En attente...');
  const mine=m=>m.predictions?.find(p=>p.userId===userId);

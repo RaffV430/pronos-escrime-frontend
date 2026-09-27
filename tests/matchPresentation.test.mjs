@@ -55,3 +55,11 @@ test('countdown uses effective deadline, never schedule alone, and honors reopen
  assert.equal(remainingSeconds({isLocked:true,manualUnlockUntil:at(600),closesAt:at(-50)},now),600);
  assert.equal(remainingSeconds({isFinished:true,manualUnlockUntil:at(600)},now),null);
 });
+
+import {nextClosingGroup} from '../src/components/matchPresentation.js';
+test('countdown groups the actual closing time and lists every affected match, not a single pair',()=>{
+ const now=Date.now(),at=n=>new Date(now+n*1000).toISOString(),m=(id,round,n)=>({id,round,closesAt:at(n)});
+ const group=nextClosingGroup([m(1,'T16',600),m(2,'T16',600),m(3,'T16',720),{...m(4,'T16',600),isFinished:true},m(5,'Bronze',600)],now);
+ assert.deepEqual(group.matches.map(m=>m.id),[1,2,5]);assert.deepEqual(group.rounds,['T16','Bronze']);assert.equal(group.seconds,600);
+ assert.equal(nextClosingGroup([m(1,'T16',901)],now),null);assert.equal(nextClosingGroup([m(1,'T16',0)],now),null);
+});

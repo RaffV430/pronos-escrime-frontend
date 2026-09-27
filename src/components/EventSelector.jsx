@@ -10,7 +10,9 @@ const readSelection = key => {
 
 export default function EventSelector({ userId, onSelect, onReset, beforeChange = action => action() }) {
   const storageKey = 'pronos:last-event:' + userId;
-  const pendingRestore = useRef(readSelection(storageKey));
+  const link=new URLSearchParams(location.search);
+  const linked={tournamentId:Number(link.get('tournament')),eventId:Number(link.get('event'))};
+  const pendingRestore = useRef(Number.isSafeInteger(linked.tournamentId)&&linked.tournamentId>0&&Number.isSafeInteger(linked.eventId)&&linked.eventId>0?linked:readSelection(storageKey));
   const onSelectRef = useRef(onSelect);
   useEffect(() => { onSelectRef.current = onSelect; }, [onSelect]);
   const remember = (selection) => {
