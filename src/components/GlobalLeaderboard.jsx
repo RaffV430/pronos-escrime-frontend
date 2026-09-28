@@ -1,15 +1,175 @@
-import {useEffect,useState} from 'react';
+import { useEffect, useState } from 'react';
 import API from '../api';
-export default function GlobalLeaderboard({userId,tournamentId,competitionId}) {
- const [scope,setScope]=useState('Général'),[selectedTournament,setTournament]=useState(String(tournamentId)),[selectedEvent,setEvent]=useState(String(competitionId)),[tournaments,setTournaments]=useState([]),[events,setEvents]=useState([]),[rows,setRows]=useState(null),[error,setError]=useState(''),[revision,setRevision]=useState(0);
- useEffect(()=>{const c=new AbortController();API.get('/tournaments',{signal:c.signal}).then(({data})=>{if(!c.signal.aborted)setTournaments(data)}).catch(()=>{});return()=>c.abort()},[]);
- useEffect(()=>{const c=new AbortController();API.get(`/podium/competitions/${selectedTournament}`,{signal:c.signal}).then(({data})=>{if(!c.signal.aborted){setEvents(data);setEvent(old=>data.some(e=>String(e.id)===old)?old:String(data[0]?.id||''));}}).catch(()=>{});return()=>c.abort()},[selectedTournament]);
- useEffect(()=>{const c=new AbortController();setRows(null);setError('');if(scope==='Épreuve'&&!selectedEvent)return()=>c.abort();const params=scope==='Tournoi'?`?tournamentId=${selectedTournament}`:scope==='Épreuve'?`?competitionId=${selectedEvent}`:'';API.get(`/matches/leaderboard${params}`,{signal:c.signal}).then(({data})=>{if(!c.signal.aborted)setRows(data)}).catch(e=>{if(!c.signal.aborted)setError(e.response?.data?.error||'Classement indisponible. Réessayez.')});return()=>c.abort()},[scope,selectedTournament,selectedEvent,revision]);
- const me=rows?.find(r=>r.id===userId),previous=me?rows.filter(r=>(r.rank||0)<me.rank).at(-1):null;
- return <section><div className="page-heading"><p className="eyebrow">CHAQUE POINT COMPTE</p><h1>La course au podium.</h1><p>{scope==='Général'?'Toutes les compétitions':scope==='Tournoi'?tournaments.find(t=>String(t.id)===selectedTournament)?.name:events.find(e=>String(e.id)===selectedEvent)?.name}</p></div><div className="feature-heading"><div className="filter-row">{['Général','Tournoi','Épreuve'].map(s=><button key={s} aria-pressed={scope===s} onClick={()=>setScope(s)}>{s}</button>)}</div><button className="button-secondary" onClick={()=>setRevision(n=>n+1)}>Actualiser</button></div>
- {scope!=='Général'&&<div className="ranking-selectors"><label>Tournoi<select value={selectedTournament} onChange={e=>{setTournament(e.target.value);setEvent('')}}>{tournaments.map(t=><option value={t.id} key={t.id}>{t.name}</option>)}</select></label>{scope==='Épreuve'&&<label>Épreuve<select value={selectedEvent} onChange={e=>setEvent(e.target.value)}><option value="">Choisir une épreuve</option>{events.map(e=><option key={e.id} value={e.id}>{e.name}</option>)}</select></label>}</div>}
- {error&&<p role="alert">{error}</p>}{!rows&&!error&&<p role="status">{scope==='Épreuve'&&!selectedEvent?'Choisissez une épreuve.':'Chargement du classement…'}</p>}
- {me&&<><div className="overview"><div><strong>{me.rank}</strong><span>votre position</span></div><div><strong>{me.totalPoints} pts</strong><span>votre total</span></div><div><strong>{previous?`${previous.totalPoints-me.totalPoints} pts`:'En tête'}</strong><span>{previous?'pour rejoindre le rang précédent':'du classement'}</span></div></div><button className="button-link" onClick={()=>document.getElementById('my-ranking')?.scrollIntoView({behavior:'smooth',block:'center'})}>Ma position ↓</button></>}
- <div className="real-ranking">{rows?.map((r,i)=><article key={r.id} id={r.id===userId?'my-ranking':undefined} className={r.id===userId?'my-row':''}><div className="rank-main"><span className="rank-number">{r.rank||i+1}</span><strong>{r.name}{r.id===userId?' · Vous':''}</strong><b>{r.totalPoints} <small>pts</small></b></div><details><summary>Détail des points</summary><p>Matchs : {r.matchPoints??0} · Podiums : {r.podiumPoints??0} · Poules : {r.poolPoints??0} · Défis : {r.challengePoints??0} · Ajustements : {r.adjustmentPoints??0}</p></details></article>)}</div>{rows?.length===0&&<p>Aucun point attribué pour cette sélection.</p>}
- </section>;
+export default function GlobalLeaderboard({ userId, tournamentId, competitionId }) {
+  const [scope, setScope] = useState('Général'),
+    [selectedTournament, setTournament] = useState(String(tournamentId)),
+    [selectedEvent, setEvent] = useState(String(competitionId)),
+    [tournaments, setTournaments] = useState([]),
+    [events, setEvents] = useState([]),
+    [rows, setRows] = useState(null),
+    [error, setError] = useState(''),
+    [revision, setRevision] = useState(0);
+  useEffect(() => {
+    const c = new AbortController();
+    API.get('/tournaments', { signal: c.signal })
+      .then(({ data }) => {
+        if (!c.signal.aborted) setTournaments(data);
+      })
+      .catch(() => {});
+    return () => c.abort();
+  }, []);
+  useEffect(() => {
+    const c = new AbortController();
+    API.get(`/podium/competitions/${selectedTournament}`, { signal: c.signal })
+      .then(({ data }) => {
+        if (!c.signal.aborted) {
+          setEvents(data);
+          setEvent((old) => (data.some((e) => String(e.id) === old) ? old : String(data[0]?.id || '')));
+        }
+      })
+      .catch(() => {});
+    return () => c.abort();
+  }, [selectedTournament]);
+  useEffect(() => {
+    const c = new AbortController();
+    setRows(null);
+    setError('');
+    if (scope === 'Épreuve' && !selectedEvent) return () => c.abort();
+    const params =
+      scope === 'Tournoi'
+        ? `?tournamentId=${selectedTournament}`
+        : scope === 'Épreuve'
+          ? `?competitionId=${selectedEvent}`
+          : '';
+    API.get(`/matches/leaderboard${params}`, { signal: c.signal })
+      .then(({ data }) => {
+        if (!c.signal.aborted) setRows(data);
+      })
+      .catch((e) => {
+        if (!c.signal.aborted) setError(e.response?.data?.error || 'Classement indisponible. Réessayez.');
+      });
+    return () => c.abort();
+  }, [scope, selectedTournament, selectedEvent, revision]);
+  const me = rows?.find((r) => r.id === userId),
+    previous = me ? rows.filter((r) => (r.rank || 0) < me.rank).at(-1) : null;
+  return (
+    <section>
+      <div className="page-heading">
+        <p className="eyebrow">CHAQUE POINT COMPTE</p>
+        <h1>La course au podium.</h1>
+        <p>
+          {scope === 'Général'
+            ? 'Toutes les compétitions'
+            : scope === 'Tournoi'
+              ? tournaments.find((t) => String(t.id) === selectedTournament)?.name
+              : events.find((e) => String(e.id) === selectedEvent)?.name}
+        </p>
+      </div>
+      <div className="feature-heading">
+        <div className="filter-row">
+          {['Général', 'Tournoi', 'Épreuve'].map((s) => (
+            <button key={s} aria-pressed={scope === s} onClick={() => setScope(s)}>
+              {s}
+            </button>
+          ))}
+        </div>
+        <button className="button-secondary" onClick={() => setRevision((n) => n + 1)}>
+          Actualiser
+        </button>
+      </div>
+      {scope !== 'Général' && (
+        <div className="ranking-selectors">
+          <label>
+            Tournoi
+            <select
+              value={selectedTournament}
+              onChange={(e) => {
+                setTournament(e.target.value);
+                setEvent('');
+              }}
+            >
+              {tournaments.map((t) => (
+                <option value={t.id} key={t.id}>
+                  {t.name}
+                </option>
+              ))}
+            </select>
+          </label>
+          {scope === 'Épreuve' && (
+            <label>
+              Épreuve
+              <select value={selectedEvent} onChange={(e) => setEvent(e.target.value)}>
+                <option value="">Choisir une épreuve</option>
+                {events.map((e) => (
+                  <option key={e.id} value={e.id}>
+                    {e.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+          )}
+        </div>
+      )}
+      {error && <p role="alert">{error}</p>}
+      {!rows && !error && (
+        <p role="status">
+          {scope === 'Épreuve' && !selectedEvent ? 'Choisissez une épreuve.' : 'Chargement du classement…'}
+        </p>
+      )}
+      {me && (
+        <>
+          <div className="overview">
+            <div>
+              <strong>{me.rank}</strong>
+              <span>votre position</span>
+            </div>
+            <div>
+              <strong>{me.totalPoints} pts</strong>
+              <span>votre total</span>
+            </div>
+            <div>
+              <strong>{previous ? `${previous.totalPoints - me.totalPoints} pts` : 'En tête'}</strong>
+              <span>{previous ? 'pour rejoindre le rang précédent' : 'du classement'}</span>
+            </div>
+          </div>
+          <button
+            className="button-link"
+            onClick={() =>
+              document.getElementById('my-ranking')?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+            }
+          >
+            Ma position ↓
+          </button>
+        </>
+      )}
+      <div className="real-ranking">
+        {rows?.map((r, i) => (
+          <article
+            key={r.id}
+            id={r.id === userId ? 'my-ranking' : undefined}
+            className={r.id === userId ? 'my-row' : ''}
+          >
+            <div className="rank-main">
+              <span className="rank-number">{r.rank || i + 1}</span>
+              <strong>
+                {r.name}
+                {r.id === userId ? ' · Vous' : ''}
+              </strong>
+              <b>
+                {r.totalPoints} <small>pts</small>
+              </b>
+            </div>
+            <details>
+              <summary>Détail des points</summary>
+              <p>
+                Matchs : {r.matchPoints ?? 0} · Podiums : {r.podiumPoints ?? 0} · Poules : {r.poolPoints ?? 0} · Défis :{' '}
+                {r.challengePoints ?? 0} · Ajustements : {r.adjustmentPoints ?? 0}
+              </p>
+            </details>
+          </article>
+        ))}
+      </div>
+      {rows?.length === 0 && <p>Aucun point attribué pour cette sélection.</p>}
+    </section>
+  );
 }

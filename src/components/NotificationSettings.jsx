@@ -1,33 +1,300 @@
-import {useEffect,useState} from 'react';
+import { useEffect, useState } from 'react';
 import API from '../api';
-import {pushSupport,applicationKey,disableThisDevice} from '../lib/notifications';
-export default function NotificationSettings({userId}){
- const [open,setOpen]=useState(false),[choices,setChoices]=useState([]),[config,setConfig]=useState(null),[registration,setRegistration]=useState(null),[sub,setSub]=useState(null),[enabled,setEnabled]=useState(false),[tournaments,setTournaments]=useState([]),[events,setEvents]=useState([]),[busy,setBusy]=useState(false),[message,setMessage]=useState(''),[ready,setReady]=useState(false);
- const [preferences,setPreferences]=useState({newMatches:true,reminders:false,roundResults:false,quietEnabled:false,quietStart:'22:00',quietEnd:'08:00',timezone:Intl.DateTimeFormat().resolvedOptions().timeZone||'Europe/Paris'}),[diagnostic,setDiagnostic]=useState(null);
- const [devices,setDevices]=useState([]);
- const unsupported=pushSupport();
- useEffect(()=>{
-  if(!open)return;let cancelled=false;setReady(false);setMessage('');
-  (async()=>{try{
-   const [settings,items,ownDevices]=await Promise.all([API.get('/notifications/config'),API.get('/notifications/choices'),API.get('/notifications/devices')]);
-   const reg=unsupported?null:await navigator.serviceWorker.register('/sw.js');
-   const current=reg&&await reg.pushManager.getSubscription();
-   const status=current?(await API.post('/notifications/status',{endpoint:current.endpoint})).data:null;
-   if(cancelled)return;setDevices(ownDevices.data);setConfig(settings.data);setChoices(items.data);setRegistration(reg);setSub(current);setEnabled(Boolean(status?.enabled));setTournaments(status?.tournamentIds||[]);setEvents(status?.competitionIds||[]);if(status?.preferences)setPreferences(status.preferences);setDiagnostic(status?.diagnostic||null);setReady(true);
-  }catch{if(!cancelled)setMessage('Impossible de charger vos préférences. Fermez puis rouvrez ce panneau.');}})();return()=>{cancelled=true;};
- },[open,userId,unsupported]);
- const toggle=(setter,id,checked)=>setter(old=>checked?[...new Set([...old,id])]:old.filter(x=>x!==id));
- const activate=async()=>{
-  // Ask during the user's click, before any network wait (required by iOS).
-  const permission=Notification.permission==='granted'?Promise.resolve('granted'):Notification.requestPermission();
-  setBusy(true);setMessage('');
-  try{if(await permission!=='granted')throw Error('Autorisation refusée. Vous pouvez la modifier dans les réglages de notifications du navigateur ou de l’application.');
-   await navigator.serviceWorker.ready;
-   const current=sub||await registration.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:applicationKey(config.publicKey)});setSub(current);
-   await API.post('/notifications/subscribe',{subscription:current.toJSON(),tournamentIds:tournaments,competitionIds:events,preferences});setEnabled(true);setMessage('Préférences enregistrées sur cet appareil. Vos catégories d’alertes et horaires silencieux sont appliqués.');
-  }catch(e){setMessage(e.response?.data?.error||e.message||'Activation impossible. Réessayez.');}finally{setBusy(false);}
- };
- const disable=async()=>{setBusy(true);try{await disableThisDevice();setSub(null);setEnabled(false);setMessage('Notifications désactivées sur cet appareil.');}catch{setMessage('Désactivation non confirmée. Réessayez.');}finally{setBusy(false);}};
- const test=async(subscriptionId)=>{setBusy(true);try{const result=await API.post('/notifications/test',subscriptionId?{subscriptionId}:{endpoint:sub.endpoint});setMessage(`Test accepté pour cet appareil uniquement. Clôture fictive : ${new Date(result.data.testClosesAt).toLocaleString('fr-FR')}. Vérifiez la notification reçue.`);}catch(e){setMessage(e.response?.data?.error||'Test indisponible.');}finally{setBusy(false);}};
- return <details className="feature-panel notification-settings" onToggle={e=>setOpen(e.currentTarget.open)}><summary>Notifications et diagnostic de cet appareil</summary>{open&&<><p>Choisissez les tournois ou les épreuves à suivre sur cet appareil. Une seule alerte par tour lorsque la moitié des rencontres est disponible. Le rappel de clôture reste réservé aux pronostics manquants.</p>{unsupported&&<p className="notice">{unsupported}</p>}{!ready&&!message&&<p role="status">Chargement des préférences…</p>}{ready&&<>{!config?.available&&<p>Les notifications sont en cours de configuration.</p>}<p className="status-pill">{enabled&&Notification.permission==='granted'?'Activées sur cet appareil':'Désactivées ou autorisation à vérifier'}</p><p>Autorisation du téléphone : {typeof Notification==='undefined'?'non disponible':Notification.permission==='granted'?'accordée':Notification.permission==='denied'?'refusée':'pas encore demandée'} · abonnement : {sub?'présent':'absent'}.</p>{diagnostic&&<p>Dernier envoi : {diagnostic.sentAt?new Date(diagnostic.sentAt).toLocaleString('fr-FR'):'aucun'}{diagnostic.failed?' · Un envoi récent a échoué. Essayez le bouton de test.':''}</p>}<fieldset><legend>Mes alertes</legend>{[['newMatches','Une alerte lorsque la moitié du tour est pronosticable'],['reminders','Rappel à 10 minutes de la clôture, si un pronostic manque'],['roundResults','Mon bilan après chaque tour']].map(([k,label])=><label className="check-row" key={k}><input type="checkbox" checked={preferences[k]} disabled={busy} onChange={e=>setPreferences(p=>({...p,[k]:e.target.checked}))}/>{label}</label>)}<label className="check-row"><input type="checkbox" checked={preferences.quietEnabled} onChange={e=>setPreferences(p=>({...p,quietEnabled:e.target.checked}))}/> Heures silencieuses</label>{preferences.quietEnabled&&<div className="quiet-hours"><label>De <input type="time" value={preferences.quietStart} onChange={e=>setPreferences(p=>({...p,quietStart:e.target.value}))}/></label><label>à <input type="time" value={preferences.quietEnd} onChange={e=>setPreferences(p=>({...p,quietEnd:e.target.value}))}/></label><label>Fuseau horaire <input value={preferences.timezone} onChange={e=>setPreferences(p=>({...p,timezone:e.target.value}))}/></label><small>Les alertes devenues inutiles pendant cette plage ne seront pas envoyées au réveil. Le test manuel reste disponible.</small></div>}</fieldset><div className="notification-choices">{choices.map(t=><fieldset key={t.id}><legend>{t.name}</legend><label className="check-row"><input type="checkbox" disabled={busy} checked={tournaments.includes(t.id)} onChange={e=>toggle(setTournaments,t.id,e.target.checked)}/> Tout le tournoi, y compris ses futures épreuves</label>{t.competitions.map(c=><label className="check-row" key={c.id}><input type="checkbox" disabled={busy||tournaments.includes(t.id)} checked={tournaments.includes(t.id)||events.includes(c.id)} onChange={e=>toggle(setEvents,c.id,e.target.checked)}/>{c.name}</label>)}</fieldset>)}</div>{devices.length>0&&<details><summary>Tester sur un de mes appareils abonnés</summary><p>Un seul envoi vers l’appareil choisi. Le test utilise une clôture fictive dans 10 minutes.</p>{devices.map((device,i)=><button className="button-secondary" key={device.id} disabled={busy} onClick={()=>test(device.id)}>Tester sur {device.label}{devices.length>1?` ${i+1}`:''}</button>)}</details>}<div className="notification-actions"><button disabled={busy||!!unsupported||!config?.available||(!tournaments.length&&!events.length)} onClick={activate}>{enabled?'Enregistrer mes choix':'Activer sur cet appareil'}</button>{enabled&&<><button className="button-secondary" disabled={busy} onClick={()=>test()}>Tester une notification</button><button className="button-link" disabled={busy} onClick={disable}>Désactiver sur cet appareil</button></>}{sub&&!enabled&&<button className="button-link" disabled={busy} onClick={disable}>Réinitialiser l’abonnement de cet appareil</button>}</div></>}{message&&<p role="status">{message}</p>}<p className="muted">Aucun envoi avant votre accord. La déconnexion désactive les alertes sur cet appareil. Les notifications peuvent être retardées par les réglages du téléphone.</p></>}</details>;
+import { pushSupport, applicationKey, disableThisDevice } from '../lib/notifications';
+export default function NotificationSettings({ userId }) {
+  const [open, setOpen] = useState(false),
+    [choices, setChoices] = useState([]),
+    [config, setConfig] = useState(null),
+    [registration, setRegistration] = useState(null),
+    [sub, setSub] = useState(null),
+    [enabled, setEnabled] = useState(false),
+    [tournaments, setTournaments] = useState([]),
+    [events, setEvents] = useState([]),
+    [busy, setBusy] = useState(false),
+    [message, setMessage] = useState(''),
+    [ready, setReady] = useState(false);
+  const [preferences, setPreferences] = useState({
+      newMatches: true,
+      reminders: false,
+      roundResults: false,
+      quietEnabled: false,
+      quietStart: '22:00',
+      quietEnd: '08:00',
+      timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || 'Europe/Paris',
+    }),
+    [diagnostic, setDiagnostic] = useState(null);
+  const [devices, setDevices] = useState([]);
+  const unsupported = pushSupport();
+  useEffect(() => {
+    if (!open) return;
+    let cancelled = false;
+    setReady(false);
+    setMessage('');
+    (async () => {
+      try {
+        const [settings, items, ownDevices] = await Promise.all([
+          API.get('/notifications/config'),
+          API.get('/notifications/choices'),
+          API.get('/notifications/devices'),
+        ]);
+        const reg = unsupported ? null : await navigator.serviceWorker.register('/sw.js');
+        const current = reg && (await reg.pushManager.getSubscription());
+        const status = current ? (await API.post('/notifications/status', { endpoint: current.endpoint })).data : null;
+        if (cancelled) return;
+        setDevices(ownDevices.data);
+        setConfig(settings.data);
+        setChoices(items.data);
+        setRegistration(reg);
+        setSub(current);
+        setEnabled(Boolean(status?.enabled));
+        setTournaments(status?.tournamentIds || []);
+        setEvents(status?.competitionIds || []);
+        if (status?.preferences) setPreferences(status.preferences);
+        setDiagnostic(status?.diagnostic || null);
+        setReady(true);
+      } catch {
+        if (!cancelled) setMessage('Impossible de charger vos préférences. Fermez puis rouvrez ce panneau.');
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [open, userId, unsupported]);
+  const toggle = (setter, id, checked) =>
+    setter((old) => (checked ? [...new Set([...old, id])] : old.filter((x) => x !== id)));
+  const activate = async () => {
+    // Ask during the user's click, before any network wait (required by iOS).
+    const permission =
+      Notification.permission === 'granted' ? Promise.resolve('granted') : Notification.requestPermission();
+    setBusy(true);
+    setMessage('');
+    try {
+      if ((await permission) !== 'granted')
+        throw Error(
+          'Autorisation refusée. Vous pouvez la modifier dans les réglages de notifications du navigateur ou de l’application.',
+        );
+      await navigator.serviceWorker.ready;
+      const current =
+        sub ||
+        (await registration.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey: applicationKey(config.publicKey),
+        }));
+      setSub(current);
+      await API.post('/notifications/subscribe', {
+        subscription: current.toJSON(),
+        tournamentIds: tournaments,
+        competitionIds: events,
+        preferences,
+      });
+      setEnabled(true);
+      setMessage(
+        'Préférences enregistrées sur cet appareil. Vos catégories d’alertes et horaires silencieux sont appliqués.',
+      );
+    } catch (e) {
+      setMessage(e.response?.data?.error || e.message || 'Activation impossible. Réessayez.');
+    } finally {
+      setBusy(false);
+    }
+  };
+  const disable = async () => {
+    setBusy(true);
+    try {
+      await disableThisDevice();
+      setSub(null);
+      setEnabled(false);
+      setMessage('Notifications désactivées sur cet appareil.');
+    } catch {
+      setMessage('Désactivation non confirmée. Réessayez.');
+    } finally {
+      setBusy(false);
+    }
+  };
+  const test = async (subscriptionId) => {
+    setBusy(true);
+    try {
+      const result = await API.post(
+        '/notifications/test',
+        subscriptionId ? { subscriptionId } : { endpoint: sub.endpoint },
+      );
+      setMessage(
+        `Test accepté pour cet appareil uniquement. Clôture fictive : ${new Date(result.data.testClosesAt).toLocaleString('fr-FR')}. Vérifiez la notification reçue.`,
+      );
+    } catch (e) {
+      setMessage(e.response?.data?.error || 'Test indisponible.');
+    } finally {
+      setBusy(false);
+    }
+  };
+  return (
+    <details className="feature-panel notification-settings" onToggle={(e) => setOpen(e.currentTarget.open)}>
+      <summary>Notifications et diagnostic de cet appareil</summary>
+      {open && (
+        <>
+          <p>
+            Choisissez les tournois ou les épreuves à suivre sur cet appareil. Une seule alerte par tour lorsque la
+            moitié des rencontres est disponible. Le rappel de clôture reste réservé aux pronostics manquants.
+          </p>
+          {unsupported && <p className="notice">{unsupported}</p>}
+          {!ready && !message && <p role="status">Chargement des préférences…</p>}
+          {ready && (
+            <>
+              {!config?.available && <p>Les notifications sont en cours de configuration.</p>}
+              <p className="status-pill">
+                {enabled && Notification.permission === 'granted'
+                  ? 'Activées sur cet appareil'
+                  : 'Désactivées ou autorisation à vérifier'}
+              </p>
+              <p>
+                Autorisation du téléphone :{' '}
+                {typeof Notification === 'undefined'
+                  ? 'non disponible'
+                  : Notification.permission === 'granted'
+                    ? 'accordée'
+                    : Notification.permission === 'denied'
+                      ? 'refusée'
+                      : 'pas encore demandée'}{' '}
+                · abonnement : {sub ? 'présent' : 'absent'}.
+              </p>
+              {diagnostic && (
+                <p>
+                  Dernier envoi : {diagnostic.sentAt ? new Date(diagnostic.sentAt).toLocaleString('fr-FR') : 'aucun'}
+                  {diagnostic.failed ? ' · Un envoi récent a échoué. Essayez le bouton de test.' : ''}
+                </p>
+              )}
+              <fieldset>
+                <legend>Mes alertes</legend>
+                {[
+                  ['newMatches', 'Une alerte lorsque la moitié du tour est pronosticable'],
+                  ['reminders', 'Rappel à 10 minutes de la clôture, si un pronostic manque'],
+                  ['roundResults', 'Mon bilan après chaque tour'],
+                ].map(([k, label]) => (
+                  <label className="check-row" key={k}>
+                    <input
+                      type="checkbox"
+                      checked={preferences[k]}
+                      disabled={busy}
+                      onChange={(e) => setPreferences((p) => ({ ...p, [k]: e.target.checked }))}
+                    />
+                    {label}
+                  </label>
+                ))}
+                <label className="check-row">
+                  <input
+                    type="checkbox"
+                    checked={preferences.quietEnabled}
+                    onChange={(e) => setPreferences((p) => ({ ...p, quietEnabled: e.target.checked }))}
+                  />{' '}
+                  Heures silencieuses
+                </label>
+                {preferences.quietEnabled && (
+                  <div className="quiet-hours">
+                    <label>
+                      De{' '}
+                      <input
+                        type="time"
+                        value={preferences.quietStart}
+                        onChange={(e) => setPreferences((p) => ({ ...p, quietStart: e.target.value }))}
+                      />
+                    </label>
+                    <label>
+                      à{' '}
+                      <input
+                        type="time"
+                        value={preferences.quietEnd}
+                        onChange={(e) => setPreferences((p) => ({ ...p, quietEnd: e.target.value }))}
+                      />
+                    </label>
+                    <label>
+                      Fuseau horaire{' '}
+                      <input
+                        value={preferences.timezone}
+                        onChange={(e) => setPreferences((p) => ({ ...p, timezone: e.target.value }))}
+                      />
+                    </label>
+                    <small>
+                      Les alertes devenues inutiles pendant cette plage ne seront pas envoyées au réveil. Le test manuel
+                      reste disponible.
+                    </small>
+                  </div>
+                )}
+              </fieldset>
+              <div className="notification-choices">
+                {choices.map((t) => (
+                  <fieldset key={t.id}>
+                    <legend>{t.name}</legend>
+                    <label className="check-row">
+                      <input
+                        type="checkbox"
+                        disabled={busy}
+                        checked={tournaments.includes(t.id)}
+                        onChange={(e) => toggle(setTournaments, t.id, e.target.checked)}
+                      />{' '}
+                      Tout le tournoi, y compris ses futures épreuves
+                    </label>
+                    {t.competitions.map((c) => (
+                      <label className="check-row" key={c.id}>
+                        <input
+                          type="checkbox"
+                          disabled={busy || tournaments.includes(t.id)}
+                          checked={tournaments.includes(t.id) || events.includes(c.id)}
+                          onChange={(e) => toggle(setEvents, c.id, e.target.checked)}
+                        />
+                        {c.name}
+                      </label>
+                    ))}
+                  </fieldset>
+                ))}
+              </div>
+              {devices.length > 0 && (
+                <details>
+                  <summary>Tester sur un de mes appareils abonnés</summary>
+                  <p>Un seul envoi vers l’appareil choisi. Le test utilise une clôture fictive dans 10 minutes.</p>
+                  {devices.map((device, i) => (
+                    <button
+                      className="button-secondary"
+                      key={device.id}
+                      disabled={busy}
+                      onClick={() => test(device.id)}
+                    >
+                      Tester sur {device.label}
+                      {devices.length > 1 ? ` ${i + 1}` : ''}
+                    </button>
+                  ))}
+                </details>
+              )}
+              <div className="notification-actions">
+                <button
+                  disabled={busy || !!unsupported || !config?.available || (!tournaments.length && !events.length)}
+                  onClick={activate}
+                >
+                  {enabled ? 'Enregistrer mes choix' : 'Activer sur cet appareil'}
+                </button>
+                {enabled && (
+                  <>
+                    <button className="button-secondary" disabled={busy} onClick={() => test()}>
+                      Tester une notification
+                    </button>
+                    <button className="button-link" disabled={busy} onClick={disable}>
+                      Désactiver sur cet appareil
+                    </button>
+                  </>
+                )}
+                {sub && !enabled && (
+                  <button className="button-link" disabled={busy} onClick={disable}>
+                    Réinitialiser l’abonnement de cet appareil
+                  </button>
+                )}
+              </div>
+            </>
+          )}
+          {message && <p role="status">{message}</p>}
+          <p className="muted">
+            Aucun envoi avant votre accord. La déconnexion désactive les alertes sur cet appareil. Les notifications
+            peuvent être retardées par les réglages du téléphone.
+          </p>
+        </>
+      )}
+    </details>
+  );
 }

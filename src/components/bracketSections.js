@@ -20,6 +20,6 @@ export function bracketSection(match) {
 export function sectionGroups(groups, section) {
   if (!section || section === 'all') return groups;
   return groups
-    .map(group => ({ ...group, items: group.items.filter(match => bracketSection(match) === section) }))
-    .filter(group => group.items.length > 0);
+    .map((group) => ({ ...group, items: group.items.filter((match) => bracketSection(match) === section) }))
+    .filter((group) => group.items.length > 0);
 }

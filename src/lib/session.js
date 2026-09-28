@@ -11,7 +11,11 @@ export function isExpiredSession(error) {
 
 export function handleAuthError(error, { storage = globalThis.localStorage, target = globalThis.window } = {}) {
   if (isExpiredSession(error)) {
-    try { storage?.removeItem('token'); } catch { /* Stockage indisponible : la session reste en mémoire. */ }
+    try {
+      storage?.removeItem('token');
+    } catch {
+      /* Stockage indisponible : la session reste en mémoire. */
+    }
     target?.dispatchEvent(new Event(SESSION_EXPIRED_EVENT));
   }
   return Promise.reject(error);
