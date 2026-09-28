@@ -1289,4 +1289,31 @@
     background: var(--soft);
     color: var(--primary);
   }
+  .button-danger {
+    border-color: #6b3441;
+  }
+  .button-danger:hover:not(:disabled) {
+    background: #5a2c37;
+  }
+  .quiet-hours input,
+  .notification-settings fieldset,
+  .demo-push {
+    border-color: var(--border);
+  }
+  .preview-banner,
+  .demo-push {
+    background: var(--soft);
+    color: var(--text);
+  }
+  .demo-push small {
+    color: var(--muted);
+  }
+  .outcome-points {
+    border-left-color: #3f7a57;
+  }
+  .account-actions .button-link[aria-pressed='true'],
+  .account-actions .button-link[aria-pressed='true']:hover {
+    background: transparent;
+    color: var(--primary);
+  }
 }
