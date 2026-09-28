@@ -1,0 +1,148 @@
+.season-select {
+  min-width: 160px;
+}
+.season-stats p {
+  margin: 0;
+}
+.season-breakdown {
+  color: var(--muted);
+  font-size: 0.95rem;
+}
+.season-tools {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 8px 16px;
+}
+.season-tools .filter-row {
+  margin: 12px 0;
+}
+.season-search {
+  flex: 1 1 220px;
+  max-width: 320px;
+}
+.season-tournament {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  margin: 14px 0;
+  background: var(--surface);
+}
+.season-tournament > summary {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  cursor: pointer;
+}
+.season-tournament > summary > span:first-child {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.season-tournament small,
+.season-row small {
+  color: var(--muted);
+}
+.season-points {
+  font-weight: 700;
+  color: var(--primary);
+  white-space: nowrap;
+}
+.season-competition {
+  padding: 0 16px 12px;
+}
+.season-competition h3 {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 1rem;
+  margin: 12px 0 6px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+.season-rows {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.season-row {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(0, 1fr) minmax(0, 1.2fr) minmax(0, 1fr);
+  gap: 12px;
+  align-items: center;
+  padding: 10px 0 10px 10px;
+  border-bottom: 1px solid var(--soft);
+  border-left: 3px solid transparent;
+  overflow-wrap: anywhere;
+}
+.season-row > div {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.season-row-points {
+  align-items: flex-end;
+  text-align: right;
+}
+.season-row-points strong {
+  font-size: 1.1rem;
+}
+.season-outcome {
+  white-space: nowrap;
+  font-size: 0.75rem;
+  padding: 1px 8px;
+  border-radius: 20px;
+  background: var(--soft);
+  color: var(--muted);
+}
+.outcome-exact {
+  border-left-color: var(--success);
+}
+.outcome-exact .season-outcome,
+.outcome-points .season-outcome {
+  background: var(--success-soft);
+  color: var(--success);
+}
+.outcome-points {
+  border-left-color: #7fb897;
+}
+.outcome-miss {
+  border-left-color: var(--danger);
+}
+.outcome-miss .season-outcome {
+  background: var(--danger-soft);
+  color: var(--danger);
+}
+.outcome-pending .season-outcome {
+  background: var(--warning-soft);
+  color: var(--warning);
+}
+.outcome-cancelled {
+  opacity: 0.6;
+}
+.season-adjustment {
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+@media (max-width: 640px) {
+  .season-row {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+  .season-row-name {
+    grid-column: 1 / -1;
+  }
+  .season-row-points {
+    grid-column: 1 / -1;
+    flex-direction: row !important;
+    justify-content: flex-end;
+    align-items: baseline !important;
+    gap: 8px !important;
+    flex-wrap: wrap;
+  }
+  .season-row-points small {
+    flex-basis: 100%;
+  }
+}
