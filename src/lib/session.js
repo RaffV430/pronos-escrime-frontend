@@ -20,3 +20,16 @@ export function handleAuthError(error, { storage = globalThis.localStorage, targ
   }
   return Promise.reject(error);
 }
+
+// Âge d'un jeton en secondes (lecture de la date d'émission, sans vérification).
+export function tokenAgeSeconds(token, now = Date.now()) {
+  try {
+    const payload = JSON.parse(atob(String(token).split('.')[1].replace(/-/g, '+').replace(/_/g, '/')));
+    return Number.isFinite(payload.iat) ? Math.floor(now / 1000) - payload.iat : null;
+  } catch {
+    return null;
+  }
+}
+
+// Session glissante : un jeton de plus d'un jour est renouvelé pour 30 jours.
+export const shouldRefresh = (token, now = Date.now()) => (tokenAgeSeconds(token, now) ?? 0) > 24 * 3600;

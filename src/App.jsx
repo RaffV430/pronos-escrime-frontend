@@ -1,6 +1,7 @@
 import { eventLanding } from './components/matchPresentation';
 import { useState, useEffect, lazy, Suspense } from 'react';
 import API, { SESSION_EXPIRED_EVENT } from './api';
+import { shouldRefresh } from './lib/session.js';
 import ScoringRules from './components/ScoringRules';
 import EventSelector from './components/EventSelector';
 import PodiumPrediction from './components/PodiumPrediction';
@@ -136,6 +137,11 @@ export default function App() {
         try {
           const res = await API.get('/auth/me');
           setUser(res.data);
+          // Session glissante : renouvelée à chaque visite après un jour, pour 30 jours.
+          if (shouldRefresh(token))
+            API.post('/auth/refresh')
+              .then(({ data }) => data.token && localStorage.setItem('token', data.token))
+              .catch(() => {});
         } catch (err) {
           if (![401, 403, 404].includes(err.response?.status)) {
             setSessionError(true);

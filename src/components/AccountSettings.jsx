@@ -2,6 +2,7 @@ import { useState } from 'react';
 import API from '../api';
 import { LegalLinks } from './LegalPages';
 import TwoFactorSettings from './TwoFactorSettings';
+import SessionSettings from './SessionSettings';
 
 export default function AccountSettings({ user, onDeleted }) {
   const [password, setPassword] = useState('');
@@ -27,6 +28,8 @@ export default function AccountSettings({ user, onDeleted }) {
       <p className="muted">
         Vos données sont décrites dans la politique de confidentialité. <LegalLinks />
       </p>
+
+      <SessionSettings />
 
       {user.isAdmin && <TwoFactorSettings />}
 
