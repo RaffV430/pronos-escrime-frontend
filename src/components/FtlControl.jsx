@@ -103,6 +103,9 @@ export default function FtlControl({ competitionId, onRefresh }) {
                 </p>
               )}
               <p>{summary.podium ? 'Podium officiel vérifié.' : 'Podium en attente du classement final vérifiable.'}</p>
+              {summary.notes?.map((n, i) => (
+                <p key={`note-${i}`}>{n}</p>
+              ))}
               {summary.warnings?.map((w, i) => (
                 <p key={i}>{w}</p>
               ))}
