@@ -1346,3 +1346,13 @@
 .crowd-trend small {
   color: var(--muted);
 }
+.outsider-bonus {
+  font-weight: 500;
+  font-size: 0.85em;
+  color: var(--success);
+}
+.crowd-outsider {
+  margin: 2px 0;
+  color: var(--success);
+  font-weight: 600;
+}

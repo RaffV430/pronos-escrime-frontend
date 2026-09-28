@@ -1,5 +1,7 @@
 import { roundLabel } from './matchPresentation.js';
 export const APP_URL = 'https://pronos-escrime.vercel.app/';
+// Points d'un pronostic de match : barème + bonus outsider éventuel.
+export const matchTotal = (p) => (p?.pointsEarned ?? 0) + (p?.bonusPoints ?? 0);
 export const plural = (n, singular, multiple = `${singular}s`) => (Number(n) > 1 ? multiple : singular);
 export const roundStatus = (round, complete) =>
   !complete ? 'En cours' : round === 'T4' ? 'Terminées' : round === 'T2' ? 'Terminée' : 'Terminé';

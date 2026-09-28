@@ -28,3 +28,10 @@ test('native sharing includes the app link and singular points', () => {
   assert.deepEqual(payload.files, [file]);
   assert.match(payload.text, /1 point\./);
 });
+
+import { matchTotal } from '../src/components/resultPresentation.js';
+test('match points include the outsider bonus', () => {
+  assert.equal(matchTotal({ pointsEarned: 1, bonusPoints: 1 }), 2);
+  assert.equal(matchTotal({ pointsEarned: 4 }), 4);
+  assert.equal(matchTotal(null), 0);
+});
