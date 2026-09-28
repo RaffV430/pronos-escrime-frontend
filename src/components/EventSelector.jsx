@@ -80,7 +80,7 @@ export default function EventSelector({ userId, onSelect, onReset, beforeChange 
 
   const field = { display: 'grid', gap: '8px', flex: '1 1 240px' };
   const select = { width: '100%' };
-  return <section aria-labelledby="event-choice" style={{ background: '#f2f6fb', border: '1px solid var(--border)', borderRadius: '12px', padding: '20px', marginBottom: '24px' }}>
+  return <section aria-labelledby="event-choice" style={{ background: 'var(--soft)', border: '1px solid var(--border)', borderRadius: '12px', padding: '20px', marginBottom: '24px' }}>
     <h2 id="event-choice" style={{ marginTop: 0 }}>Choisissez vos pronostics</h2>
     <p>Sélectionnez une compétition, puis l’épreuve sur laquelle vous souhaitez pronostiquer.</p>
     <form onSubmit={e => { e.preventDefault(); if (tournamentId && eventId && !loading && !error) { remember({ tournamentId: Number(tournamentId), eventId: Number(eventId) }); onSelect(Number(tournamentId), Number(eventId), events.find(event=>String(event.id)===eventId)); setConfirmed(true); } }}>
