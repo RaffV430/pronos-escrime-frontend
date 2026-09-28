@@ -88,11 +88,16 @@ function PredictionRow({ userId, pool, fencer, closed, onRefresh, reportDirty })
           <span className="pool-country" title="Nationalité · code ISO à trois lettres">
             {fencer.countryCode || '—'}
           </span>
-          {pool.rankingSystem && (
-            <span className="pool-ranking" title="Classement de la liste d’engagement de l’épreuve">
-              {pool.rankingSystem === 'NATIONAL' ? 'National' : pool.rankingSystem} ·{' '}
-              {Number.isInteger(fencer.ranking) && fencer.ranking > 0 ? fencer.ranking : 'non renseigné'}
+          {pool.rankingSystem && Number.isInteger(fencer.ranking) && fencer.ranking > 0 ? (
+            <span className="pool-ranking" title="Classement saisi pour cette poule">
+              {pool.rankingSystem === 'NATIONAL' ? 'National' : pool.rankingSystem} · {fencer.ranking}
             </span>
+          ) : Number.isInteger(fencer.entryRanking) && fencer.entryRanking > 0 ? (
+            <span className="pool-ranking" title="Classement d’entrée dans l’épreuve (liste des engagés)">
+              Entrée · {fencer.entryRanking}
+            </span>
+          ) : (
+            pool.rankingSystem && <span className="pool-ranking">Classement non renseigné</span>
           )}
         </div>
       </td>
