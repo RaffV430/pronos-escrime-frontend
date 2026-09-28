@@ -85,7 +85,9 @@ export default function MySeason({ userId }) {
             </p>
           </div>
           <p className="season-breakdown">
-            Matchs {totals.match} · Poules {totals.pool} · Podiums {totals.podium} · Défis {totals.challenge}
+            Matchs {totals.match}
+            {totals.outsider > 0 && ` · Bonus outsider ${totals.outsider}`} · Poules {totals.pool} · Podiums{' '}
+            {totals.podium} · Défis {totals.challenge}
             {totals.adjustment !== 0 && ` · Ajustements ${signedPoints(totals.adjustment)}`}
           </p>
 

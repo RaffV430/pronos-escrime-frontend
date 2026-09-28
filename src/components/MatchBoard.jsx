@@ -1,4 +1,5 @@
 import CrowdTrend from './CrowdTrend';
+import { matchTotal } from './resultPresentation';
 import { roundLabel } from './matchPresentation';
 import { useEffect, useRef, useState } from 'react';
 import API from '../api';
@@ -272,7 +273,8 @@ export default function MatchBoard({
             </p>
             {p && (
               <strong>
-                {p.pointsEarned ?? 0} {(p.pointsEarned ?? 0) === 1 ? 'point' : 'points'}
+                {matchTotal(p)} {matchTotal(p) === 1 ? 'point' : 'points'}
+                {p.bonusPoints > 0 && <span className="outsider-bonus"> dont +{p.bonusPoints} outsider</span>}
               </strong>
             )}
           </div>

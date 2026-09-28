@@ -22,6 +22,9 @@ export default function CrowdTrend({ match }) {
       >
         <span style={{ width: `${c.player1Pct}%` }} />
       </div>
+      {c.outsider && (
+        <p className="crowd-outsider">Victoire d’outsider : +1 point bonus pour ceux qui l’avaient vue venir.</p>
+      )}
       <small>
         {c.total} {plural(c.total, 'pronostic')}
         {top && ` · score le plus joué : ${top.score1} – ${top.score2} (${top.count})`}
