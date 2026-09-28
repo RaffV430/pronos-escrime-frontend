@@ -7,6 +7,7 @@ import PodiumPrediction from './components/PodiumPrediction';
 import PoolPredictions from './components/PoolPredictions';
 import GlobalLeaderboard from './components/GlobalLeaderboard';
 import MyPredictions from './components/MyPredictions';
+import MySeason from './components/MySeason';
 import Community from './components/Community';
 import AdminPanel from './components/AdminPanel';
 import FtlControl from './components/FtlControl';
@@ -219,6 +220,7 @@ export default function App() {
           {[
             ['play', '◎', 'Pronostiquer'],
             ['mine', '▤', 'Mes pronostics'],
+            ['season', '◷', 'Ma saison'],
             ['leaderboard', '↗', 'Classements'],
             ['community', '♧', 'Communauté'],
           ].map(([id, icon, label]) => (
@@ -234,30 +236,33 @@ export default function App() {
         {mainTab === 'admin' && user.isAdmin && (
           <FtlTournamentSetup onConfigured={() => setEventListVersion((v) => v + 1)} />
         )}
-        <EventSelector
-          key={`${user.id}:${eventListVersion}:${mainTab === 'play' ? 'active' : 'history'}`}
-          includeArchived={mainTab !== 'play'}
-          userId={user.id}
-          beforeChange={runNavigation}
-          onReset={() => {
-            setTournamentId(null);
-            selectCompetition(null);
-            setCompetition(null);
-          }}
-          onSelect={(tId, cId, entry) => {
-            setTournamentId(tId);
-            selectCompetition(cId);
-            setCompetition(entry);
-            if (cId !== selectedCompetitionId) setPlayTab('tableau');
-            setMainTab((current) =>
-              current !== 'play'
-                ? current
-                : new URLSearchParams(location.search).get('view') === 'mine'
-                  ? 'mine'
-                  : 'play',
-            );
-          }}
-        />
+        {mainTab === 'season' && <MySeason userId={user.id} />}
+        {mainTab !== 'season' && (
+          <EventSelector
+            key={`${user.id}:${eventListVersion}:${mainTab === 'play' ? 'active' : 'history'}`}
+            includeArchived={mainTab !== 'play'}
+            userId={user.id}
+            beforeChange={runNavigation}
+            onReset={() => {
+              setTournamentId(null);
+              selectCompetition(null);
+              setCompetition(null);
+            }}
+            onSelect={(tId, cId, entry) => {
+              setTournamentId(tId);
+              selectCompetition(cId);
+              setCompetition(entry);
+              if (cId !== selectedCompetitionId) setPlayTab('tableau');
+              setMainTab((current) =>
+                current !== 'play'
+                  ? current
+                  : new URLSearchParams(location.search).get('view') === 'mine'
+                    ? 'mine'
+                    : 'play',
+              );
+            }}
+          />
+        )}
         {selectedCompetitionId && (
           <>
             {mainTab === 'play' && (
