@@ -163,9 +163,17 @@ function PredictionRow({ userId, pool, fencer, closed, onRefresh, reportDirty })
             >
               {fencer.comparison.points.total}
             </strong>
-          ) : (
-            '—'
+          ) : null}
+          {fencer.comparison?.points.adjusted && (
+            <small className="pool-adjusted">
+              Ajusté : {fencer.comparison.points.adjusted.annulled} match
+              {fencer.comparison.points.adjusted.annulled > 1 ? 's annulés' : ' annulé'} · comparé à{' '}
+              {fencer.comparison.points.adjusted.wins} V · indice{' '}
+              {fencer.comparison.points.adjusted.indicator > 0 ? '+' : ''}
+              {fencer.comparison.points.adjusted.indicator}
+            </small>
           )}
+          {!fencer.comparison && '—'}
         </td>
       )}
       <td data-label="Pronostic" className="pool-state-cell">
@@ -638,7 +646,13 @@ function PoolList({ competitionId, user, onDirtyChange, refreshVersion }) {
                             reportDirty={reportDirty}
                             pool={pool}
                             fencer={fencer}
-                            closed={pool.isFinal || closed || Boolean(fencer.firstResultAt) || Boolean(fencer.isClosed) || sourcePending}
+                            closed={
+                              pool.isFinal ||
+                              closed ||
+                              Boolean(fencer.firstResultAt) ||
+                              Boolean(fencer.isClosed) ||
+                              sourcePending
+                            }
                             onRefresh={reload}
                           />
                         ))}
