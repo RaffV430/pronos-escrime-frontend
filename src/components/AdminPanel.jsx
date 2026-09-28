@@ -2,6 +2,7 @@ import { roundLabel } from './matchPresentation';
 import { useState, useEffect, useRef } from 'react';
 import API from '../api';
 import FtlSetup from './FtlSetup';
+import ArchiveTournament from './ArchiveTournament';
 import PodiumPrediction from './PodiumPrediction';
 import PoolPredictions from './PoolPredictions';
 export default function AdminPanel({ competitionId, tournamentId, user, matches, onRefresh, now }) {
@@ -87,6 +88,7 @@ export default function AdminPanel({ competitionId, tournamentId, user, matches,
       <p>Les actions concernent l’épreuve sélectionnée. Les opérations sensibles sont consignées dans le journal.</p>
       {message && <p role="status">{message}</p>}
       <FtlSetup competitionId={competitionId} tournamentId={tournamentId} />
+      <ArchiveTournament tournamentId={tournamentId} />
       <form className="feature-panel" onSubmit={adjust}>
         <h3>Ajustement manuel des points</h3>
         <div className="form-grid">
