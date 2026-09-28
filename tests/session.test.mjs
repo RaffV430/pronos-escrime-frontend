@@ -38,3 +38,13 @@ test('wrong passwords, forbidden pages, anonymous calls and server errors keep t
     assert.deepEqual([e.removed, e.events], [[], []]);
   }
 });
+
+import { tokenAgeSeconds, shouldRefresh } from '../src/lib/session.js';
+test('tokens older than a day are renewed; unreadable tokens are left alone', () => {
+  const token = (iat) => `x.${Buffer.from(JSON.stringify({ iat })).toString('base64url')}.y`;
+  const now = Date.parse('2026-09-28T20:00:00Z');
+  assert.equal(tokenAgeSeconds(token(now / 1000 - 3600), now), 3600);
+  assert.equal(shouldRefresh(token(now / 1000 - 3600), now), false);
+  assert.equal(shouldRefresh(token(now / 1000 - 2 * 86400), now), true);
+  assert.equal(shouldRefresh('pas-un-jeton', now), false);
+});
