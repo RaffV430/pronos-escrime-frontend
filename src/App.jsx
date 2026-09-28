@@ -8,6 +8,10 @@ import PoolPredictions from './components/PoolPredictions';
 import GlobalLeaderboard from './components/GlobalLeaderboard';
 import MyPredictions from './components/MyPredictions';
 import MySeason from './components/MySeason';
+import AccountSettings from './components/AccountSettings';
+import { ForgotPassword, ResetPassword } from './components/AccountRecovery';
+import { LegalPage, LegalLinks } from './components/LegalPages';
+import { legalPageFor } from './lib/legal.js';
 import Community from './components/Community';
 import ResultFreshness from './components/ResultFreshness';
 import ClosingCountdown from './components/ClosingCountdown';
@@ -29,6 +33,19 @@ export default function App() {
   const [sessionRetry, setSessionRetry] = useState(0);
   const [isRegister, setIsRegister] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [forgotPassword, setForgotPassword] = useState(false);
+  const [passwordReset, setPasswordReset] = useState(false);
+  const [resetToken, setResetToken] = useState(() => new URLSearchParams(location.search).get('reset'));
+  const legalPage = legalPageFor(location.pathname);
+  useEffect(() => {
+    API.get('/auth/config')
+      .then(({ data }) => setPasswordReset(Boolean(data.passwordReset)))
+      .catch(() => setPasswordReset(false));
+  }, []);
+  const closeReset = () => {
+    setResetToken(null);
+    history.replaceState(null, '', location.pathname);
+  };
   const [formData, setFormData] = useState({ username: '', email: '', password: '' });
   const [error, setError] = useState('');
 
@@ -186,6 +203,13 @@ export default function App() {
     setSelectedCompetitionId(competitionId);
   };
 
+  if (legalPage) return <LegalPage page={legalPage} />;
+  if (resetToken)
+    return (
+      <div className="auth-card">
+        <ResetPassword token={resetToken} onDone={closeReset} />
+      </div>
+    );
   if (sessionError)
     return (
       <main className="auth-card">
@@ -213,6 +237,9 @@ export default function App() {
                 Administration
               </button>
             )}
+            <button className="button-link" aria-pressed={mainTab === 'account'} onClick={() => navigate('account')}>
+              Mon compte
+            </button>
             <button className="button-link" onClick={() => runNavigation(handleLogout)}>
               Déconnexion
             </button>
@@ -241,7 +268,18 @@ export default function App() {
           </Suspense>
         )}
         {mainTab === 'season' && <MySeason userId={user.id} />}
-        {mainTab !== 'season' && (
+        {mainTab === 'account' && (
+          <AccountSettings
+            user={user}
+            onDeleted={() => {
+              localStorage.removeItem('token');
+              setUser(null);
+              setMainTab('play');
+              setError('Votre compte et vos données ont été supprimés.');
+            }}
+          />
+        )}
+        {!['season', 'account'].includes(mainTab) && (
           <EventSelector
             key={`${user.id}:${eventListVersion}:${mainTab === 'play' ? 'active' : 'history'}`}
             includeArchived={mainTab !== 'play'}
@@ -408,7 +446,9 @@ export default function App() {
             )}
           </>
         )}
-        <footer className="site-footer">Pronos Escrime · Les résultats sont actualisés après import officiel.</footer>
+        <footer className="site-footer">
+          Pronos Escrime · Les résultats sont actualisés après import officiel. · <LegalLinks />
+        </footer>
         {pendingNavigation && (
           <div className="navigation-overlay">
             <section role="dialog" aria-modal="true" aria-labelledby="unsaved-title" className="navigation-dialog">
@@ -437,60 +477,80 @@ export default function App() {
 
   return (
     <div className="auth-card">
-      <h2>{isRegister ? 'Inscription' : 'Connexion'}</h2>
-      {error && <div style={{ color: 'red', marginBottom: '10px' }}>{error}</div>}
-      <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-        {isRegister && (
-          <input
-            type="text"
-            placeholder="Nom d'utilisateur"
-            required
-            value={formData.username}
-            onChange={(e) => setFormData({ ...formData, username: e.target.value })}
-          />
-        )}
-        <input
-          type="text"
-          placeholder={isRegister ? 'Email' : 'Identifiant'}
-          required
-          value={formData.email}
-          onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-        />
-        <div className="password-field">
-          <input
-            id="auth-password"
-            aria-label="Mot de passe"
-            type={showPassword ? 'text' : 'password'}
-            autoComplete={isRegister ? 'new-password' : 'current-password'}
-            placeholder="Mot de passe"
-            required
-            value={formData.password}
-            onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-          />
-          <button
-            type="button"
-            className="button-secondary"
-            aria-controls="auth-password"
-            aria-label={showPassword ? 'Masquer le mot de passe' : 'Afficher le mot de passe'}
-            onClick={() => setShowPassword((visible) => !visible)}
-          >
-            {showPassword ? 'Masquer' : 'Afficher'}
-          </button>
-        </div>
-        <button type="submit">{isRegister ? "S'inscrire" : 'Se connecter'}</button>
-      </form>
-      <p style={{ marginTop: '15px' }}>
-        {isRegister ? 'Déjà un compte ?' : 'Pas encore de compte ?'}{' '}
-        <button
-          className="button-link"
-          onClick={() => {
-            setIsRegister(!isRegister);
-            setShowPassword(false);
-          }}
-          style={{ textDecoration: 'underline' }}
-        >
-          {isRegister ? 'Se connecter' : "S'inscrire"}
-        </button>
+      {forgotPassword ? (
+        <ForgotPassword onBack={() => setForgotPassword(false)} />
+      ) : (
+        <>
+          <h2>{isRegister ? 'Inscription' : 'Connexion'}</h2>
+          {error && (
+            <p role="alert" className="form-error">
+              {error}
+            </p>
+          )}
+          <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+            {isRegister && (
+              <input
+                type="text"
+                placeholder="Nom d'utilisateur"
+                required
+                value={formData.username}
+                onChange={(e) => setFormData({ ...formData, username: e.target.value })}
+              />
+            )}
+            <input
+              type="text"
+              placeholder={isRegister ? 'Email' : 'Identifiant'}
+              required
+              value={formData.email}
+              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+            />
+            <div className="password-field">
+              <input
+                id="auth-password"
+                aria-label="Mot de passe"
+                type={showPassword ? 'text' : 'password'}
+                autoComplete={isRegister ? 'new-password' : 'current-password'}
+                placeholder="Mot de passe"
+                required
+                value={formData.password}
+                onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+              />
+              <button
+                type="button"
+                className="button-secondary"
+                aria-controls="auth-password"
+                aria-label={showPassword ? 'Masquer le mot de passe' : 'Afficher le mot de passe'}
+                onClick={() => setShowPassword((visible) => !visible)}
+              >
+                {showPassword ? 'Masquer' : 'Afficher'}
+              </button>
+            </div>
+            <button type="submit">{isRegister ? "S'inscrire" : 'Se connecter'}</button>
+          </form>
+          {!isRegister && passwordReset && (
+            <p>
+              <button className="button-link" onClick={() => setForgotPassword(true)}>
+                Mot de passe oublié ?
+              </button>
+            </p>
+          )}
+          <p style={{ marginTop: '15px' }}>
+            {isRegister ? 'Déjà un compte ?' : 'Pas encore de compte ?'}{' '}
+            <button
+              className="button-link"
+              onClick={() => {
+                setIsRegister(!isRegister);
+                setShowPassword(false);
+              }}
+              style={{ textDecoration: 'underline' }}
+            >
+              {isRegister ? 'Se connecter' : "S'inscrire"}
+            </button>
+          </p>
+        </>
+      )}
+      <p className="muted auth-legal">
+        <LegalLinks />
       </p>
     </div>
   );
