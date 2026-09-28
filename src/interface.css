@@ -1311,9 +1311,38 @@
   .outcome-points {
     border-left-color: #3f7a57;
   }
-  .account-actions .button-link[aria-pressed='true'],
-  .account-actions .button-link[aria-pressed='true']:hover {
+  .account-actions .button-link[aria-current='page'],
+  .account-actions .button-link[aria-current='page']:hover {
     background: transparent;
     color: var(--primary);
   }
+}
+
+/* Tendances des pronostics après clôture */
+.crowd-trend {
+  margin: 10px 0 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 13px;
+}
+.crowd-labels {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  overflow-wrap: anywhere;
+}
+.crowd-bar {
+  height: 6px;
+  border-radius: 3px;
+  background: var(--border);
+  overflow: hidden;
+}
+.crowd-bar span {
+  display: block;
+  height: 100%;
+  background: var(--primary);
+}
+.crowd-trend small {
+  color: var(--muted);
 }

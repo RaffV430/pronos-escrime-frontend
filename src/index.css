@@ -428,8 +428,8 @@ button[aria-pressed='true'] {
   font-size: 1.1rem;
   margin-top: 24px;
 }
-.account-actions .button-link[aria-pressed='true'],
-.account-actions .button-link[aria-pressed='true']:hover {
+.account-actions .button-link[aria-current='page'],
+.account-actions .button-link[aria-current='page']:hover {
   background: transparent;
   color: var(--primary);
   text-decoration-thickness: 2px;

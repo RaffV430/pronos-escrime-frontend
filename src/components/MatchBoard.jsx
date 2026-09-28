@@ -1,3 +1,4 @@
+import CrowdTrend from './CrowdTrend';
 import { roundLabel } from './matchPresentation';
 import { useEffect, useRef, useState } from 'react';
 import API from '../api';
@@ -278,6 +279,7 @@ export default function MatchBoard({
         ) : (
           <MatchTiming match={m} now={now} hideChecked={checked.length === 1} />
         )}
+        {closed && <CrowdTrend match={m} />}
         {m.syncIssue && <p role="alert">{m.syncIssue}</p>}
         {!m.isFinished && (
           <div className="match-actions">

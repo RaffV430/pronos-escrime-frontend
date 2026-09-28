@@ -237,7 +237,11 @@ export default function App() {
                 Administration
               </button>
             )}
-            <button className="button-link" aria-pressed={mainTab === 'account'} onClick={() => navigate('account')}>
+            <button
+              className="button-link"
+              aria-current={mainTab === 'account' ? 'page' : undefined}
+              onClick={() => navigate('account')}
+            >
               Mon compte
             </button>
             <button className="button-link" onClick={() => runNavigation(handleLogout)}>
