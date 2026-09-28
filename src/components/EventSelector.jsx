@@ -8,11 +8,13 @@ const readSelection = key => {
   } catch { return null; }
 };
 
-export default function EventSelector({ userId, onSelect, onReset, beforeChange = action => action() }) {
+export default function EventSelector({ userId, onSelect, onReset, beforeChange = action => action(), includeArchived = false }) {
   const storageKey = 'pronos:last-event:' + userId;
   const link=new URLSearchParams(location.search);
   const linked={tournamentId:Number(link.get('tournament')),eventId:Number(link.get('event'))};
   const pendingRestore = useRef(Number.isSafeInteger(linked.tournamentId)&&linked.tournamentId>0&&Number.isSafeInteger(linked.eventId)&&linked.eventId>0?linked:readSelection(storageKey));
+  const onResetRef=useRef(onReset);
+  useEffect(()=>{onResetRef.current=onReset;},[onReset]);
   const onSelectRef = useRef(onSelect);
   useEffect(() => { onSelectRef.current = onSelect; }, [onSelect]);
   const remember = (selection) => {
@@ -31,7 +33,7 @@ export default function EventSelector({ userId, onSelect, onReset, beforeChange 
   useEffect(() => {
     const controller = new AbortController();
     setLoading(true); setError('');
-    const url = tournamentId ? `/podium/competitions/${tournamentId}` : '/tournaments';
+    const url = tournamentId ? `/podium/competitions/${tournamentId}` : `/tournaments${includeArchived?'':'?active=true'}`;
     API.get(url, { signal: controller.signal }).then(({ data }) => {
       if (!Array.isArray(data)) throw new Error('Invalid list');
       if (!controller.signal.aborted) {
@@ -53,7 +55,7 @@ export default function EventSelector({ userId, onSelect, onReset, beforeChange 
           if (saved) {
             if (data.some(t => Number(t.id) === saved.tournamentId)) setTournamentId(String(saved.tournamentId));
             else {
-              pendingRestore.current = null;
+              pendingRestore.current = null; onResetRef.current();
               try { localStorage.removeItem(storageKey); } catch { /* Optional preference. */ }
             }
           }
@@ -63,7 +65,21 @@ export default function EventSelector({ userId, onSelect, onReset, beforeChange 
       if (!controller.signal.aborted) setError('Impossible de charger les compétitions. Réessayez.');
     }).finally(() => { if (!controller.signal.aborted) setLoading(false); });
     return () => controller.abort();
-  }, [tournamentId, retry, storageKey]);
+  }, [tournamentId, retry, storageKey, includeArchived]);
+
+  useEffect(()=>{
+    if(includeArchived)return;
+    const controller=new AbortController();
+    const refresh=()=>API.get('/tournaments?active=true',{signal:controller.signal}).then(({data})=>{
+      if(controller.signal.aborted||!Array.isArray(data))return;
+      setTournaments(data);
+      if(tournamentId&&!data.some(t=>String(t.id)===tournamentId)){
+        pendingRestore.current=null;setTournamentId('');setEventId('');setEvents([]);setConfirmed(false);setChooserOpen(false);onResetRef.current();
+      }
+    }).catch(()=>{});
+    const timer=setInterval(refresh,60000);if(chooserOpen)refresh();
+    return()=>{controller.abort();clearInterval(timer);};
+  },[includeArchived,tournamentId,chooserOpen]);
 
   function reset() { pendingRestore.current = null; setConfirmed(false); onReset(); }
   if (confirmed) return <><section className="compact-event"><div><p className="eyebrow">{tournaments.find(t=>String(t.id)===tournamentId)?.name}</p><strong>{events.find(e=>String(e.id)===eventId)?.name}</strong><p>{events.find(e=>String(e.id)===eventId)?.podiumFormat==='TEAM'?'Par équipes · trois médailles':'Individuel · deux médailles de bronze'}</p></div><button className="button-secondary" onClick={()=>setChooserOpen(true)}>Changer ⌄</button></section>
@@ -87,7 +103,7 @@ export default function EventSelector({ userId, onSelect, onReset, beforeChange 
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '16px' }}>
         <label style={field}>Compétition<select style={select} required value={tournamentId} disabled={loading && !tournamentId} onChange={e => { reset(); setTournamentId(e.target.value); setEventId(''); setEvents([]); }}>
           <option value="">Choisir une compétition</option>
-          {tournaments.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+          {tournaments.map(t => <option key={t.id} value={t.id}>{t.name}{t.archivedAt?' · Archivé':''}</option>)}
         </select></label>
         <label style={field}>Épreuve<select style={select} required value={eventId} disabled={!tournamentId || loading || !!error} onChange={e => { reset(); setEventId(e.target.value); }}>
           <option value="">Choisir une épreuve</option>
@@ -143,7 +159,7 @@ function EventChooser({userId,tournaments,currentTournamentId,currentEventId,cur
     </>:<>
       <p className="event-chooser-context">Sélectionnez un tournoi pour retrouver ses épreuves.</p>
       <button className="button-link event-chooser-back" onClick={()=>setView('events')}>← Retour aux épreuves</button>
-      <div className="event-chooser-list">{tournaments.map(t=><button key={t.id} className="event-choice-card" onClick={()=>{setChosenTournamentId(String(t.id));setView('events');}}><strong>{t.name}</strong>{String(t.id)===currentTournamentId&&<span>Tournoi actuel</span>}</button>)}</div>
+      <div className="event-chooser-list">{tournaments.map(t=><button key={t.id} className="event-choice-card" onClick={()=>{setChosenTournamentId(String(t.id));setView('events');}}><strong>{t.name}{t.archivedAt?' · Archivé':''}</strong>{String(t.id)===currentTournamentId&&<span>Tournoi actuel</span>}</button>)}</div>
     </>}
   </dialog>;
 }

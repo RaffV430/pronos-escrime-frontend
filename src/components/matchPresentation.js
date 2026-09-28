@@ -54,3 +54,11 @@ export function nextClosingGroup(matches,now){
  const {at,seconds}=upcoming[0],affected=upcoming.filter(x=>x.at===at).map(x=>x.match);
  return {seconds,matches:affected,rounds:[...new Set(affected.map(m=>m.round||'Rencontres'))]};
 }
+
+export function eventLanding(matches,userId,now=Date.now(),team=false){
+ const valid=matches.filter(m=>m.resultType!=='CANCELLED');
+ if(!valid.length)return {tab:team?'tableau':'pools',filter:'Tous'};
+ const open=valid.filter(m=>!isMatchClosed(m,now));
+ const missing=open.some(m=>!m.predictions?.some(p=>p.userId===userId));
+ return {tab:'tableau',filter:missing?'À compléter':open.length?'À venir':valid.every(m=>m.isFinished)?'Résultats publiés':'Tous'};
+}
