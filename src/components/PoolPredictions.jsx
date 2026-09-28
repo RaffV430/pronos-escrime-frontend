@@ -73,6 +73,8 @@ function PredictionRow({ userId, pool, fencer, closed, onRefresh, reportDirty })
     }
   }
   const formId = `pool-prediction-${pool.id}-${fencer.id}`;
+  // Suspension temporaire (contrôle FencingTimeLive en retard), à distinguer d'un blocage définitif.
+  const pending = closed && !pool.isFinal && !pool.isClosed && !fencer.firstResultAt && Boolean(pool.sourceUnavailable);
   const lockReason = pool.isFinal
     ? 'Résultats publiés'
     : fencer.firstResultAt
@@ -143,7 +145,7 @@ function PredictionRow({ userId, pool, fencer, closed, onRefresh, reportDirty })
             max={maximum}
             step="1"
             required
-            placeholder="+8"
+            placeholder={closed ? '' : '+8'}
             value={indicator}
             onChange={(e) => {
               setDirty(true);
@@ -183,7 +185,14 @@ function PredictionRow({ userId, pool, fencer, closed, onRefresh, reportDirty })
       )}
       {!pool.isFinal && (
         <td data-label="Pronostic" className="pool-state-cell">
-          {closed || pool.isFinal ? (
+          {pending ? (
+            <span
+              className="pool-row-state pool-row-pending"
+              title="Vérification FencingTimeLive en attente : la saisie reprend automatiquement au prochain contrôle."
+            >
+              ⏳<span className="pool-long-label"> En attente</span>
+            </span>
+          ) : closed || pool.isFinal ? (
             <span
               className="pool-row-state"
               title={fencer.prediction || pool.isFinal ? lockReason : `${lockReason} · aucun pronostic`}
@@ -638,6 +647,12 @@ function PoolList({ competitionId, user, onDirtyChange, refreshVersion }) {
                             : 'Pronostics ouverts'}
                     </span>
                   </header>
+                  {pool.sourceUnavailable && !closed && !pool.isFinal && (
+                    <p className="pool-pending" role="status">
+                      ⏳ Saisie suspendue : vérification FencingTimeLive en attente. Elle reprend automatiquement au
+                      prochain contrôle.
+                    </p>
+                  )}
                   {pool.recomposedAt && !closed && (
                     <p className="pool-recomposed" role="status">
                       Poule modifiée sur FencingTimeLive le{' '}
