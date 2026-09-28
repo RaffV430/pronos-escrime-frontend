@@ -1042,14 +1042,6 @@
     min-height: 44px;
     padding: 8px 10px;
   }
-  .pool-table {
-    min-width: 680px;
-  }
-  .pool-table .pool-name-cell {
-    min-width: 135px;
-    width: 135px;
-    max-width: 155px;
-  }
   .pool-table-scroll {
     overflow-x: auto;
   }

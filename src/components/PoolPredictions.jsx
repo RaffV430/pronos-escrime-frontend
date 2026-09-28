@@ -47,7 +47,7 @@ function PredictionRow({ userId, pool, fencer, closed, onRefresh, reportDirty })
       });
       localDraft.discard();
       setDirty(false);
-      setFeedback('Pronostic enregistré.');
+      setFeedback('');
       onRefresh();
     } catch (error) {
       setFeedback(message(error));
@@ -64,7 +64,7 @@ function PredictionRow({ userId, pool, fencer, closed, onRefresh, reportDirty })
       setDirty(false);
       setWins('');
       setIndicator('');
-      setFeedback('Pronostic supprimé.');
+      setFeedback('');
       onRefresh();
     } catch (error) {
       setFeedback(message(error));
@@ -118,18 +118,17 @@ function PredictionRow({ userId, pool, fencer, closed, onRefresh, reportDirty })
           />
         )}
       </td>
-      <td data-label="Défaites" className="pool-number-cell">
+      <td data-label="Défaites" className="pool-number-cell pool-losses-cell">
         {pool.isFinal ? (
           resultCell(fencer.prediction?.losses, fencer.losses)
         ) : (
-          <input
-            aria-label={`Défaites de ${fencer.name} (calcul automatique)`}
+          <span
+            className="pool-losses"
             title="Calcul automatique"
-            type="number"
-            value={losses}
-            readOnly
-            tabIndex={-1}
-          />
+            aria-label={`Défaites de ${fencer.name} : ${losses === '' ? 'non calculées' : losses}`}
+          >
+            {losses === '' ? '—' : losses}
+          </span>
         )}
       </td>
       <td data-label="Indice" className="pool-number-cell">
@@ -165,65 +164,98 @@ function PredictionRow({ userId, pool, fencer, closed, onRefresh, reportDirty })
             </strong>
           ) : null}
           {fencer.comparison?.points.adjusted && (
-            <small className="pool-adjusted">
-              Ajusté : {fencer.comparison.points.adjusted.annulled} match
-              {fencer.comparison.points.adjusted.annulled > 1 ? 's annulés' : ' annulé'} · comparé à{' '}
-              {fencer.comparison.points.adjusted.wins} V · indice{' '}
-              {fencer.comparison.points.adjusted.indicator > 0 ? '+' : ''}
-              {fencer.comparison.points.adjusted.indicator}
+            <small
+              className="pool-adjusted"
+              title={`${fencer.comparison.points.adjusted.annulled} match(s) annulé(s) : comparé à ${fencer.comparison.points.adjusted.wins} V · indice ${signed(fencer.comparison.points.adjusted.indicator)}`}
+            >
+              Ajusté
+              <span className="pool-long-label">
+                {' '}
+                : {fencer.comparison.points.adjusted.annulled} match
+                {fencer.comparison.points.adjusted.annulled > 1 ? 's annulés' : ' annulé'} · comparé à{' '}
+                {fencer.comparison.points.adjusted.wins} V · indice{' '}
+                {signed(fencer.comparison.points.adjusted.indicator)}
+              </span>
             </small>
           )}
           {!fencer.comparison && '—'}
         </td>
       )}
-      <td data-label="Pronostic" className="pool-state-cell">
-        <span className="pool-row-state" title={lockReason}>
-          {closed ? '🔒 ' : ''}
-          {lockReason}
-        </span>
-        {!pool.isFinal && (
-          <form id={formId} onSubmit={save} className="pool-row-actions">
-            {!closed && (
-              <>
-                <button disabled={busy} type="submit" aria-label={`Enregistrer le pronostic de ${fencer.name}`}>
-                  {busy ? 'Enregistrement…' : 'Enregistrer'}
+      {!pool.isFinal && (
+        <td data-label="Pronostic" className="pool-state-cell">
+          {closed || pool.isFinal ? (
+            <span
+              className="pool-row-state"
+              title={fencer.prediction || pool.isFinal ? lockReason : `${lockReason} · aucun pronostic`}
+            >
+              🔒
+              <span className="pool-long-label">
+                {' '}
+                {fencer.prediction || pool.isFinal ? lockReason : 'Aucun pronostic'}
+              </span>
+            </span>
+          ) : (
+            <form id={formId} onSubmit={save} className="pool-row-actions">
+              {fencer.prediction && !dirty ? (
+                <span
+                  className="pool-saved"
+                  title={`Enregistré : ${fencer.prediction.wins} V · ${fencer.prediction.losses} D · ${signed(fencer.prediction.indicator)}`}
+                >
+                  ✓<span className="pool-long-label"> Enregistré</span>
+                </span>
+              ) : (
+                <button
+                  disabled={busy}
+                  type="submit"
+                  className="pool-save"
+                  aria-label={`Enregistrer le pronostic de ${fencer.name}`}
+                >
+                  {busy ? (
+                    '…'
+                  ) : (
+                    <>
+                      <span className="pool-long-label">Enregistrer</span>
+                      <span className="pool-short-label" aria-hidden="true">
+                        OK
+                      </span>
+                    </>
+                  )}
                 </button>
-                {fencer.prediction && (
-                  <button
-                    disabled={busy}
-                    type="button"
-                    className="pool-secondary"
-                    aria-label={`Supprimer le pronostic de ${fencer.name}`}
-                    onClick={remove}
-                  >
-                    Supprimer
-                  </button>
-                )}
-              </>
-            )}
-          </form>
-        )}
-        {fencer.prediction && !pool.isFinal && (
-          <small className="pool-saved">
-            Enregistré : {fencer.prediction.wins} V · {fencer.prediction.losses} D ·{' '}
-            {signed(fencer.prediction.indicator)}
-          </small>
-        )}
-        {closed && !fencer.prediction && <small>Aucun pronostic enregistré</small>}
-        {!closed && (
-          <DraftNotice
-            draft={localDraft}
-            onRestore={(value) => {
-              setWins(value.wins ?? '');
-              setIndicator(value.indicator ?? '');
-              setDirty(true);
-            }}
-          />
-        )}
-        <span role="status" className="pool-row-feedback">
-          {feedback}
-        </span>
-      </td>
+              )}
+              {fencer.prediction && (
+                <button
+                  disabled={busy}
+                  type="button"
+                  className="pool-secondary pool-icon-button"
+                  aria-label={`Supprimer le pronostic de ${fencer.name}`}
+                  title="Supprimer"
+                  onClick={remove}
+                >
+                  ✕
+                </button>
+              )}
+            </form>
+          )}
+          {!closed && fencer.prediction && dirty && (
+            <small className="pool-saved-previous">
+              Enregistré : {fencer.prediction.wins} V · {signed(fencer.prediction.indicator)}
+            </small>
+          )}
+          {!closed && (
+            <DraftNotice
+              draft={localDraft}
+              onRestore={(value) => {
+                setWins(value.wins ?? '');
+                setIndicator(value.indicator ?? '');
+                setDirty(true);
+              }}
+            />
+          )}
+          <span role="status" className="pool-row-feedback">
+            {feedback}
+          </span>
+        </td>
+      )}
     </tr>
   );
 }
@@ -581,13 +613,22 @@ function PoolList({ competitionId, user, onDirtyChange, refreshVersion }) {
               return (
                 <article className="pool-card" key={pool.id}>
                   <header>
-                    <div>
-                      <h3>{pool.name}</h3>
-                      <p>
-                        {pool.fencers.length} tireurs · {pool.fencers.length - 1} matchs par tireur
-                      </p>
-                    </div>
-                    <span className={`pool-badge ${closed ? 'closed' : ''}`}>
+                    <h3>
+                      {pool.name}{' '}
+                      <span className="pool-card-meta">
+                        {pool.fencers.length} tireurs · {pool.fencers.length - 1} matchs
+                        {pool.lockMode !== 'FIRST_RESULT' &&
+                          ` · clôture ${new Date(pool.closesAt).toLocaleString('fr-FR', { dateStyle: 'short', timeStyle: 'short' })}`}
+                      </span>
+                    </h3>
+                    <span
+                      className={`pool-badge ${closed ? 'closed' : ''}`}
+                      title={
+                        pool.lockMode === 'FIRST_RESULT'
+                          ? 'Clôture individuelle au premier résultat détecté sur FencingTimeLive.'
+                          : undefined
+                      }
+                    >
                       {pool.isFinal
                         ? 'Résultats publiés'
                         : closed
@@ -604,16 +645,6 @@ function PoolList({ competitionId, user, onDirtyChange, refreshVersion }) {
                       : pronostics à refaire.
                     </p>
                   )}
-                  <p className="pool-deadline">
-                    {pool.lockMode === 'FIRST_RESULT' ? (
-                      'Clôture individuelle au premier résultat détecté sur FencingTimeLive.'
-                    ) : (
-                      <>
-                        Clôture :{' '}
-                        {new Date(pool.closesAt).toLocaleString('fr-FR', { dateStyle: 'medium', timeStyle: 'short' })}
-                      </>
-                    )}
-                  </p>
                   {pool.rankingSourceUrl && (
                     <p className="pool-deadline">
                       <a href={pool.rankingSourceUrl} target="_blank" rel="noreferrer">
@@ -623,19 +654,33 @@ function PoolList({ competitionId, user, onDirtyChange, refreshVersion }) {
                   )}
                   <div className="pool-table-scroll" role="region" aria-label={`Tableau de ${pool.name}`} tabIndex={0}>
                     <table className="pool-table">
-                      <caption>
+                      <caption className={pool.isFinal ? 'pool-caption' : 'visually-hidden'}>
                         {pool.isFinal
-                          ? 'Pour chaque valeur : votre pronostic, puis le résultat réel en gras.'
+                          ? 'En petit : votre pronostic · en gras : le résultat réel.'
                           : 'Saisissez les victoires et l’indice, puis enregistrez chaque ligne. Les défaites sont calculées automatiquement.'}
                       </caption>
                       <thead>
                         <tr>
-                          <th scope="col">Tireur / tireuse</th>
-                          <th scope="col">Victoires</th>
-                          <th scope="col">Défaites</th>
-                          <th scope="col">Indice</th>
-                          {pool.isFinal && <th scope="col">Points</th>}
-                          <th scope="col">{pool.isFinal ? 'État' : 'Pronostic'}</th>
+                          <th scope="col">Tireur</th>
+                          <th scope="col" className="pool-number-head">
+                            <abbr title="Victoires">V</abbr>
+                          </th>
+                          <th scope="col" className="pool-number-head pool-losses-head">
+                            <abbr title="Défaites (calcul automatique)">D</abbr>
+                          </th>
+                          <th scope="col" className="pool-number-head">
+                            <abbr title="Indice (touches données − reçues)">Ind.</abbr>
+                          </th>
+                          {pool.isFinal && (
+                            <th scope="col" className="pool-number-head">
+                              <abbr title="Points gagnés">Pts</abbr>
+                            </th>
+                          )}
+                          {!pool.isFinal && (
+                            <th scope="col">
+                              <span className="visually-hidden">Pronostic</span>
+                            </th>
+                          )}
                         </tr>
                       </thead>
                       <tbody>

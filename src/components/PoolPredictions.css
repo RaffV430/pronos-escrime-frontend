@@ -24,8 +24,11 @@
   background: white;
   border: 1px solid var(--border);
   border-radius: 12px;
-  padding: 20px;
-  margin: 20px 0;
+  padding: 12px 14px;
+  margin: 12px 0;
+}
+.pool-card h3 {
+  font-size: 1.05rem;
 }
 .pool-badge {
   background: #e4f3e9;
@@ -110,7 +113,7 @@
 }
 @media (max-width: 480px) {
   .pool-card {
-    padding: 12px;
+    padding: 10px 8px;
   }
   .pool-fields {
     gap: 8px;
@@ -187,7 +190,7 @@
 .pool-table-scroll {
   overflow-x: auto;
   max-width: 100%;
-  margin-top: 16px;
+  margin-top: 10px;
   border: 1px solid var(--border);
   border-radius: 10px;
 }
@@ -195,22 +198,23 @@
   outline: 2px solid var(--primary);
   outline-offset: 3px;
 }
+/* Tableau compact : une ligne par tireur, largeur ajustée au contenu utile. */
 .pool-table {
   width: 100%;
-  min-width: 780px;
   border-collapse: separate;
   border-spacing: 0;
   font-size: 0.875rem;
 }
-.pool-table caption {
+.pool-table .pool-caption {
+  caption-side: bottom;
   text-align: left;
-  padding: 12px;
+  padding: 6px 10px;
   color: var(--muted);
-  font-size: 0.8rem;
+  font-size: 0.75rem;
 }
 .pool-table th,
 .pool-table td {
-  padding: 12px 10px;
+  padding: 5px 8px;
   border-top: 1px solid var(--border);
   vertical-align: middle;
   text-align: left;
@@ -218,16 +222,23 @@
 .pool-table thead th {
   background: var(--soft);
   font-weight: 700;
+  font-size: 0.75rem;
   white-space: nowrap;
+  padding-top: 7px;
+  padding-bottom: 7px;
+}
+.pool-table thead th:first-child,
+.pool-table tbody tr:first-child > * {
+  border-top: 0;
 }
 .pool-table .pool-name-cell {
   position: sticky;
   left: 0;
   z-index: 1;
   background: white;
-  min-width: 175px;
-  max-width: 230px;
+  width: 45%;
   box-shadow: 1px 0 0 var(--border);
+  line-height: 1.25;
 }
 .pool-table thead th:first-child {
   position: sticky;
@@ -240,23 +251,38 @@
   background: #f8fafc;
 }
 .pool-table .pool-number-cell {
-  min-width: 85px;
+  width: 1%;
   text-align: center;
+  white-space: nowrap;
+}
+.pool-short-label {
+  display: none;
 }
 .pool-table input {
-  width: 76px;
+  width: 56px;
   min-width: 0;
+  height: 34px;
+  min-height: 0;
   margin: 0;
-  padding: 9px 7px;
+  padding: 4px 6px;
   text-align: center;
   font-variant-numeric: tabular-nums;
 }
-.pool-table input[readonly] {
-  background: var(--soft);
+.pool-table .pool-number-head {
+  text-align: center;
+}
+.pool-table abbr {
+  text-decoration: none;
+}
+.pool-losses {
+  display: inline-block;
+  min-width: 24px;
   color: var(--muted);
+  font-variant-numeric: tabular-nums;
 }
 .pool-state-cell {
-  min-width: 175px;
+  width: 1%;
+  white-space: nowrap;
 }
 .pool-row-state,
 .pool-row-feedback,
@@ -266,11 +292,10 @@
 }
 .pool-row-state {
   color: var(--muted);
-  margin-bottom: 6px;
 }
 .pool-row-actions {
   display: flex;
-  flex-wrap: wrap;
+  align-items: center;
   gap: 6px;
 }
 .pool-row-actions:empty,
@@ -279,40 +304,102 @@
 }
 .pool-row-actions button {
   font-size: 0.75rem;
-  padding: 7px 10px;
+  padding: 0 10px;
+  height: 32px;
+  min-height: 32px;
+}
+.pool-row-actions .pool-icon-button {
+  width: 32px;
+  padding: 0;
+}
+.pool-state-cell .pool-saved {
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+.pool-saved-previous {
+  color: var(--muted);
+  margin-top: 2px;
 }
 .pool-row-feedback {
-  margin-top: 6px;
+  margin-top: 4px;
+  color: var(--danger);
+  white-space: normal;
 }
 .pool-predicted,
 .pool-actual {
   display: block;
   font-variant-numeric: tabular-nums;
+  line-height: 1.2;
 }
 .pool-predicted {
   color: var(--muted);
-  font-size: 0.8rem;
-  margin-bottom: 5px;
+  font-size: 0.75rem;
 }
 .pool-actual {
   color: var(--primary);
 }
-.pool-points-cell {
+.pool-table .pool-points-cell {
+  width: 1%;
+  min-width: 90px;
+  white-space: normal;
+}
+.pool-card-meta {
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--muted);
+}
+.visually-hidden {
+  position: absolute !important;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
   white-space: nowrap;
 }
 @media (max-width: 600px) {
+  /* Mobile : la colonne Défaites (calculée) disparaît, le reste tient sans défilement. */
+  .pool-table .pool-losses-cell,
+  .pool-table thead .pool-losses-head {
+    display: none;
+  }
   .pool-table .pool-name-cell {
-    min-width: 130px;
-    max-width: 150px;
+    width: auto;
     font-size: 0.8rem;
+    white-space: normal;
+  }
+  .pool-table .pool-name-cell .pool-fencer-meta {
+    display: block;
+    margin-left: 26px;
   }
   .pool-table th,
   .pool-table td {
-    padding: 10px 8px;
+    padding: 4px 5px;
+  }
+  .pool-table input {
+    width: 46px;
+    height: 36px;
+    font-size: 16px;
   }
   .pool-table .pool-position {
     width: 20px;
     height: 20px;
+  }
+  .pool-row-actions .pool-save {
+    padding: 0 8px;
+  }
+  .pool-long-label {
+    display: none;
+  }
+  .pool-short-label {
+    display: inline;
+  }
+  .pool-state-cell .pool-saved {
+    font-size: 1.1rem;
+    padding: 0 4px;
+  }
+  .pool-card header .pool-badge {
+    padding: 3px 8px;
+    font-size: 11px;
   }
 }
 .pool-fencer-meta {
@@ -334,6 +421,8 @@
 
 .pool-adjusted {
   display: block;
+  max-width: 170px;
+  white-space: normal;
   margin-top: 2px;
   font-size: 11px;
   font-weight: 500;
