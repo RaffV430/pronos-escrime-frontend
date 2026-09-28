@@ -321,3 +321,13 @@
   color: var(--muted);
   white-space: nowrap;
 }
+
+.pool-recomposed {
+  margin: 8px 0 0;
+  padding: 8px 12px;
+  border-radius: 8px;
+  background: #fff4dc;
+  color: #6b4a00;
+  font-size: 14px;
+  font-weight: 600;
+}

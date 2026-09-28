@@ -567,9 +567,9 @@ function PoolList({ competitionId, user, onDirtyChange, refreshVersion }) {
             {group.items.map((pool) => {
               const closed =
                 pool.isClosed || (pool.lockMode !== 'FIRST_RESULT' && new Date(pool.closesAt).getTime() <= now);
-              const sourcePending =
-                pool.lockMode === 'FIRST_RESULT' &&
-                (!pool.sourceCheckedAt || now - new Date(pool.sourceCheckedAt).getTime() > 180000);
+              // Le serveur décide seul si la vérification FencingTimeLive est à jour (avant le début des
+              // poules, la saisie reste ouverte) : aucune règle de délai dupliquée ici.
+              const sourcePending = Boolean(pool.sourceUnavailable);
               return (
                 <article className="pool-card" key={pool.id}>
                   <header>
@@ -589,6 +589,13 @@ function PoolList({ competitionId, user, onDirtyChange, refreshVersion }) {
                             : 'Pronostics ouverts'}
                     </span>
                   </header>
+                  {pool.recomposedAt && !closed && (
+                    <p className="pool-recomposed" role="status">
+                      Poule modifiée sur FencingTimeLive le{' '}
+                      {new Date(pool.recomposedAt).toLocaleString('fr-FR', { dateStyle: 'short', timeStyle: 'short' })}{' '}
+                      : pronostics à refaire.
+                    </p>
+                  )}
                   <p className="pool-deadline">
                     {pool.lockMode === 'FIRST_RESULT' ? (
                       'Clôture individuelle au premier résultat détecté sur FencingTimeLive.'
@@ -631,7 +638,7 @@ function PoolList({ competitionId, user, onDirtyChange, refreshVersion }) {
                             reportDirty={reportDirty}
                             pool={pool}
                             fencer={fencer}
-                            closed={pool.isFinal || closed || Boolean(fencer.firstResultAt) || sourcePending}
+                            closed={pool.isFinal || closed || Boolean(fencer.firstResultAt) || Boolean(fencer.isClosed) || sourcePending}
                             onRefresh={reload}
                           />
                         ))}
