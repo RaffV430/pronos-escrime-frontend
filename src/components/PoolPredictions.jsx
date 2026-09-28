@@ -8,6 +8,18 @@ import './PoolPredictions.css';
 const message = (error) => error.response?.data?.error || 'Connexion impossible. Réessayez.';
 const signed = (value) => (value > 0 ? `+${value}` : String(value));
 
+// Nation (code olympique) et classement, affichés discrètement après le nom : « FRA · 3 ».
+// Classement saisi pour la poule s'il existe, sinon rang d'entrée dans l'épreuve.
+function fencerMeta(pool, fencer) {
+  const rank =
+    pool.rankingSystem && Number.isInteger(fencer.ranking) && fencer.ranking > 0
+      ? fencer.ranking
+      : Number.isInteger(fencer.entryRanking) && fencer.entryRanking > 0
+        ? fencer.entryRanking
+        : null;
+  return [fencer.countryCode, rank].filter(Boolean).join(' · ');
+}
+
 function PredictionRow({ userId, pool, fencer, closed, onRefresh, reportDirty }) {
   const localDraft = useLocalDraft(draftKey(userId, pool.competitionId, `pool-${fencer.id}`));
   const [wins, setWins] = useState(fencer.prediction?.wins ?? '');
@@ -82,25 +94,8 @@ function PredictionRow({ userId, pool, fencer, closed, onRefresh, reportDirty })
     <tr id={`pool-${fencer.id}`} className={closed ? 'pool-table-row is-closed' : 'pool-table-row'}>
       <th scope="row" className="pool-name-cell">
         <span className="pool-position">{fencer.position}</span> <span>{fencer.name}</span>
+        {fencerMeta(pool, fencer) && <span className="pool-fencer-meta"> {fencerMeta(pool, fencer)}</span>}
       </th>
-      <td data-label="Nationalité · classement">
-        <div className="pool-fencer-info">
-          <span className="pool-country" title="Nationalité · code ISO à trois lettres">
-            {fencer.countryCode || '—'}
-          </span>
-          {pool.rankingSystem && Number.isInteger(fencer.ranking) && fencer.ranking > 0 ? (
-            <span className="pool-ranking" title="Classement saisi pour cette poule">
-              {pool.rankingSystem === 'NATIONAL' ? 'National' : pool.rankingSystem} · {fencer.ranking}
-            </span>
-          ) : Number.isInteger(fencer.entryRanking) && fencer.entryRanking > 0 ? (
-            <span className="pool-ranking" title="Classement d’entrée dans l’épreuve (liste des engagés)">
-              Entrée · {fencer.entryRanking}
-            </span>
-          ) : (
-            pool.rankingSystem && <span className="pool-ranking">Classement non renseigné</span>
-          )}
-        </div>
-      </td>
       <td data-label="Victoires" className="pool-number-cell">
         {pool.isFinal ? (
           resultCell(fencer.prediction?.wins, fencer.wins)
@@ -621,7 +616,6 @@ function PoolList({ competitionId, user, onDirtyChange, refreshVersion }) {
                       <thead>
                         <tr>
                           <th scope="col">Tireur / tireuse</th>
-                          <th scope="col">Nationalité · classement</th>
                           <th scope="col">Victoires</th>
                           <th scope="col">Défaites</th>
                           <th scope="col">Indice</th>
