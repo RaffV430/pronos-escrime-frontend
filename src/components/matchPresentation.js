@@ -121,3 +121,11 @@ export function eventLanding(matches, userId, now = Date.now(), team = false) {
           : 'Tous',
   };
 }
+
+// Prochain match à pronostiquer après `currentId`, dans l'ordre affiché (on
+// repart du début si besoin). `eligible(id)` : match ouvert et sans pronostic.
+export function nextMatchId(orderedIds, currentId, eligible) {
+  const start = orderedIds.indexOf(currentId);
+  const order = start < 0 ? orderedIds : [...orderedIds.slice(start + 1), ...orderedIds.slice(0, start)];
+  return order.find((id) => id !== currentId && eligible(id)) ?? null;
+}

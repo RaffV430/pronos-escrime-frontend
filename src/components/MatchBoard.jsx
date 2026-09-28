@@ -6,7 +6,7 @@ import API from '../api';
 import useLocalDraft, { draftKey } from './useLocalDraft';
 import DraftNotice from './DraftNotice';
 import MatchTiming from './MatchTiming';
-import { groupMatches, isMatchClosed, validateScores } from './matchPresentation';
+import { groupMatches, isMatchClosed, validateScores, nextMatchId } from './matchPresentation';
 
 export default function MatchBoard({
   initialFilter = 'Tous',
@@ -94,6 +94,10 @@ export default function MatchBoard({
     return () => clearTimeout(timer);
   }, [focusTarget]);
   const saving = useRef(false);
+  // Navigation clavier : après Entrée (ou Maj seule) sur un pronostic complet, on
+  // enregistre puis on passe au prochain match ouvert sans pronostic.
+  const pendingAdvance = useRef(null);
+  const shiftAlone = useRef(false);
   const valid = matches.filter(
     (m) => m.player1?.trim() && m.player2?.trim() && m.player1 !== 'En attente...' && m.player2 !== 'En attente...',
   );
@@ -120,9 +124,10 @@ export default function MatchBoard({
   });
   const message = (id, text, failed = false) => setMessages((old) => ({ ...old, [id]: { text, failed } }));
   const save = async (ids) => {
-    if (saving.current) return;
+    if (saving.current) return [];
     saving.current = true;
     setBusy(true);
+    const saved = [];
     try {
       for (const id of ids) {
         const m = valid.find((m) => m.id === Number(id));
@@ -156,6 +161,7 @@ export default function MatchBoard({
             return next;
           });
           message(id, 'Pronostic enregistré.');
+          saved.push(Number(id));
         } catch (e) {
           message(id, e.response?.data?.error || 'Enregistrement impossible. Votre saisie est conservée.', true);
         }
@@ -164,7 +170,30 @@ export default function MatchBoard({
       saving.current = false;
       setBusy(false);
     }
+    return saved;
   };
+  const advance = async (id) => {
+    const saved = await save([id]);
+    if (saved.includes(id)) pendingAdvance.current = id;
+  };
+  useEffect(() => {
+    // Attend la fin de l'enregistrement (champs réactivés) avant de déplacer le focus.
+    if (busy || pendingAdvance.current === null) return;
+    const current = pendingAdvance.current;
+    pendingAdvance.current = null;
+    const ordered = [...document.querySelectorAll('input[id^="input-"][id$="-1"]')].map((el) =>
+      Number(el.id.split('-')[1]),
+    );
+    const next = nextMatchId(ordered, current, (mid) => {
+      const m = valid.find((x) => x.id === mid);
+      return Boolean(m) && !isMatchClosed(m, Date.now()) && !mine(m);
+    });
+    const input = next && document.getElementById(`input-${next}-1`);
+    if (input && !input.disabled) {
+      input.focus({ preventScroll: true });
+      input.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    } else document.activeElement?.blur(); // plus rien à saisir : ferme le clavier sur mobile
+  });
   const remove = async (m) => {
     if (saving.current) return;
     saving.current = true;
@@ -254,12 +283,25 @@ export default function MatchBoard({
               onChange={(e) =>
                 saveDrafts((old) => ({ ...old, [m.id]: { ...values(m), [`score${i + 1}`]: e.target.value } }))
               }
+              enterKeyHint="next"
               onKeyDown={(e) => {
-                if (e.key === 'Enter') {
-                  e.preventDefault();
-                  if (i === 0) document.getElementById(`input-${m.id}-2`)?.focus();
-                  else save([m.id]);
+                if (e.key === 'Shift') {
+                  shiftAlone.current = !e.repeat;
+                  return;
                 }
+                shiftAlone.current = false; // Maj+Tab, Maj+chiffre… : pas de navigation
+                if (e.key !== 'Enter') return;
+                e.preventDefault();
+                const v = values(m);
+                if (v.score1 !== '' && v.score2 !== '') advance(m.id);
+                else if (i === 0) document.getElementById(`input-${m.id}-2`)?.focus();
+                else save([m.id]);
+              }}
+              onKeyUp={(e) => {
+                if (e.key !== 'Shift' || !shiftAlone.current) return;
+                shiftAlone.current = false;
+                const v = values(m);
+                if (v.score1 !== '' && v.score2 !== '') advance(m.id);
               }}
             />
           </label>

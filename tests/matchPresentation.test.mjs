@@ -132,3 +132,27 @@ test('countdown groups the actual closing time and lists every affected match, n
   assert.equal(nextClosingGroup([m(1, 'T16', 900)], now), null);
   assert.equal(nextClosingGroup([m(1, 'T16', 0)], now), null);
 });
+
+import { nextMatchId } from '../src/components/matchPresentation.js';
+test('next match to predict follows the displayed order, wraps around, skips closed or predicted ones', () => {
+  const open = new Set([2, 5, 7]);
+  assert.equal(
+    nextMatchId([1, 2, 3, 5, 7], 3, (id) => open.has(id)),
+    5,
+  );
+  assert.equal(
+    nextMatchId([1, 2, 3, 5, 7], 7, (id) => open.has(id)),
+    2,
+    'wraps around',
+  );
+  assert.equal(
+    nextMatchId([1, 2, 3], 2, (id) => id === 2),
+    null,
+    'never the current match',
+  );
+  assert.equal(
+    nextMatchId([1, 3], 3, () => false),
+    null,
+    'nothing left: keyboard closes',
+  );
+});
