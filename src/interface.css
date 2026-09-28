@@ -1356,3 +1356,81 @@
   color: var(--success);
   font-weight: 600;
 }
+
+/* Duel entre membres d'une ligue */
+.duel-button {
+  margin-left: 10px;
+  padding: 2px 10px;
+  font-size: 0.8rem;
+}
+.duel-score {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  margin: 8px 0;
+}
+.duel-score > div {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.duel-score strong {
+  font-size: 2rem;
+  color: var(--primary);
+}
+.duel-score small {
+  color: var(--muted);
+  overflow-wrap: anywhere;
+  text-align: center;
+}
+.duel-rows {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.duel-row {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(0, 1fr) minmax(0, 1fr) 6.5rem;
+  gap: 10px;
+  align-items: center;
+  padding: 10px 0 10px 10px;
+  border-bottom: 1px solid var(--soft);
+  border-left: 3px solid transparent;
+}
+.duel-row > div {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.duel-row small {
+  color: var(--muted);
+}
+.duel-me {
+  border-left-color: var(--success);
+}
+.duel-them {
+  border-left-color: var(--danger);
+}
+.duel-verdict {
+  font-size: 0.8rem;
+  color: var(--muted);
+  text-align: right;
+  overflow-wrap: anywhere;
+}
+@media (max-width: 640px) {
+  .duel-row {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+  .duel-match {
+    grid-column: 1 / -1;
+  }
+  .duel-verdict {
+    grid-column: 1 / -1;
+    text-align: left;
+  }
+  .duel-verdict::before {
+    content: 'Avantage : ';
+  }
+}

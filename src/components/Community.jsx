@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import API from '../api';
-function Ranking({ rows }) {
+import DuelView from './DuelView';
+function Ranking({ rows, onDuel, userId }) {
   return (
     <ol className="ranking-list">
       {rows.map((r) => (
@@ -11,6 +12,11 @@ function Ranking({ rows }) {
           <strong>
             {Number.isInteger(r.totalPoints) ? r.totalPoints : r.totalPoints.toFixed(2)} pts
             {r.members ? ` · ${r.members} membres` : ''}
+            {onDuel && r.id !== userId && (
+              <button className="button-secondary duel-button" onClick={() => onDuel(r)}>
+                Duel
+              </button>
+            )}
           </strong>
         </li>
       ))}
@@ -22,6 +28,7 @@ export default function Community({ tournamentId, competitionId, userId }) {
     [clubs, setClubs] = useState([]),
     [challenges, setChallenges] = useState([]),
     [detail, setDetail] = useState(null),
+    [duel, setDuel] = useState(null),
     [name, setName] = useState(''),
     [kind, setKind] = useState('PRIVATE'),
     [code, setCode] = useState(''),
@@ -64,8 +71,9 @@ export default function Community({ tournamentId, competitionId, userId }) {
     <section className="feature-panel">
       <h2>Entre amis et clubs</h2>
       <p>
-        Les ligues reprennent les points du tournoi sélectionné, y compris ceux obtenus avant l’inscription. Les
-        pronostics restent personnels.
+        Les ligues reprennent les points du tournoi sélectionné, y compris ceux obtenus avant l’inscription. Vos
+        pronostics restent personnels jusqu’à la fin de chaque match ; ensuite, les membres d’une même ligue peuvent se
+        comparer en duel.
       </p>
       <button onClick={() => setRevision((n) => n + 1)}>Actualiser l’affichage</button>
       {message && <p role="status">{message}</p>}
@@ -182,7 +190,15 @@ export default function Community({ tournamentId, competitionId, userId }) {
       {detail && (
         <div className="feature-panel">
           <h3>{detail.league.name}</h3>
-          <Ranking rows={detail.ranking} />
+          <p className="muted">Comparez-vous match par match avec un membre : bouton « Duel ».</p>
+          <Ranking
+            rows={detail.ranking}
+            userId={userId}
+            onDuel={(r) =>
+              action(async () => setDuel((await API.get(`/community/leagues/${detail.league.id}/duel/${r.id}`)).data))
+            }
+          />
+          {duel && duel.league.id === detail.league.id && <DuelView duel={duel} onClose={() => setDuel(null)} />}
         </div>
       )}
       <h3>Classement des clubs</h3>
