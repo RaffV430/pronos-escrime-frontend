@@ -434,3 +434,22 @@ button[aria-pressed='true'] {
   color: var(--primary);
   text-decoration-thickness: 2px;
 }
+.two-factor {
+  margin-top: 24px;
+  padding-top: 8px;
+  border-top: 1px solid var(--border);
+}
+.two-factor h2 {
+  font-size: 1.1rem;
+}
+.two-factor-qr {
+  background: #fff;
+  padding: 8px;
+  border-radius: var(--radius);
+  align-self: flex-start;
+}
+.two-factor-secret {
+  font-family: ui-monospace, monospace;
+  letter-spacing: 0.05em;
+  overflow-wrap: anywhere;
+}
