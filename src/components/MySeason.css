@@ -146,3 +146,54 @@
     flex-basis: 100%;
   }
 }
+
+.season-badges h2 {
+  font-size: 1.05rem;
+  margin: 18px 0 8px;
+}
+.season-badges ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 210px), 1fr));
+  gap: 10px;
+}
+.badge {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+.badge > div {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.badge small {
+  color: var(--muted);
+}
+.badge-icon {
+  font-size: 1.6rem;
+  line-height: 1;
+}
+.badge.earned {
+  border-color: var(--success);
+  background: var(--success-soft);
+}
+.badge.locked {
+  opacity: 0.55;
+}
+.badge.locked .badge-icon {
+  filter: grayscale(1);
+}
+.badge-count {
+  color: var(--success);
+}
+.badge-where {
+  overflow-wrap: anywhere;
+}
