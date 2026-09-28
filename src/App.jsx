@@ -1,6 +1,6 @@
 import {eventLanding} from './components/matchPresentation';
 import { useState, useEffect } from 'react';
-import API from './api';
+import API, { SESSION_EXPIRED_EVENT } from './api';
 import ScoringRules from './components/ScoringRules';
 import EventSelector from './components/EventSelector';
 import PodiumPrediction from './components/PodiumPrediction';
@@ -94,6 +94,15 @@ export default function App() {
     };
     setSessionError(false); setLoading(true); checkAuth();
   }, [sessionRetry]);
+
+  useEffect(() => {
+    const expired = () => {
+      setUser(null);
+      setError('Votre session a expiré. Reconnectez-vous pour continuer.');
+    };
+    window.addEventListener(SESSION_EXPIRED_EVENT, expired);
+    return () => window.removeEventListener(SESSION_EXPIRED_EVENT, expired);
+  }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
