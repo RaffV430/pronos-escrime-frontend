@@ -48,7 +48,7 @@ export function remainingSeconds(match,now){
 }
 
 export function nextClosingGroup(matches,now){
- const upcoming=matches.map(match=>({match,at:Date.parse(match.manualUnlockUntil||match.closesAt||''),seconds:remainingSeconds(match,now)})).filter(x=>x.seconds>0&&x.seconds<=900).sort((a,b)=>a.at-b.at);
+ const upcoming=matches.map(match=>({match,at:Date.parse(match.manualUnlockUntil||match.closesAt||''),seconds:remainingSeconds(match,now)})).filter(x=>x.seconds>0&&x.seconds<=600).sort((a,b)=>a.at-b.at);
  if(!upcoming.length)return null;
  const {at,seconds}=upcoming[0],affected=upcoming.filter(x=>x.at===at).map(x=>x.match);
  return {seconds,matches:affected,rounds:[...new Set(affected.map(m=>m.round||'Rencontres'))]};
