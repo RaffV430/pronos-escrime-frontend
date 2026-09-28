@@ -1,3 +1,4 @@
+import {roundLabel} from './matchPresentation';
 import {useState} from 'react';
 export default function TournamentShare({summary}){
  const [message,setMessage]=useState(''),[busy,setBusy]=useState(false),[preview,setPreview]=useState(null),[file,setFile]=useState(null);
@@ -7,7 +8,7 @@ export default function TournamentShare({summary}){
   const line=(text,y,size=36)=>{ctx.fillStyle='#17365b';ctx.font=`${size}px sans-serif`;const words=String(text).split(/\s+/);let row='';for(const word of words){if(ctx.measureText(row+word).width>930){ctx.fillText(row,64,y);y+=size+14;row='';}row+=word+' ';}ctx.fillText(row,64,y);return y+size+25;};
   let y=line(summary.complete?'MON BILAN FINAL':'MON BILAN PROVISOIRE',285,40);y=line(summary.tournamentName,y,34);y=line(`${summary.ranking?.name||'Mon résultat'}`,y,38);y+=20;
   for(const text of [`${summary.ranking?.totalPoints||0} points`,`Classement : ${summary.ranking?.rank||'—'} / ${summary.players}`,`${summary.exact} scores exacts`,`${summary.accuracy??0} % de bons vainqueurs`])y=line(text,y,40);
-  if(summary.bestRound)y=line(`Meilleur tour : ${summary.bestRound.round} · ${summary.bestRound.points} points`,y,30);
+  if(summary.bestRound)y=line(`Meilleur tour : ${roundLabel(summary.bestRound.round)} · ${summary.bestRound.points} points`,y,30);
   line(new Date().toLocaleDateString('fr-FR'),1120,25);
   const blob=await new Promise(resolve=>canvas.toBlob(resolve,'image/png'));if(!blob)throw Error();const file=new File([blob],'mon-bilan-pronos-escrime.png',{type:'image/png'});
   setFile(file);setPreview(old=>{if(old)URL.revokeObjectURL(old);return URL.createObjectURL(blob);});

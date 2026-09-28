@@ -1,3 +1,4 @@
+export function roundLabel(round) { return ({T4:'Semi-finales',T2:'Finale'})[round] || round; }
 export function isMatchClosed(match, now) {
   if (match.isFinished || match.syncIssue) return true;
   if (match.manualUnlockUntil) return now >= Date.parse(match.manualUnlockUntil);
