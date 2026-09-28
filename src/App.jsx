@@ -19,8 +19,6 @@ import {disableThisDevice} from './lib/notifications';
 import MatchBoard from './components/MatchBoard';
 import './interface.css';
 
-const SHOW_SHEET_SYNC = false;
-
 export default function App() {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -31,9 +29,6 @@ export default function App() {
   const [formData, setFormData] = useState({ username: '', email: '', password: '' });
   const [error, setError] = useState('');
 
-  const [isSyncing, setIsSyncing] = useState(false);
-  const [syncMessage, setSyncMessage] = useState('');
-  
   // Navigation principale
   const [mainTab, setMainTab] = useState('play');
   const [matchTarget,setMatchTarget]=useState(null);
@@ -100,25 +95,6 @@ export default function App() {
     setSessionError(false); setLoading(true); checkAuth();
   }, [sessionRetry]);
 
-  const handleSyncSheet = async () => {
-    if (!selectedCompetitionId) {
-      setSyncMessage('❌ Veuillez sélectionner une compétition.');
-      return;
-    }
-    
-    setIsSyncing(true);
-    setSyncMessage('Synchronisation en cours...');
-    try {
-      const res = await API.post('/matches/sync-sheet', { competitionId: selectedCompetitionId });
-      setSyncMessage(`✅ Succès : ${res.data.details?.count || 0} matchs mis à jour !`);
-      fetchMatches(selectedCompetitionId);
-    } catch (err) {
-      setSyncMessage(`❌ ${err.response?.data?.error || 'Erreur lors de la synchronisation.'}`);
-    } finally {
-      setIsSyncing(false);
-    }
-  };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
@@ -150,7 +126,6 @@ export default function App() {
     if(competitionId===selectedCompetitionId)return;
     setMatches([]); setLandingPending(true);
     setDirty(false); setMatchesReady(false); setMatchesError('');
-    setSyncMessage('');
     setSelectedCompetitionId(competitionId);
   };
 
@@ -170,7 +145,6 @@ export default function App() {
         {playTab==='podium'&&<PodiumPrediction key={selectedCompetitionId} tournamentId={tournamentId} selectedCompetitionId={selectedCompetitionId} user={{...user,isAdmin:false}} onDirtyChange={setDirty}/>}
         {playTab==='pools'&&<PoolPredictions refreshVersion={resultsVersion} key={selectedCompetitionId} tournamentId={tournamentId} selectedCompetitionId={selectedCompetitionId} user={{...user,isAdmin:false}} onDirtyChange={setDirty}/>}
         {playTab==='tableau'&&matchesReady&&!landingPending&&<><ScoringRules type="matches"/><MatchBoard initialFilter={landingFilter} focusTarget={matchTarget} competitionId={selectedCompetitionId} key={selectedCompetitionId} matches={matches} userId={user.id} now={matchNow} ready={matchesReady} error={matchesError} onRefresh={()=>fetchMatches(selectedCompetitionId)} onDirtyChange={setDirty}/></>}
-        {user.isAdmin&&SHOW_SHEET_SYNC&&<div><button disabled={isSyncing} onClick={handleSyncSheet}>Synchroniser Google Sheets</button><p>{syncMessage}</p></div>}
         </>}
         {mainTab==='mine'&&<MyPredictions key={selectedCompetitionId} competitionId={selectedCompetitionId} tournamentId={tournamentId} userId={user.id} onNavigate={(tab,id)=>{setMainTab('play');setPlayTab(tab==='pools'?'pools':id==='podium'?'podium':'tableau');let attempts=0;const reveal=()=>{const target=document.getElementById(id);if(!target&&attempts++<40){setTimeout(reveal,250);return;}const detail=target?.closest('details');if(detail)detail.open=true;target?.scrollIntoView({behavior:'smooth',block:'center'});};setTimeout(reveal,0);}}/>}
         {mainTab==='community'&&<Community key={selectedCompetitionId} competitionId={selectedCompetitionId} tournamentId={tournamentId} userId={user.id}/>}
