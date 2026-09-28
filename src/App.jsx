@@ -47,6 +47,8 @@ export default function App() {
     history.replaceState(null, '', location.pathname);
   };
   const [formData, setFormData] = useState({ username: '', email: '', password: '' });
+  const [twoFactor, setTwoFactor] = useState(false);
+  const [twoFactorCode, setTwoFactorCode] = useState('');
   const [error, setError] = useState('');
 
   // Navigation principale
@@ -166,13 +168,19 @@ export default function App() {
     const endpoint = isRegister ? '/auth/register' : '/auth/login';
 
     try {
-      const res = await API.post(endpoint, formData);
+      const res = await API.post(endpoint, twoFactor && !isRegister ? { ...formData, code: twoFactorCode } : formData);
       const token = res.data.token;
+      setTwoFactor(false);
+      setTwoFactorCode('');
 
       localStorage.setItem('token', token);
       setUser(res.data.user);
       if (selectedCompetitionId) fetchMatches(selectedCompetitionId);
     } catch (err) {
+      if (err.response?.data?.twoFactorRequired) {
+        setTwoFactor(true);
+        setTwoFactorCode('');
+      }
       const errorMsg =
         err.response?.data?.error || err.response?.data?.message || err.message || 'Une erreur est survenue';
       setError(typeof errorMsg === 'string' ? errorMsg : JSON.stringify(errorMsg));
@@ -529,6 +537,19 @@ export default function App() {
                 {showPassword ? 'Masquer' : 'Afficher'}
               </button>
             </div>
+            {twoFactor && !isRegister && (
+              <input
+                aria-label="Code de vérification"
+                placeholder="Code à 6 chiffres de votre application"
+                inputMode="numeric"
+                autoComplete="one-time-code"
+                pattern="[0-9 ]{6,7}"
+                required
+                autoFocus
+                value={twoFactorCode}
+                onChange={(e) => setTwoFactorCode(e.target.value)}
+              />
+            )}
             <button type="submit">{isRegister ? "S'inscrire" : 'Se connecter'}</button>
           </form>
           {!isRegister && passwordReset && (
