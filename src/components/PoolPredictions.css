@@ -331,3 +331,12 @@
   font-size: 14px;
   font-weight: 600;
 }
+
+.pool-adjusted {
+  display: block;
+  margin-top: 2px;
+  font-size: 11px;
+  font-weight: 500;
+  color: #6b4a00;
+  line-height: 1.3;
+}
