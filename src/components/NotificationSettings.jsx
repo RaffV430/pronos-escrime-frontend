@@ -15,7 +15,7 @@ export default function NotificationSettings({ userId }) {
     [ready, setReady] = useState(false);
   const [preferences, setPreferences] = useState({
       newMatches: true,
-      reminders: false,
+      reminders: true,
       roundResults: false,
       quietEnabled: false,
       quietStart: '22:00',

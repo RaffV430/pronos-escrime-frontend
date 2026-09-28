@@ -1,5 +1,5 @@
 import { eventLanding } from './components/matchPresentation';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, lazy, Suspense } from 'react';
 import API, { SESSION_EXPIRED_EVENT } from './api';
 import ScoringRules from './components/ScoringRules';
 import EventSelector from './components/EventSelector';
@@ -9,16 +9,18 @@ import GlobalLeaderboard from './components/GlobalLeaderboard';
 import MyPredictions from './components/MyPredictions';
 import MySeason from './components/MySeason';
 import Community from './components/Community';
-import AdminPanel from './components/AdminPanel';
-import FtlControl from './components/FtlControl';
 import ResultFreshness from './components/ResultFreshness';
 import ClosingCountdown from './components/ClosingCountdown';
 import InstallApp from './components/InstallApp';
 import NotificationSettings from './components/NotificationSettings';
-import FtlTournamentSetup from './components/FtlTournamentSetup';
 import { disableThisDevice } from './lib/notifications';
 import MatchBoard from './components/MatchBoard';
 import './interface.css';
+// Outils d'administration chargés à la demande : les joueurs ne les téléchargent jamais.
+const AdminPanel = lazy(() => import('./components/AdminPanel'));
+const FtlControl = lazy(() => import('./components/FtlControl'));
+const FtlTournamentSetup = lazy(() => import('./components/FtlTournamentSetup'));
+const adminFallback = <p className="muted">Chargement des outils d’administration…</p>;
 
 export default function App() {
   const [user, setUser] = useState(null);
@@ -234,7 +236,9 @@ export default function App() {
         <NotificationSettings key={user.id} userId={user.id} />
         {error && <p role="alert">{error}</p>}
         {mainTab === 'admin' && user.isAdmin && (
-          <FtlTournamentSetup onConfigured={() => setEventListVersion((v) => v + 1)} />
+          <Suspense fallback={adminFallback}>
+            <FtlTournamentSetup onConfigured={() => setEventListVersion((v) => v + 1)} />
+          </Suspense>
         )}
         {mainTab === 'season' && <MySeason userId={user.id} />}
         {mainTab !== 'season' && (
@@ -274,14 +278,16 @@ export default function App() {
                 </div>
                 <ResultFreshness key={selectedCompetitionId} competitionId={selectedCompetitionId}>
                   {user.isAdmin && (
-                    <FtlControl
-                      key={`ftl-${selectedCompetitionId}`}
-                      competitionId={selectedCompetitionId}
-                      onRefresh={() => {
-                        setResultsVersion((v) => v + 1);
-                        return fetchMatches(selectedCompetitionId);
-                      }}
-                    />
+                    <Suspense fallback={adminFallback}>
+                      <FtlControl
+                        key={`ftl-${selectedCompetitionId}`}
+                        competitionId={selectedCompetitionId}
+                        onRefresh={() => {
+                          setResultsVersion((v) => v + 1);
+                          return fetchMatches(selectedCompetitionId);
+                        }}
+                      />
+                    </Suspense>
                   )}
                 </ResultFreshness>
                 <ClosingCountdown
@@ -388,15 +394,17 @@ export default function App() {
               <GlobalLeaderboard userId={user.id} tournamentId={tournamentId} competitionId={selectedCompetitionId} />
             )}
             {mainTab === 'admin' && user.isAdmin && (
-              <AdminPanel
-                key={selectedCompetitionId}
-                competitionId={selectedCompetitionId}
-                tournamentId={tournamentId}
-                user={user}
-                matches={matches}
-                now={matchNow}
-                onRefresh={() => fetchMatches(selectedCompetitionId)}
-              />
+              <Suspense fallback={adminFallback}>
+                <AdminPanel
+                  key={selectedCompetitionId}
+                  competitionId={selectedCompetitionId}
+                  tournamentId={tournamentId}
+                  user={user}
+                  matches={matches}
+                  now={matchNow}
+                  onRefresh={() => fetchMatches(selectedCompetitionId)}
+                />
+              </Suspense>
             )}
           </>
         )}
