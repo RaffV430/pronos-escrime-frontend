@@ -511,6 +511,7 @@ export default function MatchBoard({
                 {tree.rounds.map((r) => (
                   <button
                     key={r.round}
+                    className="button-secondary"
                     onClick={() =>
                       document
                         .getElementById(`tree-${r.round}`)
