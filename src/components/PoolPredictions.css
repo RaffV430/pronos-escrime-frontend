@@ -21,7 +21,7 @@
   margin: 16px 0;
 }
 .pool-card {
-  background: white;
+  background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 12px;
   padding: 12px 14px;
@@ -235,7 +235,7 @@
   position: sticky;
   left: 0;
   z-index: 1;
-  background: white;
+  background: var(--surface);
   width: 45%;
   box-shadow: 1px 0 0 var(--border);
   line-height: 1.25;
@@ -433,4 +433,81 @@
 }
 .pool-row-pending {
   color: #1f4b99;
+}
+
+/* Suivi en direct de la poule (bilan provisoire FencingTimeLive). */
+.pool-table .pool-live-head {
+  text-align: center;
+  color: #b3261e;
+}
+.pool-live-dot {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  margin-right: 4px;
+  border-radius: 50%;
+  background: #d93025;
+  vertical-align: 1px;
+  animation: pool-live-pulse 1.6s ease-in-out infinite;
+}
+@keyframes pool-live-pulse {
+  50% {
+    opacity: 0.35;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .pool-live-dot {
+    animation: none;
+  }
+}
+.pool-table .pool-live-cell {
+  width: 1%;
+  text-align: center;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+  background: rgba(217, 48, 37, 0.05);
+  line-height: 1.2;
+}
+.pool-live-played,
+.pool-live-score {
+  display: block;
+}
+.pool-live-played {
+  color: var(--muted);
+  font-size: 0.72rem;
+}
+.pool-live-score span {
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+.pool-live-cell.is-idle .pool-live-score {
+  opacity: 0.55;
+}
+.pool-live-pending {
+  color: var(--muted);
+  font-size: 0.75rem;
+}
+.pool-live-status {
+  margin: 6px 0 0;
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+@media (max-width: 600px) {
+  .pool-table .pool-live-cell {
+    padding-left: 4px;
+    padding-right: 4px;
+  }
+}
+@media (prefers-color-scheme: dark) {
+  .pool-table .pool-live-head {
+    color: #ff8a80;
+  }
+  .pool-table .pool-live-cell {
+    background: rgba(255, 138, 128, 0.08);
+  }
+  /* Ce fichier est chargé après le thème sombre global : on y répète le fond des lignes paires. */
+  .pool-table tbody tr:nth-child(even),
+  .pool-table tbody tr:nth-child(even) .pool-name-cell {
+    background: var(--soft);
+  }
 }

@@ -23,7 +23,47 @@ function fencerMeta(pool, fencer) {
   return [fencer.countryCode, rank].filter(Boolean).join(' · ');
 }
 
-function PredictionRow({ userId, pool, fencer, closed, onRefresh, reportDirty }) {
+// Suivi en direct : bilan provisoire relevé sur FencingTimeLive à chaque contrôle (toutes les 2 minutes).
+// Une poule est « en cours » dès qu'un résultat est connu, jusqu'à la publication du résultat final.
+const poolIsLive = (pool) =>
+  !pool.isFinal && pool.fencers.some((f) => f.firstResultAt || (f.wins ?? 0) + (f.losses ?? 0) > 0);
+
+function LiveCell({ fencer, bouts }) {
+  const known = Number.isInteger(fencer.wins) && Number.isInteger(fencer.losses);
+  if (!known)
+    return (
+      <td data-label="Live" className="pool-live-cell">
+        {fencer.firstResultAt ? (
+          <span
+            className="pool-live-pending"
+            title="Un score est en cours de saisie sur FencingTimeLive : bilan affiché au prochain contrôle."
+          >
+            saisie…
+          </span>
+        ) : (
+          <span className="pool-live-pending">—</span>
+        )}
+      </td>
+    );
+  const played = fencer.wins + fencer.losses;
+  const indicator = fencer.indicator ?? 0;
+  return (
+    <td
+      data-label="Live"
+      className={`pool-live-cell${played === 0 ? ' is-idle' : ''}`}
+      aria-label={`En direct : ${played} match${played > 1 ? 's' : ''} tiré${played > 1 ? 's' : ''} sur ${bouts}, ${fencer.wins} victoire${fencer.wins > 1 ? 's' : ''}, indice ${signed(indicator)}`}
+    >
+      <span className="pool-live-played">
+        {played}/{bouts} <abbr title="matchs tirés">m.</abbr>
+      </span>
+      <span className="pool-live-score">
+        <strong>{fencer.wins} V</strong> <span>{signed(indicator)}</span>
+      </span>
+    </td>
+  );
+}
+
+function PredictionRow({ userId, pool, fencer, closed, onRefresh, reportDirty, live = false }) {
   const club = useClub();
   const localDraft = useLocalDraft(draftKey(userId, pool.competitionId, `pool-${fencer.id}`));
   const [wins, setWins] = useState(fencer.prediction?.wins ?? '');
@@ -108,6 +148,7 @@ function PredictionRow({ userId, pool, fencer, closed, onRefresh, reportDirty })
         <span>{fencer.name}</span>
         {fencerMeta(pool, fencer) && <span className="pool-fencer-meta"> {fencerMeta(pool, fencer)}</span>}
       </th>
+      {live && <LiveCell fencer={fencer} bouts={bouts} />}
       <td data-label="Victoires" className="pool-number-cell">
         {pool.isFinal ? (
           resultCell(fencer.prediction?.wins, fencer.wins)
@@ -622,6 +663,7 @@ function PoolList({ competitionId, user, onDirtyChange, refreshVersion }) {
               // Le serveur décide seul si la vérification FencingTimeLive est à jour (avant le début des
               // poules, la saisie reste ouverte) : aucune règle de délai dupliquée ici.
               const sourcePending = Boolean(pool.sourceUnavailable);
+              const live = poolIsLive(pool);
               return (
                 <article className="pool-card" key={pool.id}>
                   <header>
@@ -670,6 +712,14 @@ function PoolList({ competitionId, user, onDirtyChange, refreshVersion }) {
                       </a>
                     </p>
                   )}
+                  {live && (
+                    <p className="pool-live-status" role="status">
+                      <span className="pool-live-dot" aria-hidden="true" /> Poule en cours · suivi en direct
+                      {pool.sourceCheckedAt &&
+                        ` · dernier contrôle FencingTimeLive à ${new Date(pool.sourceCheckedAt).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}`}{' '}
+                      · mise à jour toutes les 2 minutes
+                    </p>
+                  )}
                   <div className="pool-table-scroll" role="region" aria-label={`Tableau de ${pool.name}`} tabIndex={0}>
                     <table className="pool-table">
                       <caption className={pool.isFinal ? 'pool-caption' : 'visually-hidden'}>
@@ -680,6 +730,14 @@ function PoolList({ competitionId, user, onDirtyChange, refreshVersion }) {
                       <thead>
                         <tr>
                           <th scope="col">Tireur</th>
+                          {live && (
+                            <th scope="col" className="pool-live-head">
+                              <abbr title="En direct sur FencingTimeLive : matchs tirés, victoires et indice (contrôle toutes les 2 minutes)">
+                                <span className="pool-live-dot" aria-hidden="true" />
+                                Live
+                              </abbr>
+                            </th>
+                          )}
                           <th scope="col" className="pool-number-head">
                             <abbr title="Victoires">V</abbr>
                           </th>
@@ -717,6 +775,7 @@ function PoolList({ competitionId, user, onDirtyChange, refreshVersion }) {
                               sourcePending
                             }
                             onRefresh={reload}
+                            live={live}
                           />
                         ))}
                       </tbody>
