@@ -2,6 +2,7 @@ import { useState } from 'react';
 import API from '../api';
 import VenuePicker from './VenuePicker';
 import { parisTime } from '../lib/venue.js';
+import { sourceOf } from '../lib/sources.js';
 export default function FtlTournamentSetup({ onConfigured }) {
   const [sourceUrl, setSource] = useState(''),
     [venue, setVenue] = useState({ city: '', timezone: '', offset: '' }),
@@ -10,9 +11,11 @@ export default function FtlTournamentSetup({ onConfigured }) {
     [busy, setBusy] = useState(false),
     [message, setMessage] = useState(''),
     [result, setResult] = useState(null);
+  const provider = sourceOf(sourceUrl);
   const inspect = async (e) => {
     e.preventDefault();
-    if (!venue.timezone) {
+    // engarde-service fournit la ville du lieu : le fuseau est déduit (sauf à l'étranger, voir l'aperçu).
+    if (!venue.timezone && provider !== 'engarde') {
       setMessage('Choisissez la ville du lieu de compétition dans la liste proposée.');
       return;
     }
@@ -26,6 +29,10 @@ export default function FtlTournamentSetup({ onConfigured }) {
         { sourceUrl, city: venue.city, timezone: venue.timezone },
         { timeout: 95000 },
       );
+      if (!data.timezone) {
+        setMessage('Lieu à l’étranger : choisissez sa ville, puis affichez à nouveau les épreuves.');
+        return;
+      }
       setPreview(data);
       setSelected(data.events.map((e) => e.eventId));
     } catch (e) {
@@ -57,19 +64,20 @@ export default function FtlTournamentSetup({ onConfigured }) {
   };
   return (
     <details className="feature-panel tournament-setup">
-      <summary>Préparer un tournoi FencingTimeLive</summary>
+      <summary>Préparer un tournoi (FencingTimeLive ou engarde-service)</summary>
       <p>
-        Un seul calendrier pour retrouver les épreuves individuelles et par équipes, puis choisir celles à proposer aux
-        joueurs.
+        Un seul lien pour retrouver les épreuves individuelles et par équipes, puis choisir celles à proposer aux
+        joueurs. Un tournoi peut être préparé avant la publication des engagés : le suivi automatique les importera dès
+        leur mise en ligne.
       </p>
       <form onSubmit={inspect}>
         <div className="form-grid">
           <label>
-            Lien SCHEDULE du tournoi
+            Lien du tournoi
             <input
               required
               type="url"
-              placeholder="https://www.fencingtimelive.com/tournaments/eventSchedule/…"
+              placeholder="Lien SCHEDULE FencingTimeLive ou lien du tournoi engarde-service"
               value={sourceUrl}
               disabled={busy}
               onChange={(e) => {
@@ -78,6 +86,12 @@ export default function FtlTournamentSetup({ onConfigured }) {
               }}
             />
           </label>
+          {provider === 'engarde' && (
+            <p className="setup-source">
+              <span className="source-badge">engarde-service</span> Le lieu est lu sur la page du tournoi ; ne
+              choisissez une ville que pour une compétition à l’étranger.
+            </p>
+          )}
           <VenuePicker
             value={venue}
             disabled={busy}
@@ -94,7 +108,10 @@ export default function FtlTournamentSetup({ onConfigured }) {
       </form>
       {preview && (
         <section className="prediction-summary">
-          <h3>{preview.tournament}</h3>
+          <h3>
+            {preview.tournament}
+            {preview.provider === 'engarde' && <span className="source-badge">engarde-service</span>}
+          </h3>
           <p>
             {preview.events.length} épreuves · Horaires du lieu de compétition
             {preview.city ? ` · ${preview.city}` : ''} ({preview.timezone}
@@ -129,14 +146,18 @@ export default function FtlTournamentSetup({ onConfigured }) {
                     {e.startsAt ? ` (${parisTime(e.startsAt)} à Paris)` : ''} ·{' '}
                     {e.format === 'TEAM' ? 'Par équipes' : 'Individuel'}
                   </small>
-                  <small>{e.existingCompetitionId ? 'Déjà configurée · conservée' : 'À ajouter'}</small>
+                  <small>
+                    {e.existingCompetitionId ? 'Déjà configurée · conservée' : 'À ajouter'}
+                    {preview.provider === 'engarde' &&
+                      ` · ${e.entries ? `${e.entries} engagés` : 'engagés pas encore publiés'}`}
+                  </small>
                 </span>
               </label>
             ))}
           </div>
           <p>
-            Les listes complètes d’engagés seront vérifiées. Les sources encore non publiées seront recherchées lors des
-            prochains contrôles manuels.
+            Les listes complètes d’engagés seront vérifiées. Les sources encore non publiées seront recherchées
+            automatiquement jusqu’à leur mise en ligne.
           </p>
           <button disabled={busy || !selected.length} onClick={save}>
             {busy ? 'Préparation du tournoi…' : `Préparer ${selected.length} épreuve${selected.length > 1 ? 's' : ''}`}
