@@ -7,7 +7,7 @@ import useLocalDraft, { draftKey } from './useLocalDraft';
 import DraftNotice from './DraftNotice';
 import { withCount } from '../lib/plural';
 import MatchTiming from './MatchTiming';
-import { groupMatches, isMatchClosed, validateScores, nextMatchId } from './matchPresentation';
+import { groupMatches, isMatchClosed, isUpcoming, validateScores, nextMatchId } from './matchPresentation';
 import { useNow } from '../lib/polling';
 import { useClub } from '../lib/club';
 import HeadToHead from './HeadToHead';
@@ -238,7 +238,7 @@ export default function MatchBoard({
       : filter === 'Nouveaux'
         ? newMatches.some((n) => n.id === m.id)
         : filter === 'À venir'
-          ? !isMatchClosed(m, now)
+          ? isUpcoming(m)
           : filter === 'À compléter'
             ? !mine(m) && !isMatchClosed(m, now)
             : filter === 'Ferment bientôt'
@@ -436,8 +436,8 @@ export default function MatchBoard({
             </strong>{' '}
             enregistrés · <strong>{valid.filter((m) => !mine(m) && !isMatchClosed(m, now)).length}</strong> à compléter
           </p>
-          <div className="board-toolbar filter-scroll">
-            <div className="filter-row">
+          <div className="board-toolbar">
+            <div className="filter-row filter-scroll" role="group" aria-label="Filtrer les matchs">
               {[
                 'Tous',
                 ...(club.hasFencers ? ['Nos tireurs'] : []),
@@ -451,7 +451,7 @@ export default function MatchBoard({
                 </button>
               ))}
             </div>
-            <div className="filter-row">
+            <div className="filter-row view-toggle" role="group" aria-label="Affichage">
               {['Liste', 'Arbre'].map((x) => (
                 <button
                   key={x}
