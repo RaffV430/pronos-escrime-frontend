@@ -18,6 +18,25 @@ export default function AccountSettings({ user, onDeleted }) {
       setStatus({ busy: false, error: err.response?.data?.error || 'Suppression impossible. Réessayez.' });
     }
   };
+  const [exporting, setExporting] = useState('');
+  // Droit d'accès (RGPD) : téléchargement de toutes les données du compte en JSON.
+  const exportData = async () => {
+    setExporting('busy');
+    try {
+      const { data } = await API.get('/me/export');
+      const url = URL.createObjectURL(new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' }));
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = 'pronos-escrime-mes-donnees.json';
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+      setExporting('');
+    } catch {
+      setExporting('Téléchargement impossible. Réessayez.');
+    }
+  };
   return (
     <section className="feature-panel">
       <p className="eyebrow">MON COMPTE</p>
@@ -27,6 +46,17 @@ export default function AccountSettings({ user, onDeleted }) {
       </p>
       <p className="muted">
         Vos données sont décrites dans la politique de confidentialité. <LegalLinks />
+      </p>
+      <p>
+        <button type="button" className="button-secondary" onClick={exportData} disabled={exporting === 'busy'}>
+          {exporting === 'busy' ? 'Préparation…' : 'Télécharger mes données'}
+        </button>
+        {exporting && exporting !== 'busy' && (
+          <span role="alert" className="form-error">
+            {' '}
+            {exporting}
+          </span>
+        )}
       </p>
 
       <SessionSettings />

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import API from '../api';
+import { withCount } from '../lib/plural';
 
 const readSelection = (key) => {
   try {
@@ -364,7 +365,9 @@ function EventChooser({ userId, tournaments, currentTournamentId, currentEventId
                 >
                   <strong>{event.name}</strong>
                   {newCount(event, userId) > 0 && (
-                    <span className="status-pill saved">{newCount(event, userId)} nouvelle(s) rencontre(s)</span>
+                    <span className="status-pill saved">
+                      {withCount(newCount(event, userId), 'nouvelle rencontre', 'nouvelles rencontres')}
+                    </span>
                   )}
                   <span>
                     {event.podiumFormat === 'TEAM' ? 'Par équipes' : 'Individuel'}

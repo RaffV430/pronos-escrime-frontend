@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import API from '../api';
 import DuelView from './DuelView';
+import { withCount } from '../lib/plural';
 function Ranking({ rows, onDuel, userId }) {
   return (
     <ol className="ranking-list">
@@ -126,7 +127,8 @@ export default function Community({ tournamentId, competitionId, userId }) {
       {!leagues.length && <p>Aucun groupe rejoint pour ce tournoi.</p>}
       {leagues.map((l) => (
         <article className="prediction-summary" key={l.id}>
-          <strong>{l.name}</strong> · {l.kind === 'CLUB' ? 'Club' : 'Ligue privée'} · {l._count.members} membre(s)
+          <strong>{l.name}</strong> · {l.kind === 'CLUB' ? 'Club' : 'Ligue privée'} ·{' '}
+          {withCount(l._count.members, 'membre')}
           <p>
             Code à partager : <code>{l.code}</code>
           </p>

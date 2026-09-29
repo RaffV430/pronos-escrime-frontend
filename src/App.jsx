@@ -1,5 +1,5 @@
 import { eventLanding } from './components/matchPresentation';
-import { useState, useEffect, lazy, Suspense } from 'react';
+import { useState, useEffect, useRef, lazy, Suspense } from 'react';
 import API, { SESSION_EXPIRED_EVENT } from './api';
 import { shouldRefresh } from './lib/session.js';
 import ScoringRules from './components/ScoringRules';
@@ -70,6 +70,10 @@ export default function App() {
   const [dirty, setDirty] = useState(false);
   const [matchesReady, setMatchesReady] = useState(false);
   const [matchesError, setMatchesError] = useState('');
+  // Données déjà affichées mais dernier rafraîchissement raté (wifi de salle) : on prévient sans bloquer.
+  const [matchesStale, setMatchesStale] = useState(false);
+  const [matchesAttempt, setMatchesAttempt] = useState(0);
+  const matchesLoaded = useRef(false);
   useEffect(() => {
     if (!landingPending || !matchesReady) return;
     const next = eventLanding(matches, user?.id, Date.now(), competition?.podiumFormat === 'TEAM');
@@ -102,8 +106,9 @@ export default function App() {
       setMatches(res.data);
       setMatchesReady(true);
       setMatchesError('');
-    } catch (err) {
-      console.error('Erreur chargement matchs :', err);
+      setMatchesStale(false);
+    } catch {
+      setMatchesStale(true);
     }
   };
 
@@ -114,13 +119,18 @@ export default function App() {
       API.get(`/matches?competitionId=${selectedCompetitionId}`, { signal: controller.signal })
         .then(({ data }) => {
           if (!controller.signal.aborted) {
+            matchesLoaded.current = true;
             setMatches(data);
             setMatchesReady(true);
             setMatchesError('');
+            setMatchesStale(false);
           }
         })
         .catch(() => {
-          if (!controller.signal.aborted) setMatchesError('Impossible de vérifier les matchs. Réessayez.');
+          if (controller.signal.aborted) return;
+          // Tant qu'aucune donnée n'est chargée : erreur visible ; ensuite : simple avertissement.
+          if (matchesLoaded.current) setMatchesStale(true);
+          else setMatchesError('Impossible de charger les matchs. Vérifiez votre connexion.');
         });
     refreshMatches();
     const timer = setInterval(refreshMatches, 30000);
@@ -128,7 +138,7 @@ export default function App() {
       controller.abort();
       clearInterval(timer);
     };
-  }, [selectedCompetitionId]);
+  }, [selectedCompetitionId, matchesAttempt]);
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -214,6 +224,8 @@ export default function App() {
     setDirty(false);
     setMatchesReady(false);
     setMatchesError('');
+    setMatchesStale(false);
+    matchesLoaded.current = false;
     setSelectedCompetitionId(competitionId);
   };
 
@@ -395,6 +407,25 @@ export default function App() {
                     onDirtyChange={setDirty}
                   />
                 )}
+                {playTab === 'tableau' && !matchesReady && (
+                  <div className="load-state" role={matchesError ? 'alert' : 'status'}>
+                    {matchesError ? (
+                      <>
+                        {matchesError}{' '}
+                        <button
+                          onClick={() => {
+                            setMatchesError('');
+                            setMatchesAttempt((n) => n + 1);
+                          }}
+                        >
+                          Réessayer
+                        </button>
+                      </>
+                    ) : (
+                      'Chargement des matchs…'
+                    )}
+                  </div>
+                )}
                 {playTab === 'tableau' && matchesReady && !landingPending && (
                   <>
                     <ScoringRules type="matches" />
@@ -407,7 +438,7 @@ export default function App() {
                       userId={user.id}
                       now={matchNow}
                       ready={matchesReady}
-                      error={matchesError}
+                      stale={matchesStale}
                       onRefresh={() => fetchMatches(selectedCompetitionId)}
                       onDirtyChange={setDirty}
                     />
@@ -510,6 +541,8 @@ export default function App() {
             {isRegister && (
               <input
                 type="text"
+                aria-label="Nom d'utilisateur"
+                autoComplete="nickname"
                 placeholder="Nom d'utilisateur"
                 required
                 value={formData.username}
@@ -517,8 +550,11 @@ export default function App() {
               />
             )}
             <input
-              type="text"
-              placeholder={isRegister ? 'Email' : 'Identifiant'}
+              type={isRegister ? 'email' : 'text'}
+              aria-label={isRegister ? 'Adresse e-mail' : 'Identifiant ou adresse e-mail'}
+              autoComplete={isRegister ? 'email' : 'username'}
+              autoCapitalize="none"
+              placeholder={isRegister ? 'Email' : 'Identifiant ou e-mail'}
               required
               value={formData.email}
               onChange={(e) => setFormData({ ...formData, email: e.target.value })}

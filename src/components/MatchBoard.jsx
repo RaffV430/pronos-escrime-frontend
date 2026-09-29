@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from 'react';
 import API from '../api';
 import useLocalDraft, { draftKey } from './useLocalDraft';
 import DraftNotice from './DraftNotice';
+import { withCount } from '../lib/plural';
 import MatchTiming from './MatchTiming';
 import { groupMatches, isMatchClosed, validateScores, nextMatchId } from './matchPresentation';
 
@@ -15,7 +16,7 @@ export default function MatchBoard({
   competitionId,
   now,
   ready,
-  error,
+  stale = false,
   onRefresh,
   onDirtyChange,
   focusTarget,
@@ -129,6 +130,7 @@ export default function MatchBoard({
     setBusy(true);
     const saved = [];
     try {
+      const ready_ = [];
       for (const id of ids) {
         const m = valid.find((m) => m.id === Number(id));
         if (!m) continue;
@@ -138,7 +140,7 @@ export default function MatchBoard({
           message(id, invalid, true);
           continue;
         }
-        if (!ready || error || isMatchClosed(m, Date.now())) {
+        if (!ready || isMatchClosed(m, Date.now())) {
           message(
             id,
             'Le match est clos ou sa disponibilité ne peut pas être vérifiée. Votre saisie est conservée.',
@@ -146,25 +148,32 @@ export default function MatchBoard({
           );
           continue;
         }
-        try {
-          if (onPreviewSave)
-            await onPreviewSave(id, { predictedScore1: Number(v.score1), predictedScore2: Number(v.score2) });
-          else
-            await API.post(`/matches/${id}/predict`, {
-              predictedScore1: Number(v.score1),
-              predictedScore2: Number(v.score2),
-            });
-          await onRefresh();
-          saveDrafts((old) => {
-            const next = { ...old };
-            delete next[id];
-            return next;
-          });
-          message(id, 'Pronostic enregistré.');
-          saved.push(Number(id));
-        } catch (e) {
-          message(id, e.response?.data?.error || 'Enregistrement impossible. Votre saisie est conservée.', true);
-        }
+        ready_.push([id, { predictedScore1: Number(v.score1), predictedScore2: Number(v.score2) }]);
+      }
+      // Envois en parallèle (le serveur contrôle chaque clôture), puis un seul rafraîchissement.
+      const results = await Promise.allSettled(
+        ready_.map(([id, body]) =>
+          onPreviewSave ? onPreviewSave(id, body) : API.post(`/matches/${id}/predict`, body),
+        ),
+      );
+      results.forEach((r, i) => {
+        const id = ready_[i][0];
+        if (r.status === 'fulfilled') saved.push(Number(id));
+        else
+          message(
+            id,
+            r.reason?.response?.data?.error || 'Enregistrement impossible. Votre saisie est conservée.',
+            true,
+          );
+      });
+      if (saved.length) {
+        await onRefresh();
+        saveDrafts((old) => {
+          const next = { ...old };
+          for (const id of saved) delete next[id];
+          return next;
+        });
+        for (const id of saved) message(id, 'Pronostic enregistré.');
       }
     } finally {
       saving.current = false;
@@ -238,18 +247,17 @@ export default function MatchBoard({
     const p = mine(m),
       v = values(m),
       closed = isMatchClosed(m, now),
-      status =
-        !ready || error
-          ? 'Vérification…'
-          : m.isFinished
-            ? 'Résultat publié'
-            : closed
-              ? 'Clos'
-              : drafts[m.id]
-                ? 'Non enregistré'
-                : p
-                  ? 'Enregistré'
-                  : 'À compléter';
+      status = !ready
+        ? 'Vérification…'
+        : m.isFinished
+          ? 'Résultat publié'
+          : closed
+            ? 'Clos'
+            : drafts[m.id]
+              ? 'Non enregistré'
+              : p
+                ? 'Enregistré'
+                : 'À compléter';
     return (
       <article
         id={`match-${m.id}`}
@@ -273,16 +281,17 @@ export default function MatchBoard({
               id={`input-${m.id}-${i + 1}`}
               aria-label={`Score prévu de ${name}`}
               inputMode="numeric"
-              type="number"
-              min="0"
-              max={m.maxScore || 15}
-              step="1"
+              type="text"
+              pattern="[0-9]*"
+              maxLength={2}
+              autoComplete="off"
               placeholder="—"
               value={v[`score${i + 1}`]}
-              disabled={closed || busy || !ready || !!error}
-              onChange={(e) =>
-                saveDrafts((old) => ({ ...old, [m.id]: { ...values(m), [`score${i + 1}`]: e.target.value } }))
-              }
+              disabled={closed || busy || !ready}
+              onChange={(e) => {
+                const value = e.target.value.replace(/\D/g, '').slice(0, 2);
+                saveDrafts((old) => ({ ...old, [m.id]: { ...values(m), [`score${i + 1}`]: value } }));
+              }}
               enterKeyHint="next"
               onKeyDown={(e) => {
                 if (e.key === 'Shift') {
@@ -327,11 +336,11 @@ export default function MatchBoard({
         {m.syncIssue && <p role="alert">{m.syncIssue}</p>}
         {!m.isFinished && (
           <div className="match-actions">
-            <button disabled={closed || busy || !drafts[m.id] || !ready || !!error} onClick={() => save([m.id])}>
+            <button disabled={closed || busy || !drafts[m.id] || !ready} onClick={() => save([m.id])}>
               {busy ? 'Enregistrement…' : 'Enregistrer'}
             </button>
             {p && (
-              <button className="button-link" disabled={closed || busy || !ready || !!error} onClick={() => remove(m)}>
+              <button className="button-link" disabled={closed || busy || !ready} onClick={() => remove(m)}>
                 Supprimer
               </button>
             )}
@@ -368,7 +377,9 @@ export default function MatchBoard({
       <>
         {newMatches.length > 0 && (
           <aside className="new-matches">
-            <strong>{newMatches.length} nouvelle(s) rencontre(s) dans cette épreuve</strong>{' '}
+            <strong>
+              {withCount(newMatches.length, 'nouvelle rencontre', 'nouvelles rencontres')} dans cette épreuve
+            </strong>{' '}
             <button onClick={showNew}>Voir les nouvelles rencontres</button>{' '}
             <button className="button-link" onClick={markSeen}>
               Marquer comme vues
@@ -376,7 +387,7 @@ export default function MatchBoard({
           </aside>
         )}
       </>
-      {ready && !error && (
+      {ready && (
         <DraftNotice
           draft={localDraft}
           onRestore={(value) =>
@@ -390,10 +401,13 @@ export default function MatchBoard({
           }
         />
       )}
-      {!ready && !error && <p role="status">Vérification des matchs…</p>}
-      {error && (
-        <p role="alert">
-          {error} <button onClick={onRefresh}>Réessayer</button>
+      {!ready && <p role="status">Vérification des matchs…</p>}
+      {stale && (
+        <p className="stale-banner" role="status">
+          Connexion instable : les matchs affichés ne sont peut-être pas à jour. Vos saisies restent possibles.{' '}
+          <button className="button-link" onClick={onRefresh}>
+            Actualiser
+          </button>
         </p>
       )}
       {ready && (
@@ -489,8 +503,8 @@ export default function MatchBoard({
       )}
       {dirty && (
         <div className="save-dock">
-          <span>{Object.keys(drafts).length} saisie(s) non enregistrée(s)</span>
-          <button disabled={busy || !ready || !!error} onClick={() => save(Object.keys(drafts))}>
+          <span>{withCount(Object.keys(drafts).length, 'saisie non enregistrée', 'saisies non enregistrées')}</span>
+          <button disabled={busy || !ready} onClick={() => save(Object.keys(drafts))}>
             {busy ? 'Enregistrement…' : 'Tout enregistrer'}
           </button>
         </div>

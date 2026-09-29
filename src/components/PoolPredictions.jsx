@@ -4,6 +4,7 @@ import API from '../api';
 import useLocalDraft, { draftKey } from './useLocalDraft';
 import DraftNotice from './DraftNotice';
 import './PoolPredictions.css';
+import { withCount } from '../lib/plural';
 
 const message = (error) => error.response?.data?.error || 'Connexion impossible. Réessayez.';
 const signed = (value) => (value > 0 ? `+${value}` : String(value));
@@ -562,7 +563,7 @@ function PoolList({ competitionId, user, onDirtyChange, refreshVersion }) {
         <button className="pool-secondary" onClick={reload} disabled={loading}>
           Actualiser
         </button>
-        <span role="status">{loading ? 'Chargement des poules…' : `${pools.length} poule(s)`}</span>
+        <span role="status">{loading ? 'Chargement des poules…' : withCount(pools.length, 'poule')}</span>
       </div>
       {error && (
         <p role="alert" className="pool-error">
