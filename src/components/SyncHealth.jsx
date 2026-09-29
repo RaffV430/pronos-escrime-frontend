@@ -75,6 +75,12 @@ export default function SyncHealth() {
           passe oublié » est indisponible.
         </p>
       )}
+      {data?.mailConfigured && data?.mailSandbox && (
+        <p className="sync-health-channel">
+          ✉️ E-mails en mode test Resend (adresse @resend.dev) : vos alertes arrivent par e-mail, mais « mot de passe
+          oublié » reste masqué pour les joueurs tant qu’aucun domaine n’est vérifié.
+        </p>
+      )}
       {data?.pushConfigured === false && (
         <p className="sync-health-channel">🔕 Notifications non configurées sur le serveur (clés VAPID).</p>
       )}
