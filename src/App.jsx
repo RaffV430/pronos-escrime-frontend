@@ -21,9 +21,11 @@ import NotificationSettings from './components/NotificationSettings';
 import { disableThisDevice } from './lib/notifications';
 import MatchBoard from './components/MatchBoard';
 import './interface.css';
+import ErrorBoundary from './components/ErrorBoundary';
 // Outils d'administration chargés à la demande : les joueurs ne les téléchargent jamais.
 const AdminPanel = lazy(() => import('./components/AdminPanel'));
 const FtlControl = lazy(() => import('./components/FtlControl'));
+const SyncHealth = lazy(() => import('./components/SyncHealth'));
 const FtlTournamentSetup = lazy(() => import('./components/FtlTournamentSetup'));
 const adminFallback = <p className="muted">Chargement des outils d’administration…</p>;
 
@@ -292,210 +294,213 @@ export default function App() {
         <InstallApp />
         <NotificationSettings key={user.id} userId={user.id} />
         {error && <p role="alert">{error}</p>}
-        {mainTab === 'admin' && user.isAdmin && (
-          <Suspense fallback={adminFallback}>
-            <FtlTournamentSetup onConfigured={() => setEventListVersion((v) => v + 1)} />
-          </Suspense>
-        )}
-        {mainTab === 'season' && <MySeason userId={user.id} />}
-        {mainTab === 'account' && (
-          <AccountSettings
-            user={user}
-            onDeleted={() => {
-              localStorage.removeItem('token');
-              setUser(null);
-              setMainTab('play');
-              setError('Votre compte et vos données ont été supprimés.');
-            }}
-          />
-        )}
-        {!['season', 'account'].includes(mainTab) && (
-          <EventSelector
-            key={`${user.id}:${eventListVersion}:${mainTab === 'play' ? 'active' : 'history'}`}
-            includeArchived={mainTab !== 'play'}
-            userId={user.id}
-            beforeChange={runNavigation}
-            onReset={() => {
-              setTournamentId(null);
-              selectCompetition(null);
-              setCompetition(null);
-            }}
-            onSelect={(tId, cId, entry) => {
-              setTournamentId(tId);
-              selectCompetition(cId);
-              setCompetition(entry);
-              if (cId !== selectedCompetitionId)
-                setPlayTab(new URLSearchParams(location.search).get('view') === 'pools' ? 'pools' : 'tableau');
-              setMainTab((current) =>
-                current !== 'play'
-                  ? current
-                  : new URLSearchParams(location.search).get('view') === 'mine'
-                    ? 'mine'
-                    : 'play',
-              );
-            }}
-          />
-        )}
-        {selectedCompetitionId && (
-          <>
-            {mainTab === 'play' && (
-              <>
-                <div className="page-heading">
-                  <p className="eyebrow">À VOUS DE JOUER</p>
-                  <h1>Faites la différence.</h1>
-                  <p>Vos favoris, vos scores, votre compétition.</p>
-                </div>
-                <ResultFreshness key={selectedCompetitionId} competitionId={selectedCompetitionId}>
-                  {user.isAdmin && (
-                    <Suspense fallback={adminFallback}>
-                      <FtlControl
-                        key={`ftl-${selectedCompetitionId}`}
-                        competitionId={selectedCompetitionId}
-                        onRefresh={() => {
-                          setResultsVersion((v) => v + 1);
-                          return fetchMatches(selectedCompetitionId);
-                        }}
-                      />
-                    </Suspense>
-                  )}
-                </ResultFreshness>
-                <ClosingCountdown
-                  matches={matches}
-                  now={matchNow}
-                  userId={user.id}
-                  onSelectMatch={(id) =>
-                    runNavigation(() => {
-                      setPlayTab('tableau');
-                      setMatchTarget({ id, at: Date.now() });
-                    })
-                  }
-                />
-                <nav className="secondary-nav" aria-label="Type de pronostic">
-                  {[['podium', 'Podium'], ...(!team ? [['pools', 'Poules']] : []), ['tableau', 'Tableau']].map(
-                    ([id, label]) => (
-                      <button
-                        key={id}
-                        aria-pressed={playTab === id}
-                        onClick={() =>
-                          runNavigation(() => {
-                            setDirty(false);
-                            setPlayTab(id);
-                          })
-                        }
-                      >
-                        {label}
-                      </button>
-                    ),
-                  )}
-                </nav>
-                {playTab === 'podium' && (
-                  <PodiumPrediction
-                    key={selectedCompetitionId}
-                    tournamentId={tournamentId}
-                    selectedCompetitionId={selectedCompetitionId}
-                    user={{ ...user, isAdmin: false }}
-                    onDirtyChange={setDirty}
-                  />
-                )}
-                {playTab === 'pools' && (
-                  <PoolPredictions
-                    refreshVersion={resultsVersion}
-                    key={selectedCompetitionId}
-                    tournamentId={tournamentId}
-                    selectedCompetitionId={selectedCompetitionId}
-                    user={{ ...user, isAdmin: false }}
-                    onDirtyChange={setDirty}
-                  />
-                )}
-                {playTab === 'tableau' && !matchesReady && (
-                  <div className="load-state" role={matchesError ? 'alert' : 'status'}>
-                    {matchesError ? (
-                      <>
-                        {matchesError}{' '}
-                        <button
-                          onClick={() => {
-                            setMatchesError('');
-                            setMatchesAttempt((n) => n + 1);
-                          }}
-                        >
-                          Réessayer
-                        </button>
-                      </>
-                    ) : (
-                      'Chargement des matchs…'
-                    )}
+        <ErrorBoundary zone="contenu" resetKey={`${mainTab}:${playTab}:${selectedCompetitionId}`}>
+          {mainTab === 'admin' && user.isAdmin && (
+            <Suspense fallback={adminFallback}>
+              <SyncHealth />
+              <FtlTournamentSetup onConfigured={() => setEventListVersion((v) => v + 1)} />
+            </Suspense>
+          )}
+          {mainTab === 'season' && <MySeason userId={user.id} />}
+          {mainTab === 'account' && (
+            <AccountSettings
+              user={user}
+              onDeleted={() => {
+                localStorage.removeItem('token');
+                setUser(null);
+                setMainTab('play');
+                setError('Votre compte et vos données ont été supprimés.');
+              }}
+            />
+          )}
+          {!['season', 'account'].includes(mainTab) && (
+            <EventSelector
+              key={`${user.id}:${eventListVersion}:${mainTab === 'play' ? 'active' : 'history'}`}
+              includeArchived={mainTab !== 'play'}
+              userId={user.id}
+              beforeChange={runNavigation}
+              onReset={() => {
+                setTournamentId(null);
+                selectCompetition(null);
+                setCompetition(null);
+              }}
+              onSelect={(tId, cId, entry) => {
+                setTournamentId(tId);
+                selectCompetition(cId);
+                setCompetition(entry);
+                if (cId !== selectedCompetitionId)
+                  setPlayTab(new URLSearchParams(location.search).get('view') === 'pools' ? 'pools' : 'tableau');
+                setMainTab((current) =>
+                  current !== 'play'
+                    ? current
+                    : new URLSearchParams(location.search).get('view') === 'mine'
+                      ? 'mine'
+                      : 'play',
+                );
+              }}
+            />
+          )}
+          {selectedCompetitionId && (
+            <>
+              {mainTab === 'play' && (
+                <>
+                  <div className="page-heading">
+                    <p className="eyebrow">À VOUS DE JOUER</p>
+                    <h1>Faites la différence.</h1>
+                    <p>Vos favoris, vos scores, votre compétition.</p>
                   </div>
-                )}
-                {playTab === 'tableau' && matchesReady && !landingPending && (
-                  <>
-                    <ScoringRules type="matches" />
-                    <MatchBoard
-                      initialFilter={landingFilter}
-                      focusTarget={matchTarget}
-                      competitionId={selectedCompetitionId}
+                  <ResultFreshness key={selectedCompetitionId} competitionId={selectedCompetitionId}>
+                    {user.isAdmin && (
+                      <Suspense fallback={adminFallback}>
+                        <FtlControl
+                          key={`ftl-${selectedCompetitionId}`}
+                          competitionId={selectedCompetitionId}
+                          onRefresh={() => {
+                            setResultsVersion((v) => v + 1);
+                            return fetchMatches(selectedCompetitionId);
+                          }}
+                        />
+                      </Suspense>
+                    )}
+                  </ResultFreshness>
+                  <ClosingCountdown
+                    matches={matches}
+                    now={matchNow}
+                    userId={user.id}
+                    onSelectMatch={(id) =>
+                      runNavigation(() => {
+                        setPlayTab('tableau');
+                        setMatchTarget({ id, at: Date.now() });
+                      })
+                    }
+                  />
+                  <nav className="secondary-nav" aria-label="Type de pronostic">
+                    {[['podium', 'Podium'], ...(!team ? [['pools', 'Poules']] : []), ['tableau', 'Tableau']].map(
+                      ([id, label]) => (
+                        <button
+                          key={id}
+                          aria-pressed={playTab === id}
+                          onClick={() =>
+                            runNavigation(() => {
+                              setDirty(false);
+                              setPlayTab(id);
+                            })
+                          }
+                        >
+                          {label}
+                        </button>
+                      ),
+                    )}
+                  </nav>
+                  {playTab === 'podium' && (
+                    <PodiumPrediction
                       key={selectedCompetitionId}
-                      matches={matches}
-                      userId={user.id}
-                      now={matchNow}
-                      ready={matchesReady}
-                      stale={matchesStale}
-                      onRefresh={() => fetchMatches(selectedCompetitionId)}
+                      tournamentId={tournamentId}
+                      selectedCompetitionId={selectedCompetitionId}
+                      user={{ ...user, isAdmin: false }}
                       onDirtyChange={setDirty}
                     />
-                  </>
-                )}
-              </>
-            )}
-            {mainTab === 'mine' && (
-              <MyPredictions
-                key={selectedCompetitionId}
-                competitionId={selectedCompetitionId}
-                tournamentId={tournamentId}
-                userId={user.id}
-                onNavigate={(tab, id) => {
-                  setMainTab('play');
-                  setPlayTab(tab === 'pools' ? 'pools' : id === 'podium' ? 'podium' : 'tableau');
-                  let attempts = 0;
-                  const reveal = () => {
-                    const target = document.getElementById(id);
-                    if (!target && attempts++ < 40) {
-                      setTimeout(reveal, 250);
-                      return;
-                    }
-                    const detail = target?.closest('details');
-                    if (detail) detail.open = true;
-                    target?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                  };
-                  setTimeout(reveal, 0);
-                }}
-              />
-            )}
-            {mainTab === 'community' && (
-              <Community
-                key={selectedCompetitionId}
-                competitionId={selectedCompetitionId}
-                tournamentId={tournamentId}
-                userId={user.id}
-              />
-            )}
-            {mainTab === 'leaderboard' && (
-              <GlobalLeaderboard userId={user.id} tournamentId={tournamentId} competitionId={selectedCompetitionId} />
-            )}
-            {mainTab === 'admin' && user.isAdmin && (
-              <Suspense fallback={adminFallback}>
-                <AdminPanel
+                  )}
+                  {playTab === 'pools' && (
+                    <PoolPredictions
+                      refreshVersion={resultsVersion}
+                      key={selectedCompetitionId}
+                      tournamentId={tournamentId}
+                      selectedCompetitionId={selectedCompetitionId}
+                      user={{ ...user, isAdmin: false }}
+                      onDirtyChange={setDirty}
+                    />
+                  )}
+                  {playTab === 'tableau' && !matchesReady && (
+                    <div className="load-state" role={matchesError ? 'alert' : 'status'}>
+                      {matchesError ? (
+                        <>
+                          {matchesError}{' '}
+                          <button
+                            onClick={() => {
+                              setMatchesError('');
+                              setMatchesAttempt((n) => n + 1);
+                            }}
+                          >
+                            Réessayer
+                          </button>
+                        </>
+                      ) : (
+                        'Chargement des matchs…'
+                      )}
+                    </div>
+                  )}
+                  {playTab === 'tableau' && matchesReady && !landingPending && (
+                    <>
+                      <ScoringRules type="matches" />
+                      <MatchBoard
+                        initialFilter={landingFilter}
+                        focusTarget={matchTarget}
+                        competitionId={selectedCompetitionId}
+                        key={selectedCompetitionId}
+                        matches={matches}
+                        userId={user.id}
+                        now={matchNow}
+                        ready={matchesReady}
+                        stale={matchesStale}
+                        onRefresh={() => fetchMatches(selectedCompetitionId)}
+                        onDirtyChange={setDirty}
+                      />
+                    </>
+                  )}
+                </>
+              )}
+              {mainTab === 'mine' && (
+                <MyPredictions
                   key={selectedCompetitionId}
                   competitionId={selectedCompetitionId}
                   tournamentId={tournamentId}
-                  user={user}
-                  matches={matches}
-                  now={matchNow}
-                  onRefresh={() => fetchMatches(selectedCompetitionId)}
+                  userId={user.id}
+                  onNavigate={(tab, id) => {
+                    setMainTab('play');
+                    setPlayTab(tab === 'pools' ? 'pools' : id === 'podium' ? 'podium' : 'tableau');
+                    let attempts = 0;
+                    const reveal = () => {
+                      const target = document.getElementById(id);
+                      if (!target && attempts++ < 40) {
+                        setTimeout(reveal, 250);
+                        return;
+                      }
+                      const detail = target?.closest('details');
+                      if (detail) detail.open = true;
+                      target?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    };
+                    setTimeout(reveal, 0);
+                  }}
                 />
-              </Suspense>
-            )}
-          </>
-        )}
+              )}
+              {mainTab === 'community' && (
+                <Community
+                  key={selectedCompetitionId}
+                  competitionId={selectedCompetitionId}
+                  tournamentId={tournamentId}
+                  userId={user.id}
+                />
+              )}
+              {mainTab === 'leaderboard' && (
+                <GlobalLeaderboard userId={user.id} tournamentId={tournamentId} competitionId={selectedCompetitionId} />
+              )}
+              {mainTab === 'admin' && user.isAdmin && (
+                <Suspense fallback={adminFallback}>
+                  <AdminPanel
+                    key={selectedCompetitionId}
+                    competitionId={selectedCompetitionId}
+                    tournamentId={tournamentId}
+                    user={user}
+                    matches={matches}
+                    now={matchNow}
+                    onRefresh={() => fetchMatches(selectedCompetitionId)}
+                  />
+                </Suspense>
+              )}
+            </>
+          )}
+        </ErrorBoundary>
         <footer className="site-footer">
           Pronos Escrime · Les résultats sont actualisés après import officiel. · <LegalLinks />
         </footer>

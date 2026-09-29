@@ -351,7 +351,7 @@ export default function AdminPanel({ competitionId, tournamentId, user, matches,
         <button disabled={busy}>Publier le défi</button>
       </form>
       <details className="feature-panel">
-        <summary>Journal des 100 dernières actions</summary>
+        <summary>Journal des 100 dernières actions (hors contrôles automatiques)</summary>
         <button onClick={() => act(loadAudit)} disabled={busy}>
           Actualiser le journal
         </button>

@@ -474,3 +474,40 @@ button[aria-pressed='true'] {
   color: #6b4a00;
   font-size: 0.85rem;
 }
+
+.sync-health summary {
+  font-weight: 700;
+}
+.sync-health-summary {
+  font-weight: 500;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+.sync-health.has-error {
+  border-color: var(--danger);
+}
+.sync-health-scroll {
+  overflow-x: auto;
+}
+.sync-health-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+}
+.sync-health-table th,
+.sync-health-table td {
+  text-align: left;
+  padding: 6px 8px;
+  border-top: 1px solid var(--border);
+  vertical-align: top;
+}
+.sync-health-table small {
+  color: var(--muted);
+}
+.sync-health-error {
+  display: block;
+  color: var(--danger) !important;
+}
+.sync-health-table tr.level-error {
+  background: var(--danger-soft, #fdecec);
+}
