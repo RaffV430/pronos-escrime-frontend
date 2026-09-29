@@ -2276,7 +2276,7 @@
 }
 @media (max-width: 600px) {
   .match-board {
-    --tree-col: 196px;
+    --tree-col: 212px;
     --tree-gap: 30px;
     --tree-slot: 84px;
   }
