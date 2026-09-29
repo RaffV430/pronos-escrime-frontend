@@ -370,6 +370,7 @@ export default function App() {
               {mainTab === 'mine' && (
                 <MyPredictions
                   userId={user.id}
+                  playerName={user.name || user.username}
                   initialCompetitionId={
                     new URLSearchParams(location.search).get('view') === 'mine'
                       ? Number(new URLSearchParams(location.search).get('event')) || null

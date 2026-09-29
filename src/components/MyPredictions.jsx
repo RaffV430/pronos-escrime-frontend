@@ -3,6 +3,7 @@ import { roundLabel } from './matchPresentation';
 import { useState, useEffect } from 'react';
 import API from '../api';
 import TournamentShare from './TournamentShare';
+import EventRecap from './EventRecap';
 
 const STATUSES = ['Tous', 'À compléter', 'Enregistré', 'Clos', 'Terminé', 'Annulé'];
 const errorText = (e) => e.response?.data?.error || 'Chargement impossible. Réessayez.';
@@ -100,7 +101,7 @@ function TournamentSummary({ tournamentId, revision }) {
 }
 
 // Détail d'une épreuve : tous ses matchs (y compris à compléter), bilan par tour.
-function EventDetail({ competitionId, revision, onOpen }) {
+function EventDetail({ competitionId, revision, onOpen, playerName }) {
   const [data, setData] = useState(null),
     [filter, setFilter] = useState('Tous'),
     [selectedRound, setSelectedRound] = useState(null),
@@ -130,6 +131,7 @@ function EventDetail({ competitionId, revision, onOpen }) {
   return (
     <div className="mine-detail">
       <h3>{data.competition.name}</h3>
+      <EventRecap competitionId={competitionId} playerName={playerName} revision={revision} />
       <p>
         <strong>
           {saved} / {activeRows.length}
@@ -264,7 +266,7 @@ function Overview({ events, onPick, onOpen }) {
 
 // « Mes pronostics » : sélection propre à l'onglet (tous les tournois par défaut),
 // indépendante de l'épreuve choisie dans « Pronostiquer ».
-export default function MyPredictions({ userId, initialCompetitionId = null, onNavigate }) {
+export default function MyPredictions({ userId, playerName = '', initialCompetitionId = null, onNavigate }) {
   const [all, setAll] = useState(null),
     [error, setError] = useState(''),
     [revision, setRevision] = useState(0),
@@ -360,6 +362,7 @@ export default function MyPredictions({ userId, initialCompetitionId = null, onN
               key={`detail-${selected.competition.id}`}
               competitionId={selected.competition.id}
               revision={revision}
+              playerName={playerName}
               onOpen={selected.tournament.archived ? null : open(selected)}
             />
           ) : (
