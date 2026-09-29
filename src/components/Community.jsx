@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import API from '../api';
 import DuelView from './DuelView';
+import ClubLeague from './ClubLeague';
 import { withCount } from '../lib/plural';
 function Ranking({ rows, onDuel, userId }) {
   return (
@@ -76,6 +77,7 @@ export default function Community({ tournamentId, competitionId, userId }) {
         pronostics restent personnels jusqu’à la fin de chaque match ; ensuite, les membres d’une même ligue peuvent se
         comparer en duel.
       </p>
+      <ClubLeague tournamentId={tournamentId} onJoined={() => setRevision((n) => n + 1)} />
       <button onClick={() => setRevision((n) => n + 1)}>Actualiser l’affichage</button>
       {message && <p role="status">{message}</p>}
       <div className="feature-grid">

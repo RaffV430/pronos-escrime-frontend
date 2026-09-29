@@ -6,6 +6,7 @@ import DraftNotice from './DraftNotice';
 import './PoolPredictions.css';
 import { withCount } from '../lib/plural';
 import { pollWhileVisible, useNow } from '../lib/polling';
+import { useClub } from '../lib/club';
 
 const message = (error) => error.response?.data?.error || 'Connexion impossible. Réessayez.';
 const signed = (value) => (value > 0 ? `+${value}` : String(value));
@@ -23,6 +24,7 @@ function fencerMeta(pool, fencer) {
 }
 
 function PredictionRow({ userId, pool, fencer, closed, onRefresh, reportDirty }) {
+  const club = useClub();
   const localDraft = useLocalDraft(draftKey(userId, pool.competitionId, `pool-${fencer.id}`));
   const [wins, setWins] = useState(fencer.prediction?.wins ?? '');
   const [indicator, setIndicator] = useState(fencer.prediction?.indicator ?? '');
@@ -97,7 +99,13 @@ function PredictionRow({ userId, pool, fencer, closed, onRefresh, reportDirty })
   return (
     <tr id={`pool-${fencer.id}`} className={closed ? 'pool-table-row is-closed' : 'pool-table-row'}>
       <th scope="row" className="pool-name-cell">
-        <span className="pool-position">{fencer.position}</span> <span>{fencer.name}</span>
+        <span className="pool-position">{fencer.position}</span>{' '}
+        {club.isClubFencer(fencer.name) && (
+          <span className="club-star" title="Tireur du club">
+            ★{' '}
+          </span>
+        )}
+        <span>{fencer.name}</span>
         {fencerMeta(pool, fencer) && <span className="pool-fencer-meta"> {fencerMeta(pool, fencer)}</span>}
       </th>
       <td data-label="Victoires" className="pool-number-cell">

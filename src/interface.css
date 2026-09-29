@@ -1595,3 +1595,17 @@
 .share-result small {
   font-size: 0.75rem;
 }
+
+.club-star {
+  color: #c98a00;
+}
+.club-league {
+  margin: 12px 0;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid #f0d58a;
+  background: #fff8e5;
+}
+.club-league p {
+  margin: 6px 0;
+}

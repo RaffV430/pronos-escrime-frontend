@@ -9,6 +9,7 @@ import { withCount } from '../lib/plural';
 import MatchTiming from './MatchTiming';
 import { groupMatches, isMatchClosed, validateScores, nextMatchId } from './matchPresentation';
 import { useNow } from '../lib/polling';
+import { useClub } from '../lib/club';
 
 export default function MatchBoard({
   initialFilter = 'Tous',
@@ -25,6 +26,7 @@ export default function MatchBoard({
   onPreviewRemove,
 }) {
   const clock = useNow(5000);
+  const club = useClub();
   const now = fixedNow ?? clock;
   const deepLink = new URLSearchParams(location.search);
   const linkedIds =
@@ -228,17 +230,19 @@ export default function MatchBoard({
     }
   };
   const visible = (m) =>
-    filter === 'Nouveaux'
-      ? newMatches.some((n) => n.id === m.id)
-      : filter === 'À venir'
-        ? !isMatchClosed(m, now)
-        : filter === 'À compléter'
-          ? !mine(m) && !isMatchClosed(m, now)
-          : filter === 'Ferment bientôt'
-            ? !isMatchClosed(m, now) && m.closesAt && Date.parse(m.closesAt) - now <= 3600000
-            : filter === 'Résultats publiés'
-              ? m.isFinished
-              : true;
+    filter === 'Nos tireurs'
+      ? club.isClubFencer(m.player1) || club.isClubFencer(m.player2)
+      : filter === 'Nouveaux'
+        ? newMatches.some((n) => n.id === m.id)
+        : filter === 'À venir'
+          ? !isMatchClosed(m, now)
+          : filter === 'À compléter'
+            ? !mine(m) && !isMatchClosed(m, now)
+            : filter === 'Ferment bientôt'
+              ? !isMatchClosed(m, now) && m.closesAt && Date.parse(m.closesAt) - now <= 3600000
+              : filter === 'Résultats publiés'
+                ? m.isFinished
+                : true;
   const groups = groupMatches(valid),
     next = () => {
       const target = valid.find((m) => !mine(m) && !isMatchClosed(m, now));
@@ -277,6 +281,11 @@ export default function MatchBoard({
         {[m.player1, m.player2].map((name, i) => (
           <label className="opponent-row" key={i}>
             <strong>
+              {club.isClubFencer(name) && (
+                <span className="club-star" title={`Tireur du club${club.name ? ` ${club.name}` : ''}`}>
+                  ★{' '}
+                </span>
+              )}
               {name}
               {m[`player${i + 1}Country`] && ` - ${m[`player${i + 1}Country`]}`}
             </strong>
@@ -423,7 +432,14 @@ export default function MatchBoard({
           </p>
           <div className="board-toolbar filter-scroll">
             <div className="filter-row">
-              {['Tous', 'À compléter', 'À venir', 'Ferment bientôt', 'Résultats publiés'].map((x) => (
+              {[
+                'Tous',
+                ...(club.hasFencers ? ['Nos tireurs'] : []),
+                'À compléter',
+                'À venir',
+                'Ferment bientôt',
+                'Résultats publiés',
+              ].map((x) => (
                 <button key={x} aria-pressed={filter === x} onClick={() => setFilter(x)}>
                   {x}
                 </button>
