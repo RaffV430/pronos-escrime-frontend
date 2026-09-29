@@ -298,7 +298,7 @@ export default function App() {
                 <FtlTournamentSetup onConfigured={() => setEventListVersion((v) => v + 1)} />
               </Suspense>
             )}
-            {mainTab === 'season' && <MySeason userId={user.id} />}
+            {mainTab === 'season' && <MySeason userId={user.id} playerName={user.name || user.username} />}
             {mainTab === 'account' && (
               <>
                 <InstallApp />
