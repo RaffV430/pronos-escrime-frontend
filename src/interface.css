@@ -1496,6 +1496,7 @@
   /* Filtres des matchs sur une ligne défilante, choix Liste / Arbre toujours visible en dessous. */
   .board-toolbar {
     flex-direction: column;
+    flex-wrap: nowrap; /* en colonne « wrap », la ligne prendrait la largeur des filtres et déborderait */
     align-items: stretch;
     gap: 0;
   }
