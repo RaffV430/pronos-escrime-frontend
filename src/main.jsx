@@ -2,6 +2,7 @@ import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import './index.css';
 import App from './App.jsx';
+import ErrorBoundary from './components/ErrorBoundary.jsx';
 import { startMonitoring, reportError } from './lib/monitoring.js';
 
 startMonitoring();
@@ -11,7 +12,9 @@ createRoot(document.getElementById('root'), {
   onCaughtError: (error, info) => reportError(error, { componentStack: info.componentStack }),
 }).render(
   <StrictMode>
-    <App />
+    <ErrorBoundary zone="application">
+      <App />
+    </ErrorBoundary>
   </StrictMode>,
 );
 
