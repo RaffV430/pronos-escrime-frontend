@@ -15,6 +15,18 @@ export default function MatchTiming({ match, now, hideChecked = false }) {
                 ? `Ferme le ${date(match.closesAt)}`
                 : 'Ouvert · horaire de clôture à confirmer'}
       </p>
+      {isMatchClosed(match, now) &&
+        !match.isFinished &&
+        !match.startsAt &&
+        !match.isLocked &&
+        !match.syncIssue &&
+        !match.timingUnverified &&
+        !match.manualUnlockUntil && (
+          <p className="timing-note">
+            Horaire non communiqué : pronostics clos 10 minutes après le tour précédent. Ils rouvriront si
+            FencingTimeLive publie l’heure du match.
+          </p>
+        )}
       <details>
         <summary>Horaires et vérification</summary>
         <p>Début prévu : {date(match.startsAt)}. Heures de votre appareil.</p>
