@@ -12,6 +12,8 @@ import { useNow } from '../lib/polling';
 import { useClub } from '../lib/club';
 import HeadToHead from './HeadToHead';
 import MatchSocial from './MatchSocial';
+import BracketTree from './BracketTree';
+import { buildTree } from './bracketTree';
 
 export default function MatchBoard({
   initialFilter = 'Tous',
@@ -44,6 +46,7 @@ export default function MatchBoard({
     [messages, setMessages] = useState({}),
     [busy, setBusy] = useState(false),
     [filter, setFilter] = useState(linkedIds.length ? 'Nouveaux' : initialFilter),
+    [openId, setOpenId] = useState(null),
     [view, setView] = useState(() => {
       try {
         return localStorage.getItem('pronos:match-view') === 'Arbre' ? 'Arbre' : 'Liste';
@@ -211,6 +214,37 @@ export default function MatchBoard({
       input.scrollIntoView({ behavior: 'smooth', block: 'center' });
     } else document.activeElement?.blur(); // plus rien à saisir : ferme le clavier sur mobile
   });
+  // Saisie commune aux vues Liste et Arbre.
+  const type = (m, side, raw) => {
+    const value = String(raw).replace(/\D/g, '').slice(0, 2);
+    saveDrafts((old) => ({ ...old, [m.id]: { ...values(m), [`score${side}`]: value } }));
+  };
+  // Entrée (ou Maj seule) sur un pronostic complet : enregistre puis passe au prochain match à saisir.
+  const keyDown = (m, side, e) => {
+    if (e.key === 'Shift') {
+      shiftAlone.current = !e.repeat;
+      return;
+    }
+    shiftAlone.current = false; // Maj+Tab, Maj+chiffre… : pas de navigation
+    if (e.key !== 'Enter') return;
+    e.preventDefault();
+    const v = values(m);
+    if (v.score1 !== '' && v.score2 !== '') advance(m.id);
+    else if (side === 1) document.getElementById(`input-${m.id}-2`)?.focus();
+    else save([m.id]);
+  };
+  const keyUp = (m, e) => {
+    if (e.key !== 'Shift' || !shiftAlone.current) return;
+    shiftAlone.current = false;
+    const v = values(m);
+    if (v.score1 !== '' && v.score2 !== '') advance(m.id);
+  };
+  // Tab ou toucher ailleurs : un match quitté avec deux scores valides est enregistré.
+  const leave = (m) => {
+    if (!drafts[m.id] || !ready || isMatchClosed(m, now)) return;
+    if (validateScores(values(m), m.maxScore || 15)) return;
+    save([m.id]);
+  };
   const remove = async (m) => {
     if (saving.current) return;
     saving.current = true;
@@ -253,6 +287,8 @@ export default function MatchBoard({
       if (target) setTimeout(() => document.getElementById(`input-${target.id}-1`)?.focus(), 0);
     };
   const checked = [...new Set(valid.map((m) => m.sourceCheckedAt).filter(Boolean))];
+  const tree = buildTree(valid);
+  const openMatch = openId ? valid.find((m) => m.id === openId) : null;
   const card = (m) => {
     const p = mine(m),
       v = values(m),
@@ -270,10 +306,13 @@ export default function MatchBoard({
                 : 'À compléter';
     return (
       <article
-        id={`match-${m.id}`}
+        id={view === 'Arbre' ? `match-detail-${m.id}` : `match-${m.id}`}
         tabIndex={-1}
         className={`match-card ${focusTarget?.id === m.id ? 'match-target' : ''}`}
         key={m.id}
+        onBlur={(e) => {
+          if (!e.currentTarget.contains(e.relatedTarget)) leave(m);
+        }}
       >
         <div className="match-meta">
           <span>
@@ -294,7 +333,7 @@ export default function MatchBoard({
               {m[`player${i + 1}Country`] && ` - ${m[`player${i + 1}Country`]}`}
             </strong>
             <input
-              id={`input-${m.id}-${i + 1}`}
+              id={`${view === 'Arbre' ? 'detail-' : ''}input-${m.id}-${i + 1}`}
               aria-label={`Score prévu de ${name}`}
               inputMode="numeric"
               type="text"
@@ -304,30 +343,10 @@ export default function MatchBoard({
               placeholder="—"
               value={v[`score${i + 1}`]}
               disabled={closed || busy || !ready}
-              onChange={(e) => {
-                const value = e.target.value.replace(/\D/g, '').slice(0, 2);
-                saveDrafts((old) => ({ ...old, [m.id]: { ...values(m), [`score${i + 1}`]: value } }));
-              }}
+              onChange={(e) => type(m, i + 1, e.target.value)}
               enterKeyHint="next"
-              onKeyDown={(e) => {
-                if (e.key === 'Shift') {
-                  shiftAlone.current = !e.repeat;
-                  return;
-                }
-                shiftAlone.current = false; // Maj+Tab, Maj+chiffre… : pas de navigation
-                if (e.key !== 'Enter') return;
-                e.preventDefault();
-                const v = values(m);
-                if (v.score1 !== '' && v.score2 !== '') advance(m.id);
-                else if (i === 0) document.getElementById(`input-${m.id}-2`)?.focus();
-                else save([m.id]);
-              }}
-              onKeyUp={(e) => {
-                if (e.key !== 'Shift' || !shiftAlone.current) return;
-                shiftAlone.current = false;
-                const v = values(m);
-                if (v.score1 !== '' && v.score2 !== '') advance(m.id);
-              }}
+              onKeyDown={(e) => keyDown(m, i + 1, e)}
+              onKeyUp={(e) => keyUp(m, e)}
             />
           </label>
         ))}
@@ -482,29 +501,75 @@ export default function MatchBoard({
               Pronostic suivant →
             </button>
           </div>
-          {view === 'Arbre' && (
-            <p className="muted">
-              Tours du tableau · faites défiler horizontalement sur mobile. Seules les rencontres avec deux adversaires
-              connus sont affichées ; le numéro officiel conserve leur position.
-            </p>
-          )}
-          <div className={view === 'Arbre' ? 'bracket-board' : 'rounds'}>
-            {groups
-              .filter((g) => g.items.some(visible))
-              .map(({ round, items }) => (
-                <section className="round-column" key={round}>
-                  <h2>
-                    {roundLabel(round)}{' '}
-                    <span className="round-count">
-                      {items.filter((m) => mine(m)).length}/{items.length}
-                    </span>
-                  </h2>
-                  <div className={view === 'Arbre' ? 'bracket-cards' : 'match-grid'}>
-                    {items.filter(visible).map(card)}
-                  </div>
+          {view === 'Arbre' && tree ? (
+            <>
+              <p className="muted">
+                Votre score pronostiqué en face des tireurs, le résultat officiel en bas à droite. Entrée enregistre et
+                passe au match suivant ; touchez un match pour son détail.
+              </p>
+              <div className="filter-row tree-jumps" role="group" aria-label="Aller au tour">
+                {tree.rounds.map((r) => (
+                  <button
+                    key={r.round}
+                    onClick={() =>
+                      document
+                        .getElementById(`tree-${r.round}`)
+                        ?.scrollIntoView({ behavior: 'smooth', inline: 'start', block: 'nearest' })
+                    }
+                  >
+                    {roundLabel(r.round)}
+                  </button>
+                ))}
+              </div>
+              <BracketTree
+                tree={tree}
+                ready={ready}
+                busy={busy}
+                drafts={drafts}
+                values={values}
+                mine={mine}
+                isClosed={(m) => isMatchClosed(m, now)}
+                visible={visible}
+                club={club}
+                onType={type}
+                onKey={keyDown}
+                onKeyUp={keyUp}
+                onLeave={leave}
+                onOpen={(m) => setOpenId((old) => (old === m.id ? null : m.id))}
+                openId={openId}
+              />
+              {tree.bronze && (
+                <section className="round-column tree-bronze">
+                  <h2>{roundLabel('Bronze')}</h2>
+                  <div className="match-grid">{card(tree.bronze)}</div>
                 </section>
-              ))}
-          </div>
+              )}
+              {openMatch && (
+                <section className="tree-detail" aria-label="Détail du match">
+                  <button className="button-link" onClick={() => setOpenId(null)}>
+                    Fermer le détail
+                  </button>
+                  {card(openMatch)}
+                </section>
+              )}
+            </>
+          ) : (
+            <div className="rounds">
+              {groups
+                .filter((g) => g.items.some(visible))
+                .map(({ round, items }) => (
+                  <section className="round-column" key={round}>
+                    <h2>
+                      {roundLabel(round)}{' '}
+                      <span className="round-count">
+                        {items.filter((m) => mine(m)).length}/{items.length}
+                      </span>
+                    </h2>
+                    <div className="match-grid">{items.filter(visible).map(card)}</div>
+                  </section>
+                ))}
+            </div>
+          )}
           {!valid.some(visible) && (
             <p className="pool-empty">
               {valid.length
