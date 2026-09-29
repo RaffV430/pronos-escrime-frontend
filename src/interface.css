@@ -1796,3 +1796,21 @@
 .mine-event[open] > summary {
   margin-bottom: 6px;
 }
+
+.update-banner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 12px;
+  margin: 8px 0 12px;
+  padding: 10px 14px;
+  border: 1px solid var(--primary);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--primary) 10%, var(--surface));
+  color: var(--text);
+  font-size: 0.9rem;
+}
+.update-banner button {
+  min-height: 40px;
+}
