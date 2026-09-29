@@ -156,3 +156,11 @@ test('next match to predict follows the displayed order, wraps around, skips clo
     'nothing left: keyboard closes',
   );
 });
+
+import { stripLabel } from '../src/components/matchPresentation.js';
+test('strip label: number or final strip colour in French', () => {
+  assert.equal(stripLabel('11'), 'Piste 11');
+  assert.equal(stripLabel('Blue'), 'Piste bleue');
+  assert.equal(stripLabel('RED'), 'Piste rouge');
+  assert.equal(stripLabel(null), '');
+});

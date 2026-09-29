@@ -7,6 +7,7 @@ import './PoolPredictions.css';
 import { withCount } from '../lib/plural';
 import { pollWhileVisible, useNow } from '../lib/polling';
 import { useClub } from '../lib/club';
+import { stripLabel } from './matchPresentation';
 
 const message = (error) => error.response?.data?.error || 'Connexion impossible. Réessayez.';
 const signed = (value) => (value > 0 ? `+${value}` : String(value));
@@ -671,6 +672,9 @@ function PoolList({ competitionId, user, onDirtyChange, refreshVersion }) {
                       {pool.name}{' '}
                       <span className="pool-card-meta">
                         {pool.fencers.length} tireurs · {pool.fencers.length - 1} matchs
+                        {pool.strip && ` · ${stripLabel(pool.strip).toLowerCase()}`}
+                        {pool.startsAt &&
+                          ` · ${new Date(pool.startsAt).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}`}
                         {pool.lockMode !== 'FIRST_RESULT' &&
                           ` · clôture ${new Date(pool.closesAt).toLocaleString('fr-FR', { dateStyle: 'short', timeStyle: 'short' })}`}
                       </span>
