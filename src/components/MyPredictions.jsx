@@ -40,10 +40,7 @@ export default function MyPredictions({ competitionId, tournamentId, userId, onN
   return (
     <section className="feature-panel">
       <div className="feature-heading">
-        <div>
-          <p className="eyebrow">VOTRE CARNET DE JEU</p>
-          <h1>Tout retrouver, simplement.</h1>
-        </div>
+        <h1 className="section-title">Mes pronostics</h1>
         <button onClick={() => setRevision((n) => n + 1)}>Actualiser l’affichage</button>
       </div>
       <p className="muted">
