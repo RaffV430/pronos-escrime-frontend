@@ -4,6 +4,7 @@ import { roundLabel } from './matchPresentation';
 import { plural } from './resultPresentation';
 import { SEASON_FILTERS, OUTCOME_LABELS, filterSeason, signedPoints } from './seasonPresentation';
 import SeasonBadges from './SeasonBadges';
+import SeasonAnalysis from './SeasonAnalysis';
 import './MySeason.css';
 
 const dateLabel = (value) =>
@@ -92,6 +93,7 @@ export default function MySeason({ userId }) {
             {totals.adjustment !== 0 && ` · Ajustements ${signedPoints(totals.adjustment)}`}
           </p>
           <SeasonBadges badges={data.badges} />
+          <SeasonAnalysis analysis={data.analysis} />
 
           <div className="season-tools">
             <div className="filter-row" role="group" aria-label="Filtrer les pronostics">
