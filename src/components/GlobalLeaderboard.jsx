@@ -8,7 +8,23 @@ export default function GlobalLeaderboard({ userId, tournamentId, competitionId 
     [events, setEvents] = useState([]),
     [rows, setRows] = useState(null),
     [error, setError] = useState(''),
-    [revision, setRevision] = useState(0);
+    [revision, setRevision] = useState(0),
+    [circuits, setCircuits] = useState([]),
+    [selectedCircuit, setCircuit] = useState(''),
+    [circuitInfo, setCircuitInfo] = useState(null);
+  // Circuits définis par l'administrateur (classements cumulés sur plusieurs tournois).
+  useEffect(() => {
+    const c = new AbortController();
+    API.get('/community/circuits', { signal: c.signal })
+      .then(({ data }) => {
+        if (c.signal.aborted) return;
+        const list = Array.isArray(data) ? data : [];
+        setCircuits(list);
+        setCircuit((old) => old || String(list[0]?.id || ''));
+      })
+      .catch(() => {});
+    return () => c.abort();
+  }, []);
   useEffect(() => {
     const c = new AbortController();
     API.get('/tournaments', { signal: c.signal })
@@ -26,8 +42,9 @@ export default function GlobalLeaderboard({ userId, tournamentId, competitionId 
     API.get(`/podium/competitions/${selectedTournament}`, { signal: c.signal })
       .then(({ data }) => {
         if (!c.signal.aborted) {
-          setEvents(data);
-          setEvent((old) => (data.some((e) => String(e.id) === old) ? old : String(data[0]?.id || '')));
+          const list = Array.isArray(data) ? data : [];
+          setEvents(list);
+          setEvent((old) => (list.some((e) => String(e.id) === old) ? old : String(list[0]?.id || '')));
         }
       })
       .catch(() => {});
@@ -38,6 +55,19 @@ export default function GlobalLeaderboard({ userId, tournamentId, competitionId 
     setRows(null);
     setError('');
     if ((scope === 'Épreuve' && !selectedEvent) || (scope === 'Tournoi' && !selectedTournament)) return () => c.abort();
+    if (scope === 'Circuit') {
+      if (!selectedCircuit) return () => c.abort();
+      API.get(`/community/circuits/${selectedCircuit}`, { signal: c.signal })
+        .then(({ data }) => {
+          if (c.signal.aborted) return;
+          setCircuitInfo(data.circuit);
+          setRows(data.rows);
+        })
+        .catch((e) => {
+          if (!c.signal.aborted) setError(e.response?.data?.error || 'Classement indisponible. Réessayez.');
+        });
+      return () => c.abort();
+    }
     const params =
       scope === 'Tournoi'
         ? `?tournamentId=${selectedTournament}`
@@ -52,7 +82,7 @@ export default function GlobalLeaderboard({ userId, tournamentId, competitionId 
         if (!c.signal.aborted) setError(e.response?.data?.error || 'Classement indisponible. Réessayez.');
       });
     return () => c.abort();
-  }, [scope, selectedTournament, selectedEvent, revision]);
+  }, [scope, selectedTournament, selectedEvent, selectedCircuit, revision]);
   const me = rows?.find((r) => r.id === userId),
     previous = me ? rows.filter((r) => (r.rank || 0) < me.rank).at(-1) : null;
   return (
@@ -64,12 +94,14 @@ export default function GlobalLeaderboard({ userId, tournamentId, competitionId 
             ? 'toutes les compétitions'
             : scope === 'Tournoi'
               ? tournaments.find((t) => String(t.id) === selectedTournament)?.name
-              : events.find((e) => String(e.id) === selectedEvent)?.name}
+              : scope === 'Circuit'
+                ? circuits.find((c) => String(c.id) === selectedCircuit)?.name
+                : events.find((e) => String(e.id) === selectedEvent)?.name}
         </small>
       </h1>
       <div className="feature-heading">
         <div className="filter-row">
-          {['Général', 'Tournoi', 'Épreuve'].map((s) => (
+          {['Général', 'Tournoi', 'Épreuve', ...(circuits.length ? ['Circuit'] : [])].map((s) => (
             <button key={s} aria-pressed={scope === s} onClick={() => setScope(s)}>
               {s}
             </button>
@@ -79,7 +111,28 @@ export default function GlobalLeaderboard({ userId, tournamentId, competitionId 
           Actualiser
         </button>
       </div>
-      {scope !== 'Général' && (
+      {scope === 'Circuit' && (
+        <div className="ranking-selectors">
+          <label>
+            Circuit
+            <select value={selectedCircuit} onChange={(e) => setCircuit(e.target.value)}>
+              {circuits.map((c) => (
+                <option value={c.id} key={c.id}>
+                  {c.name}
+                </option>
+              ))}
+            </select>
+          </label>
+          {circuitInfo && (
+            <p className="muted">
+              {circuitInfo.tournaments.length} tournoi{circuitInfo.tournaments.length > 1 ? 's' : ''}
+              {circuitInfo.dropWorst > 0 &&
+                ` · ${circuitInfo.dropWorst} plus mauvais résultat${circuitInfo.dropWorst > 1 ? 's' : ''} retiré${circuitInfo.dropWorst > 1 ? 's' : ''}`}
+            </p>
+          )}
+        </div>
+      )}
+      {scope !== 'Général' && scope !== 'Circuit' && (
         <div className="ranking-selectors">
           <label>
             Tournoi
@@ -163,10 +216,14 @@ export default function GlobalLeaderboard({ userId, tournamentId, competitionId 
             </div>
             <details>
               <summary>Détail des points</summary>
-              <p>
-                Matchs : {r.matchPoints ?? 0} · Podiums : {r.podiumPoints ?? 0} · Poules : {r.poolPoints ?? 0} · Défis :{' '}
-                {r.challengePoints ?? 0} · Ajustements : {r.adjustmentPoints ?? 0}
-              </p>
+              {r.results && circuitInfo ? (
+                <p>{circuitInfo.tournaments.map((t, k) => `${t.name} : ${r.results[k]}`).join(' · ')}</p>
+              ) : (
+                <p>
+                  Matchs : {r.matchPoints ?? 0} · Podiums : {r.podiumPoints ?? 0} · Poules : {r.poolPoints ?? 0} · Défis
+                  : {r.challengePoints ?? 0} · Ajustements : {r.adjustmentPoints ?? 0}
+                </p>
+              )}
             </details>
           </article>
         ))}

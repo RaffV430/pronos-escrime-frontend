@@ -20,6 +20,7 @@ import { ClubContext, clubValue } from './lib/club';
 // Outils d'administration chargés à la demande : les joueurs ne les téléchargent jamais.
 const AdminPanel = lazy(() => import('./components/AdminPanel'));
 const FtlControl = lazy(() => import('./components/FtlControl'));
+const CircuitSettings = lazy(() => import('./components/CircuitSettings'));
 const ClubSettings = lazy(() => import('./components/ClubSettings'));
 const SyncHealth = lazy(() => import('./components/SyncHealth'));
 const FtlTournamentSetup = lazy(() => import('./components/FtlTournamentSetup'));
@@ -310,6 +311,7 @@ export default function App() {
                 <Suspense fallback={adminFallback}>
                   <SyncHealth />
                   <ClubSettings />
+                  <CircuitSettings />
                   <FtlTournamentSetup onConfigured={() => setEventListVersion((v) => v + 1)} />
                 </Suspense>
               )}
