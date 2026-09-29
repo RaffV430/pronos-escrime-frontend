@@ -333,7 +333,7 @@ export default function App() {
                   }}
                 />
               )}
-              {!['season', 'account'].includes(mainTab) && (
+              {!['season', 'account', 'mine'].includes(mainTab) && (
                 <EventSelector
                   key={`${user.id}:${eventListVersion}:${mainTab === 'play' ? 'active' : 'history'}`}
                   includeArchived={mainTab !== 'play'}
@@ -363,6 +363,41 @@ export default function App() {
               {/* Classement général consultable sans choisir d'épreuve. */}
               {mainTab === 'leaderboard' && (
                 <GlobalLeaderboard userId={user.id} tournamentId={tournamentId} competitionId={selectedCompetitionId} />
+              )}
+              {mainTab === 'mine' && (
+                <MyPredictions
+                  userId={user.id}
+                  initialCompetitionId={
+                    new URLSearchParams(location.search).get('view') === 'mine'
+                      ? Number(new URLSearchParams(location.search).get('event')) || null
+                      : null
+                  }
+                  onNavigate={(tab, id, target) => {
+                    const wanted = tab === 'pools' ? 'pools' : id === 'podium' ? 'podium' : 'tableau';
+                    // Autre épreuve que celle de « Pronostiquer » : on l'ouvre via le lien direct habituel.
+                    if (target && target.competitionId !== selectedCompetitionId)
+                      history.replaceState(
+                        null,
+                        '',
+                        `${location.pathname}?tournament=${target.tournamentId}&event=${target.competitionId}${wanted === 'pools' ? '&view=pools' : ''}`,
+                      );
+                    setMainTab('play');
+                    setPlayTab(wanted);
+                    let attempts = 0;
+                    const reveal = () => {
+                      const target = document.getElementById(id);
+                      if (!target && attempts++ < 40) {
+                        setPlayTab(wanted);
+                        setTimeout(reveal, 250);
+                        return;
+                      }
+                      const detail = target?.closest('details');
+                      if (detail) detail.open = true;
+                      target?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    };
+                    setTimeout(reveal, 0);
+                  }}
+                />
               )}
               {selectedCompetitionId && (
                 <>
@@ -468,30 +503,6 @@ export default function App() {
                         </>
                       )}
                     </>
-                  )}
-                  {mainTab === 'mine' && (
-                    <MyPredictions
-                      key={selectedCompetitionId}
-                      competitionId={selectedCompetitionId}
-                      tournamentId={tournamentId}
-                      userId={user.id}
-                      onNavigate={(tab, id) => {
-                        setMainTab('play');
-                        setPlayTab(tab === 'pools' ? 'pools' : id === 'podium' ? 'podium' : 'tableau');
-                        let attempts = 0;
-                        const reveal = () => {
-                          const target = document.getElementById(id);
-                          if (!target && attempts++ < 40) {
-                            setTimeout(reveal, 250);
-                            return;
-                          }
-                          const detail = target?.closest('details');
-                          if (detail) detail.open = true;
-                          target?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                        };
-                        setTimeout(reveal, 0);
-                      }}
-                    />
                   )}
                   {mainTab === 'community' && (
                     <Community

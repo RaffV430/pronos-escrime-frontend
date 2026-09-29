@@ -1759,3 +1759,40 @@
   white-space: pre-wrap;
   overflow-wrap: anywhere;
 }
+
+.mine-selectors {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 10px;
+  margin: 12px 0 4px;
+}
+.mine-selectors label {
+  display: grid;
+  gap: 4px;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+.mine-selectors select {
+  width: 100%;
+  min-height: 44px;
+}
+.mine-hint {
+  margin: 0 0 12px;
+  font-size: 0.85rem;
+}
+.mine-tournament h3 {
+  margin: 18px 0 6px;
+}
+.mine-event {
+  margin: 8px 0;
+  padding: 10px 12px;
+  border: 1px solid var(--border, #e3e6ec);
+  border-radius: 12px;
+}
+.mine-event > summary {
+  cursor: pointer;
+  line-height: 1.4;
+}
+.mine-event[open] > summary {
+  margin-bottom: 6px;
+}
