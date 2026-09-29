@@ -17,6 +17,7 @@ export default function NotificationSettings({ userId }) {
       newMatches: true,
       reminders: true,
       roundResults: false,
+      poolResults: false,
       quietEnabled: false,
       quietStart: '22:00',
       quietEnd: '08:00',
@@ -49,7 +50,7 @@ export default function NotificationSettings({ userId }) {
         setEnabled(Boolean(status?.enabled));
         setTournaments(status?.tournamentIds || []);
         setEvents(status?.competitionIds || []);
-        if (status?.preferences) setPreferences(status.preferences);
+        if (status?.preferences) setPreferences((p) => ({ ...p, ...status.preferences }));
         setDiagnostic(status?.diagnostic || null);
         setReady(true);
       } catch {
@@ -168,6 +169,7 @@ export default function NotificationSettings({ userId }) {
                   ['newMatches', 'Une alerte lorsque la moitié du tour est pronosticable'],
                   ['reminders', 'Rappel à 10 minutes de la clôture, si un pronostic manque'],
                   ['roundResults', 'Mon bilan après chaque tour'],
+                  ['poolResults', 'Mon bilan des poules (une fois toutes les poules terminées)'],
                 ].map(([k, label]) => (
                   <label className="check-row" key={k}>
                     <input
