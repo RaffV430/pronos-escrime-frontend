@@ -6,6 +6,7 @@ import ArchiveTournament from './ArchiveTournament';
 import PodiumPrediction from './PodiumPrediction';
 import PoolPredictions from './PoolPredictions';
 import { useNow } from '../lib/polling';
+import EngagementPanel from './EngagementPanel';
 export default function AdminPanel({ competitionId, tournamentId, user, matches, onRefresh }) {
   const now = useNow(5000);
   const [query, setQuery] = useState(''),
@@ -89,6 +90,7 @@ export default function AdminPanel({ competitionId, tournamentId, user, matches,
       <h2>Administration</h2>
       <p>Les actions concernent l’épreuve sélectionnée. Les opérations sensibles sont consignées dans le journal.</p>
       {message && <p role="status">{message}</p>}
+      <EngagementPanel tournamentId={tournamentId} competitionId={competitionId} />
       <FtlSetup competitionId={competitionId} tournamentId={tournamentId} />
       <ArchiveTournament tournamentId={tournamentId} />
       <form className="feature-panel" onSubmit={adjust}>

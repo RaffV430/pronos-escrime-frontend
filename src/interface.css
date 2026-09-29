@@ -1652,3 +1652,26 @@
 .h2h-pill.lost {
   background: #b3261e;
 }
+
+.engagement summary {
+  font-weight: 700;
+}
+.engagement-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 10px 0;
+  font-size: 0.85rem;
+}
+.engagement-table th,
+.engagement-table td {
+  text-align: left;
+  padding: 5px 6px;
+  border-top: 1px solid var(--border);
+}
+.engagement-table tr.is-current {
+  background: var(--soft);
+}
+.engagement-inactive {
+  font-size: 0.85rem;
+  color: var(--muted);
+}
