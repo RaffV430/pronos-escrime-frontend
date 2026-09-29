@@ -1,5 +1,6 @@
 import { roundLabel } from './matchPresentation';
 import { nextClosingGroup } from './matchPresentation';
+import { countdownText, countdownLabel } from '../lib/countdown';
 export default function ClosingCountdown({ matches, now, userId, onSelectMatch }) {
   const group = nextClosingGroup(matches, now);
   if (!group) return null;
@@ -36,8 +37,8 @@ export default function ClosingCountdown({ matches, now, userId, onSelectMatch }
           <small className="countdown-complete">Tous vos pronostics sont enregistrés pour cette clôture.</small>
         )}
       </div>
-      <strong className="countdown-digits" aria-label={`${Math.floor(seconds / 60)} minutes ${seconds % 60} secondes`}>
-        {String(Math.floor(seconds / 60)).padStart(2, '0')}:{String(seconds % 60).padStart(2, '0')}
+      <strong className="countdown-digits" aria-label={countdownLabel(seconds)}>
+        {countdownText(seconds)}
       </strong>
     </aside>
   );

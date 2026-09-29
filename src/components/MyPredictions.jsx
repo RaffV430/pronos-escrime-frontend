@@ -182,7 +182,7 @@ export default function MyPredictions({ competitionId, tournamentId, userId, onN
           </div>
           <p>
             {progress
-              ? `Évolution depuis le classement du ${new Date(progress.date).toLocaleString('fr-FR')} : ${progress.change > 0 ? '+' : ''}${progress.change} place(s).`
+              ? `Évolution depuis le classement du ${new Date(progress.date).toLocaleString('fr-FR')} : ${progress.change > 0 ? '+' : ''}${progress.change} place${Math.abs(progress.change) > 1 ? 's' : ''}.`
               : 'L’évolution sera disponible après deux imports faisant évoluer le classement.'}
           </p>
           <small>

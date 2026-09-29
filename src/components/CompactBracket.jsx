@@ -1,5 +1,6 @@
 import { roundLabel } from './matchPresentation';
 import { useEffect, useRef, useState } from 'react';
+import { withCount } from '../lib/plural';
 
 export default function CompactBracket({ groups, visible, card, mine, selectedRound, onRoundChange }) {
   const root = useRef(null);
@@ -114,7 +115,7 @@ export default function CompactBracket({ groups, visible, card, mine, selectedRo
                   {!items.length && <p className="compact-round-note">Aucun match pour ce filtre.</p>}
                   {missing > 0 && (
                     <p className="compact-round-note">
-                      {missing} emplacement(s) sans rencontre importée · exemptions ou adversaires à venir
+                      {withCount(missing, 'emplacement')} sans rencontre importée · exemptions ou adversaires à venir
                     </p>
                   )}
                 </div>
