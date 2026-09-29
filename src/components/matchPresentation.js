@@ -10,6 +10,10 @@ export function isMatchClosed(match, now) {
     (!match.awaitingPreviousRound && match.closesAt && now >= Date.parse(match.closesAt)),
   );
 }
+// « À venir » : tout match dont le résultat n'est pas encore publié, pronostics ouverts ou clos.
+export function isUpcoming(match) {
+  return !match.isFinished && match.resultType !== 'CANCELLED';
+}
 export function validateScores(values, maxScore = 15) {
   const scores = [values.score1, values.score2];
   if (!scores.every((v) => /^\d+$/.test(String(v)) && Number.isSafeInteger(Number(v)) && Number(v) <= maxScore))

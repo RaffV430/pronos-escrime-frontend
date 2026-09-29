@@ -1488,9 +1488,25 @@
   .filter-scroll::-webkit-scrollbar {
     display: none;
   }
-  .filter-scroll .filter-row {
+  .filter-scroll .filter-row,
+  .filter-row.filter-scroll {
     flex-wrap: nowrap;
     margin: 8px 0;
+  }
+  /* Filtres des matchs sur une ligne défilante, choix Liste / Arbre toujours visible en dessous. */
+  .board-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0;
+  }
+  .board-toolbar .filter-scroll {
+    min-width: 0;
+  }
+  .board-toolbar .view-toggle {
+    margin-top: 0;
+  }
+  .board-toolbar .view-toggle button {
+    flex: 1;
   }
   .filter-row button {
     font-size: 12px;

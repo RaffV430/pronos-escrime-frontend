@@ -1,4 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
+import IndicatorInput from './IndicatorInput';
+import { parseIndicator } from '../lib/indicator.js';
 import ScoringRules from './ScoringRules';
 import API from '../api';
 import useLocalDraft, { draftKey } from './useLocalDraft';
@@ -88,7 +90,7 @@ function PredictionRow({ userId, pool, fencer, closed, onRefresh, reportDirty, l
       await API.put(`/pools/${pool.id}/fencers/${fencer.id}/prediction`, {
         wins: Number(wins),
         losses,
-        indicator: Number(indicator),
+        indicator: parseIndicator(indicator),
       });
       localDraft.discard();
       setDirty(false);
@@ -189,20 +191,17 @@ function PredictionRow({ userId, pool, fencer, closed, onRefresh, reportDirty, l
         {pool.isFinal ? (
           resultCell(fencer.prediction?.indicator, fencer.indicator, true)
         ) : (
-          <input
+          <IndicatorInput
             form={formId}
-            aria-label={`Indice de ${fencer.name}`}
-            type="number"
-            min={minimum}
-            max={maximum}
-            step="1"
-            required
+            label={fencer.name}
+            minimum={minimum}
+            maximum={maximum}
             placeholder={closed ? '' : '+8'}
             value={indicator}
-            onChange={(e) => {
+            onChange={(next) => {
               setDirty(true);
-              setIndicator(e.target.value);
-              localDraft.persist({ wins, indicator: e.target.value });
+              setIndicator(next);
+              localDraft.persist({ wins, indicator: next });
             }}
             disabled={closed || busy}
           />
@@ -350,7 +349,7 @@ function PoolAdmin({ pool, closed, onRefresh }) {
           fencerId: f.id,
           wins: Number(results[f.id].wins),
           losses: bouts - Number(results[f.id].wins),
-          indicator: Number(results[f.id].indicator),
+          indicator: parseIndicator(results[f.id].indicator),
         })),
       });
       setFeedback(response.data.message);
@@ -393,16 +392,12 @@ function PoolAdmin({ pool, closed, onRefresh }) {
               </label>
               <label>
                 Indice
-                <input
-                  aria-label={`Indice officiel de ${f.name}`}
-                  type="number"
-                  min={-5 * bouts}
-                  max={5 * bouts}
-                  required
+                <IndicatorInput
+                  label={`${f.name} (officiel)`}
+                  minimum={-5 * bouts}
+                  maximum={5 * bouts}
                   value={results[f.id].indicator}
-                  onChange={(e) =>
-                    setResults((prev) => ({ ...prev, [f.id]: { ...prev[f.id], indicator: e.target.value } }))
-                  }
+                  onChange={(next) => setResults((prev) => ({ ...prev, [f.id]: { ...prev[f.id], indicator: next } }))}
                 />
               </label>
             </div>

@@ -511,3 +511,32 @@
     background: var(--soft);
   }
 }
+
+/* Indice : champ texte numérique + bouton ± (clavier Android sans « - ») */
+.indicator-input {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.indicator-input .indicator-sign {
+  min-height: 36px;
+  min-width: 32px;
+  margin: 0;
+  padding: 0 6px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--primary);
+  font-size: 1rem;
+  line-height: 1;
+}
+.indicator-input .indicator-sign:hover:not(:disabled) {
+  background: var(--soft);
+}
+.pool-official .indicator-input {
+  display: flex;
+  margin-top: 6px;
+}
+.pool-official .indicator-input input {
+  flex: 1;
+  margin-top: 0;
+}
