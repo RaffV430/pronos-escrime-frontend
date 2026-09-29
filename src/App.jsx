@@ -459,6 +459,7 @@ export default function App() {
                             key={selectedCompetitionId}
                             matches={matches}
                             userId={user.id}
+                            isAdmin={!!user.isAdmin}
                             ready={matchesReady}
                             stale={matchesStale}
                             onRefresh={() => fetchMatches(selectedCompetitionId)}

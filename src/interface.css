@@ -1696,3 +1696,66 @@
   gap: 6px;
   font-weight: 400;
 }
+
+.match-social {
+  margin-top: 6px;
+  font-size: 0.85rem;
+}
+.match-social summary {
+  cursor: pointer;
+  color: var(--primary);
+  font-weight: 600;
+}
+.match-social-count {
+  color: var(--muted);
+  font-weight: 400;
+}
+.match-reactions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 8px 0;
+}
+.match-reactions .reaction {
+  min-width: 44px;
+  min-height: 36px;
+  padding: 4px 8px;
+  border: 1px solid var(--border, #d0d4dc);
+  border-radius: 18px;
+  background: transparent;
+  color: inherit;
+  font-size: 1rem;
+}
+.match-reactions .reaction.mine {
+  border-color: var(--primary);
+  background: color-mix(in srgb, var(--primary) 14%, transparent);
+}
+.match-reactions .reaction small {
+  font-size: 0.75rem;
+}
+.match-comment-form textarea {
+  width: 100%;
+  box-sizing: border-box;
+  resize: vertical;
+}
+.match-comment-form > div {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  margin: 4px 0 8px;
+}
+.match-comments {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.match-comments li {
+  padding: 6px 0;
+  border-top: 1px solid var(--border, #e3e6ec);
+}
+.match-comments p {
+  margin: 2px 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
