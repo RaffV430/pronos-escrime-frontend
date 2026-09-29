@@ -1459,7 +1459,11 @@
     min-height: 40px;
   }
   .primary-nav button {
-    font-size: 11px;
+    /* 5 onglets sur 360-430 px : taille calculée pour que « Pronostiquer » et « Communauté » tiennent. */
+    font-size: clamp(9.5px, 2.65vw, 12px);
+    letter-spacing: -0.2px;
+    padding: 5px 0;
+    min-width: 0;
     min-height: 54px;
   }
   .compact-event .eyebrow {
@@ -1511,4 +1515,69 @@
 }
 .board-next .button-link {
   margin-left: auto;
+}
+
+.season-analysis {
+  margin: 14px 0;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface, #fff);
+}
+.season-analysis summary {
+  font-weight: 700;
+  cursor: pointer;
+}
+.analysis-rounds {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 10px 0;
+  font-size: 0.9rem;
+}
+.analysis-rounds th,
+.analysis-rounds td {
+  text-align: left;
+  padding: 5px 6px;
+  border-top: 1px solid var(--border);
+  white-space: nowrap;
+}
+.analysis-rounds tr.is-best th::after {
+  content: ' ★';
+  color: #c98a00;
+}
+.analysis-bar {
+  display: inline-block;
+  width: 60px;
+  height: 6px;
+  margin-right: 6px;
+  vertical-align: middle;
+  border-radius: 3px;
+  background: var(--soft);
+  overflow: hidden;
+}
+.analysis-bar > span {
+  display: block;
+  height: 100%;
+  background: var(--primary);
+}
+.analysis-facts {
+  margin: 6px 0 0;
+  padding-left: 18px;
+  line-height: 1.6;
+}
+@media (max-width: 600px) {
+  .season-analysis {
+    padding: 10px;
+  }
+  .analysis-rounds {
+    font-size: 0.8rem;
+  }
+  .analysis-rounds th,
+  .analysis-rounds td {
+    padding: 4px 3px;
+  }
+  .analysis-bar {
+    width: 32px;
+    margin-right: 4px;
+  }
 }
