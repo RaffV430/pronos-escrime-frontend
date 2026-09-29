@@ -1609,3 +1609,46 @@
 .club-league p {
   margin: 6px 0;
 }
+
+.h2h {
+  margin-top: 6px;
+  font-size: 0.85rem;
+}
+.h2h summary {
+  cursor: pointer;
+  color: var(--primary);
+  font-weight: 600;
+}
+.h2h-summary {
+  margin: 6px 0 2px;
+}
+.h2h-list {
+  margin: 0 0 6px;
+  padding-left: 18px;
+}
+.h2h-list small {
+  color: var(--muted);
+}
+.h2h-form {
+  margin: 4px 0;
+}
+.h2h-form > span:first-child {
+  color: var(--muted);
+}
+.h2h-pill {
+  display: inline-grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  margin-right: 3px;
+  border-radius: 50%;
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: #fff;
+}
+.h2h-pill.won {
+  background: #1f8a4c;
+}
+.h2h-pill.lost {
+  background: #b3261e;
+}

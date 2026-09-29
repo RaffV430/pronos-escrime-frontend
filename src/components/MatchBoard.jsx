@@ -10,6 +10,7 @@ import MatchTiming from './MatchTiming';
 import { groupMatches, isMatchClosed, validateScores, nextMatchId } from './matchPresentation';
 import { useNow } from '../lib/polling';
 import { useClub } from '../lib/club';
+import HeadToHead from './HeadToHead';
 
 export default function MatchBoard({
   initialFilter = 'Tous',
@@ -344,6 +345,7 @@ export default function MatchBoard({
         ) : (
           <MatchTiming match={m} now={now} hideChecked={checked.length === 1} />
         )}
+        <HeadToHead matchId={m.id} player1={m.player1} player2={m.player2} />
         {closed && <CrowdTrend match={m} />}
         {m.syncIssue && <p role="alert">{m.syncIssue}</p>}
         {!m.isFinished && (
