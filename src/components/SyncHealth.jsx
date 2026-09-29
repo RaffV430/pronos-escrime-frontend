@@ -46,7 +46,11 @@ export default function SyncHealth() {
     };
   }, [load]);
   const s = data?.summary;
-  const open = Boolean(s && (s.error || s.warning)) || data?.workerEnabled === false;
+  const open =
+    Boolean(s && (s.error || s.warning)) ||
+    data?.workerEnabled === false ||
+    data?.mailConfigured === false ||
+    data?.pushConfigured === false;
   return (
     <details className={`feature-panel sync-health ${s?.error ? 'has-error' : ''}`} open={open}>
       <summary>
@@ -55,6 +59,7 @@ export default function SyncHealth() {
           <span className="sync-health-summary">
             {s.error > 0 && `❌ ${s.error} en panne · `}
             {s.warning > 0 && `⚠️ ${s.warning} à surveiller · `}✅ {s.ok} à jour
+            {data?.mailConfigured === false && ' · ✉️ e-mails désactivés'}
           </span>
         )}
       </summary>
@@ -63,6 +68,15 @@ export default function SyncHealth() {
         <p role="alert">
           Le suivi automatique est désactivé sur le serveur (FTL_AUTO_SYNC). Seuls les contrôles manuels ont lieu.
         </p>
+      )}
+      {data?.mailConfigured === false && (
+        <p className="sync-health-channel">
+          ✉️ E-mails non configurés (Resend) : les alertes administrateur n’arrivent que par notification, et « mot de
+          passe oublié » est indisponible.
+        </p>
+      )}
+      {data?.pushConfigured === false && (
+        <p className="sync-health-channel">🔕 Notifications non configurées sur le serveur (clés VAPID).</p>
       )}
       {data && !data.competitions?.length && <p>Aucune épreuve suivie en ce moment.</p>}
       {data?.competitions?.length > 0 && (
