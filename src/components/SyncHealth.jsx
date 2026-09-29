@@ -64,8 +64,8 @@ export default function SyncHealth() {
           Le suivi automatique est désactivé sur le serveur (FTL_AUTO_SYNC). Seuls les contrôles manuels ont lieu.
         </p>
       )}
-      {data && !data.competitions.length && <p>Aucune épreuve suivie en ce moment.</p>}
-      {data?.competitions.length > 0 && (
+      {data && !data.competitions?.length && <p>Aucune épreuve suivie en ce moment.</p>}
+      {data?.competitions?.length > 0 && (
         <div className="sync-health-scroll">
           <table className="sync-health-table">
             <thead>
