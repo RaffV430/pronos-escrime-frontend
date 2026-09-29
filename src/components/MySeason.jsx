@@ -5,12 +5,13 @@ import { plural } from './resultPresentation';
 import { SEASON_FILTERS, OUTCOME_LABELS, filterSeason, signedPoints } from './seasonPresentation';
 import SeasonBadges from './SeasonBadges';
 import SeasonAnalysis from './SeasonAnalysis';
+import ShareResult from './ShareResult';
 import './MySeason.css';
 
 const dateLabel = (value) =>
   value ? new Date(value).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' }) : '';
 
-export default function MySeason({ userId }) {
+export default function MySeason({ userId, playerName = '' }) {
   const [season, setSeason] = useState(null);
   const [data, setData] = useState(null);
   const [error, setError] = useState('');
@@ -131,6 +132,7 @@ export default function MySeason({ userId }) {
                 </span>
                 <span className="season-points">
                   {t.points} {plural(t.points, 'pt')}
+                  <ShareResult tournamentId={t.id} playerName={playerName} />
                 </span>
               </summary>
               {t.competitions.map((c) => (
