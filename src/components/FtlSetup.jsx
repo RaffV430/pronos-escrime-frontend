@@ -1,10 +1,14 @@
 import { useState } from 'react';
 import API from '../api';
+import VenuePicker from './VenuePicker';
+import { parisTime, venueTime } from '../lib/venue.js';
 export default function FtlSetup({ competitionId, tournamentId }) {
   const [form, setForm] = useState({
       sourceUrl: '',
       date: '',
-      timezone: 'Europe/Istanbul',
+      city: '',
+      timezone: '',
+      offset: '',
       format: 'TEAM',
       name: '',
       destination: 'current',
@@ -19,11 +23,24 @@ export default function FtlSetup({ competitionId, tournamentId }) {
   };
   const inspect = async (e) => {
     e.preventDefault();
+    if (!form.timezone) {
+      setMessage('Choisissez la ville du lieu de compétition dans la liste proposée.');
+      return;
+    }
     setBusy(true);
     setMessage('');
     setPreview(null);
     try {
-      setPreview((await API.post('/admin/ftl/preview', form, { timeout: 95000 })).data);
+      const { sourceUrl, date, city, timezone, format, name, destination } = form;
+      setPreview(
+        (
+          await API.post(
+            '/admin/ftl/preview',
+            { sourceUrl, date, city, timezone, format, name, destination },
+            { timeout: 95000 },
+          )
+        ).data,
+      );
     } catch (e) {
       setMessage(e.response?.data?.error || 'Source non vérifiable. Réessayez.');
     } finally {
@@ -78,15 +95,15 @@ export default function FtlSetup({ competitionId, tournamentId }) {
             Date locale de l’épreuve
             <input required type="date" value={form.date} onChange={(e) => change('date', e.target.value)} />
           </label>
-          <label>
-            Fuseau du lieu de compétition
-            <input
-              required
-              value={form.timezone}
-              placeholder="Europe/Istanbul"
-              onChange={(e) => change('timezone', e.target.value)}
-            />
-          </label>
+          <VenuePicker
+            value={form}
+            disabled={busy}
+            onChange={(venue) => {
+              setForm((old) => ({ ...old, city: '', timezone: '', offset: '', ...venue }));
+              setPreview(null);
+              setMessage('');
+            }}
+          />
           <label>
             Format
             <select value={form.format} onChange={(e) => change('format', e.target.value)}>
@@ -110,9 +127,16 @@ export default function FtlSetup({ competitionId, tournamentId }) {
             <strong>{preview.event}</strong> · {preview.eventTime}
           </p>
           <p>
-            {preview.entries.length} engagés · {preview.timezone} ·{' '}
-            {preview.format === 'TEAM' ? 'Équipes' : 'Individuel'}
+            {preview.entries.length} engagés · {preview.city ? `${preview.city} · ` : ''}
+            {preview.timezone}
+            {preview.offset ? ` (${preview.offset})` : ''} · {preview.format === 'TEAM' ? 'Équipes' : 'Individuel'}
           </p>
+          {preview.startsAt && (
+            <p className="venue-check">
+              Début : {venueTime(preview.startsAt, preview.timezone)} sur place, soit {parisTime(preview.startsAt)} à
+              Paris. Si l’écart vous semble faux, corrigez la ville avant de confirmer.
+            </p>
+          )}
           <details>
             <summary>Vérifier la liste complète</summary>
             <ul>
