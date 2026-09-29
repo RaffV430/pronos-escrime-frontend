@@ -11,11 +11,13 @@ import { groupMatches, isMatchClosed, validateScores, nextMatchId } from './matc
 import { useNow } from '../lib/polling';
 import { useClub } from '../lib/club';
 import HeadToHead from './HeadToHead';
+import MatchSocial from './MatchSocial';
 
 export default function MatchBoard({
   initialFilter = 'Tous',
   matches,
   userId,
+  isAdmin = false,
   competitionId,
   now: fixedNow,
   ready,
@@ -346,6 +348,7 @@ export default function MatchBoard({
           <MatchTiming match={m} now={now} hideChecked={checked.length === 1} />
         )}
         <HeadToHead matchId={m.id} player1={m.player1} player2={m.player2} />
+        {!onPreviewSave && <MatchSocial matchId={m.id} counts={m.social} isAdmin={isAdmin} />}
         {closed && <CrowdTrend match={m} />}
         {m.syncIssue && <p role="alert">{m.syncIssue}</p>}
         {!m.isFinished && (
