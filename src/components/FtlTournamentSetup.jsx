@@ -1,8 +1,10 @@
 import { useState } from 'react';
 import API from '../api';
+import VenuePicker from './VenuePicker';
+import { parisTime } from '../lib/venue.js';
 export default function FtlTournamentSetup({ onConfigured }) {
   const [sourceUrl, setSource] = useState(''),
-    [timezone, setTimezone] = useState('Europe/Istanbul'),
+    [venue, setVenue] = useState({ city: '', timezone: '', offset: '' }),
     [preview, setPreview] = useState(null),
     [selected, setSelected] = useState([]),
     [busy, setBusy] = useState(false),
@@ -10,12 +12,20 @@ export default function FtlTournamentSetup({ onConfigured }) {
     [result, setResult] = useState(null);
   const inspect = async (e) => {
     e.preventDefault();
+    if (!venue.timezone) {
+      setMessage('Choisissez la ville du lieu de compétition dans la liste proposée.');
+      return;
+    }
     setBusy(true);
     setMessage('');
     setPreview(null);
     setResult(null);
     try {
-      const { data } = await API.post('/admin/ftl/tournament/preview', { sourceUrl, timezone }, { timeout: 95000 });
+      const { data } = await API.post(
+        '/admin/ftl/tournament/preview',
+        { sourceUrl, city: venue.city, timezone: venue.timezone },
+        { timeout: 95000 },
+      );
       setPreview(data);
       setSelected(data.events.map((e) => e.eventId));
     } catch (e) {
@@ -68,18 +78,15 @@ export default function FtlTournamentSetup({ onConfigured }) {
               }}
             />
           </label>
-          <label>
-            Fuseau du lieu de compétition
-            <input
-              required
-              value={timezone}
-              disabled={busy}
-              onChange={(e) => {
-                setTimezone(e.target.value);
-                setPreview(null);
-              }}
-            />
-          </label>
+          <VenuePicker
+            value={venue}
+            disabled={busy}
+            onChange={(next) => {
+              setVenue({ city: '', timezone: '', offset: '', ...next });
+              setPreview(null);
+              setMessage('');
+            }}
+          />
         </div>
         <button disabled={busy}>
           {busy ? 'Lecture des sources officielles…' : 'Afficher les épreuves du tournoi'}
@@ -89,7 +96,9 @@ export default function FtlTournamentSetup({ onConfigured }) {
         <section className="prediction-summary">
           <h3>{preview.tournament}</h3>
           <p>
-            {preview.events.length} épreuves · Horaires du lieu de compétition ({preview.timezone})
+            {preview.events.length} épreuves · Horaires du lieu de compétition
+            {preview.city ? ` · ${preview.city}` : ''} ({preview.timezone}
+            {preview.offset ? `, ${preview.offset}` : ''})
           </p>
           <label className="check-row">
             <input
@@ -116,7 +125,8 @@ export default function FtlTournamentSetup({ onConfigured }) {
                 <span>
                   <strong>{e.event}</strong>
                   <small>
-                    {new Date(e.date + 'T12:00:00').toLocaleDateString('fr-FR')} · {e.time} ·{' '}
+                    {new Date(e.date + 'T12:00:00').toLocaleDateString('fr-FR')} · {e.time}
+                    {e.startsAt ? ` (${parisTime(e.startsAt)} à Paris)` : ''} ·{' '}
                     {e.format === 'TEAM' ? 'Par équipes' : 'Individuel'}
                   </small>
                   <small>{e.existingCompetitionId ? 'Déjà configurée · conservée' : 'À ajouter'}</small>
