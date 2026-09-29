@@ -31,6 +31,7 @@ const PodiumPrediction = lazy(() => import('./components/PodiumPrediction'));
 const PoolPredictions = lazy(() => import('./components/PoolPredictions'));
 const GlobalLeaderboard = lazy(() => import('./components/GlobalLeaderboard'));
 const MyPredictions = lazy(() => import('./components/MyPredictions'));
+const ClubDay = lazy(() => import('./components/ClubDay'));
 const MySeason = lazy(() => import('./components/MySeason'));
 const AccountSettings = lazy(() => import('./components/AccountSettings'));
 const Community = lazy(() => import('./components/Community'));
@@ -431,23 +432,34 @@ export default function App() {
                         }
                       />
                       <nav className="secondary-nav" aria-label="Type de pronostic">
-                        {[['podium', 'Podium'], ...(!team ? [['pools', 'Poules']] : []), ['tableau', 'Tableau']].map(
-                          ([id, label]) => (
-                            <button
-                              key={id}
-                              aria-pressed={playTab === id}
-                              onClick={() =>
-                                runNavigation(() => {
-                                  setDirty(false);
-                                  setPlayTab(id);
-                                })
-                              }
-                            >
-                              {label}
-                            </button>
-                          ),
-                        )}
+                        {[
+                          ['podium', 'Podium'],
+                          ...(!team ? [['pools', 'Poules']] : []),
+                          ['tableau', 'Tableau'],
+                          ...(club.hasFencers ? [['club', 'Nos tireurs']] : []),
+                        ].map(([id, label]) => (
+                          <button
+                            key={id}
+                            aria-pressed={playTab === id}
+                            onClick={() =>
+                              runNavigation(() => {
+                                setDirty(false);
+                                setPlayTab(id);
+                              })
+                            }
+                          >
+                            {label}
+                          </button>
+                        ))}
                       </nav>
+                      {playTab === 'club' && club.hasFencers && (
+                        <ClubDay
+                          key={selectedCompetitionId}
+                          competitionId={selectedCompetitionId}
+                          matches={matches}
+                          team={team}
+                        />
+                      )}
                       {playTab === 'podium' && (
                         <PodiumPrediction
                           key={selectedCompetitionId}
