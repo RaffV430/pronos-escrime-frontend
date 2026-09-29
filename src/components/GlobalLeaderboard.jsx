@@ -2,8 +2,8 @@ import { useEffect, useState } from 'react';
 import API from '../api';
 export default function GlobalLeaderboard({ userId, tournamentId, competitionId }) {
   const [scope, setScope] = useState('Général'),
-    [selectedTournament, setTournament] = useState(String(tournamentId)),
-    [selectedEvent, setEvent] = useState(String(competitionId)),
+    [selectedTournament, setTournament] = useState(tournamentId ? String(tournamentId) : ''),
+    [selectedEvent, setEvent] = useState(competitionId ? String(competitionId) : ''),
     [tournaments, setTournaments] = useState([]),
     [events, setEvents] = useState([]),
     [rows, setRows] = useState(null),
@@ -13,13 +13,16 @@ export default function GlobalLeaderboard({ userId, tournamentId, competitionId 
     const c = new AbortController();
     API.get('/tournaments', { signal: c.signal })
       .then(({ data }) => {
-        if (!c.signal.aborted) setTournaments(data);
+        if (c.signal.aborted) return;
+        setTournaments(data);
+        setTournament((old) => old || String(data[0]?.id || ''));
       })
       .catch(() => {});
     return () => c.abort();
   }, []);
   useEffect(() => {
     const c = new AbortController();
+    if (!selectedTournament) return () => c.abort();
     API.get(`/podium/competitions/${selectedTournament}`, { signal: c.signal })
       .then(({ data }) => {
         if (!c.signal.aborted) {
@@ -34,7 +37,7 @@ export default function GlobalLeaderboard({ userId, tournamentId, competitionId 
     const c = new AbortController();
     setRows(null);
     setError('');
-    if (scope === 'Épreuve' && !selectedEvent) return () => c.abort();
+    if ((scope === 'Épreuve' && !selectedEvent) || (scope === 'Tournoi' && !selectedTournament)) return () => c.abort();
     const params =
       scope === 'Tournoi'
         ? `?tournamentId=${selectedTournament}`
@@ -54,17 +57,16 @@ export default function GlobalLeaderboard({ userId, tournamentId, competitionId 
     previous = me ? rows.filter((r) => (r.rank || 0) < me.rank).at(-1) : null;
   return (
     <section>
-      <div className="page-heading">
-        <p className="eyebrow">CHAQUE POINT COMPTE</p>
-        <h1>La course au podium.</h1>
-        <p>
+      <h1 className="section-title">
+        Classement{' '}
+        <small>
           {scope === 'Général'
-            ? 'Toutes les compétitions'
+            ? 'toutes les compétitions'
             : scope === 'Tournoi'
               ? tournaments.find((t) => String(t.id) === selectedTournament)?.name
               : events.find((e) => String(e.id) === selectedEvent)?.name}
-        </p>
-      </div>
+        </small>
+      </h1>
       <div className="feature-heading">
         <div className="filter-row">
           {['Général', 'Tournoi', 'Épreuve'].map((s) => (

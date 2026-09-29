@@ -8,13 +8,14 @@ import DraftNotice from './DraftNotice';
 import { withCount } from '../lib/plural';
 import MatchTiming from './MatchTiming';
 import { groupMatches, isMatchClosed, validateScores, nextMatchId } from './matchPresentation';
+import { useNow } from '../lib/polling';
 
 export default function MatchBoard({
   initialFilter = 'Tous',
   matches,
   userId,
   competitionId,
-  now,
+  now: fixedNow,
   ready,
   stale = false,
   onRefresh,
@@ -23,6 +24,8 @@ export default function MatchBoard({
   onPreviewSave,
   onPreviewRemove,
 }) {
+  const clock = useNow(5000);
+  const now = fixedNow ?? clock;
   const deepLink = new URLSearchParams(location.search);
   const linkedIds =
     Number(deepLink.get('event')) === Number(competitionId)
@@ -412,23 +415,13 @@ export default function MatchBoard({
       )}
       {ready && (
         <>
-          <div className="overview">
-            <div>
-              <strong>
-                {valid.filter((m) => mine(m)).length} / {valid.length}
-              </strong>
-              <span>pronostics enregistrés</span>
-            </div>
-            <div>
-              <strong>{valid.filter((m) => !mine(m) && !isMatchClosed(m, now)).length}</strong>
-              <span>à compléter</span>
-            </div>
-            <div>
-              <strong>Clôture par tour</strong>
-              <span>Heure prévue, au moins 10 min après le dernier résultat du tour précédent</span>
-            </div>
-          </div>
-          <div className="board-toolbar">
+          <p className="board-summary">
+            <strong>
+              {valid.filter((m) => mine(m)).length}/{valid.length}
+            </strong>{' '}
+            enregistrés · <strong>{valid.filter((m) => !mine(m) && !isMatchClosed(m, now)).length}</strong> à compléter
+          </p>
+          <div className="board-toolbar filter-scroll">
             <div className="filter-row">
               {['Tous', 'À compléter', 'À venir', 'Ferment bientôt', 'Résultats publiés'].map((x) => (
                 <button key={x} aria-pressed={filter === x} onClick={() => setFilter(x)}>
@@ -455,12 +448,10 @@ export default function MatchBoard({
               ))}
             </div>
           </div>
-          <div className="feature-heading">
-            <p className="muted">
-              {checked.length === 1
-                ? `Dernière vérification officielle : ${new Date(checked[0]).toLocaleString('fr-FR')}`
-                : 'Les dates de vérification figurent sur les rencontres.'}
-            </p>
+          <div className="feature-heading board-next">
+            {checked.length === 1 && (
+              <p className="muted">Dernière vérification officielle : {new Date(checked[0]).toLocaleString('fr-FR')}</p>
+            )}
             <button
               className="button-link"
               onClick={next}

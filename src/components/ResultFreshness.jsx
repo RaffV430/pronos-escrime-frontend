@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import API from '../api';
+import { pollWhileVisible } from '../lib/polling';
 export default function ResultFreshness({ competitionId, children }) {
   const [data, setData] = useState(null),
     [failed, setFailed] = useState(false),
@@ -19,10 +20,10 @@ export default function ResultFreshness({ competitionId, children }) {
         });
     };
     read();
-    const timer = setInterval(read, 30000);
+    const stopPolling = pollWhileVisible(read, 30000);
     return () => {
       c.abort();
-      clearInterval(timer);
+      stopPolling();
     };
   }, [competitionId]);
   const label = failed

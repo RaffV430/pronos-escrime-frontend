@@ -1,7 +1,10 @@
 import { roundLabel } from './matchPresentation';
 import { nextClosingGroup } from './matchPresentation';
 import { countdownText, countdownLabel } from '../lib/countdown';
-export default function ClosingCountdown({ matches, now, userId, onSelectMatch }) {
+import { useNow } from '../lib/polling';
+export default function ClosingCountdown({ matches, now: fixedNow, userId, onSelectMatch }) {
+  const clock = useNow(1000);
+  const now = fixedNow ?? clock;
   const group = nextClosingGroup(matches, now);
   if (!group) return null;
   const { seconds } = group;

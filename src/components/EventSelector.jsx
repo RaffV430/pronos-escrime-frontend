@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import API from '../api';
 import { withCount } from '../lib/plural';
+import { pollWhileVisible } from '../lib/polling';
 
 const readSelection = (key) => {
   try {
@@ -136,11 +137,11 @@ export default function EventSelector({
           }
         })
         .catch(() => {});
-    const timer = setInterval(refresh, 60000);
+    const stopPolling = pollWhileVisible(refresh, 60000);
     if (chooserOpen) refresh();
     return () => {
       controller.abort();
-      clearInterval(timer);
+      stopPolling();
     };
   }, [includeArchived, tournamentId, chooserOpen]);
 

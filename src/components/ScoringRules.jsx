@@ -35,6 +35,10 @@ export default function ScoringRules({ type = 'pools' }) {
             Les deux critères sont cumulables : 3 + 1 = 4 points maximum par match. Ce barème concerne les matchs, pas
             les pronostics de podium.
           </p>
+          <p className="muted">
+            <strong>Clôture par tour :</strong> à l’heure prévue du tour, et au moins 10 minutes après le dernier
+            résultat du tour précédent.
+          </p>
         </>
       )}
     </details>

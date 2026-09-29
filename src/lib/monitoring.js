@@ -4,11 +4,24 @@ let sentry = null;
 
 export function startMonitoring(dsn = import.meta.env.VITE_SENTRY_DSN?.trim()) {
   if (!dsn) return Promise.resolve(null);
-  return import('@sentry/react').then((Sentry) => {
-    Sentry.init({ dsn, environment: import.meta.env.MODE, tracesSampleRate: 0, sendDefaultPii: false });
-    sentry = Sentry;
-    return Sentry;
-  });
+  // Chargé une fois la page affichée (le suivi des erreurs ne doit pas retarder l'écran des matchs).
+  const idle = (fn) =>
+    typeof window !== 'undefined' && 'requestIdleCallback' in window
+      ? window.requestIdleCallback(fn, { timeout: 4000 })
+      : setTimeout(fn, 1500);
+  return new Promise((resolve) => idle(resolve))
+    .then(() => import('./sentry.js'))
+    .then((Sentry) => {
+      Sentry.init({
+        dsn,
+        environment: import.meta.env.MODE,
+        tracesSampleRate: 0,
+        sendDefaultPii: false,
+        integrations: (defaults) => defaults.filter((i) => !/Replay/.test(i.name)),
+      });
+      sentry = Sentry;
+      return Sentry;
+    });
 }
 
 export function reportError(error, context) {

@@ -5,7 +5,9 @@ import FtlSetup from './FtlSetup';
 import ArchiveTournament from './ArchiveTournament';
 import PodiumPrediction from './PodiumPrediction';
 import PoolPredictions from './PoolPredictions';
-export default function AdminPanel({ competitionId, tournamentId, user, matches, onRefresh, now }) {
+import { useNow } from '../lib/polling';
+export default function AdminPanel({ competitionId, tournamentId, user, matches, onRefresh }) {
+  const now = useNow(5000);
   const [query, setQuery] = useState(''),
     [users, setUsers] = useState([]),
     [target, setTarget] = useState(''),

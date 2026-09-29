@@ -1,15 +1,10 @@
-import { useCallback, useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import API from '../api';
 import useLocalDraft, { draftKey } from './useLocalDraft';
 import DraftNotice from './DraftNotice';
+import { pollWhileVisible } from '../lib/polling';
 
-export default function PodiumPrediction({
-  tournamentId,
-  selectedCompetitionId,
-  user,
-  adminOnly = false,
-  onDirtyChange = () => {},
-}) {
+export default function PodiumPrediction({ selectedCompetitionId, user, adminOnly = false, onDirtyChange = () => {} }) {
   const localDraft = useLocalDraft(draftKey(user?.id, selectedCompetitionId, 'podium'));
   const [dirty, setDirty] = useState(false);
   useEffect(() => {
@@ -31,14 +26,14 @@ export default function PodiumPrediction({
   const [search, setSearch] = useState('');
   const [legacy, setLegacy] = useState({});
   const [isLocked, setIsLocked] = useState(true);
+  // Dernier statut confirmé par le serveur (l'état initial « verrouillé » n'est qu'une précaution d'affichage).
+  const lockedRef = useRef(false);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   const [lockBusy, setLockBusy] = useState(false);
   const [adminMessage, setAdminMessage] = useState('');
   const [allPredictions, setAllPredictions] = useState([]);
-  const [leaderboard, setLeaderboard] = useState([]);
-  const [activeTab, setActiveTab] = useState('prediction');
   const team = options?.format === 'TEAM';
   const slots = team ? ['gold', 'silver', 'bronze1'] : ['gold', 'silver', 'bronze1', 'bronze2'];
   const labels = {
@@ -56,13 +51,6 @@ export default function PodiumPrediction({
     const entry = options?.entries.find((e) => e.id === ids?.[slot]);
     return entry ? entryLabel(entry) : fallback || '—';
   };
-  const refreshLeaderboard = useCallback(async () => {
-    try {
-      setLeaderboard((await API.get(`/podium/leaderboard/${tournamentId}`)).data || []);
-    } catch {
-      /* Keep the current ranking on transient errors. */
-    }
-  }, [tournamentId]);
 
   useEffect(() => {
     if (!selectedCompetitionId) return;
@@ -77,6 +65,7 @@ export default function PodiumPrediction({
         if (controller.signal.aborted) return;
         setOptions(opt.data);
         setIsLocked(status.data.isLocked);
+        lockedRef.current = status.data.isLocked;
         setLegacy(pick.data || {});
         setError('');
         const ids = { ...(pick.data.selectionIds || {}) };
@@ -96,24 +85,25 @@ export default function PodiumPrediction({
       }
     };
     load();
-    const timer = setInterval(async () => {
+    const stopPolling = pollWhileVisible(async () => {
+      if (lockedRef.current) return; // podium verrouillé : plus rien à surveiller
       try {
         const status = await API.get(`/podium/competition-status/${selectedCompetitionId}`, {
           signal: controller.signal,
         });
-        if (!controller.signal.aborted) setIsLocked(status.data.isLocked);
+        if (!controller.signal.aborted) {
+          setIsLocked(status.data.isLocked);
+          lockedRef.current = status.data.isLocked;
+        }
       } catch {
         /* Do not replace a valid status with an invented one. */
       }
-    }, 10000);
+    }, 30000);
     return () => {
       controller.abort();
-      clearInterval(timer);
+      stopPolling();
     };
   }, [selectedCompetitionId, user?.isAdmin]);
-  useEffect(() => {
-    refreshLeaderboard();
-  }, [refreshLeaderboard, selectedCompetitionId]);
 
   useEffect(() => {
     if (!isLocked || !selectedCompetitionId) return;
@@ -163,7 +153,6 @@ export default function PodiumPrediction({
       setIsLocked(true);
       setOptions((await API.get(`/podium/options/${selectedCompetitionId}`)).data);
       setAllPredictions((await API.get(`/podium/all/competition/${selectedCompetitionId}`)).data);
-      refreshLeaderboard();
     } catch (err) {
       setAdminMessage(err.response?.data?.error || 'Erreur lors de la validation.');
     } finally {
@@ -183,18 +172,8 @@ export default function PodiumPrediction({
       }}
     >
       <h3>{adminOnly ? 'Administration du podium' : 'Qui montera sur le podium ?'}</h3>
-      {!adminOnly && (
-        <div style={{ display: 'flex', gap: 10, marginBottom: 20 }}>
-          <button aria-pressed={activeTab === 'prediction'} onClick={() => setActiveTab('prediction')}>
-            🎯 Pronostics Podium
-          </button>
-          <button aria-pressed={activeTab === 'leaderboard'} onClick={() => setActiveTab('leaderboard')}>
-            📊 Classement Pronos Podium
-          </button>
-        </div>
-      )}
       {error && <p role="alert">{error}</p>}
-      {activeTab === 'prediction' ? (
+      {
         <>
           {options && (
             <>
@@ -379,20 +358,7 @@ export default function PodiumPrediction({
             </>
           )}
         </>
-      ) : (
-        <div>
-          <h4>Classement pronos podium</h4>
-          {leaderboard.length ? (
-            leaderboard.map((entry, i) => (
-              <p key={entry.user.id}>
-                {entry.rank || i + 1}. {entry.user.name} — {entry.totalPoints} pts
-              </p>
-            ))
-          ) : (
-            <p>Aucun point attribué pour le moment.</p>
-          )}
-        </div>
-      )}
+      }
     </section>
   );
 }

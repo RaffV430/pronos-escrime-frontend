@@ -5,6 +5,7 @@ import useLocalDraft, { draftKey } from './useLocalDraft';
 import DraftNotice from './DraftNotice';
 import './PoolPredictions.css';
 import { withCount } from '../lib/plural';
+import { pollWhileVisible, useNow } from '../lib/polling';
 
 const message = (error) => error.response?.data?.error || 'Connexion impossible. Réessayez.';
 const signed = (value) => (value > 0 ? `+${value}` : String(value));
@@ -532,7 +533,7 @@ function PoolList({ competitionId, user, onDirtyChange, refreshVersion }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [refresh, setRefresh] = useState(0);
-  const [now, setNow] = useState(() => Date.now());
+  const now = useNow(5000);
   const reload = useCallback(() => setRefresh((n) => n + 1), []);
   useEffect(() => {
     const controller = new AbortController();
@@ -549,14 +550,7 @@ function PoolList({ competitionId, user, onDirtyChange, refreshVersion }) {
       });
     return () => controller.abort();
   }, [competitionId, refresh, refreshVersion]);
-  useEffect(() => {
-    const timer = setInterval(reload, 30000);
-    return () => clearInterval(timer);
-  }, [reload]);
-  useEffect(() => {
-    const timer = setInterval(() => setNow(Date.now()), 1000);
-    return () => clearInterval(timer);
-  }, []);
+  useEffect(() => pollWhileVisible(reload, 30000), [reload]);
   return (
     <>
       <div className="pool-toolbar">

@@ -1426,3 +1426,89 @@
     content: 'Avantage : ';
   }
 }
+
+/* Tableau : synthèse sur une ligne (au lieu de 3 encadrés) et titres de section sobres. */
+.board-summary {
+  margin: 10px 0 6px;
+  font-size: 0.95rem;
+  color: var(--muted);
+}
+.board-summary strong {
+  color: var(--text);
+}
+.section-title {
+  font-size: 1.4rem;
+  margin: 16px 0 8px;
+}
+.section-title small {
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--muted);
+}
+.error-panel .error-detail {
+  display: block;
+  margin-top: 10px;
+  color: var(--muted);
+}
+
+/* Mobile : textes lisibles (12 px minimum) et cibles tactiles d'au moins 40-44 px. */
+@media (max-width: 600px) {
+  .account-actions button {
+    font-size: 12px;
+    padding: 8px 10px;
+    min-height: 40px;
+  }
+  .primary-nav button {
+    font-size: 11px;
+    min-height: 54px;
+  }
+  .compact-event .eyebrow {
+    font-size: 10px;
+  }
+  .compact-event button {
+    font-size: 12px;
+    min-height: 40px;
+  }
+  .overview span {
+    font-size: 12px;
+  }
+  /* Filtres : une seule rangée qui défile horizontalement. */
+  .filter-scroll {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    gap: 8px;
+    scrollbar-width: none;
+    margin: 0 -2px;
+    padding: 0 2px;
+  }
+  .filter-scroll::-webkit-scrollbar {
+    display: none;
+  }
+  .filter-scroll .filter-row {
+    flex-wrap: nowrap;
+    margin: 8px 0;
+  }
+  .filter-row button {
+    font-size: 12px;
+    min-height: 40px;
+    padding: 8px 12px;
+    white-space: nowrap;
+  }
+  .save-dock {
+    font-size: 13px;
+  }
+  .save-dock button {
+    font-size: 13px;
+    min-height: 44px;
+  }
+  .match-board > .feature-heading p {
+    font-size: 12px;
+  }
+}
+
+.board-next {
+  margin: 4px 0 8px;
+}
+.board-next .button-link {
+  margin-left: auto;
+}
