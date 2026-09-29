@@ -1,6 +1,6 @@
 import CrowdTrend from './CrowdTrend';
 import { matchTotal } from './resultPresentation';
-import { roundLabel } from './matchPresentation';
+import { roundLabel, stripLabel } from './matchPresentation';
 import { useEffect, useRef, useState } from 'react';
 import API from '../api';
 import useLocalDraft, { draftKey } from './useLocalDraft';
@@ -278,6 +278,7 @@ export default function MatchBoard({
         <div className="match-meta">
           <span>
             {m.sourceKey ? `Match ${m.sourceKey.split(':').pop()}` : `#${m.id}`} · {roundLabel(m.round)}
+            {m.strip && <span className="match-strip"> · {stripLabel(m.strip)}</span>}
           </span>
           <span className={`status-pill ${p && !drafts[m.id] ? 'saved' : ''}`}>{status}</span>
         </div>

@@ -129,3 +129,11 @@ export function nextMatchId(orderedIds, currentId, eligible) {
   const order = start < 0 ? orderedIds : [...orderedIds.slice(start + 1), ...orderedIds.slice(0, start)];
   return order.find((id) => id !== currentId && eligible(id)) ?? null;
 }
+
+// Piste annoncée par FencingTimeLive : numéro, ou couleur des pistes de finale.
+const STRIP_COLORS = { blue: 'bleue', red: 'rouge', yellow: 'jaune', green: 'verte' };
+export const stripLabel = (strip) => {
+  const value = String(strip ?? '').trim();
+  if (!value) return '';
+  return `Piste ${STRIP_COLORS[value.toLowerCase()] || value}`;
+};
