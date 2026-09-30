@@ -12,7 +12,16 @@ const winnerSide = (m) =>
         ? 1
         : 2
       : null;
-const side = (m, n) => ({ name: m[`player${n}`], country: m[`player${n}Country`] || '' });
+// Tête de série officielle (entier positif) ou null.
+export const seedOf = (m, n) => {
+  const s = m?.[`seed${n}`];
+  return Number.isInteger(s) && s > 0 ? s : null;
+};
+const side = (m, n) => ({
+  name: m[`player${n}`],
+  country: m[`player${n}Country`] || '',
+  ...(seedOf(m, n) ? { seed: seedOf(m, n) } : {}),
+});
 
 // Vainqueur officiel d'un match terminé.
 export function officialWinner(m) {
