@@ -2035,7 +2035,7 @@
    donc chaque match se centre entre ses deux matchs d'origine ; traits de liaison entre les tours. */
 .match-board {
   --tree-slot: 88px;
-  --tree-col: 232px;
+  --tree-col: 262px;
   --tree-gap: 44px;
   --tree-line: #b9c7da;
   --tree-pick: var(--primary);
@@ -2142,7 +2142,7 @@
 }
 .tree-row {
   display: grid;
-  grid-template-columns: 30px minmax(0, 1fr) 34px;
+  grid-template-columns: 28px 30px minmax(0, 1fr) 34px;
   align-items: center;
   gap: 6px;
   height: 26px;
@@ -2150,6 +2150,17 @@
 }
 .tree-row + .tree-row {
   border-top: 1px solid var(--border);
+}
+/* Classement d'entrée dans le tableau, façon FencingTimeLive : « (12) » devant le tireur. */
+.tree-seed {
+  color: var(--muted);
+  font:
+    600 10px ui-monospace,
+    SFMono-Regular,
+    Menlo,
+    monospace;
+  text-align: right;
+  white-space: nowrap;
 }
 .tree-country {
   color: var(--muted);
@@ -2276,7 +2287,7 @@
 }
 @media (max-width: 600px) {
   .match-board {
-    --tree-col: 212px;
+    --tree-col: 236px;
     --tree-gap: 30px;
     --tree-slot: 84px;
   }
