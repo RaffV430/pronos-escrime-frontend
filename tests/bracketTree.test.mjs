@@ -95,3 +95,18 @@ test('tête de série officielle transmise aux qualifiés et aux exempts', async
   const e = entrantFrom(t, 1, 1, () => ({}));
   assert.deepEqual([e.kind, e.name, e.seed], ['real', 'D', 4]);
 });
+
+test('confirmed advancement remains available while points wait for validation', () => {
+  const prior = m('T4', 1, 'A', 'FRA', 'B', 'ITA', null, null, {
+    winner: 1,
+    pointsPending: true,
+    progressionConfirmedAt: '2026-10-05T10:00:00Z',
+  });
+  const tree = buildTree([prior, m('T4', 2, 'C', 'POL', 'D', 'GER')]);
+  assert.equal(entrantFrom(tree, 1, 1, () => ({})).name, 'A');
+  const ambiguous = buildTree([
+    { ...prior, winner: null, progressionConfirmedAt: null },
+    m('T4', 2, 'C', 'POL', 'D', 'GER'),
+  ]);
+  assert.notEqual(entrantFrom(ambiguous, 1, 1, () => ({})).name, 'A');
+});

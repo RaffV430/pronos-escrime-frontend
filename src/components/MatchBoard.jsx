@@ -350,7 +350,13 @@ export default function MatchBoard({
             />
           </label>
         ))}
-        {m.isFinished ? (
+        {m.pointsPending ? (
+          <p role="status">
+            <strong>Points en attente de validation</strong>
+            {m.progressionConfirmedAt && m.winnerName ? ` · ${m.winnerName} qualifié(e)` : ''}. Le reste du tableau
+            continue.
+          </p>
+        ) : m.isFinished ? (
           <div className="official-result">
             <p>
               {m.resultType === 'MEDICAL_WITHDRAWAL'

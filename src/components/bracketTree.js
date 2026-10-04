@@ -25,7 +25,8 @@ const side = (m, n) => ({
 
 // Vainqueur officiel d'un match terminé.
 export function officialWinner(m) {
-  if (!m?.isFinished) return null;
+  if (!m?.isFinished && !m?.progressionConfirmedAt) return null;
+  if (m.pointsPending && !m.progressionConfirmedAt) return null;
   const w = winnerSide(m);
   return w ? side(m, w) : null;
 }
