@@ -351,8 +351,10 @@ export default function App() {
                     setTournamentId(tId);
                     selectCompetition(cId);
                     setCompetition(entry);
-                    if (cId !== selectedCompetitionId)
-                      setPlayTab(new URLSearchParams(location.search).get('view') === 'pools' ? 'pools' : 'tableau');
+                    if (cId !== selectedCompetitionId) {
+                      const view = new URLSearchParams(location.search).get('view');
+                      setPlayTab(view === 'pools' ? 'pools' : view === 'podium' ? 'podium' : 'tableau');
+                    }
                     setMainTab((current) =>
                       current !== 'play'
                         ? current
