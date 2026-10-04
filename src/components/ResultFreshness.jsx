@@ -58,6 +58,9 @@ export default function ResultFreshness({ competitionId, children }) {
       <div className="freshness-content">
         <strong>{label}</strong>
         {data?.checkedAt && <p>Dernière vérification : {new Date(data.checkedAt).toLocaleString('fr-FR')}</p>}
+        {data?.publishedAt && (
+          <p>Dernière publication du site officiel : {new Date(data.publishedAt).toLocaleString('fr-FR')}</p>
+        )}
         {data?.state !== 'COMPLETE' && data?.nextAt && (
           <p>Prochain contrôle prévu : {new Date(data.nextAt).toLocaleString('fr-FR')}</p>
         )}

@@ -139,5 +139,6 @@ const STRIP_COLORS = { blue: 'bleue', red: 'rouge', yellow: 'jaune', green: 'ver
 export const stripLabel = (strip) => {
   const value = String(strip ?? '').trim();
   if (!value) return '';
+  if (value.toLowerCase() === 'podium') return 'Podium';
   return `Piste ${STRIP_COLORS[value.toLowerCase()] || value}`;
 };
