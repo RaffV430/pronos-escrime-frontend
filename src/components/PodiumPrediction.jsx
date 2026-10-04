@@ -228,7 +228,7 @@ export default function PodiumPrediction({ selectedCompetitionId, user, adminOnl
               {options?.resultsSourceUrl && (
                 <p>
                   <a href={options.resultsSourceUrl} target="_blank" rel="noreferrer">
-                    Consulter Results sur FencingTimeLive
+                    Consulter le classement officiel
                   </a>
                 </p>
               )}

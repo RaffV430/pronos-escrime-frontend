@@ -39,7 +39,7 @@ function LiveCell({ fencer, bouts }) {
         {fencer.firstResultAt ? (
           <span
             className="pool-live-pending"
-            title="Un score est en cours de saisie sur FencingTimeLive : bilan affiché au prochain contrôle."
+            title="Un score est en cours de saisie sur le site officiel : bilan affiché au prochain contrôle."
           >
             saisie…
           </span>
@@ -126,13 +126,15 @@ function PredictionRow({ userId, pool, fencer, closed, onRefresh, reportDirty, l
     ? 'Résultats publiés'
     : fencer.firstResultAt
       ? 'Premier résultat publié'
-      : pool.isClosed
-        ? 'Poule fermée'
-        : closed
-          ? pool.lockMode === 'FIRST_RESULT'
-            ? 'Vérification en attente'
-            : 'Clôture atteinte'
-          : 'Pronostic ouvert';
+      : pool.lockMode === 'PROVISIONAL'
+        ? 'Tirage provisoire'
+        : pool.isClosed
+          ? 'Poule fermée'
+          : closed
+            ? pool.lockMode !== 'TIME'
+              ? 'Vérification en attente'
+              : 'Clôture atteinte'
+            : 'Pronostic ouvert';
   const resultCell = (predicted, actual, isIndicator = false) => (
     <>
       <span className="pool-predicted">{predicted == null ? '—' : isIndicator ? signed(predicted) : predicted}</span>
@@ -239,7 +241,7 @@ function PredictionRow({ userId, pool, fencer, closed, onRefresh, reportDirty, l
           {pending ? (
             <span
               className="pool-row-state pool-row-pending"
-              title="Vérification FencingTimeLive en attente : la saisie reprend automatiquement au prochain contrôle."
+              title="Vérification du site officiel en attente : la saisie reprend automatiquement au prochain contrôle."
             >
               ⏳<span className="pool-long-label"> En attente</span>
             </span>
@@ -670,7 +672,7 @@ function PoolList({ competitionId, user, onDirtyChange, refreshVersion }) {
                         {pool.strip && ` · ${stripLabel(pool.strip).toLowerCase()}`}
                         {pool.startsAt &&
                           ` · ${new Date(pool.startsAt).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}`}
-                        {pool.lockMode !== 'FIRST_RESULT' &&
+                        {pool.lockMode === 'TIME' &&
                           ` · clôture ${new Date(pool.closesAt).toLocaleString('fr-FR', { dateStyle: 'short', timeStyle: 'short' })}`}
                       </span>
                     </h3>
@@ -678,28 +680,40 @@ function PoolList({ competitionId, user, onDirtyChange, refreshVersion }) {
                       className={`pool-badge ${closed ? 'closed' : ''}`}
                       title={
                         pool.lockMode === 'FIRST_RESULT'
-                          ? 'Clôture individuelle au premier résultat détecté sur FencingTimeLive.'
-                          : undefined
+                          ? 'Clôture individuelle au premier résultat détecté sur le site officiel.'
+                          : pool.lockMode === 'START_OR_FIRST_RESULT'
+                            ? 'Clôture à l’heure de début annoncée, ou plus tôt pour un tireur dès son premier résultat publié.'
+                            : undefined
                       }
                     >
                       {pool.isFinal
                         ? 'Résultats publiés'
-                        : closed
-                          ? 'Pronostics clos'
-                          : pool.lockMode === 'FIRST_RESULT'
-                            ? 'Blocage par tireur'
-                            : 'Pronostics ouverts'}
+                        : pool.lockMode === 'PROVISIONAL'
+                          ? 'Tirage provisoire'
+                          : closed
+                            ? 'Pronostics clos'
+                            : pool.lockMode === 'FIRST_RESULT'
+                              ? 'Blocage par tireur'
+                              : pool.lockMode === 'START_OR_FIRST_RESULT'
+                                ? `Clôture à ${new Date(pool.closesAt).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}`
+                                : 'Pronostics ouverts'}
                     </span>
                   </header>
+                  {pool.lockMode === 'PROVISIONAL' && (
+                    <p className="pool-pending" role="status">
+                      Tirage provisoire : les pronostics ouvriront après l’appel des tireurs, le jour de l’épreuve. La
+                      composition peut encore changer.
+                    </p>
+                  )}
                   {pool.sourceUnavailable && !closed && !pool.isFinal && (
                     <p className="pool-pending" role="status">
-                      ⏳ Saisie suspendue : vérification FencingTimeLive en attente. Elle reprend automatiquement au
+                      ⏳ Saisie suspendue : vérification du site officiel en attente. Elle reprend automatiquement au
                       prochain contrôle.
                     </p>
                   )}
                   {pool.recomposedAt && !closed && (
                     <p className="pool-recomposed" role="status">
-                      Poule modifiée sur FencingTimeLive le{' '}
+                      Poule modifiée sur le site officiel le{' '}
                       {new Date(pool.recomposedAt).toLocaleString('fr-FR', { dateStyle: 'short', timeStyle: 'short' })}{' '}
                       : pronostics à refaire.
                     </p>
@@ -715,7 +729,7 @@ function PoolList({ competitionId, user, onDirtyChange, refreshVersion }) {
                     <p className="pool-live-status" role="status">
                       <span className="pool-live-dot" aria-hidden="true" /> Poule en cours · suivi en direct
                       {pool.sourceCheckedAt &&
-                        ` · dernier contrôle FencingTimeLive à ${new Date(pool.sourceCheckedAt).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}`}{' '}
+                        ` · dernier contrôle du site officiel à ${new Date(pool.sourceCheckedAt).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}`}{' '}
                       · mise à jour toutes les 2 minutes
                     </p>
                   )}

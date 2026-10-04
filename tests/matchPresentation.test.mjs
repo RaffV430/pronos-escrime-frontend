@@ -164,3 +164,9 @@ test('strip label: number or final strip colour in French', () => {
   assert.equal(stripLabel('RED'), 'Piste rouge');
   assert.equal(stripLabel(null), '');
 });
+
+test('piste « Podium » affichée telle quelle', async () => {
+  const { stripLabel } = await import('../src/components/matchPresentation.js');
+  assert.equal(stripLabel('Podium'), 'Podium');
+  assert.equal(stripLabel('4'), 'Piste 4');
+});
