@@ -23,8 +23,8 @@ export default function MatchTiming({ match, now, hideChecked = false }) {
         !match.timingUnverified &&
         !match.manualUnlockUntil && (
           <p className="timing-note">
-            Horaire non communiqué : pronostics clos 10 minutes après le tour précédent. Ils rouvriront si
-            FencingTimeLive publie l’heure du match.
+            Horaire non communiqué : pronostics clos 10 minutes après le tour précédent. Ils rouvriront si le site
+            officiel publie l’heure du match.
           </p>
         )}
       <details>

@@ -408,7 +408,7 @@ export default function App() {
                   {mainTab === 'play' && (
                     <>
                       <h1 className="visually-hidden">Pronostiquer</h1>
-                      <ResultFreshness key={selectedCompetitionId} competitionId={selectedCompetitionId}>
+                      <ResultFreshness competitionId={selectedCompetitionId}>
                         {user.isAdmin && (
                           <Suspense fallback={adminFallback}>
                             <FtlControl

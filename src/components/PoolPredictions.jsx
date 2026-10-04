@@ -39,7 +39,7 @@ function LiveCell({ fencer, bouts }) {
         {fencer.firstResultAt ? (
           <span
             className="pool-live-pending"
-            title="Un score est en cours de saisie sur FencingTimeLive : bilan affiché au prochain contrôle."
+            title="Un score est en cours de saisie sur le site officiel : bilan affiché au prochain contrôle."
           >
             saisie…
           </span>
@@ -239,7 +239,7 @@ function PredictionRow({ userId, pool, fencer, closed, onRefresh, reportDirty, l
           {pending ? (
             <span
               className="pool-row-state pool-row-pending"
-              title="Vérification FencingTimeLive en attente : la saisie reprend automatiquement au prochain contrôle."
+              title="Vérification du site officiel en attente : la saisie reprend automatiquement au prochain contrôle."
             >
               ⏳<span className="pool-long-label"> En attente</span>
             </span>
@@ -678,7 +678,7 @@ function PoolList({ competitionId, user, onDirtyChange, refreshVersion }) {
                       className={`pool-badge ${closed ? 'closed' : ''}`}
                       title={
                         pool.lockMode === 'FIRST_RESULT'
-                          ? 'Clôture individuelle au premier résultat détecté sur FencingTimeLive.'
+                          ? 'Clôture individuelle au premier résultat détecté sur le site officiel.'
                           : undefined
                       }
                     >
@@ -693,13 +693,13 @@ function PoolList({ competitionId, user, onDirtyChange, refreshVersion }) {
                   </header>
                   {pool.sourceUnavailable && !closed && !pool.isFinal && (
                     <p className="pool-pending" role="status">
-                      ⏳ Saisie suspendue : vérification FencingTimeLive en attente. Elle reprend automatiquement au
+                      ⏳ Saisie suspendue : vérification du site officiel en attente. Elle reprend automatiquement au
                       prochain contrôle.
                     </p>
                   )}
                   {pool.recomposedAt && !closed && (
                     <p className="pool-recomposed" role="status">
-                      Poule modifiée sur FencingTimeLive le{' '}
+                      Poule modifiée sur le site officiel le{' '}
                       {new Date(pool.recomposedAt).toLocaleString('fr-FR', { dateStyle: 'short', timeStyle: 'short' })}{' '}
                       : pronostics à refaire.
                     </p>
@@ -715,7 +715,7 @@ function PoolList({ competitionId, user, onDirtyChange, refreshVersion }) {
                     <p className="pool-live-status" role="status">
                       <span className="pool-live-dot" aria-hidden="true" /> Poule en cours · suivi en direct
                       {pool.sourceCheckedAt &&
-                        ` · dernier contrôle FencingTimeLive à ${new Date(pool.sourceCheckedAt).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}`}{' '}
+                        ` · dernier contrôle du site officiel à ${new Date(pool.sourceCheckedAt).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}`}{' '}
                       · mise à jour toutes les 2 minutes
                     </p>
                   )}
