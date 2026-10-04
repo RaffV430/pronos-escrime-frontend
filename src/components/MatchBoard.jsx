@@ -12,7 +12,7 @@ import { useNow } from '../lib/polling';
 import { useClub } from '../lib/club';
 import HeadToHead from './HeadToHead';
 import MatchSocial from './MatchSocial';
-import BracketTree from './BracketTree';
+import BracketTree from './BracketTree.jsx';
 import { buildTree } from './bracketTree';
 
 export default function MatchBoard({

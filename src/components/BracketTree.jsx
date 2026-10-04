@@ -1,4 +1,4 @@
-import { entrantFrom, officialWinner } from './bracketTree';
+import { entrantFrom, officialWinner, seedOf } from './bracketTree';
 import { matchTotal } from './resultPresentation';
 import { roundLabel, stripLabel } from './matchPresentation';
 
@@ -11,9 +11,12 @@ const Box = ({ value }) => (
 );
 
 // Ligne d'un tireur (composant de module : identité stable, les champs gardent le focus pendant la frappe).
-function Row({ name, country, win, extra = '', club, children }) {
+function Row({ name, country, seed, win, extra = '', club, children }) {
   return (
     <div className={`tree-row${win ? ' is-win' : ''}${extra}`}>
+      <span className="tree-seed" title={seed ? `Classement d’entrée dans le tableau : ${seed}` : undefined}>
+        {seed ? `(${seed})` : ''}
+      </span>
       <span className="tree-country">{country}</span>
       <span className="tree-name" title={name}>
         {club?.isClubFencer(name) && <span className="club-star">★ </span>}
@@ -58,7 +61,14 @@ export default function BracketTree({
         onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && (e.preventDefault(), onOpen(m))}
       >
         {[1, 2].map((i) => (
-          <Row club={club} key={i} name={m[`player${i}`]} country={m[`player${i}Country`]} win={w === m[`player${i}`]}>
+          <Row
+            club={club}
+            key={i}
+            name={m[`player${i}`]}
+            country={m[`player${i}Country`]}
+            seed={seedOf(m, i)}
+            win={w === m[`player${i}`]}
+          >
             <Box value={p?.[`predictedScore${i}`]} />
           </Row>
         ))}
@@ -101,7 +111,7 @@ export default function BracketTree({
         }}
       >
         {[1, 2].map((i) => (
-          <Row club={club} key={i} name={m[`player${i}`]} country={m[`player${i}Country`]}>
+          <Row club={club} key={i} name={m[`player${i}`]} country={m[`player${i}Country`]} seed={seedOf(m, i)}>
             {closed ? (
               <Box value={p?.[`predictedScore${i}`]} />
             ) : (
@@ -138,7 +148,7 @@ export default function BracketTree({
 
   const advanceCard = (a, first) => (
     <div className="tree-card is-bye">
-      <Row club={club} name={a.name} country={a.country} win>
+      <Row club={club} name={a.name} country={a.country} seed={a.seed} win>
         <span />
       </Row>
       <Row club={club} name={first ? 'Exempt' : 'Qualifié'} country="" extra=" is-tbd">
@@ -161,6 +171,7 @@ export default function BracketTree({
             key={i}
             name={e.name}
             country={e.country || ''}
+            seed={e.seed}
             extra={e.kind === 'pick' ? ' is-pick' : e.kind === 'tbd' ? ' is-tbd' : ''}
           >
             <Box value="" />

@@ -70,3 +70,28 @@ test('unreliable positions fall back to the list layout; cancelled matches are i
   assert.ok(tree);
   assert.equal(buildTree([m('Bronze', 1, 'A', 'FRA', 'B', 'ITA')]), null);
 });
+
+test('tête de série officielle transmise aux qualifiés et aux exempts', async () => {
+  const { seedOf, entrantFrom, buildTree } = await import('../src/components/bracketTree.js');
+  assert.equal(seedOf({ seed1: 12 }, 1), 12);
+  assert.equal(seedOf({ seed1: 0 }, 1), null);
+  assert.equal(seedOf({}, 2), null);
+  const t = buildTree([
+    {
+      id: 1,
+      round: 'T4',
+      sourceKey: 'T4:1',
+      player1: 'A',
+      player2: 'D',
+      seed1: 1,
+      seed2: 4,
+      winner: 2,
+      score1: 9,
+      score2: 15,
+      isFinished: true,
+    },
+    { id: 2, round: 'T4', sourceKey: 'T4:2', player1: 'B', player2: 'C', seed1: 2, seed2: 3 },
+  ]);
+  const e = entrantFrom(t, 1, 1, () => ({}));
+  assert.deepEqual([e.kind, e.name, e.seed], ['real', 'D', 4]);
+});
