@@ -126,13 +126,15 @@ function PredictionRow({ userId, pool, fencer, closed, onRefresh, reportDirty, l
     ? 'Résultats publiés'
     : fencer.firstResultAt
       ? 'Premier résultat publié'
-      : pool.isClosed
-        ? 'Poule fermée'
-        : closed
-          ? pool.lockMode !== 'TIME'
-            ? 'Vérification en attente'
-            : 'Clôture atteinte'
-          : 'Pronostic ouvert';
+      : pool.lockMode === 'PROVISIONAL'
+        ? 'Tirage provisoire'
+        : pool.isClosed
+          ? 'Poule fermée'
+          : closed
+            ? pool.lockMode !== 'TIME'
+              ? 'Vérification en attente'
+              : 'Clôture atteinte'
+            : 'Pronostic ouvert';
   const resultCell = (predicted, actual, isIndicator = false) => (
     <>
       <span className="pool-predicted">{predicted == null ? '—' : isIndicator ? signed(predicted) : predicted}</span>
@@ -686,15 +688,23 @@ function PoolList({ competitionId, user, onDirtyChange, refreshVersion }) {
                     >
                       {pool.isFinal
                         ? 'Résultats publiés'
-                        : closed
-                          ? 'Pronostics clos'
-                          : pool.lockMode === 'FIRST_RESULT'
-                            ? 'Blocage par tireur'
-                            : pool.lockMode === 'START_OR_FIRST_RESULT'
-                              ? `Clôture à ${new Date(pool.closesAt).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}`
-                              : 'Pronostics ouverts'}
+                        : pool.lockMode === 'PROVISIONAL'
+                          ? 'Tirage provisoire'
+                          : closed
+                            ? 'Pronostics clos'
+                            : pool.lockMode === 'FIRST_RESULT'
+                              ? 'Blocage par tireur'
+                              : pool.lockMode === 'START_OR_FIRST_RESULT'
+                                ? `Clôture à ${new Date(pool.closesAt).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}`
+                                : 'Pronostics ouverts'}
                     </span>
                   </header>
+                  {pool.lockMode === 'PROVISIONAL' && (
+                    <p className="pool-pending" role="status">
+                      Tirage provisoire : les pronostics ouvriront après l’appel des tireurs, le jour de l’épreuve. La
+                      composition peut encore changer.
+                    </p>
+                  )}
                   {pool.sourceUnavailable && !closed && !pool.isFinal && (
                     <p className="pool-pending" role="status">
                       ⏳ Saisie suspendue : vérification du site officiel en attente. Elle reprend automatiquement au
