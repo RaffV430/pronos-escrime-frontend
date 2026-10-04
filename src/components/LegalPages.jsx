@@ -46,9 +46,9 @@ function Legal() {
       </ul>
       <h2>Résultats sportifs</h2>
       <p>
-        Les résultats sont repris des publications officielles (FencingTimeLive). Pronos Escrime n’est affilié ni à la
-        Fédération française d’escrime, ni à la FIE, ni aux organisateurs des compétitions. Le jeu est gratuit et sans
-        mise d’argent.
+        Les résultats sont repris des publications officielles (FencingTimeLive, engarde-service). Pronos Escrime n’est
+        affilié ni à la Fédération française d’escrime, ni à la FIE, ni aux organisateurs des compétitions. Le jeu est
+        gratuit et sans mise d’argent.
       </p>
     </>
   );

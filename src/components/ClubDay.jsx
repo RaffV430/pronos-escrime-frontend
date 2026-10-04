@@ -72,7 +72,7 @@ export default function ClubDay({ competitionId, matches = [], team = false }) {
   return (
     <section className="club-day">
       <h2 className="section-title">Nos tireurs{club.name ? ` · ${club.name}` : ''}</h2>
-      <p className="muted">Parcours du jour, mis à jour à chaque contrôle FencingTimeLive.</p>
+      <p className="muted">Parcours du jour, mis à jour à chaque contrôle du site officiel.</p>
       {!days.length && <p className="muted">Aucun tireur du club dans cette épreuve pour l’instant.</p>}
       {days.map((d) => (
         <article key={d.name} className={`club-day-card is-${d.status.kind}`}>

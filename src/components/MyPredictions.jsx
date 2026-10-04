@@ -315,8 +315,8 @@ export default function MyPredictions({ userId, playerName = '', initialCompetit
         <button onClick={() => setRevision((n) => n + 1)}>Actualiser l’affichage</button>
       </div>
       <p className="muted">
-        Les données affichées sont celles du dernier import officiel. Ce bouton ne lance pas de collecte sur
-        FencingTimeLive.
+        Les données affichées sont celles du dernier import officiel. Ce bouton ne lance pas de collecte sur le site
+        officiel.
       </p>
       {error && <p role="alert">{error}</p>}
       {!all && !error && <p>Chargement…</p>}
