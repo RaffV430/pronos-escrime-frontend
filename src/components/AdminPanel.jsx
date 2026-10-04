@@ -241,6 +241,21 @@ export default function AdminPanel({ competitionId, tournamentId, user, matches,
             });
           }}
         >
+          <div role="status">
+            {matches
+              .filter((m) => m.pointsPending)
+              .map((m) => (
+                <p key={m.id}>
+                  <strong>
+                    {roundLabel(m.round)} · {m.player1} / {m.player2}
+                  </strong>{' '}
+                  : {m.syncIssue || 'Points à valider'}{' '}
+                  <button type="button" onClick={() => setCorrection({ ...correction, matchId: String(m.id) })}>
+                    Examiner ce match
+                  </button>
+                </p>
+              ))}
+          </div>
           <p>
             À utiliser uniquement après vérification du score et du vainqueur officiels. Les points sont recalculés sans
             cumul.
@@ -257,7 +272,7 @@ export default function AdminPanel({ competitionId, tournamentId, user, matches,
                 .filter((m) => m.sourceUrl)
                 .map((m) => (
                   <option key={m.id} value={m.id}>
-                    #{m.id} · {m.player1} / {m.player2}
+                    {m.pointsPending ? 'À vérifier · ' : ''}#{m.id} · {m.player1} / {m.player2}
                   </option>
                 ))}
             </select>

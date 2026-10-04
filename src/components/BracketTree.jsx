@@ -75,9 +75,13 @@ export default function BracketTree({
         <div className="tree-meta">
           <span>{stripLabel(m.strip)}</span>
           <span className="tree-result">
-            {m.resultType === 'MEDICAL_WITHDRAWAL' ? 'Abandon' : `Résultat : ${m.score1}–${m.score2}`}{' '}
+            {m.pointsPending
+              ? 'Points à valider'
+              : m.resultType === 'MEDICAL_WITHDRAWAL'
+                ? 'Abandon'
+                : `Résultat : ${m.score1}–${m.score2}`}{' '}
             <span className={`tree-chip ${p ? (total > 0 ? 'is-good' : 'is-wrong') : ''}`}>
-              {p ? `${total > 0 ? '+' : ''}${total} pt${total > 1 ? 's' : ''}` : '—'}
+              {m.pointsPending ? 'En attente' : p ? `${total > 0 ? '+' : ''}${total} pt${total > 1 ? 's' : ''}` : '—'}
             </span>
           </span>
         </div>
@@ -93,7 +97,7 @@ export default function BracketTree({
     const status = !ready
       ? ['Vérification…', '']
       : closed
-        ? [m.syncIssue ? 'Vérification' : 'Clos · résultat à venir', '']
+        ? [m.pointsPending ? 'Points à valider' : m.syncIssue ? 'Vérification' : 'Clos · résultat à venir', '']
         : draft
           ? ['Non enregistré', 'is-draft']
           : p
