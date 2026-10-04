@@ -129,7 +129,7 @@ function PredictionRow({ userId, pool, fencer, closed, onRefresh, reportDirty, l
       : pool.isClosed
         ? 'Poule fermée'
         : closed
-          ? pool.lockMode === 'FIRST_RESULT'
+          ? pool.lockMode !== 'TIME'
             ? 'Vérification en attente'
             : 'Clôture atteinte'
           : 'Pronostic ouvert';
@@ -670,7 +670,7 @@ function PoolList({ competitionId, user, onDirtyChange, refreshVersion }) {
                         {pool.strip && ` · ${stripLabel(pool.strip).toLowerCase()}`}
                         {pool.startsAt &&
                           ` · ${new Date(pool.startsAt).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}`}
-                        {pool.lockMode !== 'FIRST_RESULT' &&
+                        {pool.lockMode === 'TIME' &&
                           ` · clôture ${new Date(pool.closesAt).toLocaleString('fr-FR', { dateStyle: 'short', timeStyle: 'short' })}`}
                       </span>
                     </h3>
@@ -679,7 +679,9 @@ function PoolList({ competitionId, user, onDirtyChange, refreshVersion }) {
                       title={
                         pool.lockMode === 'FIRST_RESULT'
                           ? 'Clôture individuelle au premier résultat détecté sur le site officiel.'
-                          : undefined
+                          : pool.lockMode === 'START_OR_FIRST_RESULT'
+                            ? 'Clôture à l’heure de début annoncée, ou plus tôt pour un tireur dès son premier résultat publié.'
+                            : undefined
                       }
                     >
                       {pool.isFinal
@@ -688,7 +690,9 @@ function PoolList({ competitionId, user, onDirtyChange, refreshVersion }) {
                           ? 'Pronostics clos'
                           : pool.lockMode === 'FIRST_RESULT'
                             ? 'Blocage par tireur'
-                            : 'Pronostics ouverts'}
+                            : pool.lockMode === 'START_OR_FIRST_RESULT'
+                              ? `Clôture à ${new Date(pool.closesAt).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}`
+                              : 'Pronostics ouverts'}
                     </span>
                   </header>
                   {pool.sourceUnavailable && !closed && !pool.isFinal && (
