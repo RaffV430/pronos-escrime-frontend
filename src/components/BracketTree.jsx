@@ -1,4 +1,7 @@
+import { useEffect, useRef, useState } from 'react';
 import { entrantFrom, officialWinner, seedOf } from './bracketTree';
+import { shortName, shortRoundName } from './eventResults';
+import { usePerView } from './usePerView';
 import { matchTotal } from './resultPresentation';
 import { roundLabel, stripLabel } from './matchPresentation';
 
@@ -15,12 +18,20 @@ function Row({ name, country, seed, win, extra = '', club, children }) {
   return (
     <div className={`tree-row${win ? ' is-win' : ''}${extra}`}>
       <span className="tree-seed" title={seed ? `Classement d’entrée dans le tableau : ${seed}` : undefined}>
-        {seed ? `(${seed})` : ''}
+        {seed ? (
+          <>
+            <span className="tree-full">({seed})</span>
+            <span className="tree-short">{seed}</span>
+          </>
+        ) : (
+          ''
+        )}
       </span>
       <span className="tree-country">{country}</span>
       <span className="tree-name" title={name}>
         {club?.isClubFencer(name) && <span className="club-star">★ </span>}
-        {name}
+        <span className="tree-full">{name}</span>
+        <span className="tree-short">{shortName(name)}</span>
       </span>
       {children}
     </div>
@@ -44,8 +55,30 @@ export default function BracketTree({
   onLeave,
   onOpen,
   openId,
+  revealId,
 }) {
   const valueOf = (m) => values(m);
+  const perView = usePerView();
+  // Tour affiché en premier : choisi par le joueur, sinon le premier tour encore ouvert aux pronostics
+  // (puis le premier pas encore terminé) ; les tours suivants s'affichent à sa droite.
+  const [focus, setFocus] = useState(null);
+  const touch = useRef(null);
+  const count = Math.min(perView, tree.rounds.length);
+  const last = Math.max(0, tree.rounds.length - count);
+  const firstWhere = (test) => tree.rounds.findIndex((r) => r.slots.some((s) => s.match && test(s.match)));
+  const open = firstWhere((m) => !m.isFinished && !isClosed(m));
+  const pending = firstWhere((m) => !m.isFinished);
+  const auto = open >= 0 ? open : pending >= 0 ? pending : last;
+  const start = Math.max(0, Math.min(last, focus ?? auto));
+  const shown = tree.rounds.slice(start, start + count);
+  const go = (i) => setFocus(Math.max(0, Math.min(last, i)));
+  // Match à montrer (Entrée, « Pronostic suivant », lien d'une notification) : son tour devient visible.
+  useEffect(() => {
+    if (!revealId) return;
+    const i = tree.rounds.findIndex((r) => r.slots.some((s) => s.match?.id === revealId.id));
+    if (i >= 0 && (i < start || i >= start + count)) setFocus(Math.min(i, last));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [revealId]);
 
   const finishedCard = (m) => {
     const p = mine(m),
@@ -203,12 +236,63 @@ export default function BracketTree({
   };
 
   return (
-    <div className="tree-scroller">
-      <div className="tree" style={{ '--tree-rows': tree.base }}>
-        {tree.rounds.map((r, index) => {
+    <div className="tree-paged">
+      <div className="tree-tabs" role="tablist" aria-label="Tours du tableau">
+        <button
+          type="button"
+          className="tree-arrow"
+          disabled={start === 0}
+          onClick={() => go(start - 1)}
+          aria-label="Tour précédent"
+        >
+          ‹
+        </button>
+        {tree.rounds.map((r, i) => (
+          <button
+            key={r.round}
+            type="button"
+            role="tab"
+            aria-selected={i >= start && i < start + shown.length}
+            className="tree-tab"
+            onClick={() => go(i)}
+          >
+            {shortRoundName(r.round)}
+          </button>
+        ))}
+        <button
+          type="button"
+          className="tree-arrow"
+          disabled={start >= last}
+          onClick={() => go(start + 1)}
+          aria-label="Tour suivant"
+        >
+          ›
+        </button>
+      </div>
+      <div
+        className="tree"
+        style={{ '--tree-cols': shown.length }}
+        onTouchStart={(e) => (touch.current = { x: e.touches[0].clientX, y: e.touches[0].clientY })}
+        onTouchEnd={(e) => {
+          const t = touch.current;
+          touch.current = null;
+          if (!t) return;
+          const dx = e.changedTouches[0].clientX - t.x,
+            dy = e.changedTouches[0].clientY - t.y;
+          if (Math.abs(dx) > 60 && Math.abs(dx) > 2 * Math.abs(dy)) go(start + (dx < 0 ? 1 : -1));
+        }}
+      >
+        {shown.map((r, j) => {
+          const index = start + j;
           const played = r.slots.filter((s) => s.match);
           return (
-            <section className="tree-round" id={`tree-${r.round}`} key={r.round} aria-label={roundLabel(r.round)}>
+            <section
+              className="tree-round"
+              id={`tree-${r.round}`}
+              key={r.round}
+              aria-label={roundLabel(r.round)}
+              style={{ '--tree-span': 2 ** j }}
+            >
               <h2>
                 {roundLabel(r.round)}{' '}
                 <span className="round-count">
