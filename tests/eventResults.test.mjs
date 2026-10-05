@@ -11,6 +11,10 @@ import {
   playedMatches,
   roundName,
   cityName,
+  shortName,
+  shortRoundName,
+  poolStanding,
+  poolRounds,
 } from '../src/components/eventResults.js';
 
 const list = [
@@ -109,4 +113,30 @@ test('noms des tours et ville seule', () => {
   ]);
   assert.equal(cityName('Veszprém, Veszprém megye, Hongrie'), 'Veszprém');
   assert.equal(cityName(null), '');
+});
+
+test('noms compacts, onglets de tours et classement des poules', () => {
+  assert.equal(shortName('MONTI Lucrezia'), 'MONTI L.');
+  assert.equal(shortName('DI VEROLI Gaia'), 'DI VEROLI G.');
+  assert.equal(shortName('ITALY'), 'ITALY');
+  assert.deepEqual(['T64', 'T8', 'T4', 'T2'].map(shortRoundName), ['T64', 'Quarts', 'Demies', 'Finale']);
+  const fencers = [
+    { name: 'A', position: 1, wins: 2, indicator: 1 },
+    { name: 'B', position: 2, wins: 4, indicator: 9 },
+    { name: 'C', position: 3, wins: 2, indicator: 5 },
+  ];
+  assert.deepEqual(
+    poolStanding(fencers).map((f) => f.name),
+    ['B', 'C', 'A'],
+  );
+  assert.deepEqual(
+    poolRounds([{ name: 'Tour 2 · Poule 1' }, { name: 'Poule 10' }, { name: 'Poule 2' }]).map((r) => [
+      r.round,
+      r.pools.map((p) => p.name),
+    ]),
+    [
+      [1, ['Poule 2', 'Poule 10']],
+      [2, ['Tour 2 · Poule 1']],
+    ],
+  );
 });

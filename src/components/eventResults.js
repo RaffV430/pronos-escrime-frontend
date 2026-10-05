@@ -86,3 +86,45 @@ export const cityName = (city) =>
   String(city || '')
     .split(',')[0]
     .trim();
+// Nom court d'un tour pour les onglets du tableau (« T64 », « Quarts », « Demies », « Finale »).
+export function shortRoundName(round) {
+  const n = Number(/^T(\d+)$/.exec(round || '')?.[1]);
+  if (n === 2) return 'Finale';
+  if (n === 4) return 'Demies';
+  if (n === 8) return 'Quarts';
+  if (n >= 16) return `T${n}`;
+  if (round === 'Bronze') return '3e place';
+  return round || '';
+}
+// Classement d'une poule : victoires, puis indice, puis touches données ; rang officiel s'il est publié.
+export function poolStanding(fencers) {
+  return [...(fencers || [])].sort(
+    (a, b) =>
+      (a.ranking ?? Infinity) - (b.ranking ?? Infinity) ||
+      (b.wins ?? -1) - (a.wins ?? -1) ||
+      (b.indicator ?? -999) - (a.indicator ?? -999) ||
+      a.position - b.position,
+  );
+}
+// Tours de poules : « Poule 3 » au tour 1, « Tour 2 · Poule 1 »… regroupées par tour.
+export function poolRounds(pools) {
+  const groups = new Map();
+  for (const p of pools || []) {
+    const round = Number(/^Tour (\d+) · /.exec(p.name)?.[1]) || 1;
+    if (!groups.has(round)) groups.set(round, []);
+    groups.get(round).push(p);
+  }
+  return [...groups]
+    .sort(([a], [b]) => a - b)
+    .map(([round, items]) => ({
+      round,
+      pools: items.sort((a, b) => String(a.name).localeCompare(String(b.name), 'fr', { numeric: true })),
+    }));
+}
+// Nom compact pour petits écrans : « MONTI Lucrezia » → « MONTI L. », équipes et noms courts inchangés.
+export function shortName(name) {
+  const words = String(name || '').split(' ');
+  const k = words.findIndex((w) => w !== w.toUpperCase());
+  if (k <= 0) return String(name || '');
+  return `${words.slice(0, k).join(' ')} ${words[k][0]}.`;
+}
