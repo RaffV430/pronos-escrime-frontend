@@ -402,6 +402,61 @@
   text-decoration: underline;
 }
 
+/* Matrice complète d'une poule : V5 = victoire, chiffre seul = touches données dans une défaite. */
+.result-pool-grid.has-matrix {
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 420px), 1fr));
+}
+.result-matrix-legend {
+  margin: 6px 0;
+  font-size: 0.82rem;
+}
+.result-matrix-wrap {
+  overflow-x: auto;
+}
+.result-matrix {
+  border-collapse: collapse;
+  font-size: 0.82rem;
+  width: 100%;
+}
+.result-matrix caption {
+  text-align: left;
+  font-weight: 700;
+  padding: 4px 0;
+}
+.result-matrix th,
+.result-matrix td {
+  padding: 3px 4px;
+  border-bottom: 1px solid var(--border);
+  text-align: center;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+.result-matrix th:first-child,
+.result-matrix td:first-child {
+  text-align: left;
+  max-width: 11em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.result-matrix .pool-num {
+  color: var(--muted);
+  font-size: 0.75rem;
+}
+.result-matrix .pool-bout {
+  min-width: 1.9em;
+  border-left: 1px solid var(--border);
+}
+.result-matrix .pool-bout.is-self {
+  background: var(--soft);
+}
+.result-matrix .pool-bout.is-win {
+  color: var(--primary);
+  font-weight: 700;
+}
+.result-matrix .pool-bout.is-loss {
+  color: var(--muted);
+}
+
 /* Page publique d'un tournoi et lien de partage. */
 .result-public {
   padding: 0 16px 14px;
