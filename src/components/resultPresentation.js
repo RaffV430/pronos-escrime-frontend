@@ -1,5 +1,5 @@
 import { roundLabel } from './matchPresentation.js';
-export const APP_URL = 'https://pronos-escrime.vercel.app/';
+export const APP_URL = 'https://www.pronos-escrime.fr/';
 // Points d'un pronostic de match : barème + bonus outsider éventuel.
 export const matchTotal = (p) => (p?.pointsEarned ?? 0) + (p?.bonusPoints ?? 0);
 export const plural = (n, singular, multiple = `${singular}s`) => (Number(n) > 1 ? multiple : singular);
@@ -78,6 +78,6 @@ export function drawResultCard(ctx, summary, date = new Date()) {
     );
   }
   text('À votre tour de pronostiquer !', 68, 986, 30, '#fff', 700);
-  text('pronos-escrime.vercel.app', 68, 1031, 26, '#a9c9ff');
+  text('pronos-escrime.fr', 68, 1031, 26, '#a9c9ff');
   text(date.toLocaleDateString('fr-FR'), 68, 1080, 20, '#c3d7ee');
 }
