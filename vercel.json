@@ -1,6 +1,12 @@
 {
   "redirects": [
     {
+      "source": "/",
+      "has": [{ "type": "host", "value": "pronos-escrime.vercel.app" }],
+      "destination": "https://www.pronos-escrime.fr/",
+      "permanent": true
+    },
+    {
       "source": "/:path*",
       "has": [{ "type": "host", "value": "pronos-escrime.vercel.app" }],
       "destination": "https://www.pronos-escrime.fr/:path*",
