@@ -6,6 +6,7 @@ import { stripLabel } from './matchPresentation';
 import { MEDALS, cityName, countryName, dateRange, flag, roundName } from './eventResults';
 import { LegalLinks } from './LegalPages';
 import './Results.css';
+import BrandMark from './BrandMark';
 
 // Résultat d'un match (page publique : pas de pronostic personnel).
 function PublicMatchDialog({ match, onClose }) {
@@ -115,7 +116,8 @@ export default function PublicTournament({ id }) {
     <div className="app-shell redesigned public-page">
       <header className="app-header">
         <a className="brand" href="/" aria-label="Pronos Escrime, accueil">
-          <span className="brand-mark">↗</span>pronos<span>escrime</span>
+          <BrandMark />
+          pronos<span>escrime</span>
         </a>
         <a className="button-link public-cta" href="/">
           Pronostiquer avec nous

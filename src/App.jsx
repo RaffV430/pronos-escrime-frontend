@@ -19,6 +19,7 @@ import './interface.css';
 import ErrorBoundary from './components/ErrorBoundary';
 import { pollWhileVisible } from './lib/polling';
 import { ClubContext, clubValue } from './lib/club';
+import BrandMark from './components/BrandMark';
 // Outils d'administration chargés à la demande : les joueurs ne les téléchargent jamais.
 const AdminPanel = lazy(() => import('./components/AdminPanel'));
 const FtlControl = lazy(() => import('./components/FtlControl'));
@@ -282,7 +283,8 @@ export default function App() {
         <div className="app-shell redesigned">
           <header className="app-header">
             <div className="brand">
-              <span className="brand-mark">↗</span>pronos<span>escrime</span>
+              <BrandMark />
+              pronos<span>escrime</span>
             </div>
             <div className="account-actions">
               <span>{user.name || user.username}</span>

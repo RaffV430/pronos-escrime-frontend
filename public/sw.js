@@ -1,5 +1,5 @@
 /* No authenticated page, API response, token or prediction is cached. */
-const CACHE = 'pronos-public-v2';
+const CACHE = 'pronos-public-v3';
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches
