@@ -447,7 +447,8 @@
     font-size: 9px;
     padding: 5px 2px;
     border-bottom: 0;
-    flex: 1;
+    flex: 1 1 0;
+    min-width: 0;
     min-height: 51px;
   }
   .primary-nav button[aria-pressed='true'] {
@@ -1459,9 +1460,9 @@
     min-height: 40px;
   }
   .primary-nav button {
-    /* 5 onglets sur 360-430 px : taille calculée pour que « Pronostiquer » et « Communauté » tiennent. */
-    font-size: clamp(9.5px, 2.65vw, 12px);
-    letter-spacing: -0.2px;
+    /* 6 onglets sur 360-430 px : taille calculée pour que « Classements » et « Communauté » tiennent. */
+    font-size: clamp(8px, 2.25vw, 11px);
+    letter-spacing: -0.3px;
     padding: 5px 0;
     min-width: 0;
     min-height: 54px;

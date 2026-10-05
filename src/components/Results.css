@@ -1,0 +1,184 @@
+/* Onglet « Résultats » : tournois passés, podiums et tableaux. */
+.result-tournament {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  margin: 14px 0;
+  background: var(--surface);
+}
+.result-tournament > summary {
+  padding: 14px 16px;
+  cursor: pointer;
+}
+.result-tournament > summary > span {
+  display: inline-flex;
+  flex-direction: column;
+  gap: 2px;
+  vertical-align: top;
+  max-width: calc(100% - 24px);
+}
+.result-tournament > summary small {
+  color: var(--muted);
+  font-weight: 400;
+}
+.results-filters {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 10px 14px;
+  margin: 16px 0;
+}
+.results-filters label {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--muted);
+}
+.results-filters select,
+.results-filters input {
+  display: block;
+  width: 100%;
+  margin-top: 4px;
+}
+.result-competition {
+  padding: 0 16px 14px;
+}
+.result-competition h3 {
+  font-size: 1rem;
+  margin: 12px 0 8px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+.result-competition h3 small {
+  color: var(--muted);
+  font-weight: 400;
+}
+.result-podium {
+  list-style: none;
+  margin: 0 0 8px;
+  padding: 0;
+  display: grid;
+  gap: 4px;
+}
+.result-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 16px;
+  margin: 8px 0 0;
+}
+.result-rounds h4 {
+  margin: 14px 0 6px;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+}
+.result-rounds ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 4px;
+}
+.feature-panel .result-match {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  margin: 0;
+  padding: 8px 10px;
+  text-align: left;
+  background: var(--soft);
+  color: var(--text);
+  border: 1px solid transparent;
+  border-radius: 8px;
+  font-weight: 400;
+}
+.feature-panel .result-match:hover,
+.feature-panel .result-match:focus-visible {
+  border-color: var(--primary);
+  background: var(--surface);
+}
+.result-match span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.result-match span:last-child {
+  text-align: right;
+  color: var(--muted);
+}
+.result-match .is-win,
+.result-duel .is-win td {
+  font-weight: 700;
+}
+.result-score {
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  text-align: center;
+}
+.result-dialog {
+  border: 0;
+  border-radius: 16px;
+  padding: 24px;
+  width: min(440px, calc(100vw - 32px));
+  box-shadow: 0 20px 80px #13284850;
+  color: var(--text);
+}
+.result-dialog::backdrop {
+  background: #13284866;
+}
+.result-dialog h2 {
+  margin: 0 0 4px;
+  font-size: 1.2rem;
+}
+.result-duel {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 12px 0;
+}
+.result-duel td {
+  padding: 6px 4px;
+  border-bottom: 1px solid var(--border);
+}
+.result-duel td:first-child {
+  width: 2.5em;
+}
+.result-duel .result-score {
+  width: 2.5em;
+  font-size: 1.1rem;
+}
+.result-mine {
+  background: var(--soft);
+  border-radius: 10px;
+  padding: 10px 14px;
+  margin: 12px 0 16px;
+}
+.result-mine h3 {
+  margin: 0 0 4px;
+  padding: 0;
+  border: 0;
+  font-size: 0.85rem;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.result-mine p {
+  margin: 0;
+}
+@media (max-width: 600px) {
+  .results-filters {
+    grid-template-columns: 1fr 1fr;
+  }
+  .results-filters .results-search {
+    grid-column: 1 / -1;
+  }
+  /* Vainqueur et score sur la première ligne, adversaire en dessous : noms lisibles en entier. */
+  .feature-panel .result-match {
+    grid-template-columns: minmax(0, 1fr) auto;
+    row-gap: 2px;
+  }
+  .result-match span:last-child {
+    grid-column: 1 / -1;
+    text-align: left;
+  }
+}

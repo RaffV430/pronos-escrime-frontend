@@ -33,6 +33,7 @@ const GlobalLeaderboard = lazy(() => import('./components/GlobalLeaderboard'));
 const MyPredictions = lazy(() => import('./components/MyPredictions'));
 const ClubDay = lazy(() => import('./components/ClubDay'));
 const MySeason = lazy(() => import('./components/MySeason'));
+const Results = lazy(() => import('./components/Results'));
 const AccountSettings = lazy(() => import('./components/AccountSettings'));
 const Community = lazy(() => import('./components/Community'));
 const tabFallback = <p className="muted load-state">Chargement…</p>;
@@ -298,6 +299,7 @@ export default function App() {
               ['play', '◎', 'Pronostiquer'],
               ['mine', '▤', 'Mes pronostics'],
               ['season', '◷', 'Ma saison'],
+              ['results', '⚑', 'Résultats'],
               ['leaderboard', '↗', 'Classements'],
               ['community', '♧', 'Communauté'],
             ].map(([id, icon, label]) => (
@@ -319,6 +321,7 @@ export default function App() {
                 </Suspense>
               )}
               {mainTab === 'season' && <MySeason userId={user.id} playerName={user.name || user.username} />}
+              {mainTab === 'results' && <Results />}
               {mainTab === 'account' && (
                 <>
                   <InstallApp />
@@ -336,7 +339,7 @@ export default function App() {
                   }}
                 />
               )}
-              {!['season', 'account', 'mine'].includes(mainTab) && (
+              {!['season', 'account', 'mine', 'results'].includes(mainTab) && (
                 <EventSelector
                   key={`${user.id}:${eventListVersion}:${mainTab === 'play' ? 'active' : 'history'}`}
                   includeArchived={mainTab !== 'play'}
