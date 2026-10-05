@@ -19,6 +19,7 @@ export default function NotificationSettings({ userId }) {
       reminders: true,
       roundResults: false,
       poolResults: false,
+      recap: true,
       quietEnabled: false,
       quietStart: '22:00',
       quietEnd: '08:00',
@@ -174,6 +175,7 @@ export default function NotificationSettings({ userId }) {
                   ['reminders', 'Rappel à 10 minutes de la clôture, si un pronostic manque'],
                   ['roundResults', 'Mon bilan après chaque tour'],
                   ['poolResults', 'Mon bilan des poules (une fois toutes les poules terminées)'],
+                  ['recap', 'Mon récap à la fin de chaque épreuve (points et classement)'],
                 ].map(([k, label]) => (
                   <label className="check-row" key={k}>
                     <input
