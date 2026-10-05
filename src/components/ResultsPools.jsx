@@ -3,6 +3,7 @@ import API from '../api';
 import { plural } from './resultPresentation';
 import { poolRounds, poolStanding } from './eventResults';
 
+const hasBouts = (pool) => Array.isArray(pool.bouts) && pool.bouts.length === pool.fencers.length;
 const signed = (n) => (n > 0 ? `+${n}` : String(n));
 
 // Fenêtre d'un tireur de poule : bilan officiel, puis le pronostic du joueur et ses points.
@@ -49,6 +50,76 @@ function FencerDialog({ fencer, pool, onClose }) {
   );
 }
 
+// Case d'un assaut : « V5 » (victoire 5 touches), « D3 » (défaite, 3 touches données), vide si non tiré.
+function Bout({ value }) {
+  if (!value) return <td className="pool-bout is-empty" />;
+  const win = value[0] === 'V';
+  return <td className={`pool-bout ${win ? 'is-win' : 'is-loss'}`}>{win ? value : value.slice(1)}</td>;
+}
+
+// Matrice officielle de la poule : chaque ligne donne les assauts d'un tireur contre les autres.
+function PoolMatrix({ pool, onOpen }) {
+  const fencers = [...pool.fencers].sort((a, b) => a.position - b.position);
+  const place = new Map(
+    [...fencers]
+      .filter((f) => f.wins !== null && f.wins !== undefined)
+      .sort(
+        (a, b) => b.wins / (b.wins + b.losses || 1) - a.wins / (a.wins + a.losses || 1) || b.indicator - a.indicator,
+      )
+      .map((f, i) => [f.id, i + 1]),
+  );
+  return (
+    <div className="result-matrix-wrap">
+      <table className="result-matrix">
+        <caption>{pool.name.replace(/^Tour \d+ · /, '')}</caption>
+        <thead>
+          <tr>
+            <th scope="col">Tireur</th>
+            <th scope="col" className="pool-num" />
+            {fencers.map((f) => (
+              <th key={f.id} scope="col" className="pool-num">
+                {f.position}
+              </th>
+            ))}
+            <th scope="col" title="Victoires">
+              V
+            </th>
+            <th scope="col" title="Indice">
+              Ind.
+            </th>
+            <th scope="col" title="Place dans la poule">
+              Pl.
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          {fencers.map((f, i) => (
+            <tr key={f.id}>
+              <td>
+                <button type="button" className="result-pool-name" onClick={() => onOpen(f)}>
+                  {f.name}
+                  {f.countryCode && <small className="muted"> {f.countryCode}</small>}
+                </button>
+              </td>
+              <td className="pool-num">{f.position}</td>
+              {fencers.map((o, j) =>
+                i === j ? (
+                  <td key={o.id} className="pool-bout is-self" />
+                ) : (
+                  <Bout key={o.id} value={pool.bouts[i]?.[j]} />
+                ),
+              )}
+              <td>{f.wins ?? '—'}</td>
+              <td>{f.indicator === null || f.indicator === undefined ? '—' : signed(f.indicator)}</td>
+              <td>{place.get(f.id) ?? '—'}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
 // Poules d'une épreuve, regroupées par tour : classement de chaque poule (victoires, indice).
 export default function ResultsPools({ competitionId }) {
   const [pools, setPools] = useState(null);
@@ -70,35 +141,49 @@ export default function ResultsPools({ competitionId }) {
       {rounds.map((r) => (
         <section key={r.round}>
           {rounds.length > 1 && <h4>Tour {r.round}</h4>}
-          <div className="result-pool-grid">
-            {r.pools.map((pool) => (
-              <table key={pool.id} className="result-pool">
-                <caption>{pool.name.replace(/^Tour \d+ · /, '')}</caption>
-                <thead>
-                  <tr>
-                    <th scope="col">Tireur</th>
-                    <th scope="col" title="Victoires">
-                      V
-                    </th>
-                    <th scope="col">Ind.</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {poolStanding(pool.fencers).map((f) => (
-                    <tr key={f.id}>
-                      <td>
-                        <button type="button" className="result-pool-name" onClick={() => setOpen({ fencer: f, pool })}>
-                          {f.name}
-                          {f.countryCode && <small className="muted"> {f.countryCode}</small>}
-                        </button>
-                      </td>
-                      <td>{f.wins ?? '—'}</td>
-                      <td>{f.indicator === null ? '—' : signed(f.indicator)}</td>
+          {r.pools.some(hasBouts) && (
+            <p className="muted result-matrix-legend">
+              Chaque ligne se lit de gauche à droite : V5 = victoire 5 touches, un chiffre seul = touches données dans
+              une défaite.
+            </p>
+          )}
+          <div className={`result-pool-grid${r.pools.some(hasBouts) ? ' has-matrix' : ''}`}>
+            {r.pools.map((pool) =>
+              hasBouts(pool) ? (
+                <PoolMatrix key={pool.id} pool={pool} onOpen={(f) => setOpen({ fencer: f, pool })} />
+              ) : (
+                <table key={pool.id} className="result-pool">
+                  <caption>{pool.name.replace(/^Tour \d+ · /, '')}</caption>
+                  <thead>
+                    <tr>
+                      <th scope="col">Tireur</th>
+                      <th scope="col" title="Victoires">
+                        V
+                      </th>
+                      <th scope="col">Ind.</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            ))}
+                  </thead>
+                  <tbody>
+                    {poolStanding(pool.fencers).map((f) => (
+                      <tr key={f.id}>
+                        <td>
+                          <button
+                            type="button"
+                            className="result-pool-name"
+                            onClick={() => setOpen({ fencer: f, pool })}
+                          >
+                            {f.name}
+                            {f.countryCode && <small className="muted"> {f.countryCode}</small>}
+                          </button>
+                        </td>
+                        <td>{f.wins ?? '—'}</td>
+                        <td>{f.indicator === null ? '—' : signed(f.indicator)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              ),
+            )}
           </div>
         </section>
       ))}
