@@ -204,6 +204,33 @@ function Competition({ c, tournament }) {
   );
 }
 
+// Lien vers la page publique du tournoi (sans compte), à partager sur les réseaux du club.
+function PublicLink({ tournament }) {
+  const [copied, setCopied] = useState(false);
+  const url = `${location.origin}/tournoi/${tournament.id}`;
+  const share = async () => {
+    try {
+      if (navigator.share) await navigator.share({ title: tournament.name, url });
+      else {
+        await navigator.clipboard.writeText(url);
+        setCopied(true);
+      }
+    } catch {
+      /* partage annulé */
+    }
+  };
+  return (
+    <p className="result-public">
+      <a href={url} target="_blank" rel="noreferrer">
+        Page publique du tournoi
+      </a>{' '}
+      <button type="button" className="button-link" onClick={share}>
+        {copied ? 'Lien copié' : 'Partager'}
+      </button>
+    </p>
+  );
+}
+
 export default function Results() {
   const [data, setData] = useState(null);
   const [error, setError] = useState('');
@@ -308,6 +335,7 @@ export default function Results() {
               {t.competitions.map((c) => (
                 <Competition key={c.id} c={c} tournament={t} />
               ))}
+              <PublicLink tournament={t} />
             </details>
           ))}
         </>

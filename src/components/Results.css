@@ -401,3 +401,46 @@
   color: var(--primary);
   text-decoration: underline;
 }
+
+/* Page publique d'un tournoi et lien de partage. */
+.result-public {
+  padding: 0 16px 14px;
+  margin: 0;
+  font-size: 0.9rem;
+}
+.public-page main {
+  margin-top: 8px;
+}
+.public-page .app-header .brand {
+  text-decoration: none;
+  color: inherit;
+}
+.public-cta {
+  font-weight: 700;
+}
+.public-leaderboard ol {
+  list-style: none;
+  margin: 8px 0;
+  padding: 0;
+  display: grid;
+  gap: 4px;
+  max-width: 420px;
+}
+.public-leaderboard li {
+  display: grid;
+  grid-template-columns: 2em minmax(0, 1fr) auto;
+  gap: 8px;
+  padding: 6px 10px;
+  background: var(--soft);
+  border-radius: 8px;
+}
+.public-rank {
+  color: var(--muted);
+  font-weight: 700;
+}
+.public-competition {
+  padding: 0;
+}
+.public-join {
+  margin-top: 20px;
+}

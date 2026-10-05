@@ -35,6 +35,7 @@ const MyPredictions = lazy(() => import('./components/MyPredictions'));
 const ClubDay = lazy(() => import('./components/ClubDay'));
 const MySeason = lazy(() => import('./components/MySeason'));
 const Results = lazy(() => import('./components/Results'));
+const PublicTournament = lazy(() => import('./components/PublicTournament'));
 const AccountSettings = lazy(() => import('./components/AccountSettings'));
 const Community = lazy(() => import('./components/Community'));
 const tabFallback = <p className="muted load-state">Chargement…</p>;
@@ -247,6 +248,14 @@ export default function App() {
     setSelectedCompetitionId(competitionId);
   };
 
+  // Page publique d'un tournoi (/tournoi/12), lisible sans compte.
+  const publicTournament = Number(/^\/tournoi\/(\d+)\/?$/.exec(location.pathname)?.[1]) || null;
+  if (publicTournament)
+    return (
+      <Suspense fallback={<p style={{ textAlign: 'center', marginTop: '100px' }}>Chargement…</p>}>
+        <PublicTournament id={publicTournament} />
+      </Suspense>
+    );
   if (legalPage) return <LegalPage page={legalPage} />;
   if (resetToken)
     return (
