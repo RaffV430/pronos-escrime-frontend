@@ -16,6 +16,9 @@ import {
   seasonLabel,
   seasonsOf,
 } from './eventResults';
+import ResultsBracket from './ResultsBracket';
+import ResultsPools from './ResultsPools';
+import { buildTree } from './bracketTree';
 import './Results.css';
 
 const place = (codes) => (codes || []).map((c) => `${flag(c)} ${countryName(c)}`.trim()).join(' · ');
@@ -116,6 +119,14 @@ function CompetitionMatches({ competitionId }) {
   if (error) return <p className="muted">{error}</p>;
   if (!matches) return <p className="muted">Chargement…</p>;
   if (!matches.length) return <p className="muted">Aucun match de tableau suivi pour cette épreuve.</p>;
+  if (buildTree(matches))
+    return (
+      <>
+        <ResultsBracket matches={matches} onOpen={setOpen} />
+        {open && <MatchDialog match={open} onClose={() => setOpen(null)} />}
+      </>
+    );
+  // Positions officielles inconnues (anciennes épreuves) : liste par tour.
   return (
     <div className="result-rounds">
       {groupMatches(matches).map((g) => (
@@ -144,7 +155,8 @@ function CompetitionMatches({ competitionId }) {
 }
 
 function Competition({ c, tournament }) {
-  const [showMatches, setShowMatches] = useState(false);
+  const [view, setView] = useState(null); // null | 'tableau' | 'pools'
+  const toggle = (v) => setView((current) => (current === v ? null : v));
   return (
     <div className="result-competition">
       <h3>
@@ -166,19 +178,28 @@ function Competition({ c, tournament }) {
       <p className="result-actions">
         <button
           type="button"
-          className="button-secondary"
-          aria-expanded={showMatches}
-          onClick={() => setShowMatches((v) => !v)}
+          className={view === 'tableau' ? '' : 'button-secondary'}
+          aria-expanded={view === 'tableau'}
+          onClick={() => toggle('tableau')}
         >
-          {showMatches ? 'Masquer le tableau' : 'Voir le tableau'}
+          Tableau
+        </button>
+        <button
+          type="button"
+          className={view === 'pools' ? '' : 'button-secondary'}
+          aria-expanded={view === 'pools'}
+          onClick={() => toggle('pools')}
+        >
+          Poules
         </button>
         {c.sourceUrl && (
           <a href={c.sourceUrl} target="_blank" rel="noreferrer">
-            Classement sur le site officiel
+            Site officiel
           </a>
         )}
       </p>
-      {showMatches && <CompetitionMatches competitionId={c.id} />}
+      {view === 'tableau' && <CompetitionMatches competitionId={c.id} />}
+      {view === 'pools' && <ResultsPools competitionId={c.id} />}
     </div>
   );
 }
@@ -218,8 +239,8 @@ export default function Results() {
         </div>
       </div>
       <p className="muted">
-        Podiums et tableaux des tournois passés. Touchez un match pour voir le résultat et, si vous l’aviez pronostiqué,
-        vos points.
+        Podiums, tableaux et poules des tournois passés. Touchez un match ou un tireur pour voir le résultat et, si vous
+        l’aviez pronostiqué, vos points.
       </p>
       {error && (
         <p role="alert">
