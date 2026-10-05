@@ -5,6 +5,7 @@ import { shouldRefresh } from './lib/session.js';
 import ScoringRules from './components/ScoringRules';
 import EventSelector from './components/EventSelector';
 import UpdateBanner from './components/UpdateBanner';
+import NotificationBanner from './components/NotificationBanner';
 import { ForgotPassword, ResetPassword } from './components/AccountRecovery';
 import { LegalPage, LegalLinks } from './components/LegalPages';
 import { legalPageFor } from './lib/legal.js';
@@ -294,6 +295,7 @@ export default function App() {
             </div>
           </header>
           <UpdateBanner onReload={runNavigation} />
+          <NotificationBanner userId={user.id} />
           <nav className="primary-nav" aria-label="Navigation principale">
             {[
               ['play', '◎', 'Pronostiquer'],
