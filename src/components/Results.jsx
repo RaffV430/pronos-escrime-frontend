@@ -1,9 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import API from '../api';
-import { groupMatches, roundLabel, stripLabel } from './matchPresentation';
+import { groupMatches, stripLabel } from './matchPresentation';
 import { matchTotal, plural } from './resultPresentation';
 import {
   MEDALS,
+  cityName,
+  roundName,
   countriesOf,
   countryName,
   dateRange,
@@ -36,7 +38,7 @@ function MatchDialog({ match, onClose }) {
   });
   return (
     <dialog ref={ref} className="result-dialog" aria-labelledby="result-dialog-title" onClose={onClose}>
-      <h2 id="result-dialog-title">{roundLabel(match.round)}</h2>
+      <h2 id="result-dialog-title">{roundName(match.round)}</h2>
       <p className="muted">
         {[
           match.startsAt &&
@@ -118,7 +120,7 @@ function CompetitionMatches({ competitionId }) {
     <div className="result-rounds">
       {groupMatches(matches).map((g) => (
         <section key={g.round}>
-          <h4>{roundLabel(g.round)}</h4>
+          <h4>{roundName(g.round)}</h4>
           <ul>
             {g.items.map((m) => {
               const w = m.winner === 2 ? 2 : 1;
@@ -277,7 +279,9 @@ export default function Results() {
               <summary>
                 <span>
                   <strong>{t.name}</strong>
-                  <small>{[dateRange(t.start, t.end), t.city, place(t.countries)].filter(Boolean).join(' · ')}</small>
+                  <small>
+                    {[dateRange(t.start, t.end), cityName(t.city), place(t.countries)].filter(Boolean).join(' · ')}
+                  </small>
                 </span>
               </summary>
               {t.competitions.map((c) => (

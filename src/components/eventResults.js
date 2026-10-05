@@ -70,3 +70,19 @@ export function resultText(m) {
 // Matchs à afficher : rencontres réellement disputées (ni annulées, ni sans résultat).
 export const playedMatches = (matches) =>
   (matches || []).filter((m) => m.resultType !== 'CANCELLED' && (m.isFinished || m.pointsPending));
+
+// Nom d'un tour en toutes lettres : « Tableau de 64 », « Quarts de finale », « Demi-finales »…
+export function roundName(round) {
+  const n = Number(/^T(\d+)$/.exec(round || '')?.[1]);
+  if (n === 2) return 'Finale';
+  if (n === 4) return 'Demi-finales';
+  if (n === 8) return 'Quarts de finale';
+  if (n >= 16) return `Tableau de ${n}`;
+  if (round === 'Bronze') return 'Match pour la 3e place';
+  return round || '';
+}
+// Ville seule (« Veszprém, Veszprém megye, Hongrie » → « Veszprém ») : le pays est affiché à part.
+export const cityName = (city) =>
+  String(city || '')
+    .split(',')[0]
+    .trim();
