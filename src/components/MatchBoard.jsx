@@ -47,6 +47,7 @@ export default function MatchBoard({
     [busy, setBusy] = useState(false),
     [filter, setFilter] = useState(linkedIds.length ? 'Nouveaux' : initialFilter),
     [openId, setOpenId] = useState(null),
+    [reveal, setReveal] = useState(null), // match à rendre visible dans l'arbre paginé
     [view, setView] = useState(() => {
       try {
         return localStorage.getItem('pronos:match-view') === 'Arbre' ? 'Arbre' : 'Liste';
@@ -98,6 +99,7 @@ export default function MatchBoard({
   useEffect(() => {
     if (!focusTarget) return;
     setFilter('Tous');
+    setReveal({ id: focusTarget.id });
     const timer = setTimeout(() => {
       const el = document.getElementById(`match-${focusTarget.id}`);
       el?.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -201,17 +203,28 @@ export default function MatchBoard({
     if (busy || pendingAdvance.current === null) return;
     const current = pendingAdvance.current;
     pendingAdvance.current = null;
-    const ordered = [...document.querySelectorAll('input[id^="input-"][id$="-1"]')].map((el) =>
-      Number(el.id.split('-')[1]),
-    );
+    // Arbre paginé : l'ordre suit le tableau entier, même les tours qui ne sont pas affichés.
+    const paged = view === 'Arbre' && buildTree(valid);
+    const ordered = paged
+      ? paged.rounds.flatMap((r) => r.slots.filter((s) => s.match).map((s) => s.match.id))
+      : [...document.querySelectorAll('input[id^="input-"][id$="-1"]')].map((el) => Number(el.id.split('-')[1]));
     const next = nextMatchId(ordered, current, (mid) => {
       const m = valid.find((x) => x.id === mid);
       return Boolean(m) && !isMatchClosed(m, Date.now()) && !mine(m);
     });
-    const input = next && document.getElementById(`input-${next}-1`);
-    if (input && !input.disabled) {
-      input.focus({ preventScroll: true });
-      input.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    const focusInput = () => {
+      const input = next && document.getElementById(`input-${next}-1`);
+      if (input && !input.disabled) {
+        input.focus({ preventScroll: true });
+        input.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        return true;
+      }
+      return false;
+    };
+    if (focusInput()) return;
+    if (next && view === 'Arbre') {
+      setReveal({ id: next });
+      setTimeout(() => focusInput() || document.activeElement?.blur(), 50);
     } else document.activeElement?.blur(); // plus rien à saisir : ferme le clavier sur mobile
   });
   // Saisie commune aux vues Liste et Arbre.
@@ -284,7 +297,8 @@ export default function MatchBoard({
     next = () => {
       const target = valid.find((m) => !mine(m) && !isMatchClosed(m, now));
       setFilter('À compléter');
-      if (target) setTimeout(() => document.getElementById(`input-${target.id}-1`)?.focus(), 0);
+      if (target) setReveal({ id: target.id });
+      if (target) setTimeout(() => document.getElementById(`input-${target.id}-1`)?.focus(), 50);
     };
   const checked = [...new Set(valid.map((m) => m.sourceCheckedAt).filter(Boolean))];
   const tree = buildTree(valid);
@@ -513,21 +527,6 @@ export default function MatchBoard({
                 Votre score pronostiqué en face des tireurs, le résultat officiel en bas à droite. Entrée enregistre et
                 passe au match suivant ; touchez un match pour son détail.
               </p>
-              <div className="filter-row tree-jumps" role="group" aria-label="Aller au tour">
-                {tree.rounds.map((r) => (
-                  <button
-                    key={r.round}
-                    className="button-secondary"
-                    onClick={() =>
-                      document
-                        .getElementById(`tree-${r.round}`)
-                        ?.scrollIntoView({ behavior: 'smooth', inline: 'start', block: 'nearest' })
-                    }
-                  >
-                    {roundLabel(r.round)}
-                  </button>
-                ))}
-              </div>
               <BracketTree
                 tree={tree}
                 ready={ready}
@@ -544,6 +543,7 @@ export default function MatchBoard({
                 onLeave={leave}
                 onOpen={(m) => setOpenId((old) => (old === m.id ? null : m.id))}
                 openId={openId}
+                revealId={reveal}
               />
               {tree.bronze && (
                 <section className="round-column tree-bronze">
