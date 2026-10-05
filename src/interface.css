@@ -459,6 +459,8 @@
     flex: 1 1 0;
     min-width: 0;
     min-height: 51px;
+    white-space: normal;
+    text-align: center;
   }
   .primary-nav button[aria-pressed='true'] {
     background: #edf3ff;
@@ -1839,6 +1841,33 @@
   font-size: 0.9rem;
 }
 .update-banner button {
+  min-height: 40px;
+}
+/* Activation des notifications en un clic (joueur sans appareil abonné). */
+.notification-banner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 12px;
+  margin: 8px 0 12px;
+  padding: 10px 14px;
+  border: 1px solid var(--primary);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--primary) 8%, var(--surface));
+  color: var(--text);
+  font-size: 0.9rem;
+}
+.notification-banner p {
+  margin: 0;
+  flex: 1 1 260px;
+}
+.notification-banner div {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+.notification-banner button {
   min-height: 40px;
 }
 

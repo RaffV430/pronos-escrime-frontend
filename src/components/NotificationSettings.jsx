@@ -14,6 +14,7 @@ export default function NotificationSettings({ userId }) {
     [message, setMessage] = useState(''),
     [ready, setReady] = useState(false);
   const [preferences, setPreferences] = useState({
+      followAll: true,
       newMatches: true,
       reminders: true,
       roundResults: false,
@@ -82,15 +83,18 @@ export default function NotificationSettings({ userId }) {
           applicationServerKey: applicationKey(config.publicKey),
         }));
       setSub(current);
-      await API.post('/notifications/subscribe', {
+      const legacy = !sub && devices.some((d) => d.legacy);
+      const { data } = await API.post('/notifications/subscribe', {
         subscription: current.toJSON(),
         tournamentIds: tournaments,
         competitionIds: events,
         preferences,
+        replaceLegacy: legacy,
       });
       setEnabled(true);
       setMessage(
-        'Préférences enregistrées sur cet appareil. Vos catégories d’alertes et horaires silencieux sont appliqués.',
+        'Préférences enregistrées sur cet appareil. Vos catégories d’alertes et horaires silencieux sont appliqués.' +
+          (data?.replaced ? ' L’ancienne inscription de ce navigateur (ancienne adresse) a été remplacée.' : ''),
       );
     } catch (e) {
       setMessage(e.response?.data?.error || e.message || 'Activation impossible. Réessayez.');
@@ -221,7 +225,23 @@ export default function NotificationSettings({ userId }) {
                   </div>
                 )}
               </fieldset>
-              <div className="notification-choices">
+              <label className="check-row">
+                <input
+                  type="checkbox"
+                  checked={preferences.followAll}
+                  disabled={busy}
+                  onChange={(e) => setPreferences((p) => ({ ...p, followAll: e.target.checked }))}
+                />
+                Suivre tous les tournois, y compris les prochains (recommandé)
+              </label>
+              {!sub && devices.some((d) => d.legacy) && (
+                <p className="notice">
+                  Ce navigateur reçoit peut-être déjà vos alertes via l’ancienne adresse (pronos-escrime.vercel.app).
+                  Inutile de les réactiver si vous les recevez. Si vous enregistrez ici, l’ancienne inscription de ce
+                  navigateur est remplacée, sans doublon.
+                </p>
+              )}
+              <div className="notification-choices" hidden={preferences.followAll}>
                 {choices.map((t) => (
                   <fieldset key={t.id}>
                     <legend>{t.name}</legend>
@@ -267,7 +287,12 @@ export default function NotificationSettings({ userId }) {
               )}
               <div className="notification-actions">
                 <button
-                  disabled={busy || !!unsupported || !config?.available || (!tournaments.length && !events.length)}
+                  disabled={
+                    busy ||
+                    !!unsupported ||
+                    !config?.available ||
+                    (!preferences.followAll && !tournaments.length && !events.length)
+                  }
                   onClick={activate}
                 >
                   {enabled ? 'Enregistrer mes choix' : 'Activer sur cet appareil'}
