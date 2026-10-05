@@ -7,6 +7,7 @@ import PodiumPrediction from './PodiumPrediction';
 import PoolPredictions from './PoolPredictions';
 import { useNow } from '../lib/polling';
 import EngagementPanel from './EngagementPanel';
+import ScheduleSettings from './ScheduleSettings';
 export default function AdminPanel({ competitionId, tournamentId, user, matches, onRefresh }) {
   const now = useNow(5000);
   const [query, setQuery] = useState(''),
@@ -92,6 +93,7 @@ export default function AdminPanel({ competitionId, tournamentId, user, matches,
       {message && <p role="status">{message}</p>}
       <EngagementPanel tournamentId={tournamentId} competitionId={competitionId} />
       <FtlSetup competitionId={competitionId} tournamentId={tournamentId} />
+      <ScheduleSettings competitionId={competitionId} />
       <ArchiveTournament tournamentId={tournamentId} />
       <form className="feature-panel" onSubmit={adjust}>
         <h3>Ajustement manuel des points</h3>

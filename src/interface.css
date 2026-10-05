@@ -2363,3 +2363,16 @@
 .setup-source .source-badge {
   margin: 0 6px 0 0;
 }
+
+/* Administration : jour de chaque phase. */
+.schedule-phase {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px 12px;
+}
+.feature-panel .schedule-phase input {
+  display: inline-block;
+  width: auto;
+  margin: 0;
+}
