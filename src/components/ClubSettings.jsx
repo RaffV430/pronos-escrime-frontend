@@ -41,20 +41,22 @@ export default function ClubSettings() {
   return (
     <details className="feature-panel">
       <summary>Club et « Nos tireurs »</summary>
-      <form onSubmit={save} className="form-grid">
-        <label>
-          Nom du club
-          <input
-            value={name}
-            maxLength={60}
-            onChange={(e) => setName(e.target.value)}
-            placeholder="Cercle des Escrimeurs Parisiens"
-          />
-        </label>
-        <label>
-          Tireurs du club (un par ligne, « NOM Prénom » comme sur FencingTimeLive)
-          <textarea rows={8} value={fencers} onChange={(e) => setFencers(e.target.value)} />
-        </label>
+      <form onSubmit={save}>
+        <div className="form-grid">
+          <label>
+            Nom du club
+            <input
+              value={name}
+              maxLength={60}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="Cercle des Escrimeurs Parisiens"
+            />
+          </label>
+          <label>
+            Tireurs du club (un par ligne, « NOM Prénom » comme sur FencingTimeLive)
+            <textarea rows={8} value={fencers} onChange={(e) => setFencers(e.target.value)} />
+          </label>
+        </div>
         <p className="muted">
           Les tireurs listés sont signalés par ★ sur les matchs et les poules, avec un filtre « Nos tireurs ». Une ligue
           du club est créée pour chaque tournoi dès que son horaire est connu ; ses membres sont reconduits d’un tournoi
