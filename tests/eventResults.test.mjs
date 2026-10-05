@@ -9,6 +9,8 @@ import {
   filterResults,
   resultText,
   playedMatches,
+  roundName,
+  cityName,
 } from '../src/components/eventResults.js';
 
 const list = [
@@ -94,4 +96,17 @@ test('score vainqueur en premier et matchs réellement disputés', () => {
     ]).map((m) => m.id),
     [1, 4],
   );
+});
+
+test('noms des tours et ville seule', () => {
+  assert.deepEqual(['T256', 'T16', 'T8', 'T4', 'T2', 'Bronze'].map(roundName), [
+    'Tableau de 256',
+    'Tableau de 16',
+    'Quarts de finale',
+    'Demi-finales',
+    'Finale',
+    'Match pour la 3e place',
+  ]);
+  assert.equal(cityName('Veszprém, Veszprém megye, Hongrie'), 'Veszprém');
+  assert.equal(cityName(null), '');
 });

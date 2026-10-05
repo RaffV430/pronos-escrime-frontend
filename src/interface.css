@@ -48,21 +48,30 @@
 }
 .primary-nav {
   display: flex;
-  gap: 34px;
+  gap: clamp(4px, calc(5.5vw - 38px), 34px);
   border-bottom: 1px solid #dce3ed;
   margin-bottom: 28px;
 }
 .primary-nav button {
   display: flex;
-  gap: 9px;
+  gap: clamp(5px, 0.8vw, 9px);
+  white-space: nowrap;
   align-items: center;
   border: 0;
   border-bottom: 3px solid transparent;
   background: transparent;
   border-radius: 0;
   padding: 15px 2px;
-  font-size: 14px;
+  font-size: clamp(12px, 1.5vw, 14px);
   color: #748298;
+}
+/* Tablette étroite (701-780 px) : les libellés longs passent sur deux lignes plutôt que de déborder. */
+@media (min-width: 701px) and (max-width: 780px) {
+  .primary-nav button {
+    white-space: normal;
+    line-height: 1.15;
+    text-align: left;
+  }
 }
 .primary-nav button[aria-pressed='true'] {
   border-bottom-color: #2b60c7;
