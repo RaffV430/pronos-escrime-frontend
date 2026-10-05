@@ -143,8 +143,8 @@ export default function ResultsPools({ competitionId }) {
           {rounds.length > 1 && <h4>Tour {r.round}</h4>}
           {r.pools.some(hasBouts) && (
             <p className="muted result-matrix-legend">
-              Chaque ligne se lit de gauche à droite : V5 = victoire 5 touches, un chiffre seul = touches données dans
-              une défaite.
+              Chaque ligne se lit de gauche à droite : V = victoire (V4 : victoire à 4 touches), un chiffre seul =
+              touches données dans une défaite.
             </p>
           )}
           <div className={`result-pool-grid${r.pools.some(hasBouts) ? ' has-matrix' : ''}`}>
