@@ -165,6 +165,19 @@ textarea {
 textarea {
   resize: vertical;
 }
+/* Cases à cocher et boutons radio : taille fixe, jamais étirés comme les champs de saisie. */
+input[type='checkbox'],
+input[type='radio'] {
+  flex: none;
+  width: 20px;
+  min-width: 20px;
+  height: 20px;
+  min-height: 0;
+  margin: 2px 0 0;
+  padding: 0;
+  accent-color: var(--primary);
+  vertical-align: middle;
+}
 input::placeholder,
 textarea::placeholder {
   color: #76869a;

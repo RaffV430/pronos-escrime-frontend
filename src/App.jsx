@@ -352,7 +352,7 @@ export default function App() {
                   }}
                 />
               )}
-              {!['season', 'account', 'mine', 'results'].includes(mainTab) && (
+              {!['season', 'account', 'mine', 'results', 'leaderboard'].includes(mainTab) && (
                 <EventSelector
                   key={`${user.id}:${eventListVersion}:${mainTab === 'play' ? 'active' : 'history'}`}
                   includeArchived={mainTab !== 'play'}
