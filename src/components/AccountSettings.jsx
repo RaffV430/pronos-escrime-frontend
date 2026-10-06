@@ -114,8 +114,8 @@ export default function AccountSettings({ user, onDeleted }) {
           <form onSubmit={remove} className="auth-form">
             <p>
               La suppression est <strong>définitive</strong> : vos pronostics, points, abonnements aux notifications et
-              participations aux ligues sont effacés. Les ligues que vous avez créées sont confiées au plus ancien
-              membre.
+              participations aux groupes et clubs sont effacés. Les groupes et clubs que vous avez créés sont confiés au
+              plus ancien membre.
             </p>
             {status.error && (
               <p role="alert" className="form-error">

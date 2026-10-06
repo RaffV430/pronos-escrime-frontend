@@ -14,12 +14,12 @@ export function clubValue(data) {
   return {
     name: data?.name || '',
     fencers: data?.fencers || [],
-    leagues: data?.leagues || [],
+    league: data?.league || null,
     hasFencers: names.size > 0,
     isClubFencer: (name) => names.has(normalizeName(name)),
   };
 }
 
-// Club de l'application (tireurs mis en avant, ligue du club), partagé par toutes les pages.
+// Club de l'application (tireurs mis en avant, club permanent), partagé par toutes les pages.
 export const ClubContext = createContext(clubValue(null));
 export const useClub = () => useContext(ClubContext);

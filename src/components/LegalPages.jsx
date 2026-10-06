@@ -72,9 +72,9 @@ function Privacy() {
           le demandez.
         </li>
         <li>
-          <strong>Jeu</strong> : vos pronostics (matchs, poules, podiums, défis), vos points et vos ligues ou clubs.
-          Votre nom d’utilisateur et vos points apparaissent dans les classements visibles des autres joueurs ; vos
-          pronostics ne sont montrés aux autres qu’après la clôture.
+          <strong>Jeu</strong> : vos pronostics (matchs, poules, podiums, défis), vos points et vos groupes d’amis et
+          clubs. Votre nom d’utilisateur et vos points apparaissent dans les classements visibles des autres joueurs ;
+          vos pronostics ne sont montrés aux autres qu’après la clôture.
         </li>
         <li>
           <strong>Page publique des tournois</strong> : chaque tournoi a une page consultable sans compte (adresse

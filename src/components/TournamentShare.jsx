@@ -8,7 +8,7 @@ export default function TournamentShare({ summary, tournamentId }) {
   useEffect(() => {
     const c = new AbortController();
     API.get('/community/leagues', { signal: c.signal })
-      .then(({ data }) => setGroups(data.filter((g) => g.tournamentId === tournamentId)))
+      .then(({ data }) => setGroups(Array.isArray(data) ? data : []))
       .catch(() => {});
     return () => c.abort();
   }, [tournamentId]);
@@ -77,7 +77,7 @@ export default function TournamentShare({ summary, tournamentId }) {
           <option value="general">Général</option>
           {groups.map((g) => (
             <option key={g.id} value={g.id}>
-              {g.kind === 'CLUB' ? 'Club' : 'Ligue'} · {g.name}
+              {g.kind === 'CLUB' ? 'Club' : 'Groupe d’amis'} · {g.name}
             </option>
           ))}
         </select>
