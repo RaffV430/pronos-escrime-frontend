@@ -9,6 +9,7 @@ import NotificationBanner from './components/NotificationBanner';
 import { ForgotPassword, ResetPassword } from './components/AccountRecovery';
 import { LegalPage, LegalLinks } from './components/LegalPages';
 import { legalPageFor } from './lib/legal.js';
+import { TAB_TITLES, pathForTab, tabFromPath } from './lib/routes.js';
 import ResultFreshness from './components/ResultFreshness';
 import ClosingCountdown from './components/ClosingCountdown';
 import InstallApp from './components/InstallApp';
@@ -38,6 +39,7 @@ const ClubDay = lazy(() => import('./components/ClubDay'));
 const MySeason = lazy(() => import('./components/MySeason'));
 const Results = lazy(() => import('./components/Results'));
 const PublicTournament = lazy(() => import('./components/PublicTournament'));
+const PublicResults = lazy(() => import('./components/PublicResults'));
 const AccountSettings = lazy(() => import('./components/AccountSettings'));
 const Community = lazy(() => import('./components/Community'));
 const tabFallback = <p className="muted load-state">Chargement…</p>;
@@ -68,7 +70,16 @@ export default function App() {
   const [error, setError] = useState('');
 
   // Navigation principale
-  const [mainTab, setMainTab] = useState('play');
+  const [mainTab, setMainTab] = useState(() => tabFromPath(location.pathname) || 'play');
+  // Une adresse par section : l'onglet suit l'adresse (retour arrière du navigateur) et inversement.
+  useEffect(() => {
+    const back = () => {
+      const tab = tabFromPath(location.pathname);
+      if (tab) setMainTab(tab);
+    };
+    window.addEventListener('popstate', back);
+    return () => window.removeEventListener('popstate', back);
+  }, []);
   const [matchTarget, setMatchTarget] = useState(null);
 
   // Gestion des compétitions et tournoi actif
@@ -107,6 +118,15 @@ export default function App() {
     setLandingFilter(next.filter);
     setLandingPending(false);
   }, [landingPending, matchesReady, matches, user?.id, competition]);
+
+  useEffect(() => {
+    if (!user || !tabFromPath(location.pathname)) return;
+    const path = pathForTab(mainTab);
+    if (location.pathname !== path) history.pushState(null, '', `${path}${mainTab === 'play' ? location.search : ''}`);
+    document.title = mainTab === 'play' ? 'Pronos Escrime' : `${TAB_TITLES[mainTab]} · Pronos Escrime`;
+    const canonical = document.querySelector('link[rel="canonical"]');
+    if (canonical) canonical.href = `https://www.pronos-escrime.fr${path}`;
+  }, [mainTab, user]);
 
   const [pendingNavigation, setPendingNavigation] = useState(null);
   const runNavigation = (action) => {
@@ -236,6 +256,7 @@ export default function App() {
     setTournamentId(null);
     selectCompetition(null);
     setMainTab('play');
+    history.replaceState(null, '', '/');
   };
 
   const selectCompetition = (competitionId) => {
@@ -259,6 +280,13 @@ export default function App() {
       </Suspense>
     );
   if (legalPage) return <LegalPage page={legalPage} />;
+  // Résultats consultables sans compte (/resultats) ; une fois connecté, l'onglet habituel s'affiche.
+  if (!loading && !user && tabFromPath(location.pathname) === 'results')
+    return (
+      <Suspense fallback={<p style={{ textAlign: 'center', marginTop: '100px' }}>Chargement…</p>}>
+        <PublicResults />
+      </Suspense>
+    );
   if (resetToken)
     return (
       <div className="auth-card">

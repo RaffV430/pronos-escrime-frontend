@@ -78,7 +78,7 @@ export default function FencerProfile({ name, onClose }) {
   }, []);
   useEffect(() => {
     const c = new AbortController();
-    API.get('/matches/fencer', { params: { name }, signal: c.signal })
+    API.get('/public/fencer', { params: { name }, signal: c.signal })
       .then(({ data }) => setData(data))
       .catch((e) => !c.signal.aborted && setError(e.response?.data?.error || 'Fiche indisponible.'));
     return () => c.abort();

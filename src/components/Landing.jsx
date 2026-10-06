@@ -47,6 +47,9 @@ export default function Landing({ children }) {
             <strong>Notifications</strong> quand de nouveaux matchs s’ouvrent et avant la clôture des pronostics.
           </li>
         </ul>
+        <p className="landing-results">
+          <a href="/resultats">Consulter les résultats des compétitions</a> : podiums, tableaux et poules, sans compte.
+        </p>
         {tournaments.length > 0 && (
           <section className="landing-tournaments" aria-labelledby="landing-tournaments-title">
             <h2 id="landing-tournaments-title">Derniers tournois</h2>
