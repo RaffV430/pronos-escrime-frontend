@@ -22,7 +22,21 @@ export default function SeasonBadges({ badges }) {
                 {b.count > 1 && <span className="badge-count"> ×{b.count}</span>}
               </strong>
               <small>{b.description}</small>
-              {b.count > 0 && b.where.length > 0 && <small className="badge-where">{b.where.join(' · ')}</small>}
+              {b.count > 0 && b.where.length > 0 && <small className="badge-where">{b.where[0]}</small>}
+              {b.count > 0 && b.where.length > 1 && (
+                <details className="badge-more">
+                  <summary>
+                    et {b.where.length - 1} autre{b.where.length > 2 ? 's' : ''}
+                  </summary>
+                  <ul>
+                    {b.where.slice(1).map((w, i) => (
+                      <li key={i}>
+                        <small>{w}</small>
+                      </li>
+                    ))}
+                  </ul>
+                </details>
+              )}
               {b.count === 0 && <small className="badge-where">À décrocher</small>}
             </div>
           </li>
