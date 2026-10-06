@@ -2,18 +2,44 @@
   "redirects": [
     {
       "source": "/",
-      "has": [{ "type": "host", "value": "pronos-escrime.vercel.app" }],
+      "has": [
+        {
+          "type": "host",
+          "value": "pronos-escrime.vercel.app"
+        }
+      ],
       "destination": "https://www.pronos-escrime.fr/",
       "permanent": true
     },
     {
       "source": "/:path*",
-      "has": [{ "type": "host", "value": "pronos-escrime.vercel.app" }],
+      "has": [
+        {
+          "type": "host",
+          "value": "pronos-escrime.vercel.app"
+        }
+      ],
       "destination": "https://www.pronos-escrime.fr/:path*",
       "permanent": true
     }
   ],
-  "rewrites": [{ "source": "/(.*)", "destination": "/" }],
+  "rewrites": [
+    {
+      "source": "/tournoi/:id",
+      "has": [
+        {
+          "type": "header",
+          "key": "user-agent",
+          "value": ".*(facebookexternalhit|Facebot|WhatsApp|Twitterbot|Slackbot|LinkedInBot|Discordbot|TelegramBot|Pinterest|SkypeUriPreview|Applebot|iMessage|redditbot|Snapchat|Google-InspectionTool|bingbot|Googlebot).*"
+        }
+      ],
+      "destination": "https://pronos-escrime.onrender.com/api/public/tournaments/:id/share"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/"
+    }
+  ],
   "headers": [
     {
       "source": "/(.*)",
@@ -22,10 +48,22 @@
           "key": "Content-Security-Policy",
           "value": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' https://pronos-escrime.onrender.com https://*.onrender.com https://*.sentry.io; manifest-src 'self'; worker-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; upgrade-insecure-requests"
         },
-        { "key": "X-Content-Type-Options", "value": "nosniff" },
-        { "key": "X-Frame-Options", "value": "DENY" },
-        { "key": "Referrer-Policy", "value": "strict-origin-when-cross-origin" },
-        { "key": "Permissions-Policy", "value": "camera=(), microphone=(), geolocation=(), payment=()" }
+        {
+          "key": "X-Content-Type-Options",
+          "value": "nosniff"
+        },
+        {
+          "key": "X-Frame-Options",
+          "value": "DENY"
+        },
+        {
+          "key": "Referrer-Policy",
+          "value": "strict-origin-when-cross-origin"
+        },
+        {
+          "key": "Permissions-Policy",
+          "value": "camera=(), microphone=(), geolocation=(), payment=()"
+        }
       ]
     }
   ]
