@@ -29,7 +29,7 @@ function Ranking({ rows, onDuel, userId }) {
 // Communauté : tous mes groupes (tous tournois) avec leur lien d'invitation, création et adhésion,
 // puis, pour le tournoi choisi, la ligue du club et les défis. Aucun choix d'épreuve préalable.
 export default function Community({ tournamentId: preferred = null, userId }) {
-  const [leagues, setLeagues] = useState([]),
+  const [leagues, setLeagues] = useState(null),
     [tournaments, setTournaments] = useState([]),
     [selected, setSelected] = useState(preferred ? String(preferred) : ''),
     [createFor, setCreateFor] = useState(preferred ? String(preferred) : ''),
@@ -91,7 +91,7 @@ export default function Community({ tournamentId: preferred = null, userId }) {
   const tournamentName = (id) => tournaments.find((t) => t.id === id)?.name || '';
   const active = tournaments.filter((t) => !t.archivedAt);
   // Groupes des tournois en cours d'abord, puis les plus récents.
-  const ordered = [...leagues].sort(
+  const ordered = [...(leagues || [])].sort(
     (x, y) =>
       Number(Boolean(tournaments.find((t) => t.id === x.tournamentId)?.archivedAt)) -
         Number(Boolean(tournaments.find((t) => t.id === y.tournamentId)?.archivedAt)) || y.id - x.id,
@@ -105,7 +105,8 @@ export default function Community({ tournamentId: preferred = null, userId }) {
       </p>
       {message && <p role="status">{message}</p>}
       <h3>Mes groupes</h3>
-      {!leagues.length && (
+      {!leagues && <p className="muted">Chargement de vos groupes…</p>}
+      {leagues?.length === 0 && (
         <p className="muted">
           Aucun groupe pour l’instant. Créez-en un ci-dessous : son lien d’invitation, à envoyer par WhatsApp ou SMS,
           apparaîtra ici.
