@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import API from '../api';
 import { plural } from './resultPresentation';
 import { poolRounds, poolStanding } from './eventResults';
+import { closeOnBackdrop } from './dialogBackdrop';
 
 const hasBouts = (pool) => Array.isArray(pool.bouts) && pool.bouts.length === pool.fencers.length;
 const signed = (n) => (n > 0 ? `+${n}` : String(n));
@@ -14,7 +15,13 @@ function FencerDialog({ fencer, pool, onClose }) {
   }, []);
   const p = fencer.prediction;
   return (
-    <dialog ref={ref} className="result-dialog" aria-labelledby="pool-dialog-title" onClose={onClose}>
+    <dialog
+      ref={ref}
+      className="result-dialog"
+      aria-labelledby="pool-dialog-title"
+      onClose={onClose}
+      onClick={closeOnBackdrop}
+    >
       <h2 id="pool-dialog-title">{fencer.name}</h2>
       <p className="muted">{pool.name}</p>
       <p>

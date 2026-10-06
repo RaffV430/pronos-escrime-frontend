@@ -20,6 +20,7 @@ import ResultsBracket from './ResultsBracket';
 import ResultsPools from './ResultsPools';
 import { buildTree } from './bracketTree';
 import './Results.css';
+import { closeOnBackdrop } from './dialogBackdrop';
 
 const place = (codes) => (codes || []).map((c) => `${flag(c)} ${countryName(c)}`.trim()).join(' · ');
 
@@ -40,7 +41,13 @@ function MatchDialog({ match, onClose }) {
     score: match[`score${n}`],
   });
   return (
-    <dialog ref={ref} className="result-dialog" aria-labelledby="result-dialog-title" onClose={onClose}>
+    <dialog
+      ref={ref}
+      className="result-dialog"
+      aria-labelledby="result-dialog-title"
+      onClose={onClose}
+      onClick={closeOnBackdrop}
+    >
       <h2 id="result-dialog-title">{roundName(match.round)}</h2>
       <p className="muted">
         {[
