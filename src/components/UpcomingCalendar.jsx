@@ -60,7 +60,10 @@ export default function UpcomingCalendar({
                     </span>
                   </span>
                   {e.tournamentId && (
-                    <a className="calendar-live" href={`/tournoi/${e.tournamentId}`}>
+                    <a
+                      className="calendar-live"
+                      href={`/tournoi/${e.tournamentId}${e.competitionIds?.length ? `?epreuves=${e.competitionIds.join(',')}` : ''}`}
+                    >
                       Sur l’appli
                     </a>
                   )}

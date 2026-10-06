@@ -26,9 +26,13 @@ function Ranking({ rows, onDuel, userId }) {
     </ol>
   );
 }
-export default function Community({ tournamentId, competitionId, userId }) {
+// Communauté : tous mes groupes (tous tournois) avec leur lien d'invitation, création et adhésion,
+// puis, pour le tournoi choisi, la ligue du club et les défis. Aucun choix d'épreuve préalable.
+export default function Community({ tournamentId: preferred = null, userId }) {
   const [leagues, setLeagues] = useState([]),
-    [elsewhere, setElsewhere] = useState([]),
+    [tournaments, setTournaments] = useState([]),
+    [selected, setSelected] = useState(preferred ? String(preferred) : ''),
+    [createFor, setCreateFor] = useState(preferred ? String(preferred) : ''),
     [clubs, setClubs] = useState([]),
     [challenges, setChallenges] = useState([]),
     [detail, setDetail] = useState(null),
@@ -41,24 +45,36 @@ export default function Community({ tournamentId, competitionId, userId }) {
     [revision, setRevision] = useState(0);
   useEffect(() => {
     const c = new AbortController();
-    Promise.all([
-      API.get('/community/leagues', { signal: c.signal }),
-      API.get(`/community/clubs/${tournamentId}`, { signal: c.signal }),
-      API.get(`/community/challenges?competitionId=${competitionId}`, { signal: c.signal }),
-    ])
-      .then(([a, b, d]) => {
-        if (!c.signal.aborted) {
-          setLeagues(a.data.filter((l) => l.tournamentId === tournamentId));
-          setElsewhere(a.data.filter((l) => l.tournamentId !== tournamentId));
-          setClubs(b.data);
-          setChallenges(d.data);
-        }
+    Promise.all([API.get('/community/leagues', { signal: c.signal }), API.get('/tournaments', { signal: c.signal })])
+      .then(([a, t]) => {
+        if (c.signal.aborted) return;
+        const list = Array.isArray(t.data) ? t.data : [];
+        setLeagues(a.data);
+        setTournaments(list);
+        const first = String(list.find((x) => !x.archivedAt)?.id || list[0]?.id || '');
+        setSelected((old) => old || first);
+        setCreateFor((old) => old || first);
       })
       .catch((e) => {
         if (!c.signal.aborted) setMessage(e.response?.data?.error || 'Chargement impossible.');
       });
     return () => c.abort();
-  }, [tournamentId, competitionId, revision]);
+  }, [revision]);
+  useEffect(() => {
+    if (!selected) return;
+    const c = new AbortController();
+    Promise.all([
+      API.get(`/community/clubs/${selected}`, { signal: c.signal }),
+      API.get(`/community/challenges?tournamentId=${selected}`, { signal: c.signal }),
+    ])
+      .then(([b, d]) => {
+        if (c.signal.aborted) return;
+        setClubs(b.data);
+        setChallenges(d.data);
+      })
+      .catch(() => {});
+    return () => c.abort();
+  }, [selected, revision]);
   const action = async (fn) => {
     if (busy) return;
     setBusy(true);
@@ -72,30 +88,34 @@ export default function Community({ tournamentId, competitionId, userId }) {
       setBusy(false);
     }
   };
+  const tournamentName = (id) => tournaments.find((t) => t.id === id)?.name || '';
+  const active = tournaments.filter((t) => !t.archivedAt);
+  // Groupes des tournois en cours d'abord, puis les plus récents.
+  const ordered = [...leagues].sort(
+    (x, y) =>
+      Number(Boolean(tournaments.find((t) => t.id === x.tournamentId)?.archivedAt)) -
+        Number(Boolean(tournaments.find((t) => t.id === y.tournamentId)?.archivedAt)) || y.id - x.id,
+  );
   return (
     <section className="feature-panel">
       <h2>Entre amis et clubs</h2>
       <p>
-        Les ligues reprennent les points du tournoi sélectionné, y compris ceux obtenus avant l’inscription. Vos
-        pronostics restent personnels jusqu’à la fin de chaque match ; ensuite, les membres d’une même ligue peuvent se
-        comparer en duel.
+        Créez un groupe pour un tournoi et invitez vos proches avec son lien. Les groupes reprennent les points du
+        tournoi, y compris ceux obtenus avant l’inscription ; après chaque match, vous pouvez vous comparer en duel.
       </p>
-      <ClubLeague tournamentId={tournamentId} onJoined={() => setRevision((n) => n + 1)} />
-      <button onClick={() => setRevision((n) => n + 1)}>Actualiser l’affichage</button>
       {message && <p role="status">{message}</p>}
-      <h3>Mes groupes pour ce tournoi</h3>
+      <h3>Mes groupes</h3>
       {!leagues.length && (
         <p className="muted">
-          Aucun groupe pour ce tournoi. Créez-en un ci-dessous : son lien d’invitation, à envoyer par WhatsApp ou SMS,
+          Aucun groupe pour l’instant. Créez-en un ci-dessous : son lien d’invitation, à envoyer par WhatsApp ou SMS,
           apparaîtra ici.
-          {elsewhere.length > 0 &&
-            ` Vous avez ${withCount(elsewhere.length, 'groupe')} sur d’autres tournois : choisissez le tournoi correspondant pour les voir.`}
         </p>
       )}
-      {leagues.map((l) => (
+      {ordered.map((l) => (
         <article className="prediction-summary" key={l.id}>
           <strong>{l.name}</strong> · {l.kind === 'CLUB' ? 'Club' : 'Ligue privée'} ·{' '}
           {withCount(l._count.members, 'membre')}
+          <small className="league-tournament">{tournamentName(l.tournamentId)}</small>
           <p>
             Code d’invitation : <code>{l.code}</code>
           </p>
@@ -156,13 +176,27 @@ export default function Community({ tournamentId, competitionId, userId }) {
           )}
         </article>
       ))}
+      {detail && (
+        <div className="feature-panel">
+          <h3>{detail.league.name}</h3>
+          <p className="muted">Comparez-vous match par match avec un membre : bouton « Duel ».</p>
+          <Ranking
+            rows={detail.ranking}
+            userId={userId}
+            onDuel={(r) =>
+              action(async () => setDuel((await API.get(`/community/leagues/${detail.league.id}/duel/${r.id}`)).data))
+            }
+          />
+          {duel && duel.league.id === detail.league.id && <DuelView duel={duel} onClose={() => setDuel(null)} />}
+        </div>
+      )}
       <div className="feature-grid">
         <form
           className="feature-panel"
           onSubmit={(e) => {
             e.preventDefault();
             action(async () => {
-              await API.post('/community/leagues', { name, kind, tournamentId });
+              await API.post('/community/leagues', { name, kind, tournamentId: Number(createFor) });
               setName('');
               setMessage('Groupe créé. Partagez son lien d’invitation avec vos proches.');
             });
@@ -172,6 +206,16 @@ export default function Community({ tournamentId, competitionId, userId }) {
           <label>
             Nom du groupe
             <input value={name} minLength={3} maxLength={80} required onChange={(e) => setName(e.target.value)} />
+          </label>
+          <label>
+            Tournoi
+            <select value={createFor} required onChange={(e) => setCreateFor(e.target.value)}>
+              {active.map((t) => (
+                <option key={t.id} value={t.id}>
+                  {t.name}
+                </option>
+              ))}
+            </select>
           </label>
           <label>
             Type
@@ -208,32 +252,31 @@ export default function Community({ tournamentId, competitionId, userId }) {
           <button disabled={busy}>Rejoindre</button>
         </form>
       </div>
-      {detail && (
-        <div className="feature-panel">
-          <h3>{detail.league.name}</h3>
-          <p className="muted">Comparez-vous match par match avec un membre : bouton « Duel ».</p>
-          <Ranking
-            rows={detail.ranking}
-            userId={userId}
-            onDuel={(r) =>
-              action(async () => setDuel((await API.get(`/community/leagues/${detail.league.id}/duel/${r.id}`)).data))
-            }
-          />
-          {duel && duel.league.id === detail.league.id && <DuelView duel={duel} onClose={() => setDuel(null)} />}
-        </div>
-      )}
-      <h3>Classement des clubs</h3>
+      <h3>Clubs et défis</h3>
+      <label className="community-tournament">
+        Tournoi
+        <select value={selected} onChange={(e) => setSelected(e.target.value)}>
+          {tournaments.map((t) => (
+            <option key={t.id} value={t.id}>
+              {t.name}
+              {t.archivedAt ? ' (terminé)' : ''}
+            </option>
+          ))}
+        </select>
+      </label>
+      {selected && <ClubLeague tournamentId={Number(selected)} onJoined={() => setRevision((n) => n + 1)} />}
+      <h4>Classement des clubs</h4>
       <p>
         Moyenne des points de tous les membres, y compris ceux à zéro. Minimum 3 membres ; un seul club par joueur. Les
         inscriptions et départs sont figés au début du tournoi.
       </p>
       {clubs.length ? <Ranking rows={clubs} /> : <p>Aucun club éligible pour ce tournoi.</p>}
-      <h3>Défis de l’épreuve</h3>
+      <h4>Défis du tournoi</h4>
       <p>
         Choisissez un vainqueur pour gagner 3 points bonus. Le barème est fixé à la création ; clôture au début prévu du
         match, ou plus tôt si le résultat est publié. Aucun bonus avant un résultat définitif.
       </p>
-      {!challenges.length && <p>Aucun défi proposé pour cette épreuve.</p>}
+      {!challenges.length && <p>Aucun défi proposé pour ce tournoi.</p>}
       {challenges.map((c) => (
         <article className="prediction-summary" key={c.id}>
           <h4>{c.name}</h4>

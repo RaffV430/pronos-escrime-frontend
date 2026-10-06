@@ -106,7 +106,15 @@ function PublicCompetition({ c }) {
 }
 
 // Page publique d'un tournoi, lisible sans compte : à partager sur les réseaux du club.
+// ?epreuves=1,2 : seulement ces épreuves (lien d'une entrée du calendrier, ex. M17 le samedi).
+const onlyEvents = () =>
+  (new URLSearchParams(location.search).get('epreuves') || '')
+    .split(',')
+    .map(Number)
+    .filter((n) => Number.isSafeInteger(n) && n > 0);
+
 export default function PublicTournament({ id }) {
+  const [only, setOnly] = useState(onlyEvents);
   const [data, setData] = useState(null);
   const [error, setError] = useState('');
   useEffect(() => {
@@ -175,9 +183,27 @@ export default function PublicTournament({ id }) {
                 )}
               </section>
             )}
-            {data.competitions.map((c) => (
-              <PublicCompetition key={c.id} c={c} />
-            ))}
+            {only.length > 0 && data.competitions.some((c) => !only.includes(c.id)) && (
+              <p className="public-filter">
+                {data.competitions.filter((c) => only.includes(c.id)).length} épreuve(s) affichée(s) sur{' '}
+                {data.competitions.length}.{' '}
+                <a
+                  href={`/tournoi/${id}`}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    history.replaceState(null, '', `/tournoi/${id}`);
+                    setOnly([]);
+                  }}
+                >
+                  Voir tout le tournoi
+                </a>
+              </p>
+            )}
+            {data.competitions
+              .filter((c) => !only.length || only.includes(c.id))
+              .map((c) => (
+                <PublicCompetition key={c.id} c={c} />
+              ))}
             <p className="public-join">
               Envie de jouer ? <a href="/">Créez votre compte</a> et pronostiquez les prochaines épreuves.
             </p>
