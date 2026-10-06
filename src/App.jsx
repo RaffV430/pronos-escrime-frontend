@@ -122,8 +122,11 @@ export default function App() {
   useEffect(() => {
     if (!user || !tabFromPath(location.pathname)) return;
     const path = pathForTab(mainTab);
-    if (location.pathname !== path) history.pushState(null, '', `${path}${mainTab === 'play' ? location.search : ''}`);
-    document.title = mainTab === 'play' ? 'Pronos Escrime' : `${TAB_TITLES[mainTab]} · Pronos Escrime`;
+    const target = `${path}${mainTab === 'play' ? location.search : ''}`;
+    // Accueil « / » d'un joueur connecté : remplacé par /pronostiquer (pas d'étape en plus dans l'historique).
+    if (location.pathname === '/') history.replaceState(null, '', target);
+    else if (location.pathname !== path) history.pushState(null, '', target);
+    document.title = `${TAB_TITLES[mainTab]} · Pronos Escrime`;
     const canonical = document.querySelector('link[rel="canonical"]');
     if (canonical) canonical.href = `https://www.pronos-escrime.fr${path}`;
   }, [mainTab, user]);
