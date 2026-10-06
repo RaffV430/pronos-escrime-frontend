@@ -2504,9 +2504,8 @@
   border-color: var(--primary);
   box-shadow: inset 0 0 0 1px var(--primary);
 }
-.theme-choice input {
-  width: auto;
-  margin: 4px 0 0;
+.feature-panel .theme-choice input {
+  margin: 2px 0 0;
 }
 .theme-choice span {
   display: flex;

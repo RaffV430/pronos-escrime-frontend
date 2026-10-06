@@ -320,7 +320,7 @@ summary {
   display: block;
   margin: 12px 0;
 }
-.feature-panel label input:not([type='checkbox']),
+.feature-panel label input:not([type='checkbox']):not([type='radio']),
 .feature-panel label select {
   display: block;
   width: 100%;
