@@ -1,4 +1,16 @@
-// Trophées de la saison : obtenus en couleur, à décrocher en grisé.
+const LEVELS = ['', 'Niv. 1', 'Niv. 2', 'Niv. 3', 'Niv. 4'];
+// Paliers d'un trophée : pastilles remplies jusqu'au niveau atteint.
+function Pips({ level, max }) {
+  return (
+    <span className="badge-pips" aria-hidden="true">
+      {Array.from({ length: max }, (_, i) => (
+        <span key={i} className={i < level ? 'on' : ''} />
+      ))}
+    </span>
+  );
+}
+
+// Trophées de la saison, à 4 niveaux : obtenus en couleur, à décrocher en grisé, progression vers le palier suivant.
 export default function SeasonBadges({ badges }) {
   if (!badges?.length) return null;
   const earned = badges.filter((b) => b.count > 0).length;
@@ -19,9 +31,17 @@ export default function SeasonBadges({ badges }) {
             <div>
               <strong>
                 {b.label}
-                {b.count > 1 && <span className="badge-count"> ×{b.count}</span>}
+                {b.level > 0 && <span className="badge-count"> {LEVELS[b.level] || `Niv. ${b.level}`}</span>}
               </strong>
+              {b.maxLevel > 0 && <Pips level={b.level || 0} max={b.maxLevel} />}
               <small>{b.description}</small>
+              {b.next != null && (
+                <small className="badge-progress">
+                  {b.level > 0 ? 'Niveau suivant' : 'Progression'} : {b.value ?? 0} / {b.next}
+                  {b.level > 0 && b.nextText ? ` (${b.nextText.toLowerCase()})` : ''}
+                </small>
+              )}
+              {b.level > 0 && b.next == null && <small className="badge-progress">Niveau maximum atteint</small>}
               {b.count > 0 && b.where.length > 0 && <small className="badge-where">{b.where[0]}</small>}
               {b.count > 0 && b.where.length > 1 && (
                 <details className="badge-more">
@@ -37,7 +57,7 @@ export default function SeasonBadges({ badges }) {
                   </ul>
                 </details>
               )}
-              {b.count === 0 && <small className="badge-where">À décrocher</small>}
+              {b.count === 0 && b.next == null && <small className="badge-where">À décrocher</small>}
             </div>
           </li>
         ))}

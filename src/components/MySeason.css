@@ -232,3 +232,21 @@
   gap: 2px;
   margin: 4px 0 0;
 }
+/* Niveaux des trophées : 4 pastilles, remplies jusqu'au niveau atteint. */
+.badge-pips {
+  display: inline-flex;
+  gap: 4px;
+  margin: 2px 0;
+}
+.badge-pips span {
+  width: 18px;
+  height: 5px;
+  border-radius: 3px;
+  background: var(--border);
+}
+.badge-pips span.on {
+  background: var(--success);
+}
+.badge-progress {
+  font-weight: 600;
+}

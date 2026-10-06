@@ -24,18 +24,22 @@ export default function DuelView({ duel, onClose }) {
         </div>
       </div>
       <p className="muted">
-        {totals.won} {plural(totals.won, 'match gagné', 'matchs gagnés')} · {totals.lost} {plural(totals.lost, 'perdu')}{' '}
-        · {totals.drawn} à égalité. Seuls les matchs terminés sont comparés.
+        {totals.won} {plural(totals.won, 'gagné', 'gagnés')} · {totals.lost} {plural(totals.lost, 'perdu')} ·{' '}
+        {totals.drawn} à égalité. Matchs, poules et podiums : seuls ceux qui sont terminés sont comparés.
       </p>
-      {!rows.length && <p>Aucun match terminé pronostiqué par l’un de vous deux pour l’instant.</p>}
+      {!rows.length && <p>Rien de terminé pronostiqué par l’un de vous deux pour l’instant.</p>}
       <ul className="duel-rows">
         {rows.map((r) => (
-          <li key={r.matchId} className={`duel-row duel-${r.winner}`}>
+          <li
+            key={`${r.kind || 'match'}-${r.matchId || r.poolId || r.competitionId}`}
+            className={`duel-row duel-${r.winner}`}
+          >
             <div className="duel-match">
               <strong>{r.name}</strong>
               <small>
                 {r.competition}
-                {r.round && ` · ${roundLabel(r.round)}`} · Résultat {r.result}
+                {r.round && ` · ${roundLabel(r.round)}`}
+                {r.kind && r.kind !== 'match' ? ` · ${r.result}` : ` · Résultat ${r.result}`}
               </small>
             </div>
             <div>

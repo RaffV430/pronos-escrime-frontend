@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import API from '../api';
 import PublicHeader from './PublicHeader';
 import InvitationBanner from './InvitationBanner';
+import UpcomingCalendar from './UpcomingCalendar';
 import { MEDALS, cityName, countryName, dateRange, flag } from './eventResults';
 
 const where = (t) =>
@@ -113,6 +114,20 @@ export default function Landing({ children, onRegister, onLogin, invitation = nu
             )}
           </section>
         )}
+
+        <div className="landing-preview landing-calendar">
+          <UpcomingCalendar
+            limit={6}
+            title="Prochaines épreuves"
+            footer={
+              <p className="landing-preview-links">
+                <a className="landing-all" href="/calendrier">
+                  Tout le calendrier →
+                </a>
+              </p>
+            }
+          />
+        </div>
 
         <div className="landing-card" id="connexion">
           {children}
