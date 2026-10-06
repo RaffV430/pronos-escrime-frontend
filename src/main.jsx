@@ -7,6 +7,10 @@ import { startMonitoring, reportError } from './lib/monitoring.js';
 
 startMonitoring();
 
+// Adresse de référence de la page (sans paramètres) : une seule URL par contenu pour les moteurs de recherche.
+const canonical = document.querySelector('link[rel="canonical"]');
+if (canonical) canonical.href = `https://www.pronos-escrime.fr${location.pathname.replace(/\/+$/, '') || '/'}`;
+
 createRoot(document.getElementById('root'), {
   onUncaughtError: (error, info) => reportError(error, { componentStack: info.componentStack }),
   onCaughtError: (error, info) => reportError(error, { componentStack: info.componentStack }),

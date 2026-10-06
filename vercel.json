@@ -25,6 +25,10 @@
   ],
   "rewrites": [
     {
+      "source": "/sitemap.xml",
+      "destination": "https://pronos-escrime.onrender.com/api/public/sitemap.xml"
+    },
+    {
       "source": "/tournoi/:id",
       "has": [
         {

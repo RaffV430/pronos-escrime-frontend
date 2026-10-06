@@ -114,7 +114,25 @@ export default function PublicTournament({ id }) {
     API.get(`/public/tournaments/${id}`, { signal: c.signal })
       .then(({ data }) => {
         setData(data);
-        document.title = `${data.name} · Pronos Escrime`;
+        document.title = `${data.name} : résultats et pronostics · Pronos Escrime`;
+        const golds = data.competitions
+          .map((c) => c.podium.find((p) => p.place === 1))
+          .filter(Boolean)
+          .map((p) => p.name);
+        document
+          .querySelector('meta[name="description"]')
+          ?.setAttribute(
+            'content',
+            [
+              `${data.name}`,
+              data.start && dateRange(data.start, data.end),
+              cityName(data.city),
+              golds.length ? `vainqueurs : ${golds.slice(0, 3).join(', ')}` : 'podiums et tableaux',
+              'classement des pronostiqueurs',
+            ]
+              .filter(Boolean)
+              .join(' · '),
+          );
       })
       .catch((e) => !c.signal.aborted && setError(e.response?.data?.error || 'Page indisponible.'));
     return () => c.abort();

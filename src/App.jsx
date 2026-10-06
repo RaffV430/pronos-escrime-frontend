@@ -20,6 +20,7 @@ import ErrorBoundary from './components/ErrorBoundary';
 import { pollWhileVisible } from './lib/polling';
 import { ClubContext, clubValue } from './lib/club';
 import BrandMark from './components/BrandMark';
+import Landing from './components/Landing';
 // Outils d'administration chargés à la demande : les joueurs ne les téléchargent jamais.
 const AdminPanel = lazy(() => import('./components/AdminPanel'));
 const FtlControl = lazy(() => import('./components/FtlControl'));
@@ -592,100 +593,102 @@ export default function App() {
   }
 
   return (
-    <div className="auth-card">
-      {forgotPassword ? (
-        <ForgotPassword onBack={() => setForgotPassword(false)} />
-      ) : (
-        <>
-          <h2>{isRegister ? 'Inscription' : 'Connexion'}</h2>
-          {error && (
-            <p role="alert" className="form-error">
-              {error}
-            </p>
-          )}
-          <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-            {isRegister && (
-              <input
-                type="text"
-                aria-label="Nom d'utilisateur"
-                autoComplete="nickname"
-                placeholder="Nom d'utilisateur"
-                required
-                value={formData.username}
-                onChange={(e) => setFormData({ ...formData, username: e.target.value })}
-              />
+    <Landing>
+      <div className="auth-card">
+        {forgotPassword ? (
+          <ForgotPassword onBack={() => setForgotPassword(false)} />
+        ) : (
+          <>
+            <h2>{isRegister ? 'Inscription' : 'Connexion'}</h2>
+            {error && (
+              <p role="alert" className="form-error">
+                {error}
+              </p>
             )}
-            <input
-              type={isRegister ? 'email' : 'text'}
-              aria-label={isRegister ? 'Adresse e-mail' : 'Identifiant ou adresse e-mail'}
-              autoComplete={isRegister ? 'email' : 'username'}
-              autoCapitalize="none"
-              placeholder={isRegister ? 'Email' : 'Identifiant ou e-mail'}
-              required
-              value={formData.email}
-              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-            />
-            <div className="password-field">
+            <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              {isRegister && (
+                <input
+                  type="text"
+                  aria-label="Nom d'utilisateur"
+                  autoComplete="nickname"
+                  placeholder="Nom d'utilisateur"
+                  required
+                  value={formData.username}
+                  onChange={(e) => setFormData({ ...formData, username: e.target.value })}
+                />
+              )}
               <input
-                id="auth-password"
-                aria-label="Mot de passe"
-                type={showPassword ? 'text' : 'password'}
-                autoComplete={isRegister ? 'new-password' : 'current-password'}
-                placeholder="Mot de passe"
+                type={isRegister ? 'email' : 'text'}
+                aria-label={isRegister ? 'Adresse e-mail' : 'Identifiant ou adresse e-mail'}
+                autoComplete={isRegister ? 'email' : 'username'}
+                autoCapitalize="none"
+                placeholder={isRegister ? 'Email' : 'Identifiant ou e-mail'}
                 required
-                value={formData.password}
-                onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                value={formData.email}
+                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
               />
+              <div className="password-field">
+                <input
+                  id="auth-password"
+                  aria-label="Mot de passe"
+                  type={showPassword ? 'text' : 'password'}
+                  autoComplete={isRegister ? 'new-password' : 'current-password'}
+                  placeholder="Mot de passe"
+                  required
+                  value={formData.password}
+                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                />
+                <button
+                  type="button"
+                  className="button-secondary"
+                  aria-controls="auth-password"
+                  aria-label={showPassword ? 'Masquer le mot de passe' : 'Afficher le mot de passe'}
+                  onClick={() => setShowPassword((visible) => !visible)}
+                >
+                  {showPassword ? 'Masquer' : 'Afficher'}
+                </button>
+              </div>
+              {twoFactor && !isRegister && (
+                <input
+                  aria-label="Code de vérification"
+                  placeholder="Code à 6 chiffres de votre application"
+                  inputMode="numeric"
+                  autoComplete="one-time-code"
+                  pattern="[0-9 ]{6,7}"
+                  required
+                  autoFocus
+                  value={twoFactorCode}
+                  onChange={(e) => setTwoFactorCode(e.target.value)}
+                />
+              )}
+              <button type="submit">{isRegister ? "S'inscrire" : 'Se connecter'}</button>
+            </form>
+            {!isRegister && passwordReset && (
+              <p>
+                <button className="button-link" onClick={() => setForgotPassword(true)}>
+                  Mot de passe oublié ?
+                </button>
+              </p>
+            )}
+            <p style={{ marginTop: '15px' }}>
+              {isRegister ? 'Déjà un compte ?' : 'Pas encore de compte ?'}{' '}
               <button
-                type="button"
-                className="button-secondary"
-                aria-controls="auth-password"
-                aria-label={showPassword ? 'Masquer le mot de passe' : 'Afficher le mot de passe'}
-                onClick={() => setShowPassword((visible) => !visible)}
+                className="button-link"
+                onClick={() => {
+                  setIsRegister(!isRegister);
+                  setShowPassword(false);
+                }}
+                style={{ textDecoration: 'underline' }}
               >
-                {showPassword ? 'Masquer' : 'Afficher'}
-              </button>
-            </div>
-            {twoFactor && !isRegister && (
-              <input
-                aria-label="Code de vérification"
-                placeholder="Code à 6 chiffres de votre application"
-                inputMode="numeric"
-                autoComplete="one-time-code"
-                pattern="[0-9 ]{6,7}"
-                required
-                autoFocus
-                value={twoFactorCode}
-                onChange={(e) => setTwoFactorCode(e.target.value)}
-              />
-            )}
-            <button type="submit">{isRegister ? "S'inscrire" : 'Se connecter'}</button>
-          </form>
-          {!isRegister && passwordReset && (
-            <p>
-              <button className="button-link" onClick={() => setForgotPassword(true)}>
-                Mot de passe oublié ?
+                {isRegister ? 'Se connecter' : "S'inscrire"}
               </button>
             </p>
-          )}
-          <p style={{ marginTop: '15px' }}>
-            {isRegister ? 'Déjà un compte ?' : 'Pas encore de compte ?'}{' '}
-            <button
-              className="button-link"
-              onClick={() => {
-                setIsRegister(!isRegister);
-                setShowPassword(false);
-              }}
-              style={{ textDecoration: 'underline' }}
-            >
-              {isRegister ? 'Se connecter' : "S'inscrire"}
-            </button>
-          </p>
-        </>
-      )}
-      <p className="muted auth-legal">
-        <LegalLinks />
-      </p>
-    </div>
+          </>
+        )}
+        <p className="muted auth-legal">
+          <LegalLinks />
+        </p>
+      </div>
+    </Landing>
   );
 }

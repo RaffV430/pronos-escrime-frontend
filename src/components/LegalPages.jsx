@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 // Mentions légales et politique de confidentialité, accessibles sans connexion
 // aux adresses /mentions-legales et /confidentialite.
 const EDITOR = 'Raffaele Venturi';
@@ -122,6 +123,9 @@ function Privacy() {
 }
 
 export function LegalPage({ page }) {
+  useEffect(() => {
+    document.title = `${page === 'legal' ? 'Mentions légales' : 'Politique de confidentialité'} · Pronos Escrime`;
+  }, [page]);
   return (
     <main className="legal-page feature-panel">
       <p>
