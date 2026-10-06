@@ -61,7 +61,7 @@ export default function CalendarWatch() {
               {GENDERS[e.gender]?.icon} {e.categories.join(', ')}
             </span>
             {e.tournamentId ? (
-              <a href={`/tournoi/${e.tournamentId}`}>✅ sur l’appli</a>
+              <a href={`/tournoi/${e.tournamentId}?epreuves=${(e.competitionIds || []).join(',')}`}>✅ sur l’appli</a>
             ) : (
               <span className="muted">⏳ en attente de publication</span>
             )}

@@ -148,14 +148,7 @@ export default function App() {
       try {
         const { data } = await API.post('/community/join', { code: invitation });
         const league = data.league;
-        const events = await API.get(`/podium/competitions/${league.tournamentId}`)
-          .then((r) => (Array.isArray(r.data) ? r.data : []))
-          .catch(() => []);
-        history.replaceState(
-          null,
-          '',
-          events[0] ? `/communaute?tournament=${league.tournamentId}&event=${events[0].id}` : '/communaute',
-        );
+        history.replaceState(null, '', '/communaute');
         setInviteNotice(`Vous avez rejoint « ${league.name} ». Bienvenue !`);
       } catch (e) {
         setInviteNotice(e.response?.data?.error || 'Impossible de rejoindre le groupe. Réessayez avec le code.');
@@ -439,23 +432,17 @@ export default function App() {
                   </button>
                 </p>
               )}
-              {!['season', 'account', 'mine', 'results', 'leaderboard'].includes(mainTab) && (
+              {!['season', 'account', 'mine', 'results', 'leaderboard', 'community'].includes(mainTab) && (
                 <EventSelector
                   key={`${user.id}:${eventListVersion}:${mainTab === 'play' ? 'active' : 'history'}`}
                   includeArchived={mainTab !== 'play'}
-                  {...(mainTab === 'community'
+                  {...(mainTab === 'admin'
                     ? {
-                        title: 'Choisissez un tournoi',
-                        intro: 'Groupes entre amis, ligues de club et défis sont propres à chaque tournoi.',
-                        submitLabel: 'Afficher',
+                        title: 'Épreuve à administrer',
+                        intro: 'Choisissez l’épreuve dont vous voulez gérer les matchs, les poules et les résultats.',
+                        submitLabel: 'Ouvrir',
                       }
-                    : mainTab === 'admin'
-                      ? {
-                          title: 'Épreuve à administrer',
-                          intro: 'Choisissez l’épreuve dont vous voulez gérer les matchs, les poules et les résultats.',
-                          submitLabel: 'Ouvrir',
-                        }
-                      : {})}
+                    : {})}
                   userId={user.id}
                   beforeChange={runNavigation}
                   onReset={() => {
@@ -497,6 +484,8 @@ export default function App() {
                 </details>
               )}
               {/* Classement général consultable sans choisir d'épreuve. */}
+              {/* Communauté : tous les groupes, sans choisir d'épreuve au préalable. */}
+              {mainTab === 'community' && <Community tournamentId={tournamentId} userId={user.id} />}
               {mainTab === 'leaderboard' && (
                 <GlobalLeaderboard userId={user.id} tournamentId={tournamentId} competitionId={selectedCompetitionId} />
               )}
@@ -651,14 +640,6 @@ export default function App() {
                         </>
                       )}
                     </>
-                  )}
-                  {mainTab === 'community' && (
-                    <Community
-                      key={selectedCompetitionId}
-                      competitionId={selectedCompetitionId}
-                      tournamentId={tournamentId}
-                      userId={user.id}
-                    />
                   )}
                   {mainTab === 'admin' && user.isAdmin && (
                     <Suspense fallback={adminFallback}>

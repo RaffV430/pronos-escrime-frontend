@@ -2627,3 +2627,14 @@
   border-bottom: 1px solid var(--border);
   font-size: 0.9rem;
 }
+.league-tournament {
+  display: block;
+  color: var(--muted);
+}
+.community-tournament select {
+  max-width: 28rem;
+}
+.public-filter {
+  margin: 12px 0 0;
+  color: var(--muted);
+}
