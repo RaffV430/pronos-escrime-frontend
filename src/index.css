@@ -590,6 +590,10 @@ button[aria-pressed='true'] {
   gap: 8px;
   max-width: 600px;
 }
+.landing-results {
+  margin: 0 0 20px;
+  font-weight: 600;
+}
 .landing-tournaments h2 {
   font-size: 18px;
   margin: 0 0 8px;

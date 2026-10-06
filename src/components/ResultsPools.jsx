@@ -3,6 +3,7 @@ import API from '../api';
 import { plural } from './resultPresentation';
 import { poolRounds, poolStanding } from './eventResults';
 import { FencerLink } from './FencerProfile';
+import { usePublicMode } from '../lib/publicMode';
 import { closeOnBackdrop } from './dialogBackdrop';
 
 const hasBouts = (pool) => Array.isArray(pool.bouts) && pool.bouts.length === pool.fencers.length;
@@ -10,6 +11,7 @@ const signed = (n) => (n > 0 ? `+${n}` : String(n));
 
 // Fenêtre d'un tireur de poule : bilan officiel, puis le pronostic du joueur et ses points.
 function FencerDialog({ fencer, pool, onClose }) {
+  const publicMode = usePublicMode();
   const ref = useRef(null);
   useEffect(() => {
     if (ref.current && !ref.current.open) ref.current.showModal?.();
@@ -35,25 +37,27 @@ function FencerDialog({ fencer, pool, onClose }) {
       <p>
         <FencerLink name={fencer.name}>Voir son parcours sur toutes les épreuves</FencerLink>
       </p>
-      <section className="result-mine" aria-label="Mon pronostic">
-        <h3>Mon pronostic</h3>
-        {p ? (
-          <p>
-            {p.wins} V · {p.losses} D · indice {signed(p.indicator)}
-            {pool.isFinal && (
-              <>
-                {' · '}
-                <strong>
-                  {p.pointsEarned > 0 ? '+' : ''}
-                  {p.pointsEarned} {plural(p.pointsEarned, 'pt')}
-                </strong>
-              </>
-            )}
-          </p>
-        ) : (
-          <p className="muted">Pas de pronostic sur ce tireur.</p>
-        )}
-      </section>
+      {!publicMode && (
+        <section className="result-mine" aria-label="Mon pronostic">
+          <h3>Mon pronostic</h3>
+          {p ? (
+            <p>
+              {p.wins} V · {p.losses} D · indice {signed(p.indicator)}
+              {pool.isFinal && (
+                <>
+                  {' · '}
+                  <strong>
+                    {p.pointsEarned > 0 ? '+' : ''}
+                    {p.pointsEarned} {plural(p.pointsEarned, 'pt')}
+                  </strong>
+                </>
+              )}
+            </p>
+          ) : (
+            <p className="muted">Pas de pronostic sur ce tireur.</p>
+          )}
+        </section>
+      )}
       <button type="button" className="button-secondary" onClick={() => ref.current?.close()}>
         Fermer
       </button>
@@ -133,16 +137,20 @@ function PoolMatrix({ pool, onOpen }) {
 
 // Poules d'une épreuve, regroupées par tour : classement de chaque poule (victoires, indice).
 export default function ResultsPools({ competitionId }) {
+  const publicMode = usePublicMode();
   const [pools, setPools] = useState(null);
   const [error, setError] = useState('');
   const [open, setOpen] = useState(null);
   useEffect(() => {
     const c = new AbortController();
-    API.get('/pools', { params: { competitionId }, signal: c.signal })
+    (publicMode
+      ? API.get(`/public/competitions/${competitionId}/pools`, { signal: c.signal })
+      : API.get('/pools', { params: { competitionId }, signal: c.signal })
+    )
       .then(({ data }) => setPools(data))
       .catch(() => !c.signal.aborted && setError('Poules indisponibles.'));
     return () => c.abort();
-  }, [competitionId]);
+  }, [competitionId, publicMode]);
   if (error) return <p className="muted">{error}</p>;
   if (!pools) return <p className="muted">Chargement…</p>;
   if (!pools.length) return <p className="muted">Aucune poule suivie pour cette épreuve.</p>;

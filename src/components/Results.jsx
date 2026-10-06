@@ -20,6 +20,7 @@ import ResultsBracket from './ResultsBracket';
 import ResultsPools from './ResultsPools';
 import { FencerLink } from './FencerProfile';
 import { buildTree } from './bracketTree';
+import { usePublicMode } from '../lib/publicMode';
 import './Results.css';
 import { closeOnBackdrop } from './dialogBackdrop';
 
@@ -27,6 +28,7 @@ const place = (codes) => (codes || []).map((c) => `${flag(c)} ${countryName(c)}`
 
 // Fenêtre d'un match : résultat officiel, puis, à la demande, le pronostic du joueur et ses points.
 function MatchDialog({ match, onClose }) {
+  const publicMode = usePublicMode();
   const ref = useRef(null);
   useEffect(() => {
     const d = ref.current;
@@ -85,26 +87,28 @@ function MatchDialog({ match, onClose }) {
         <p>Abandon : {match.winner === 1 ? match.player1 : match.player2} qualifié(e).</p>
       )}
       {match.pointsPending && <p className="muted">Résultat en cours de vérification.</p>}
-      <section className="result-mine" aria-label="Mon pronostic">
-        <h3>Mon pronostic</h3>
-        {p ? (
-          <p>
-            {p.predictedScore1}–{p.predictedScore2}
-            {!match.pointsPending && (
-              <>
-                {' · '}
-                <strong>
-                  {total > 0 ? '+' : ''}
-                  {total} {plural(total, 'pt')}
-                </strong>
-                {p.bonusPoints > 0 && <small className="muted"> dont {p.bonusPoints} de bonus outsider</small>}
-              </>
-            )}
-          </p>
-        ) : (
-          <p className="muted">Pas de pronostic sur ce match.</p>
-        )}
-      </section>
+      {!publicMode && (
+        <section className="result-mine" aria-label="Mon pronostic">
+          <h3>Mon pronostic</h3>
+          {p ? (
+            <p>
+              {p.predictedScore1}–{p.predictedScore2}
+              {!match.pointsPending && (
+                <>
+                  {' · '}
+                  <strong>
+                    {total > 0 ? '+' : ''}
+                    {total} {plural(total, 'pt')}
+                  </strong>
+                  {p.bonusPoints > 0 && <small className="muted"> dont {p.bonusPoints} de bonus outsider</small>}
+                </>
+              )}
+            </p>
+          ) : (
+            <p className="muted">Pas de pronostic sur ce match.</p>
+          )}
+        </section>
+      )}
       <button type="button" className="button-secondary" onClick={() => ref.current?.close()}>
         Fermer
       </button>
@@ -114,16 +118,20 @@ function MatchDialog({ match, onClose }) {
 
 // Tableau d'une épreuve : tours du premier à la finale, un match par ligne (vainqueur en premier).
 function CompetitionMatches({ competitionId }) {
+  const publicMode = usePublicMode();
   const [matches, setMatches] = useState(null);
   const [error, setError] = useState('');
   const [open, setOpen] = useState(null);
   useEffect(() => {
     const c = new AbortController();
-    API.get('/matches', { params: { competitionId }, signal: c.signal })
+    (publicMode
+      ? API.get(`/public/competitions/${competitionId}/matches`, { signal: c.signal })
+      : API.get('/matches', { params: { competitionId }, signal: c.signal })
+    )
       .then(({ data }) => setMatches(playedMatches(data)))
       .catch(() => !c.signal.aborted && setError('Tableau indisponible.'));
     return () => c.abort();
-  }, [competitionId]);
+  }, [competitionId, publicMode]);
   if (error) return <p className="muted">{error}</p>;
   if (!matches) return <p className="muted">Chargement…</p>;
   if (!matches.length) return <p className="muted">Aucun match de tableau suivi pour cette épreuve.</p>;
@@ -240,6 +248,7 @@ function PublicLink({ tournament }) {
 }
 
 export default function Results() {
+  const publicMode = usePublicMode();
   const [data, setData] = useState(null);
   const [error, setError] = useState('');
   const [revision, setRevision] = useState(0);
@@ -251,11 +260,11 @@ export default function Results() {
   useEffect(() => {
     const c = new AbortController();
     setError('');
-    API.get('/results', { signal: c.signal })
+    API.get(publicMode ? '/public/results' : '/results', { signal: c.signal })
       .then(({ data }) => setData(data))
       .catch((e) => !c.signal.aborted && setError(e.response?.data?.error || 'Chargement impossible. Réessayez.'));
     return () => c.abort();
-  }, [revision]);
+  }, [revision, publicMode]);
 
   const seasons = useMemo(() => seasonsOf(data), [data]);
   const countries = useMemo(() => countriesOf(data), [data]);
@@ -274,8 +283,8 @@ export default function Results() {
         </div>
       </div>
       <p className="muted">
-        Podiums, tableaux et poules des tournois passés. Touchez un match ou un tireur pour voir le résultat et, si vous
-        l’aviez pronostiqué, vos points.
+        Podiums, tableaux et poules des tournois passés. Touchez un match ou un tireur pour voir le résultat
+        {publicMode ? ' et le parcours de chaque tireur.' : ' et, si vous l’aviez pronostiqué, vos points.'}
       </p>
       {error && (
         <p role="alert">
