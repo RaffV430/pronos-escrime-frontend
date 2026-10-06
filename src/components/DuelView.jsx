@@ -1,7 +1,7 @@
 import { roundLabel } from './matchPresentation';
 import { plural } from './resultPresentation';
 
-// Duel entre deux membres d'une ligue, sur les matchs terminés du tournoi.
+// Duel avec un autre joueur (ligue ou Classements), sur les matchs terminés uniquement.
 export default function DuelView({ duel, onClose }) {
   const { totals, rows, opponent } = duel;
   return (

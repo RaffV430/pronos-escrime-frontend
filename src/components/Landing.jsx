@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import API from '../api';
 import PublicHeader from './PublicHeader';
+import InvitationBanner from './InvitationBanner';
 import { MEDALS, cityName, countryName, dateRange, flag } from './eventResults';
 
 const where = (t) =>
@@ -14,7 +15,7 @@ const where = (t) =>
 
 // Accueil sans compte : deux portes d'entrée (le jeu et les résultats), aperçu des derniers résultats,
 // puis le formulaire de connexion. Contenu lisible par les moteurs de recherche.
-export default function Landing({ children, onRegister, onLogin }) {
+export default function Landing({ children, onRegister, onLogin, invitation = null, onInvitationInvalid }) {
   const [results, setResults] = useState(null);
   const [tournaments, setTournaments] = useState([]);
   useEffect(() => {
@@ -40,6 +41,14 @@ export default function Landing({ children, onRegister, onLogin }) {
     <div className="landing-page">
       <PublicHeader onLogin={() => focusLogin(false)} />
       <div className="landing">
+        {invitation && (
+          <InvitationBanner
+            code={invitation}
+            onRegister={() => focusLogin(true)}
+            onLogin={() => focusLogin(false)}
+            onInvalid={onInvitationInvalid}
+          />
+        )}
         <section className="landing-hero" aria-labelledby="landing-title">
           <h1 id="landing-title">Pronostics d’escrime entre passionnés</h1>
           <p className="landing-lead">

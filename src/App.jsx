@@ -10,6 +10,7 @@ import { ForgotPassword, ResetPassword } from './components/AccountRecovery';
 import { LegalPage, LegalLinks } from './components/LegalPages';
 import { legalPageFor } from './lib/legal.js';
 import { TAB_TITLES, pathForTab, tabFromPath } from './lib/routes.js';
+import { captureInvitation, clearInvitation } from './lib/invitation.js';
 import ResultFreshness from './components/ResultFreshness';
 import ClosingCountdown from './components/ClosingCountdown';
 import InstallApp from './components/InstallApp';
@@ -45,6 +46,10 @@ const Community = lazy(() => import('./components/Community'));
 const tabFallback = <p className="muted load-state">Chargement…</p>;
 
 export default function App() {
+  // Lien d'invitation (/rejoindre/<code>) : lu avant tout le reste, l'adresse redevient « / ».
+  const [invitation, setInvitation] = useState(() => captureInvitation());
+  const [inviteNotice, setInviteNotice] = useState('');
+  const joining = useRef(false);
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [sessionError, setSessionError] = useState(false);
@@ -130,6 +135,33 @@ export default function App() {
     const canonical = document.querySelector('link[rel="canonical"]');
     if (canonical) canonical.href = `https://www.pronos-escrime.fr${path}`;
   }, [mainTab, user]);
+
+  // Connecté avec une invitation en attente : le groupe est rejoint, puis Communauté s'ouvre sur son tournoi.
+  useEffect(() => {
+    if (!user || !invitation || joining.current) return;
+    joining.current = true;
+    clearInvitation();
+    (async () => {
+      try {
+        const { data } = await API.post('/community/join', { code: invitation });
+        const league = data.league;
+        const events = await API.get(`/podium/competitions/${league.tournamentId}`)
+          .then((r) => (Array.isArray(r.data) ? r.data : []))
+          .catch(() => []);
+        history.replaceState(
+          null,
+          '',
+          events[0] ? `/communaute?tournament=${league.tournamentId}&event=${events[0].id}` : '/communaute',
+        );
+        setInviteNotice(`Vous avez rejoint « ${league.name} ». Bienvenue !`);
+      } catch (e) {
+        setInviteNotice(e.response?.data?.error || 'Impossible de rejoindre le groupe. Réessayez avec le code.');
+      }
+      setInvitation(null);
+      setMainTab('community');
+      joining.current = false;
+    })();
+  }, [user, invitation]);
 
   const [pendingNavigation, setPendingNavigation] = useState(null);
   const runNavigation = (action) => {
@@ -388,6 +420,14 @@ export default function App() {
                   }}
                 />
               )}
+              {inviteNotice && mainTab === 'community' && (
+                <p role="status" className="invite-notice">
+                  <span>{inviteNotice}</span>
+                  <button type="button" className="button-secondary" onClick={() => setInviteNotice('')}>
+                    OK
+                  </button>
+                </p>
+              )}
               {!['season', 'account', 'mine', 'results', 'leaderboard'].includes(mainTab) && (
                 <EventSelector
                   key={`${user.id}:${eventListVersion}:${mainTab === 'play' ? 'active' : 'history'}`}
@@ -642,6 +682,8 @@ export default function App() {
 
   return (
     <Landing
+      invitation={invitation}
+      onInvitationInvalid={() => setInvitation(null)}
       onRegister={() => {
         setForgotPassword(false);
         setIsRegister(true);

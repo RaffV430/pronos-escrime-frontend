@@ -3,6 +3,7 @@ import API from '../api';
 import DuelView from './DuelView';
 import ClubLeague from './ClubLeague';
 import { withCount } from '../lib/plural';
+import { invitationUrl } from '../lib/invitation';
 function Ranking({ rows, onDuel, userId }) {
   return (
     <ol className="ranking-list">
@@ -88,7 +89,7 @@ export default function Community({ tournamentId, competitionId, userId }) {
             action(async () => {
               await API.post('/community/leagues', { name, kind, tournamentId });
               setName('');
-              setMessage('Groupe créé. Partagez son code avec vos proches.');
+              setMessage('Groupe créé. Partagez son lien d’invitation avec vos proches.');
             });
           }}
         >
@@ -132,20 +133,20 @@ export default function Community({ tournamentId, competitionId, userId }) {
           <strong>{l.name}</strong> · {l.kind === 'CLUB' ? 'Club' : 'Ligue privée'} ·{' '}
           {withCount(l._count.members, 'membre')}
           <p>
-            Code à partager : <code>{l.code}</code>
+            Code d’invitation : <code>{l.code}</code>
           </p>
           <button
             className="button-secondary"
             onClick={async () => {
               try {
-                await navigator.clipboard.writeText(l.code);
-                setMessage('Code d’invitation copié.');
+                await navigator.clipboard.writeText(invitationUrl(l.code));
+                setMessage('Lien d’invitation copié : il suffit de l’ouvrir pour rejoindre le groupe.');
               } catch {
                 setMessage('Copiez le code affiché ci-dessus.');
               }
             }}
           >
-            Copier l’invitation
+            Copier le lien
           </button>
           <button
             className="button-secondary"
@@ -154,12 +155,12 @@ export default function Community({ tournamentId, competitionId, userId }) {
                 if (navigator.share)
                   await navigator.share({
                     title: l.name,
-                    text: `Rejoignez ${l.name} sur Pronos Escrime avec le code ${l.code}`,
-                    url: window.location.origin,
+                    text: `Rejoignez « ${l.name} » sur Pronos Escrime :`,
+                    url: invitationUrl(l.code),
                   });
                 else {
-                  await navigator.clipboard.writeText(`${window.location.origin} · Code : ${l.code}`);
-                  setMessage('Lien et code copiés.');
+                  await navigator.clipboard.writeText(invitationUrl(l.code));
+                  setMessage('Lien d’invitation copié.');
                 }
               } catch (e) {
                 if (e.name !== 'AbortError') setMessage('Copiez le code affiché ci-dessus.');
