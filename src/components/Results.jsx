@@ -75,7 +75,8 @@ function MatchDialog({ match, onClose }) {
               <tr key={n} className={s.won ? 'is-win' : ''}>
                 <td className="muted">{s.seed ? `(${s.seed})` : ''}</td>
                 <td>
-                  <FencerLink name={s.name} /> {s.country && <small className="muted">{s.country}</small>}
+                  <FencerLink name={s.name} matchId={match.id} />{' '}
+                  {s.country && <small className="muted">{s.country}</small>}
                 </td>
                 <td className="result-score">{match.resultType === 'MEDICAL_WITHDRAWAL' ? '' : (s.score ?? '')}</td>
               </tr>

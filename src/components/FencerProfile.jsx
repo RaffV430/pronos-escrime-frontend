@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import API from '../api';
 import { roundName } from './eventResults';
 import { closeOnBackdrop } from './dialogBackdrop';
@@ -10,7 +11,7 @@ const day = (d) =>
 const touches = (b) => (b.given !== null && b.received !== null ? `${b.given}–${b.received}` : '');
 const bilan = (w, l) => `${w} V – ${l} D`;
 
-function Competition({ c, open }) {
+function Competition({ c, open, matchId }) {
   return (
     <details className="fp-competition" open={open}>
       <summary>
@@ -51,7 +52,10 @@ function Competition({ c, open }) {
           <h4>Tableau</h4>
           <ul className="fp-bouts">
             {c.tableau.map((m) => (
-              <li key={m.matchId} className={m.won ? 'is-win' : 'is-loss'}>
+              <li
+                key={m.matchId}
+                className={`${m.won ? 'is-win' : 'is-loss'}${m.matchId === matchId ? ' is-current' : ''}`}
+              >
                 <span className="fp-mark">{m.won ? 'V' : 'D'}</span>{' '}
                 {m.medical ? 'abandon' : m.score ? `${m.score[0]}–${m.score[1]}` : ''}{' '}
                 <span className="fp-opponent">
@@ -69,7 +73,7 @@ function Competition({ c, open }) {
 }
 
 // Fiche d'un tireur : son parcours dans toutes les épreuves suivies par l'application.
-export default function FencerProfile({ name, onClose }) {
+export default function FencerProfile({ name, onClose, matchId = null }) {
   const ref = useRef(null);
   const [data, setData] = useState(null);
   const [error, setError] = useState('');
@@ -114,7 +118,12 @@ export default function FencerProfile({ name, onClose }) {
               : 'Aucune épreuve suivie pour ce tireur.'}
           </p>
           {data.competitions.map((c, i) => (
-            <Competition key={c.competitionId} c={c} open={i === 0} />
+            <Competition
+              key={c.competitionId}
+              c={c}
+              matchId={matchId}
+              open={matchId ? c.tableau.some((m) => m.matchId === matchId) : i === 0}
+            />
           ))}
         </>
       )}
@@ -126,7 +135,7 @@ export default function FencerProfile({ name, onClose }) {
 }
 
 // Nom cliquable qui ouvre la fiche du tireur.
-export function FencerLink({ name, children, className = '' }) {
+export function FencerLink({ name, children, className = '', matchId = null }) {
   const [open, setOpen] = useState(false);
   if (!name?.trim()) return children || null;
   return (
@@ -142,7 +151,9 @@ export function FencerLink({ name, children, className = '' }) {
       >
         {children || name}
       </button>
-      {open && <FencerProfile name={name} onClose={() => setOpen(false)} />}
+      {/* Fenêtre attachée à la page, pas au texte cliqué : elle n'hérite d'aucun style (gras du vainqueur…). */}
+      {open &&
+        createPortal(<FencerProfile name={name} matchId={matchId} onClose={() => setOpen(false)} />, document.body)}
     </>
   );
 }

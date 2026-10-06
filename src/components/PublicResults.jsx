@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import BrandMark from './BrandMark';
+import PublicHeader from './PublicHeader';
 import Results from './Results';
 import { LegalLinks } from './LegalPages';
 import { PublicMode } from '../lib/publicMode';
@@ -17,15 +17,7 @@ export default function PublicResults() {
   }, []);
   return (
     <div className="app-shell redesigned public-page">
-      <header className="app-header">
-        <a className="brand" href="/" aria-label="Pronos Escrime, accueil">
-          <BrandMark />
-          pronos<span>escrime</span>
-        </a>
-        <a className="button-link public-cta" href="/">
-          Pronostiquer avec nous
-        </a>
-      </header>
+      <PublicHeader current="results" />
       <PublicMode.Provider value={true}>
         <Results />
       </PublicMode.Provider>
