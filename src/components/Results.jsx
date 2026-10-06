@@ -18,6 +18,7 @@ import {
 } from './eventResults';
 import ResultsBracket from './ResultsBracket';
 import ResultsPools from './ResultsPools';
+import { FencerLink } from './FencerProfile';
 import { buildTree } from './bracketTree';
 import './Results.css';
 import { closeOnBackdrop } from './dialogBackdrop';
@@ -72,7 +73,7 @@ function MatchDialog({ match, onClose }) {
               <tr key={n} className={s.won ? 'is-win' : ''}>
                 <td className="muted">{s.seed ? `(${s.seed})` : ''}</td>
                 <td>
-                  {s.name} {s.country && <small className="muted">{s.country}</small>}
+                  <FencerLink name={s.name} /> {s.country && <small className="muted">{s.country}</small>}
                 </td>
                 <td className="result-score">{match.resultType === 'MEDICAL_WITHDRAWAL' ? '' : (s.score ?? '')}</td>
               </tr>
