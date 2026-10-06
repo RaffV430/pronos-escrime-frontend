@@ -23,6 +23,9 @@ export default function EventSelector({
   onReset,
   beforeChange = (action) => action(),
   includeArchived = false,
+  title = 'Choisissez vos pronostics',
+  intro = 'Sélectionnez une compétition, puis l’épreuve sur laquelle vous souhaitez pronostiquer.',
+  submitLabel = null,
 }) {
   const storageKey = 'pronos:last-event:' + userId;
   const link = new URLSearchParams(location.search);
@@ -206,9 +209,9 @@ export default function EventSelector({
       }}
     >
       <h2 id="event-choice" style={{ marginTop: 0 }}>
-        Choisissez vos pronostics
+        {title}
       </h2>
-      <p>Sélectionnez une compétition, puis l’épreuve sur laquelle vous souhaitez pronostiquer.</p>
+      <p>{intro}</p>
       <form
         onSubmit={(e) => {
           e.preventDefault();
@@ -277,13 +280,20 @@ export default function EventSelector({
             </button>
           </p>
         )}
-        {!loading && !error && !tournaments.length && <p>Aucune compétition disponible pour le moment.</p>}
+        {!loading && !error && !tournaments.length && (
+          <p>
+            {includeArchived
+              ? 'Aucune compétition pour le moment.'
+              : 'Aucune compétition ouverte aux pronostics pour le moment : vous serez prévenu dès qu’une nouvelle épreuve s’ouvre si les notifications sont activées.'}{' '}
+            <a href="/resultats">Voir les résultats des dernières compétitions</a>
+          </p>
+        )}
         {!loading && !error && tournamentId && !events.length && (
           <p>Aucune épreuve disponible pour cette compétition.</p>
         )}
-        {!confirmed && (
+        {!confirmed && (loading || error || tournaments.length > 0) && (
           <button type="submit" disabled={!eventId || loading || !!error} style={{ marginTop: '16px' }}>
-            Accéder aux pronostics
+            {submitLabel || 'Accéder aux pronostics'}
           </button>
         )}
       </form>

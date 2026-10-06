@@ -321,7 +321,11 @@ export default function App() {
             <div className="account-actions">
               <span>{user.name || user.username}</span>
               {user.isAdmin && (
-                <button className="button-secondary" onClick={() => navigate('admin')}>
+                <button
+                  className="button-secondary"
+                  aria-current={mainTab === 'admin' ? 'page' : undefined}
+                  onClick={() => navigate('admin')}
+                >
                   Administration
                 </button>
               )}
@@ -388,6 +392,19 @@ export default function App() {
                 <EventSelector
                   key={`${user.id}:${eventListVersion}:${mainTab === 'play' ? 'active' : 'history'}`}
                   includeArchived={mainTab !== 'play'}
+                  {...(mainTab === 'community'
+                    ? {
+                        title: 'Choisissez un tournoi',
+                        intro: 'Groupes entre amis, ligues de club et défis sont propres à chaque tournoi.',
+                        submitLabel: 'Afficher',
+                      }
+                    : mainTab === 'admin'
+                      ? {
+                          title: 'Épreuve à administrer',
+                          intro: 'Choisissez l’épreuve dont vous voulez gérer les matchs, les poules et les résultats.',
+                          submitLabel: 'Ouvrir',
+                        }
+                      : {})}
                   userId={user.id}
                   beforeChange={runNavigation}
                   onReset={() => {

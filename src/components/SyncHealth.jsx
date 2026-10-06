@@ -54,7 +54,7 @@ export default function SyncHealth() {
   return (
     <details className={`feature-panel sync-health ${s?.error ? 'has-error' : ''}`} open={open}>
       <summary>
-        Suivi FencingTimeLive{' '}
+        Suivi des sites officiels{' '}
         {s && (
           <span className="sync-health-summary">
             {s.error > 0 && `❌ ${s.error} en panne · `}
