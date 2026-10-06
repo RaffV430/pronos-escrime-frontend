@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import API from '../api';
 import { plural } from './resultPresentation';
 import { poolRounds, poolStanding } from './eventResults';
+import { FencerLink } from './FencerProfile';
 import { closeOnBackdrop } from './dialogBackdrop';
 
 const hasBouts = (pool) => Array.isArray(pool.bouts) && pool.bouts.length === pool.fencers.length;
@@ -30,6 +31,9 @@ function FencerDialog({ fencer, pool, onClose }) {
           {fencer.wins ?? '—'} V · {fencer.losses ?? '—'} D · indice{' '}
           {fencer.indicator === null ? '—' : signed(fencer.indicator)}
         </strong>
+      </p>
+      <p>
+        <FencerLink name={fencer.name}>Voir son parcours sur toutes les épreuves</FencerLink>
       </p>
       <section className="result-mine" aria-label="Mon pronostic">
         <h3>Mon pronostic</h3>

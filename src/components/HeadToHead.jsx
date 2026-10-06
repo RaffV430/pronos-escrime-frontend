@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import API from '../api';
 import { roundLabel } from './matchPresentation';
+import { FencerLink } from './FencerProfile';
 
 const shortDate = (d) =>
   d ? new Date(d).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: '2-digit' }) : '';
@@ -48,8 +49,7 @@ export default function HeadToHead({ matchId, player1, player2 }) {
             <>
               <p className="h2h-summary">
                 <strong>{data.summary.wins1}</strong> – <strong>{data.summary.wins2}</strong> en {data.meetings.length}{' '}
-                rencontre{data.meetings.length > 1 ? 's' : ''} connue
-                {data.meetings.length > 1 ? 's' : ''}
+                match{data.meetings.length > 1 ? 's' : ''} de tableau
               </p>
               <ul className="h2h-list">
                 {data.meetings.map((m) => (
@@ -64,10 +64,33 @@ export default function HeadToHead({ matchId, player1, player2 }) {
               </ul>
             </>
           ) : (
-            <p className="muted">Aucune rencontre entre eux dans les épreuves suivies.</p>
+            <p className="muted">Aucun match de tableau entre eux dans les épreuves suivies.</p>
+          )}
+          {data.poolMeetings?.length > 0 && (
+            <>
+              <p className="h2h-summary">
+                En poule : <strong>{data.summary.poolWins1}</strong> – <strong>{data.summary.poolWins2}</strong>
+              </p>
+              <ul className="h2h-list">
+                {data.poolMeetings.map((m) => (
+                  <li key={m.poolId}>
+                    <strong>{m.won ? player1 : player2}</strong>{' '}
+                    {m.given !== null && m.received !== null
+                      ? m.won
+                        ? `${m.given}–${m.received}`
+                        : `${m.received}–${m.given}`
+                      : ''}
+                    <small> · {[shortDate(m.date), m.tournament, m.pool].filter(Boolean).join(' · ')}</small>
+                  </li>
+                ))}
+              </ul>
+            </>
           )}
           <Form name={player1} rows={data.form.player1 || []} />
           <Form name={player2} rows={data.form.player2 || []} />
+          <p className="h2h-profiles">
+            Parcours complet : <FencerLink name={player1} /> · <FencerLink name={player2} />
+          </p>
         </>
       )}
     </details>
