@@ -3,6 +3,7 @@ import API from '../api';
 import { LegalLinks } from './LegalPages';
 import TwoFactorSettings from './TwoFactorSettings';
 import SessionSettings from './SessionSettings';
+import ThemeSettings from './ThemeSettings';
 
 // Page publique d'un tournoi : le joueur choisit d'apparaître (pseudo abrégé) dans son classement.
 function PublicListing({ initial }) {
@@ -96,6 +97,8 @@ export default function AccountSettings({ user, onDeleted }) {
           </span>
         )}
       </p>
+
+      <ThemeSettings />
 
       <PublicListing initial={user.publicListing} />
 

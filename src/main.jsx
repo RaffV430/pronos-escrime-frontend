@@ -4,6 +4,9 @@ import './index.css';
 import App from './App.jsx';
 import ErrorBoundary from './components/ErrorBoundary.jsx';
 import { startMonitoring, reportError } from './lib/monitoring.js';
+import { initTheme } from './lib/theme.js';
+
+initTheme();
 
 startMonitoring();
 

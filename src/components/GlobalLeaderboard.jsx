@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import API from '../api';
+import DuelView from './DuelView';
 export default function GlobalLeaderboard({ userId, tournamentId, competitionId }) {
   const [scope, setScope] = useState('Général'),
     [selectedTournament, setTournament] = useState(tournamentId ? String(tournamentId) : ''),
@@ -11,7 +12,9 @@ export default function GlobalLeaderboard({ userId, tournamentId, competitionId 
     [revision, setRevision] = useState(0),
     [circuits, setCircuits] = useState([]),
     [selectedCircuit, setCircuit] = useState(''),
-    [circuitInfo, setCircuitInfo] = useState(null);
+    [circuitInfo, setCircuitInfo] = useState(null),
+    [duel, setDuel] = useState(null),
+    [duelError, setDuelError] = useState('');
   // Circuits définis par l'administrateur (classements cumulés sur plusieurs tournois).
   useEffect(() => {
     const c = new AbortController();
@@ -83,6 +86,24 @@ export default function GlobalLeaderboard({ userId, tournamentId, competitionId 
       });
     return () => c.abort();
   }, [scope, selectedTournament, selectedEvent, selectedCircuit, revision]);
+  // Comparaison avec un autre joueur, sur la sélection affichée (épreuve, tournoi ou toute la saison).
+  const scopeParams =
+    scope === 'Tournoi'
+      ? { tournamentId: selectedTournament }
+      : scope === 'Épreuve'
+        ? { competitionId: selectedEvent }
+        : {};
+  useEffect(() => setDuel(null), [scope, selectedTournament, selectedEvent]);
+  const compare = async (r) => {
+    if (duel?.forId === r.id) return setDuel(null);
+    setDuelError('');
+    try {
+      const { data } = await API.get(`/community/duel/${r.id}`, { params: scopeParams });
+      setDuel({ forId: r.id, data });
+    } catch (e) {
+      setDuelError(e.response?.data?.error || 'Comparaison indisponible. Réessayez.');
+    }
+  };
   const me = rows?.find((r) => r.id === userId),
     previous = me ? rows.filter((r) => (r.rank || 0) < me.rank).at(-1) : null;
   return (
@@ -166,6 +187,7 @@ export default function GlobalLeaderboard({ userId, tournamentId, competitionId 
         </div>
       )}
       {error && <p role="alert">{error}</p>}
+      {duelError && <p role="alert">{duelError}</p>}
       {!rows && !error && (
         <p role="status">
           {scope === 'Épreuve' && !selectedEvent ? 'Choisissez une épreuve.' : 'Chargement du classement…'}
@@ -225,6 +247,17 @@ export default function GlobalLeaderboard({ userId, tournamentId, competitionId 
                 </p>
               )}
             </details>
+            {scope !== 'Circuit' && r.id !== userId && (
+              <button
+                type="button"
+                className="button-link compare-button"
+                aria-expanded={duel?.forId === r.id}
+                onClick={() => compare(r)}
+              >
+                {duel?.forId === r.id ? 'Masquer la comparaison' : 'Comparer nos pronostics'}
+              </button>
+            )}
+            {duel?.forId === r.id && <DuelView duel={duel.data} onClose={() => setDuel(null)} />}
           </article>
         ))}
       </div>
