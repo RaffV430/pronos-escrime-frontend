@@ -2,7 +2,7 @@
 // aux adresses /mentions-legales et /confidentialite.
 const EDITOR = 'Raffaele Venturi';
 const CONTACT = import.meta.env.VITE_CONTACT_EMAIL?.trim();
-const UPDATED = '28 septembre 2026';
+const UPDATED = '6 octobre 2026';
 
 export function LegalLinks() {
   return (
@@ -76,6 +76,14 @@ function Privacy() {
           pronostics ne sont montrés aux autres qu’après la clôture.
         </li>
         <li>
+          <strong>Page publique des tournois</strong> : chaque tournoi a une page consultable sans compte (adresse
+          /tournoi/…), avec le lieu, les dates, les podiums, les tableaux et le classement des dix meilleurs
+          pronostiqueurs. Seuls votre pseudo abrégé (prénom ou premier mot suivi d’une initiale, par exemple « Raffaele
+          V. »), votre rang et vos points y figurent ; jamais votre e-mail ni vos pronostics. Vous pouvez à tout moment
+          ne plus y apparaître en décochant la case de « Mon compte » : votre pseudo est alors remplacé par «
+          Pronostiqueur anonyme ».
+        </li>
+        <li>
           <strong>Notifications</strong> (si vous les activez) : l’abonnement technique de votre navigateur, les
           épreuves suivies, vos préférences et votre fuseau horaire.
         </li>
@@ -86,8 +94,9 @@ function Privacy() {
         </li>
       </ul>
       <p>
-        Ces traitements sont nécessaires au fonctionnement du jeu auquel vous vous inscrivez. Aucune donnée n’est vendue
-        ni utilisée à des fins publicitaires.
+        Ces traitements sont nécessaires au fonctionnement du jeu auquel vous vous inscrivez. La page publique repose
+        sur l’intérêt légitime de faire connaître les compétitions et le jeu, limité à un pseudo abrégé et à vos points,
+        avec possibilité de retrait à tout moment. Aucune donnée n’est vendue ni utilisée à des fins publicitaires.
       </p>
       <h2>Destinataires et sous-traitants</h2>
       <p>

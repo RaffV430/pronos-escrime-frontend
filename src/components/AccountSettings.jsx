@@ -4,6 +4,44 @@ import { LegalLinks } from './LegalPages';
 import TwoFactorSettings from './TwoFactorSettings';
 import SessionSettings from './SessionSettings';
 
+// Page publique d'un tournoi : le joueur choisit d'apparaître (pseudo abrégé) dans son classement.
+function PublicListing({ initial }) {
+  const [on, setOn] = useState(initial !== false);
+  const [state, setState] = useState({ busy: false, message: '', error: '' });
+  const change = async (value) => {
+    setOn(value);
+    setState({ busy: true, message: '', error: '' });
+    try {
+      const { data } = await API.put('/auth/me/public-listing', { publicListing: value });
+      setOn(data.publicListing);
+      setState({ busy: false, message: 'Choix enregistré.', error: '' });
+    } catch (err) {
+      setOn(!value);
+      setState({ busy: false, message: '', error: err.response?.data?.error || 'Enregistrement impossible.' });
+    }
+  };
+  return (
+    <section aria-labelledby="public-listing-title">
+      <h2 id="public-listing-title">Page publique des tournois</h2>
+      <label className="checkbox-line">
+        <input type="checkbox" checked={on} disabled={state.busy} onChange={(e) => change(e.target.checked)} />{' '}
+        Apparaître dans le classement des pronostiqueurs de la page publique (pseudo abrégé, par exemple « Raffaele V.
+        »)
+      </label>
+      <p className="muted">
+        Cette page se consulte sans compte. Décoché, votre rang et vos points y restent, sous le nom « Pronostiqueur
+        anonyme ». Les classements internes de l’application ne changent pas.
+      </p>
+      {state.message && <p role="status">{state.message}</p>}
+      {state.error && (
+        <p role="alert" className="form-error">
+          {state.error}
+        </p>
+      )}
+    </section>
+  );
+}
+
 export default function AccountSettings({ user, onDeleted }) {
   const [password, setPassword] = useState('');
   const [confirm, setConfirm] = useState('');
@@ -58,6 +96,8 @@ export default function AccountSettings({ user, onDeleted }) {
           </span>
         )}
       </p>
+
+      <PublicListing initial={user.publicListing} />
 
       <SessionSettings />
 
