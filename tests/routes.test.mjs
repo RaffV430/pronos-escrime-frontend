@@ -9,6 +9,8 @@ test('une adresse par section, et retour', () => {
   assert.equal(tabFromPath('/tournoi/3'), null);
   assert.equal(tabFromPath('/confidentialite'), null);
   assert.equal(pathForTab('season'), '/ma-saison');
+  assert.equal(pathForTab('play'), '/pronostiquer');
+  assert.equal(tabFromPath('/pronostiquer'), 'play');
   assert.equal(pathForTab('inconnu'), '/');
   for (const tab of ['play', 'mine', 'season', 'results', 'leaderboard', 'community', 'account', 'admin'])
     assert.equal(tabFromPath(pathForTab(tab)), tab);
