@@ -2,16 +2,15 @@ import { useState } from 'react';
 import API from '../api';
 import { useClub } from '../lib/club';
 
-// Ligue du club du tournoi : rejoindre en un clic (reconduit automatiquement pour les tournois suivants).
-export default function ClubLeague({ tournamentId, onJoined }) {
+// Club de l'application : le rejoindre en un clic ; on y reste d'un tournoi à l'autre.
+export default function ClubLeague({ onJoined }) {
   const club = useClub();
   const [state, setState] = useState({ busy: false, message: '' });
-  const league = club.leagues.find((l) => l.tournamentId === tournamentId);
-  if (!club.name || !league) return null;
+  if (!club.name || !club.league || club.league.member) return null;
   const join = async () => {
     setState({ busy: true, message: '' });
     try {
-      const { data } = await API.post(`/community/club/${tournamentId}/join`);
+      const { data } = await API.post('/community/club/join');
       setState({ busy: false, message: data.message });
       club.reload();
       onJoined?.();
@@ -21,19 +20,11 @@ export default function ClubLeague({ tournamentId, onJoined }) {
   };
   return (
     <aside className="club-league">
-      <strong>★ Ligue du club « {club.name} »</strong>
-      {league.member ? (
-        <p>Vous en faites partie : vos points comptent pour le club. Vous restez inscrit(e) aux tournois suivants.</p>
-      ) : league.open ? (
-        <>
-          <p>Faites gagner le club : vos points du tournoi s’ajoutent à ceux des autres membres.</p>
-          <button onClick={join} disabled={state.busy}>
-            {state.busy ? 'Inscription…' : 'Rejoindre la ligue du club'}
-          </button>
-        </>
-      ) : (
-        <p>Les inscriptions sont closes pour ce tournoi.</p>
-      )}
+      <strong>★ Club « {club.name} »</strong>
+      <p>Faites gagner le club : vos points comptent pour lui à chaque tournoi, sans vous réinscrire.</p>
+      <button onClick={join} disabled={state.busy}>
+        {state.busy ? 'Inscription…' : 'Rejoindre le club'}
+      </button>
       {state.message && <p role="status">{state.message}</p>}
     </aside>
   );

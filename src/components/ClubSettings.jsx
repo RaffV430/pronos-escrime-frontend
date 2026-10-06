@@ -27,11 +27,7 @@ export default function ClubSettings() {
       setState({
         busy: false,
         error: '',
-        message: `Enregistré : ${data.fencers.length} tireur${data.fencers.length > 1 ? 's' : ''}${
-          data.leaguesCreated
-            ? `, ${data.leaguesCreated} ligue${data.leaguesCreated > 1 ? 's' : ''} du club créée${data.leaguesCreated > 1 ? 's' : ''}`
-            : ''
-        }.`,
+        message: `Enregistré : ${data.fencers.length} tireur${data.fencers.length > 1 ? 's' : ''}.`,
       });
       club.reload();
     } catch (err) {
@@ -58,9 +54,9 @@ export default function ClubSettings() {
           </label>
         </div>
         <p className="muted">
-          Les tireurs listés sont signalés par ★ sur les matchs et les poules, avec un filtre « Nos tireurs ». Une ligue
-          du club est créée pour chaque tournoi dès que son horaire est connu ; ses membres sont reconduits d’un tournoi
-          à l’autre.
+          Les tireurs listés sont signalés par ★ sur les matchs et les poules, avec un filtre « Nos tireurs ». Le club
+          est aussi proposé à tous les joueurs dans Communauté : on le rejoint en un clic et on y reste d’un tournoi à
+          l’autre.
         </p>
         <button disabled={state.busy}>{state.busy ? 'Enregistrement…' : 'Enregistrer'}</button>
         {state.message && <p role="status">{state.message}</p>}
