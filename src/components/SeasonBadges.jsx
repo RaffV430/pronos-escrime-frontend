@@ -37,8 +37,7 @@ export default function SeasonBadges({ badges }) {
               <small>{b.description}</small>
               {b.next != null && (
                 <small className="badge-progress">
-                  {b.level > 0 ? 'Niveau suivant' : 'Progression'} : {b.value ?? 0} / {b.next}
-                  {b.level > 0 && b.nextText ? ` (${b.nextText.toLowerCase()})` : ''}
+                  {b.level > 0 ? `Niveau ${b.level + 1}` : 'Progression'} : {b.value ?? 0} / {b.next}
                 </small>
               )}
               {b.level > 0 && b.next == null && <small className="badge-progress">Niveau maximum atteint</small>}
