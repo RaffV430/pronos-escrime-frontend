@@ -4,7 +4,8 @@ import { plural } from './resultPresentation';
 // Analyse personnelle de la saison : où l'on vise juste, où l'on se trompe.
 export default function SeasonAnalysis({ analysis }) {
   if (!analysis || (!analysis.byRound.length && !analysis.pools.predicted)) return null;
-  const { byRound, averageScoreGap, outsiderHits, pools, bestCompetition, bestRound } = analysis;
+  const { byRound, averageScoreGap, outsiderHits, pools, bestCompetition, bestRound, bestCall, longestStreak } =
+    analysis;
   return (
     <details className="season-analysis" open>
       <summary>Mon analyse</summary>
@@ -48,6 +49,20 @@ export default function SeasonAnalysis({ analysis }) {
           <li>
             Écart moyen avec le score réel : <strong>{String(averageScoreGap).replace('.', ',')}</strong>{' '}
             {plural(averageScoreGap, 'touche')} par match
+          </li>
+        )}
+        {bestCall && (
+          <li>
+            Meilleur coup : <strong>{bestCall.name}</strong>
+            {bestCall.round ? ` (${roundLabel(bestCall.round)})` : ''}, pronostic {bestCall.prediction} pour{' '}
+            {bestCall.result} · <strong>+{bestCall.points}</strong>
+            {bestCall.exact ? ' · score exact' : ''}
+            {bestCall.bonus ? ' · bonus outsider' : ''}
+          </li>
+        )}
+        {longestStreak > 1 && (
+          <li>
+            Plus longue série de bons vainqueurs : <strong>{longestStreak}</strong> matchs d’affilée
           </li>
         )}
         <li>
