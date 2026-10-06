@@ -23,12 +23,14 @@ import { pollWhileVisible } from './lib/polling';
 import { ClubContext, clubValue } from './lib/club';
 import BrandMark from './components/BrandMark';
 import Landing from './components/Landing';
+import UpcomingCalendar from './components/UpcomingCalendar';
 // Outils d'administration chargés à la demande : les joueurs ne les téléchargent jamais.
 const AdminPanel = lazy(() => import('./components/AdminPanel'));
 const FtlControl = lazy(() => import('./components/FtlControl'));
 const CircuitSettings = lazy(() => import('./components/CircuitSettings'));
 const ClubSettings = lazy(() => import('./components/ClubSettings'));
 const SyncHealth = lazy(() => import('./components/SyncHealth'));
+const CalendarWatch = lazy(() => import('./components/CalendarWatch'));
 const FtlTournamentSetup = lazy(() => import('./components/FtlTournamentSetup'));
 const adminFallback = <p className="muted">Chargement des outils d’administration…</p>;
 // Onglets secondaires chargés à la première ouverture : l'écran des matchs s'affiche plus vite.
@@ -41,6 +43,7 @@ const MySeason = lazy(() => import('./components/MySeason'));
 const Results = lazy(() => import('./components/Results'));
 const PublicTournament = lazy(() => import('./components/PublicTournament'));
 const PublicResults = lazy(() => import('./components/PublicResults'));
+const PublicCalendar = lazy(() => import('./components/PublicCalendar'));
 const AccountSettings = lazy(() => import('./components/AccountSettings'));
 const Community = lazy(() => import('./components/Community'));
 const tabFallback = <p className="muted load-state">Chargement…</p>;
@@ -315,6 +318,13 @@ export default function App() {
       </Suspense>
     );
   if (legalPage) return <LegalPage page={legalPage} />;
+  // Calendrier des épreuves (/calendrier), lisible avec ou sans compte.
+  if (/^\/calendrier\/?$/.test(location.pathname))
+    return (
+      <Suspense fallback={<p style={{ textAlign: 'center', marginTop: '100px' }}>Chargement…</p>}>
+        <PublicCalendar />
+      </Suspense>
+    );
   // Résultats consultables sans compte (/resultats) ; une fois connecté, l'onglet habituel s'affiche.
   if (!loading && !user && tabFromPath(location.pathname) === 'results')
     return (
@@ -396,6 +406,7 @@ export default function App() {
               {mainTab === 'admin' && user.isAdmin && (
                 <Suspense fallback={adminFallback}>
                   <SyncHealth />
+                  <CalendarWatch />
                   <ClubSettings />
                   <CircuitSettings />
                   <FtlTournamentSetup onConfigured={() => setEventListVersion((v) => v + 1)} />
@@ -469,6 +480,21 @@ export default function App() {
                     );
                   }}
                 />
+              )}
+              {mainTab === 'play' && (
+                <details className="calendar-fold">
+                  <summary>Calendrier des prochaines épreuves</summary>
+                  <UpcomingCalendar
+                    limit={8}
+                    title="Prochaines épreuves"
+                    headingLevel={3}
+                    footer={
+                      <p className="calendar-all">
+                        <a href="/calendrier">Tout le calendrier →</a>
+                      </p>
+                    }
+                  />
+                </details>
               )}
               {/* Classement général consultable sans choisir d'épreuve. */}
               {mainTab === 'leaderboard' && (

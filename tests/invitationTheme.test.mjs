@@ -23,3 +23,12 @@ test('apparence : conditions sombres forcées, neutralisées ou laissées au té
     '(max-width: 600px) and (min-width: 0px)',
   );
 });
+
+import { calendarDates, calendarCategories, calendarFormat } from '../src/lib/calendar.js';
+test('calendrier : dates, catégories et format lisibles', () => {
+  assert.equal(calendarDates('2026-10-17', '2026-10-18'), '17–18 oct.');
+  assert.equal(calendarDates('2026-10-10', '2026-10-10'), '10 oct.');
+  assert.equal(calendarDates('2027-01-30', '2027-02-01'), '30 janv. – 1 févr.');
+  assert.deepEqual(calendarCategories(['SENIOR', 'V1', 'V2']), ['Seniors', 'Vétérans']);
+  assert.equal(calendarFormat('BOTH'), 'Individuel et équipes');
+});

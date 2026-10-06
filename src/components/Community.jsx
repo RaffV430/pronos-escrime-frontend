@@ -3,7 +3,7 @@ import API from '../api';
 import DuelView from './DuelView';
 import ClubLeague from './ClubLeague';
 import { withCount } from '../lib/plural';
-import { invitationUrl } from '../lib/invitation';
+import { invitationFromPath, invitationUrl } from '../lib/invitation';
 function Ranking({ rows, onDuel, userId }) {
   return (
     <ol className="ranking-list">
@@ -28,6 +28,7 @@ function Ranking({ rows, onDuel, userId }) {
 }
 export default function Community({ tournamentId, competitionId, userId }) {
   const [leagues, setLeagues] = useState([]),
+    [elsewhere, setElsewhere] = useState([]),
     [clubs, setClubs] = useState([]),
     [challenges, setChallenges] = useState([]),
     [detail, setDetail] = useState(null),
@@ -48,6 +49,7 @@ export default function Community({ tournamentId, competitionId, userId }) {
       .then(([a, b, d]) => {
         if (!c.signal.aborted) {
           setLeagues(a.data.filter((l) => l.tournamentId === tournamentId));
+          setElsewhere(a.data.filter((l) => l.tournamentId !== tournamentId));
           setClubs(b.data);
           setChallenges(d.data);
         }
@@ -81,6 +83,79 @@ export default function Community({ tournamentId, competitionId, userId }) {
       <ClubLeague tournamentId={tournamentId} onJoined={() => setRevision((n) => n + 1)} />
       <button onClick={() => setRevision((n) => n + 1)}>Actualiser l’affichage</button>
       {message && <p role="status">{message}</p>}
+      <h3>Mes groupes pour ce tournoi</h3>
+      {!leagues.length && (
+        <p className="muted">
+          Aucun groupe pour ce tournoi. Créez-en un ci-dessous : son lien d’invitation, à envoyer par WhatsApp ou SMS,
+          apparaîtra ici.
+          {elsewhere.length > 0 &&
+            ` Vous avez ${withCount(elsewhere.length, 'groupe')} sur d’autres tournois : choisissez le tournoi correspondant pour les voir.`}
+        </p>
+      )}
+      {leagues.map((l) => (
+        <article className="prediction-summary" key={l.id}>
+          <strong>{l.name}</strong> · {l.kind === 'CLUB' ? 'Club' : 'Ligue privée'} ·{' '}
+          {withCount(l._count.members, 'membre')}
+          <p>
+            Code d’invitation : <code>{l.code}</code>
+          </p>
+          <button
+            className="button-secondary"
+            onClick={async () => {
+              try {
+                await navigator.clipboard.writeText(invitationUrl(l.code));
+                setMessage('Lien d’invitation copié : il suffit de l’ouvrir pour rejoindre le groupe.');
+              } catch {
+                setMessage('Copiez le code affiché ci-dessus.');
+              }
+            }}
+          >
+            Copier le lien d’invitation
+          </button>
+          <button
+            className="button-secondary"
+            onClick={async () => {
+              try {
+                if (navigator.share)
+                  await navigator.share({
+                    title: l.name,
+                    text: `Rejoignez « ${l.name} » sur Pronos Escrime :`,
+                    url: invitationUrl(l.code),
+                  });
+                else {
+                  await navigator.clipboard.writeText(invitationUrl(l.code));
+                  setMessage('Lien d’invitation copié.');
+                }
+              } catch (e) {
+                if (e.name !== 'AbortError') setMessage('Copiez le code affiché ci-dessus.');
+              }
+            }}
+          >
+            Inviter (WhatsApp, SMS…)
+          </button>
+          <button
+            disabled={busy}
+            onClick={() => action(async () => setDetail((await API.get(`/community/leagues/${l.id}`)).data))}
+          >
+            Voir le classement
+          </button>
+          {l.ownerId !== userId && (
+            <button
+              className="button-secondary"
+              disabled={busy}
+              onClick={() =>
+                action(async () => {
+                  await API.post(`/community/leagues/${l.id}/leave`);
+                  setDetail(null);
+                  setMessage('Groupe quitté.');
+                })
+              }
+            >
+              Quitter
+            </button>
+          )}
+        </article>
+      ))}
       <div className="feature-grid">
         <form
           className="feature-panel"
@@ -112,7 +187,14 @@ export default function Community({ tournamentId, competitionId, userId }) {
           onSubmit={(e) => {
             e.preventDefault();
             action(async () => {
-              await API.post('/community/join', { code });
+              // Code seul ou lien d'invitation complet collé.
+              let value = code.trim();
+              try {
+                value = invitationFromPath(new URL(value).pathname) || value;
+              } catch {
+                /* simple code */
+              }
+              await API.post('/community/join', { code: value });
               setCode('');
               setMessage('Inscription confirmée.');
             });
@@ -120,78 +202,12 @@ export default function Community({ tournamentId, competitionId, userId }) {
         >
           <h3>Rejoindre un groupe</h3>
           <label>
-            Code d’invitation
+            Lien ou code d’invitation
             <input value={code} required onChange={(e) => setCode(e.target.value)} />
           </label>
           <button disabled={busy}>Rejoindre</button>
         </form>
       </div>
-      <h3>Mes groupes pour ce tournoi</h3>
-      {!leagues.length && <p>Aucun groupe rejoint pour ce tournoi.</p>}
-      {leagues.map((l) => (
-        <article className="prediction-summary" key={l.id}>
-          <strong>{l.name}</strong> · {l.kind === 'CLUB' ? 'Club' : 'Ligue privée'} ·{' '}
-          {withCount(l._count.members, 'membre')}
-          <p>
-            Code d’invitation : <code>{l.code}</code>
-          </p>
-          <button
-            className="button-secondary"
-            onClick={async () => {
-              try {
-                await navigator.clipboard.writeText(invitationUrl(l.code));
-                setMessage('Lien d’invitation copié : il suffit de l’ouvrir pour rejoindre le groupe.');
-              } catch {
-                setMessage('Copiez le code affiché ci-dessus.');
-              }
-            }}
-          >
-            Copier le lien
-          </button>
-          <button
-            className="button-secondary"
-            onClick={async () => {
-              try {
-                if (navigator.share)
-                  await navigator.share({
-                    title: l.name,
-                    text: `Rejoignez « ${l.name} » sur Pronos Escrime :`,
-                    url: invitationUrl(l.code),
-                  });
-                else {
-                  await navigator.clipboard.writeText(invitationUrl(l.code));
-                  setMessage('Lien d’invitation copié.');
-                }
-              } catch (e) {
-                if (e.name !== 'AbortError') setMessage('Copiez le code affiché ci-dessus.');
-              }
-            }}
-          >
-            Partager
-          </button>
-          <button
-            disabled={busy}
-            onClick={() => action(async () => setDetail((await API.get(`/community/leagues/${l.id}`)).data))}
-          >
-            Voir le classement
-          </button>
-          {l.ownerId !== userId && (
-            <button
-              className="button-secondary"
-              disabled={busy}
-              onClick={() =>
-                action(async () => {
-                  await API.post(`/community/leagues/${l.id}/leave`);
-                  setDetail(null);
-                  setMessage('Groupe quitté.');
-                })
-              }
-            >
-              Quitter
-            </button>
-          )}
-        </article>
-      ))}
       {detail && (
         <div className="feature-panel">
           <h3>{detail.league.name}</h3>

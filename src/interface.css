@@ -2522,3 +2522,108 @@
     grid-template-columns: 1fr;
   }
 }
+
+/* Calendrier des prochaines épreuves */
+.calendar-title {
+  margin: 0 0 8px;
+}
+.calendar-month h3 {
+  margin: 18px 0 6px;
+  font-size: 1rem;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.calendar ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.calendar-event {
+  display: grid;
+  grid-template-columns: 6.5rem minmax(0, 1fr) auto;
+  gap: 4px 12px;
+  align-items: start;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border);
+}
+.calendar-date {
+  font-weight: 700;
+  color: var(--primary);
+  font-variant-numeric: tabular-nums;
+}
+.calendar-what {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.calendar-what .muted {
+  font-size: 0.9rem;
+}
+.calendar-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 4px;
+}
+.calendar-tag {
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: var(--soft);
+  border: 1px solid var(--border);
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+.calendar-tag.sex-H,
+.calendar-tag.sex-F {
+  border-color: var(--primary);
+  color: var(--primary);
+  font-weight: 600;
+}
+.calendar-live {
+  align-self: center;
+  font-size: 0.85rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.calendar-fold {
+  margin: 12px 0;
+  padding: 10px 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+.calendar-fold > summary {
+  cursor: pointer;
+  font-weight: 600;
+  color: var(--primary);
+}
+.calendar-fold .calendar-title {
+  display: none;
+}
+.calendar-all {
+  margin: 10px 0 0;
+}
+@media (max-width: 600px) {
+  .calendar-event {
+    grid-template-columns: 5.2rem minmax(0, 1fr);
+  }
+  .calendar-live {
+    grid-column: 2;
+    justify-self: start;
+  }
+}
+.calendar-watch-list {
+  list-style: none;
+  padding: 0;
+  margin: 10px 0 0;
+}
+.calendar-watch-list li {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 4px 12px;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 0.9rem;
+}
