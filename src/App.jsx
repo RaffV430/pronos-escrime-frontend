@@ -624,7 +624,16 @@ export default function App() {
   }
 
   return (
-    <Landing>
+    <Landing
+      onRegister={() => {
+        setForgotPassword(false);
+        setIsRegister(true);
+      }}
+      onLogin={() => {
+        setForgotPassword(false);
+        setIsRegister(false);
+      }}
+    >
       <div className="auth-card">
         {forgotPassword ? (
           <ForgotPassword onBack={() => setForgotPassword(false)} />

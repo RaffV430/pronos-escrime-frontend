@@ -1,77 +1,134 @@
 import { useEffect, useState } from 'react';
 import API from '../api';
-import BrandMark from './BrandMark';
-import { cityName, countryName, dateRange, flag } from './eventResults';
+import PublicHeader from './PublicHeader';
+import { MEDALS, cityName, countryName, dateRange, flag } from './eventResults';
 
-// Accueil sans compte : présentation du jeu (lisible par les moteurs de recherche) et derniers tournois
-// publics, à côté du formulaire de connexion.
-export default function Landing({ children }) {
+const where = (t) =>
+  [
+    t.start && dateRange(t.start, t.end),
+    cityName(t.city),
+    (t.countries || []).map((c) => `${flag(c)} ${countryName(c)}`.trim()).join(' · '),
+  ]
+    .filter(Boolean)
+    .join(' · ');
+
+// Accueil sans compte : deux portes d'entrée (le jeu et les résultats), aperçu des derniers résultats,
+// puis le formulaire de connexion. Contenu lisible par les moteurs de recherche.
+export default function Landing({ children, onRegister, onLogin }) {
+  const [results, setResults] = useState(null);
   const [tournaments, setTournaments] = useState([]);
   useEffect(() => {
     const c = new AbortController();
+    API.get('/public/results', { signal: c.signal })
+      .then(({ data }) => setResults(Array.isArray(data) ? data : []))
+      .catch(() => setResults([]));
     API.get('/public/tournaments', { signal: c.signal })
       .then(({ data }) => setTournaments(Array.isArray(data) ? data : []))
       .catch(() => {});
     return () => c.abort();
   }, []);
+  const latest = results?.[0];
+  const others = tournaments.filter((t) => t.id !== latest?.id).slice(0, 5);
+  const focusLogin = (register) => {
+    (register ? onRegister : onLogin)?.();
+    setTimeout(() => {
+      document.getElementById('connexion')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      document.querySelector('#connexion input')?.focus({ preventScroll: true });
+    }, 50);
+  };
   return (
-    <div className="landing">
-      <section className="landing-intro" aria-labelledby="landing-title">
-        <p className="landing-brand">
-          <BrandMark />
-          <span>
-            <strong>pronos</strong> escrime
-          </span>
-        </p>
-        <h1 id="landing-title">Pronostics d’escrime entre passionnés</h1>
-        <p className="landing-lead">
-          Pronostiquez les tableaux, les poules et les podiums des compétitions d’escrime, au fleuret, à l’épée et au
-          sabre, et défiez votre club au classement.
-        </p>
-      </section>
-      <div className="landing-card">{children}</div>
-      <section className="landing-more" aria-label="Le jeu en bref">
-        <ul className="landing-points">
-          <li>
-            <strong>Tableaux et poules en direct</strong> : scores importés de FencingTimeLive et d’engarde-service,
-            points calculés dès la publication des résultats.
-          </li>
-          <li>
-            <strong>Classements</strong> par épreuve, par tournoi, sur la saison et entre membres d’un même club.
-          </li>
-          <li>
-            <strong>Résultats et fiches tireurs</strong> : podiums, tableaux complets, tous les assauts de poule et le
-            parcours de chaque tireur.
-          </li>
-          <li>
-            <strong>Notifications</strong> quand de nouveaux matchs s’ouvrent et avant la clôture des pronostics.
-          </li>
-        </ul>
-        <p className="landing-results">
-          <a href="/resultats">Consulter les résultats des compétitions</a> : podiums, tableaux et poules, sans compte.
-        </p>
-        {tournaments.length > 0 && (
-          <section className="landing-tournaments" aria-labelledby="landing-tournaments-title">
-            <h2 id="landing-tournaments-title">Derniers tournois</h2>
-            <ul>
-              {tournaments.map((t) => (
-                <li key={t.id}>
-                  <a href={`/tournoi/${t.id}`}>{t.name}</a>
-                  <small>
-                    {[
-                      t.start && dateRange(t.start, t.end),
-                      cityName(t.city),
-                      t.countries.map((c) => `${flag(c)} ${countryName(c)}`.trim()).join(' · '),
-                    ]
-                      .filter(Boolean)
-                      .join(' · ')}
-                  </small>
-                </li>
-              ))}
+    <div className="landing-page">
+      <PublicHeader onLogin={() => focusLogin(false)} />
+      <div className="landing">
+        <section className="landing-hero" aria-labelledby="landing-title">
+          <h1 id="landing-title">Pronostics d’escrime entre passionnés</h1>
+          <p className="landing-lead">
+            Pronostiquez les tableaux, les poules et les podiums des compétitions d’escrime, au fleuret, à l’épée et au
+            sabre, et défiez votre club au classement.
+          </p>
+          <p className="landing-ctas">
+            <button type="button" onClick={() => focusLogin(true)}>
+              Créer un compte
+            </button>
+            <a className="button-link-strong landing-cta-secondary" href="/resultats">
+              Voir les résultats
+            </a>
+          </p>
+        </section>
+
+        {latest && (
+          <section className="landing-preview" aria-labelledby="landing-preview-title">
+            <p className="eyebrow" id="landing-preview-title">
+              DERNIERS RÉSULTATS
+            </p>
+            <h2>
+              <a href={`/tournoi/${latest.id}`}>{latest.name}</a>
+            </h2>
+            <p className="muted">{where(latest)}</p>
+            <ul className="landing-winners">
+              {latest.competitions.map((c) => {
+                const gold = c.podium.find((p) => p.place === 1);
+                return (
+                  <li key={c.id}>
+                    <span className="landing-event">{c.name}</span>
+                    {gold ? (
+                      <span>
+                        <span aria-label="Vainqueur">{MEDALS[1]}</span> <strong>{gold.name}</strong>
+                        {gold.country && <small className="muted"> {gold.country}</small>}
+                      </span>
+                    ) : (
+                      <span className="muted">Podium à venir</span>
+                    )}
+                  </li>
+                );
+              })}
             </ul>
+            <p className="landing-preview-links">
+              <a href={`/tournoi/${latest.id}`}>Tableaux et classement de ce tournoi</a>
+              <a className="landing-all" href="/resultats">
+                Voir tous les résultats →
+              </a>
+            </p>
+            {others.length > 0 && (
+              <>
+                <h3>Autres tournois</h3>
+                <ul className="landing-tournaments">
+                  {others.map((t) => (
+                    <li key={t.id}>
+                      <a href={`/tournoi/${t.id}`}>{t.name}</a>
+                      <small>{where(t)}</small>
+                    </li>
+                  ))}
+                </ul>
+              </>
+            )}
           </section>
         )}
-      </section>
+
+        <div className="landing-card" id="connexion">
+          {children}
+        </div>
+
+        <section className="landing-more" aria-labelledby="landing-more-title">
+          <h2 id="landing-more-title">Le jeu en bref</h2>
+          <ul className="landing-points">
+            <li>
+              <strong>Tableaux et poules en direct</strong> : scores importés de FencingTimeLive et d’engarde-service,
+              points calculés dès la publication des résultats.
+            </li>
+            <li>
+              <strong>Classements</strong> par épreuve, par tournoi, sur la saison et entre membres d’un même club.
+            </li>
+            <li>
+              <strong>Résultats et fiches tireurs</strong> : podiums, tableaux complets, tous les assauts de poule et le
+              parcours de chaque tireur, consultables sans compte.
+            </li>
+            <li>
+              <strong>Notifications</strong> quand de nouveaux matchs s’ouvrent et avant la clôture des pronostics.
+            </li>
+          </ul>
+        </section>
+      </div>
     </div>
   );
 }
