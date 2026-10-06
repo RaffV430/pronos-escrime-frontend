@@ -7,6 +7,7 @@ import { MEDALS, cityName, countryName, dateRange, flag, roundName } from './eve
 import { LegalLinks } from './LegalPages';
 import './Results.css';
 import BrandMark from './BrandMark';
+import { closeOnBackdrop } from './dialogBackdrop';
 
 // Résultat d'un match (page publique : pas de pronostic personnel).
 function PublicMatchDialog({ match, onClose }) {
@@ -15,7 +16,13 @@ function PublicMatchDialog({ match, onClose }) {
     if (ref.current && !ref.current.open) ref.current.showModal?.();
   }, []);
   return (
-    <dialog ref={ref} className="result-dialog" aria-labelledby="public-dialog-title" onClose={onClose}>
+    <dialog
+      ref={ref}
+      className="result-dialog"
+      aria-labelledby="public-dialog-title"
+      onClose={onClose}
+      onClick={closeOnBackdrop}
+    >
       <h2 id="public-dialog-title">{roundName(match.round)}</h2>
       <p className="muted">
         {[
