@@ -1,3 +1,4 @@
+import { isAuthPath, authPath } from './lib/authNavigation';
 import { ArenaHome, PisteFencers } from './components/PisteExperience';
 import PisteLive from './components/PisteLive';
 import { eventLanding } from './components/matchPresentation';
@@ -60,7 +61,10 @@ export default function App() {
   const [loading, setLoading] = useState(true);
   const [sessionError, setSessionError] = useState(false);
   const [sessionRetry, setSessionRetry] = useState(0);
-  const [isRegister, setIsRegister] = useState(false);
+  const [isRegister] = useState(() => location.pathname.startsWith('/inscription'));
+  useEffect(() => {
+    if (user && isAuthPath(location.pathname)) history.replaceState(null, '', `/accueil${location.search}`);
+  }, [user]);
   const [showPassword, setShowPassword] = useState(false);
   const [forgotPassword, setForgotPassword] = useState(false);
   const [passwordReset, setPasswordReset] = useState(false);
@@ -83,7 +87,7 @@ export default function App() {
   // Navigation principale
   const [mainTab, setMainTab] = useState(
     () =>
-      (location.pathname === '/' && /[?&](event|tournament|match|matches|view)=/.test(location.search)
+      ((location.pathname === '/' || isAuthPath(location.pathname)) && /[?&](event|tournament|match|matches|view)=/.test(location.search)
         ? 'play'
         : tabFromPath(location.pathname)) || 'home',
   );
@@ -829,18 +833,7 @@ export default function App() {
   }
 
   return (
-    <Landing
-      invitation={invitation}
-      onInvitationInvalid={() => setInvitation(null)}
-      onRegister={() => {
-        setForgotPassword(false);
-        setIsRegister(true);
-      }}
-      onLogin={() => {
-        setForgotPassword(false);
-        setIsRegister(false);
-      }}
-    >
+    <Landing invitation={invitation} onInvitationInvalid={() => setInvitation(null)}>
       <div className="auth-card">
         {forgotPassword ? (
           <ForgotPassword onBack={() => setForgotPassword(false)} />
@@ -922,8 +915,7 @@ export default function App() {
               <button
                 className="button-link"
                 onClick={() => {
-                  setIsRegister(!isRegister);
-                  setShowPassword(false);
+                  location.assign(authPath(!isRegister, location.search));
                 }}
                 style={{ textDecoration: 'underline' }}
               >
