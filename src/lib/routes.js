@@ -1,5 +1,8 @@
 // Une adresse par section de l'application (retour arrière, rechargement, liens partagés ou en favori).
 export const TAB_PATHS = {
+  live: '/direct',
+  me: '/moi',
+  home: '/accueil',
   play: '/pronostiquer',
   mine: '/mes-pronostics',
   season: '/ma-saison',
@@ -10,6 +13,9 @@ export const TAB_PATHS = {
   admin: '/admin',
 };
 export const TAB_TITLES = {
+  live: 'Suivi des pistes',
+  me: 'Moi',
+  home: 'Accueil',
   play: 'Pronostiquer',
   mine: 'Mes pronostics',
   season: 'Ma saison',
@@ -19,9 +25,8 @@ export const TAB_TITLES = {
   account: 'Mon compte',
   admin: 'Administration',
 };
-// « / » est la page d'accueil ; un joueur connecté y est renvoyé vers « Pronostiquer » (anciens liens et
-// notifications compris, avec leurs paramètres).
-const BY_PATH = { '/': 'play', ...Object.fromEntries(Object.entries(TAB_PATHS).map(([tab, path]) => [path, tab])) };
+// « / » ouvre l’accueil personnel ; les anciens liens de notification gardent leur destination.
+const BY_PATH = { '/': 'home', ...Object.fromEntries(Object.entries(TAB_PATHS).map(([tab, path]) => [path, tab])) };
 // Section correspondant à une adresse (y compris ses sous-adresses : /pronostiquer/<tournoi>/<épreuve>) ;
 // null pour les autres pages (tournoi public, pages légales…).
 export function tabFromPath(pathname) {

@@ -1,3 +1,4 @@
+import { PistePodium } from './PisteExperience';
 import { useEffect, useState } from 'react';
 import API from '../api';
 import DuelView from './DuelView';
@@ -126,7 +127,7 @@ export default function GlobalLeaderboard({ userId, tournamentId, competitionId 
   const me = rows?.find((r) => r.id === userId),
     previous = me ? rows.filter((r) => (r.rank || 0) < me.rank).at(-1) : null;
   return (
-    <section>
+    <section className="leaderboard-panel">
       <h1 className="section-title">
         Classement{' '}
         <small>
@@ -238,6 +239,7 @@ export default function GlobalLeaderboard({ userId, tournamentId, competitionId 
           </button>
         </>
       )}
+      <PistePodium rows={rows || []} />
       <div className="real-ranking">
         {rows?.map((r, i) => (
           <article

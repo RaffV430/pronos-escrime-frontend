@@ -99,7 +99,7 @@ export default function Community({ tournamentId: preferred = null, userId }) {
       setDetail((await API.get(`/community/leagues/${leagueId}${scoped(scope)}`)).data);
     });
   return (
-    <section className="feature-panel">
+    <section className="feature-panel community-panel">
       <h2>Groupes d’amis et clubs</h2>
       <p>
         Créés une fois, ils durent toute la saison : invitez vos proches avec le lien, puis suivez le classement sur

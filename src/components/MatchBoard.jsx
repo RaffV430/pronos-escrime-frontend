@@ -1,3 +1,4 @@
+import { readPreviewFollows } from '../lib/previewFollows';
 import CrowdTrend from './CrowdTrend';
 import { matchTotal } from './resultPresentation';
 import { roundLabel, stripLabel } from './matchPresentation';
@@ -32,6 +33,7 @@ export default function MatchBoard({
 }) {
   const clock = useNow(5000);
   const club = useClub();
+  const [followed] = useState(() => readPreviewFollows(localStorage, `pronos:followed:${userId}`));
   const now = fixedNow ?? clock;
   const deepLink = new URLSearchParams(location.search);
   const linkedIds =
@@ -50,9 +52,10 @@ export default function MatchBoard({
     [reveal, setReveal] = useState(null), // match à rendre visible dans l'arbre paginé
     [view, setView] = useState(() => {
       try {
-        return localStorage.getItem('pronos:match-view') === 'Arbre' ? 'Arbre' : 'Liste';
+        const savedView = localStorage.getItem('pronos:match-view');
+        return ['Arena', 'Arbre', 'Liste'].includes(savedView) ? savedView : 'Arena';
       } catch {
-        return 'Liste';
+        return 'Arena';
       }
     });
   const localDraft = useLocalDraft(draftKey(userId, competitionId, 'matches'));
@@ -207,7 +210,9 @@ export default function MatchBoard({
     const paged = view === 'Arbre' && buildTree(valid);
     const ordered = paged
       ? paged.rounds.flatMap((r) => r.slots.filter((s) => s.match).map((s) => s.match.id))
-      : [...document.querySelectorAll('input[id^="input-"][id$="-1"]')].map((el) => Number(el.id.split('-')[1]));
+      : view === 'Arena'
+        ? valid.map((m) => m.id)
+        : [...document.querySelectorAll('input[id^="input-"][id$="-1"]')].map((el) => Number(el.id.split('-')[1]));
     const next = nextMatchId(ordered, current, (mid) => {
       const m = valid.find((x) => x.id === mid);
       return Boolean(m) && !isMatchClosed(m, Date.now()) && !mine(m);
@@ -222,7 +227,7 @@ export default function MatchBoard({
       return false;
     };
     if (focusInput()) return;
-    if (next && view === 'Arbre') {
+    if (next && (view === 'Arbre' || view === 'Arena')) {
       setReveal({ id: next });
       setTimeout(() => focusInput() || document.activeElement?.blur(), 50);
     } else document.activeElement?.blur(); // plus rien à saisir : ferme le clavier sur mobile
@@ -338,14 +343,41 @@ export default function MatchBoard({
         {[m.player1, m.player2].map((name, i) => (
           <label className="opponent-row" key={i}>
             <strong>
-              {club.isClubFencer(name) && (
-                <span className="club-star" title={`Tireur du club${club.name ? ` ${club.name}` : ''}`}>
+              {
+                <span className={`arena-avatar avatar-${i}`} aria-hidden="true">
+                  {name
+                    .split(/\s+/)
+                    .slice(0, 2)
+                    .map((part) => part[0])
+                    .join('')}
+                </span>
+              }
+              {(club.isClubFencer(name) || followed.some((a) => a.name === name)) && (
+                <span
+                  className="club-star"
+                  title={
+                    followed.some((a) => a.name === name)
+                      ? 'Tireur suivi'
+                      : `Tireur du club${club.name ? ` ${club.name}` : ''}`
+                  }
+                >
                   ★{' '}
                 </span>
               )}
               {name}
               {m[`player${i + 1}Country`] && ` - ${m[`player${i + 1}Country`]}`}
             </strong>
+            {view === 'Arena' && (
+              <button
+                type="button"
+                className="score-step"
+                aria-label={`Diminuer le score de ${name}`}
+                disabled={closed || busy || !ready}
+                onClick={() => type(m, i + 1, String(Math.max(0, Number(v[`score${i + 1}`] || 0) - 1)))}
+              >
+                −
+              </button>
+            )}
             <input
               id={`${view === 'Arbre' ? 'detail-' : ''}input-${m.id}-${i + 1}`}
               aria-label={`Score prévu de ${name}`}
@@ -362,6 +394,17 @@ export default function MatchBoard({
               onKeyDown={(e) => keyDown(m, i + 1, e)}
               onKeyUp={(e) => keyUp(m, e)}
             />
+            {view === 'Arena' && (
+              <button
+                type="button"
+                className="score-step"
+                aria-label={`Augmenter le score de ${name}`}
+                disabled={closed || busy || !ready}
+                onClick={() => type(m, i + 1, String(Math.min(99, Number(v[`score${i + 1}`] || 0) + 1)))}
+              >
+                +
+              </button>
+            )}
           </label>
         ))}
         {m.pointsPending ? (
@@ -394,7 +437,7 @@ export default function MatchBoard({
         {!m.isFinished && (
           <div className="match-actions">
             <button disabled={closed || busy || !drafts[m.id] || !ready} onClick={() => save([m.id])}>
-              {busy ? 'Enregistrement…' : 'Enregistrer'}
+              {busy ? 'Enregistrement…' : view === 'Arena' ? 'Enregistrer et suivant →' : 'Enregistrer'}
             </button>
             {p && (
               <button className="button-link" disabled={closed || busy || !ready} onClick={() => remove(m)}>
@@ -430,7 +473,10 @@ export default function MatchBoard({
     );
   };
   return (
-    <section className="match-board" aria-label="Tableau d’élimination directe">
+    <section
+      className={`match-board ${view === 'Arena' ? 'arena-board' : ''}`}
+      aria-label="Tableau d’élimination directe"
+    >
       <>
         {newMatches.length > 0 && (
           <aside className="new-matches">
@@ -486,12 +532,12 @@ export default function MatchBoard({
                 'Résultats publiés',
               ].map((x) => (
                 <button key={x} aria-pressed={filter === x} onClick={() => setFilter(x)}>
-                  {x}
+                  {x === 'Arena' ? 'Cartes' : x === 'Arbre' ? 'Tableau complet' : x}
                 </button>
               ))}
             </div>
             <div className="filter-row view-toggle" role="group" aria-label="Affichage">
-              {['Liste', 'Arbre'].map((x) => (
+              {['Arena', 'Liste', 'Arbre'].map((x) => (
                 <button
                   key={x}
                   aria-pressed={view === x}
@@ -504,7 +550,7 @@ export default function MatchBoard({
                     }
                   }}
                 >
-                  {x}
+                  {x === 'Arena' ? 'Cartes' : x === 'Arbre' ? 'Tableau complet' : x}
                 </button>
               ))}
             </div>
@@ -521,8 +567,49 @@ export default function MatchBoard({
               Pronostic suivant →
             </button>
           </div>
-          {view === 'Arbre' && tree ? (
-            <>
+          {view === 'Arena' ? (
+            <div className="arena-dashboard">
+              <section className="arena-featured">
+                <p className="arena-eyebrow">LE PROCHAIN ASSAUT</p>
+                <h2>Qui passe au tour suivant ?</h2>
+                <p>
+                  {valid.filter((m) => mine(m)).length} / {valid.length} pronostics enregistrés
+                </p>
+                {(() => {
+                  const candidates = valid.filter(visible);
+                  const featured =
+                    candidates.find((m) => m.id === reveal?.id) ||
+                    candidates.find((m) => !mine(m) && !isMatchClosed(m, now)) ||
+                    candidates[0];
+                  return featured ? card(featured) : <p>Aucun match pour ce filtre.</p>;
+                })()}
+              </section>
+              <aside className="piste-card-guide">
+                <p className="arena-eyebrow">VOTRE PARCOURS</p>
+                <h2>Un assaut à la fois.</h2>
+                <p>Choisissez votre score puis enregistrez. Le prochain match sans pronostic vous sera proposé.</p>
+                <p>Retrouvez toutes les affiches dans « Tableau complet ».</p>
+              </aside>
+              <section className="arena-other-matches">
+                <h2>Toutes les rencontres</h2>
+                <div className="match-grid">
+                  {valid.filter(visible).map((m) => (
+                    <button
+                      className="button-secondary"
+                      key={m.id}
+                      onClick={() => {
+                        setView('Liste');
+                        setReveal({ id: m.id });
+                      }}
+                    >
+                      {roundLabel(m.round)} · {m.player1} / {m.player2}
+                    </button>
+                  ))}
+                </div>
+              </section>
+            </div>
+          ) : view === 'Arbre' && tree ? (
+            <div className="piste-bracket-layout">
               <p className="muted">
                 Votre score pronostiqué en face des tireurs, le résultat officiel en bas à droite. Entrée enregistre et
                 passe au match suivant ; touchez un match pour son détail.
@@ -559,7 +646,7 @@ export default function MatchBoard({
                   {card(openMatch)}
                 </section>
               )}
-            </>
+            </div>
           ) : (
             <div className="rounds">
               {groups

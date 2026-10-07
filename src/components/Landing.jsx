@@ -1,3 +1,4 @@
+import { PisteCountdown } from './PisteExperience';
 import { useEffect, useState } from 'react';
 import API from '../api';
 import PublicHeader from './PublicHeader';
@@ -57,6 +58,17 @@ export default function Landing({ children, onRegister, onLogin, invitation = nu
             Pronostiquez les tableaux, les poules et les podiums des compétitions d’escrime, au fleuret, à l’épée et au
             sabre, et défiez votre club au classement.
           </p>
+          {
+            <PisteCountdown
+              deadline={
+                tournaments
+                  .flatMap((t) => t.competitions || [])
+                  .map((c) => c.startsAt)
+                  .filter(Boolean)
+                  .sort()[0]
+              }
+            />
+          }
           <p className="landing-ctas">
             <button type="button" onClick={() => focusLogin(true)}>
               Créer un compte

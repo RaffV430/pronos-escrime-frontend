@@ -1,0 +1,461 @@
+/* Charte Piste v1 — 8 octobre 2026. Variante bleue retenue par l’utilisateur. */
+.club-arena {
+  --bg: #f4f6f9;
+  --bg-raised: #fff;
+  --surface: #fff;
+  --surface-2: #eef1f5;
+  --border: #d7dde5;
+  --divider: #e6eaf0;
+  --text: #0e131b;
+  --text-2: #3a4556;
+  --text-muted: #5d6878;
+  --text-faint: #a3acb9;
+  --accent: #3da5ff;
+  --on-accent: #0b0e13;
+  --accent-link: #1469b2;
+  --lamp-left: #e02633;
+  --lamp-left-text: #e02633;
+  --lamp-right: #22d37a;
+  --success: #0fa35a;
+  --danger: #e02633;
+  --warning: #b98600;
+  --info: #3da5ff;
+  --gold: #ffc531;
+  --silver: #c9d2de;
+  --bronze: #d08a4e;
+  --success-bg: rgba(34, 211, 122, 0.1);
+  --danger-bg: rgba(255, 59, 71, 0.12);
+  --font-display: 'Barlow Condensed', sans-serif;
+  --font-body: 'Barlow', sans-serif;
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --r-xs: 6px;
+  --r-sm: 10px;
+  --r-md: 14px;
+  --r-lg: 18px;
+  --r-xl: 24px;
+  --r-pill: 999px;
+  --shadow-1: 0 4px 12px rgba(0, 0, 0, 0.25);
+  --shadow-2: 0 20px 50px rgba(0, 0, 0, 0.35);
+  --dur-1: 120ms;
+  --dur-2: 200ms;
+  --dur-3: 320ms;
+  --dur-4: 700ms;
+  --ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --ease-in: cubic-bezier(0.4, 0, 1, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --primary: var(--accent-link);
+  --primary-hover: var(--accent-link);
+  --muted: var(--text-muted);
+  --soft: var(--surface-2);
+  --arena-bg: var(--bg);
+  --arena-accent: var(--accent);
+  --arena-nav: var(--surface-2);
+  --arena-blue: var(--info);
+  --arena-blue-soft: var(--surface-2);
+  font-family: var(--font-body);
+  font-size: 15px;
+  line-height: 1.45;
+  background: var(--bg);
+  color: var(--text);
+}
+@media (prefers-color-scheme: dark) {
+  .club-arena {
+    --bg: #0b0e13;
+    --bg-raised: #0f1319;
+    --surface: #151a22;
+    --surface-2: #1c232e;
+    --border: #263040;
+    --divider: #1e2632;
+    --text: #eef2f7;
+    --text-2: #b7c0cd;
+    --text-muted: #8c97a8;
+    --text-faint: #4a5568;
+    --accent-link: #3da5ff;
+    --lamp-left: #ff3b47;
+    --lamp-left-text: #ff5a64;
+    --success: #22d37a;
+    --danger: #ff3b47;
+    --warning: #ffc531;
+  }
+}
+.club-arena h1,
+.club-arena h2,
+.club-arena h3 {
+  font-family: var(--font-display);
+}
+.club-arena h1 {
+  font-size: 40px;
+  line-height: 1;
+  font-weight: 800;
+}
+.club-arena h2 {
+  font-size: 24px;
+  line-height: 1.1;
+  font-weight: 700;
+}
+.club-arena :is(input, select, textarea) {
+  font-family: var(--font-body);
+}
+.club-arena :is(button, a):focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+.club-arena .primary-nav,
+.club-arena .topbar {
+  background: var(--bg-raised);
+  border-color: var(--divider);
+}
+.club-arena .primary-nav button {
+  font-family: var(--font-body);
+}
+.club-arena .primary-nav button[data-tab][aria-pressed='true'] {
+  color: var(--accent-link);
+  box-shadow: inset 3px 0 var(--accent);
+  background: var(--surface);
+}
+.club-arena .arena-track span {
+  background: var(--accent);
+}
+.club-arena .arena-home-event:before,
+.club-arena .arena-progress:before {
+  background: var(--accent);
+}
+.club-arena .arena-home-event,
+.club-arena .arena-featured,
+.club-arena .arena-league-card,
+.club-arena .arena-home-result {
+  background: var(--surface);
+  border-color: var(--border);
+  border-radius: var(--r-lg);
+}
+.club-arena .arena-home .arena-home-event > button,
+.club-arena .arena-featured > button:not(.arena-home-match):not(.button-link),
+.club-arena .arena-featured .match-actions > button:first-child {
+  background: var(--accent);
+  color: var(--on-accent) !important;
+  font: 700 21px var(--font-display);
+  min-height: 50px;
+  border-radius: var(--r-md);
+}
+.club-arena .arena-board .opponent-row strong {
+  font: 700 24px var(--font-display);
+  background: var(--surface-2);
+}
+.club-arena .arena-board .opponent-row:nth-of-type(1) .arena-avatar {
+  border-color: var(--lamp-left);
+}
+.club-arena .arena-board .opponent-row:nth-of-type(2) .arena-avatar {
+  border-color: var(--lamp-right);
+}
+.club-arena .arena-board .opponent-row input {
+  font-family: var(--font-display);
+  font-weight: 800;
+}
+.club-arena .piste-countdown b,
+.club-arena .piste-place b,
+.club-arena .piste-scoreboard b {
+  font-variant-numeric: tabular-nums;
+  font-family: var(--font-display);
+}
+.club-arena .piste-countdown span {
+  border: 1px solid var(--border);
+}
+.club-arena .piste-profile {
+  background: var(--surface);
+  border-color: var(--accent);
+}
+.club-arena .piste-scoreboard {
+  background: #0f1319;
+  color: #eef2f7;
+  border-radius: var(--r-xl);
+}
+.club-arena .piste-scoreboard > div:first-child {
+  border-top: 5px solid var(--lamp-left);
+}
+.club-arena .piste-scoreboard > div:last-child {
+  border-top: 5px solid var(--lamp-right);
+}
+@media (min-width: 1024px) {
+  .club-arena .primary-nav {
+    width: 240px;
+  }
+  .club-arena main {
+    margin-left: 0;
+    padding-left: 280px;
+  }
+}
+@media (max-width: 639px) {
+  .club-arena h1 {
+    font-size: 30px;
+  }
+  .club-arena h2 {
+    font-size: 24px;
+  }
+  .club-arena .arena-dashboard {
+    gap: 12px;
+  }
+  .club-arena .arena-welcome h1 {
+    font-size: 38px;
+  }
+  .club-arena .arena-board .opponent-row strong {
+    font-size: 22px;
+  }
+  .club-arena .primary-nav {
+    min-height: 64px;
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+}
+.club-arena body,
+.club-arena .app-shell {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-body);
+}
+.club-arena .app-header {
+  background: var(--bg-raised);
+  border-color: var(--divider);
+}
+.club-arena .event-chooser .event-choice-card {
+  background: var(--surface-2);
+  color: var(--text);
+  border: 1px solid var(--border);
+  text-align: left;
+}
+.club-arena .event-chooser .event-choice-card span {
+  color: var(--muted);
+}
+.club-arena .event-chooser .event-choice-card[aria-current='true'] {
+  background: var(--accent);
+  color: var(--on-accent);
+  border-color: var(--accent);
+}
+.club-arena .event-chooser .event-choice-card[aria-current='true'] span {
+  color: var(--on-accent);
+}
+.club-arena .event-chooser .event-choice-card[aria-current='true'] strong {
+  color: var(--on-accent) !important;
+}
+.club-arena .event-chooser .event-choice-card[aria-current='true'] strong::before {
+  content: '✓ ';
+}
+.club-arena .tree-card,
+.club-arena .tree-card:is(.is-done, .is-closed, .is-live, .is-saved, .is-draft, .is-future, .is-bye) {
+  border: 1px solid var(--border);
+  box-shadow: none;
+}
+.club-arena .tree-card.is-open {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px var(--accent);
+}
+@media (min-width: 1024px) {
+  .club-arena .redesigned {
+    max-width: 1680px;
+    padding-left: 280px;
+  }
+  .club-arena .app-header {
+    left: 240px;
+  }
+}
+/* Suivi de compétition : couleurs des lampes, résultats et points officiels. */
+.club-arena .piste-live {
+  margin-top: 24px;
+}
+.club-arena .piste-live-heading {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: center;
+}
+.club-arena .piste-live-notice {
+  color: var(--muted);
+  font-size: 14px;
+}
+.club-arena .piste-live-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: end;
+  margin: 24px 0;
+}
+.club-arena .piste-live-filters label {
+  display: grid;
+  gap: 4px;
+}
+.club-arena .piste-live-filters select {
+  min-height: 44px;
+}
+.club-arena .piste-live-score {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 24px;
+  overflow: hidden;
+  padding: 24px;
+}
+.club-arena .piste-live-meta {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  color: var(--muted);
+}
+.club-arena .piste-live-duel {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  margin: 20px -24px;
+}
+.club-arena .piste-live-athlete {
+  padding: 24px;
+  display: grid;
+  grid-template-columns: 64px 1fr;
+  gap: 16px;
+  align-items: center;
+  min-width: 0;
+}
+.club-arena .piste-live-athlete h2 {
+  font: 800 clamp(24px, 3vw, 40px) var(--font-display);
+  overflow-wrap: anywhere;
+}
+.club-arena .piste-live-athlete .arena-avatar {
+  width: 64px;
+  height: 64px;
+  border: 2px solid currentColor;
+}
+.club-arena .piste-live-athlete.lamp-1 {
+  background: linear-gradient(110deg, #ff334b26, transparent);
+  border-top: 5px solid var(--lamp-left);
+}
+.club-arena .piste-live-athlete.lamp-2 {
+  background: linear-gradient(250deg, #00ce7d26, transparent);
+  border-top: 5px solid var(--lamp-right);
+}
+.club-arena .piste-live-score-number {
+  grid-column: 1/-1;
+  font: 800 clamp(64px, 8vw, 120px) var(--font-display);
+  text-align: center;
+}
+.club-arena .piste-live-panels {
+  display: grid;
+  grid-template-columns: 1fr 1.5fr;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+.club-arena .piste-live-panels > section {
+  padding: 20px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+}
+.club-arena .piste-live-panels h3 {
+  font-size: 36px;
+  margin: 8px 0;
+}
+.club-arena .piste-live-bottom {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(240px, 1fr);
+  gap: 24px;
+  margin-top: 24px;
+}
+.club-arena .piste-live-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+  gap: 12px;
+  max-height: 650px;
+  overflow: auto;
+  padding: 2px;
+}
+.club-arena .piste-live-tile {
+  display: grid;
+  gap: 8px;
+  text-align: left;
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--border);
+  padding: 16px;
+  border-radius: 16px;
+}
+.club-arena .piste-live-tile[aria-pressed='true'] {
+  border-color: var(--accent);
+}
+.club-arena .piste-live-tile span {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+.club-arena .piste-live-tile small {
+  color: var(--muted);
+}
+.club-arena .piste-live-result {
+  padding: 16px 0;
+  border-bottom: 1px solid var(--divider);
+}
+.club-arena .piste-live-points {
+  color: var(--success);
+  animation: piste-points-in 0.3s ease-out;
+}
+@keyframes piste-points-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@media (max-width: 700px) {
+  .club-arena .piste-live-bottom,
+  .club-arena .piste-live-panels {
+    grid-template-columns: 1fr;
+  }
+  .club-arena .piste-live-athlete {
+    grid-template-columns: 1fr;
+    padding: 16px;
+    gap: 8px;
+  }
+  .club-arena .piste-live-athlete h2 {
+    font-size: 24px;
+  }
+  .club-arena .piste-live-athlete .arena-avatar {
+    width: 48px;
+    height: 48px;
+  }
+  .club-arena .piste-live-score {
+    padding: 16px;
+  }
+  .club-arena .piste-live-duel {
+    margin: 16px -16px;
+  }
+  .club-arena .piste-live-grid {
+    max-height: none;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .club-arena .piste-live-points {
+    animation: none;
+  }
+}
+.club-arena .piste-live .piste-live-tile:hover:not(:disabled) {
+  background: var(--surface-2);
+  color: var(--text);
+  border-color: var(--accent);
+}
+.club-arena .piste-live .piste-live-tile span,
+.club-arena .piste-live .piste-live-tile b {
+  color: var(--text) !important;
+}
+.club-arena .piste-live-filters button[aria-pressed='true'] {
+  background: var(--accent);
+  color: var(--on-accent);
+}
+.club-arena .piste-live .lamp-1 .arena-avatar {
+  background: var(--lamp-left);
+  border-color: var(--lamp-left);
+}
+.club-arena .piste-live .lamp-2 .arena-avatar {
+  background: var(--lamp-right);
+  border-color: var(--lamp-right);
+}
