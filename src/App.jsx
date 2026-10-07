@@ -1,3 +1,5 @@
+import { ArenaHome, PisteFencers } from './components/PisteExperience';
+import PisteLive from './components/PisteLive';
 import { eventLanding } from './components/matchPresentation';
 import { useState, useEffect, useRef, useMemo, lazy, Suspense } from 'react';
 import API, { SESSION_EXPIRED_EVENT } from './api';
@@ -50,6 +52,7 @@ const tabFallback = <p className="muted load-state">Chargement…</p>;
 
 export default function App() {
   // Lien d'invitation (/rejoindre/<code>) : lu avant tout le reste, l'adresse redevient « / ».
+  const [arenaMore, setArenaMore] = useState(false);
   const [invitation, setInvitation] = useState(() => captureInvitation());
   const [inviteNotice, setInviteNotice] = useState('');
   const joining = useRef(false);
@@ -78,7 +81,12 @@ export default function App() {
   const [error, setError] = useState('');
 
   // Navigation principale
-  const [mainTab, setMainTab] = useState(() => tabFromPath(location.pathname) || 'play');
+  const [mainTab, setMainTab] = useState(
+    () =>
+      (location.pathname === '/' && /[?&](event|tournament|match|matches|view)=/.test(location.search)
+        ? 'play'
+        : tabFromPath(location.pathname)) || 'home',
+  );
   // Une adresse par section : l'onglet suit l'adresse (retour arrière du navigateur) et inversement.
   const [matchTarget, setMatchTarget] = useState(null);
 
@@ -415,19 +423,63 @@ export default function App() {
           <NotificationBanner userId={user.id} />
           <nav className="primary-nav" aria-label="Navigation principale">
             {[
+              ['home', '⌂', 'Accueil'],
               ['play', '◎', 'Pronostiquer'],
-              ['mine', '▤', 'Mes pronostics'],
-              ['season', '◷', 'Ma saison'],
-              ['results', '⚑', 'Résultats'],
               ['leaderboard', '↗', 'Classements'],
-              ['community', '♧', 'Communauté'],
+              ['me', '◉', 'Moi'],
             ].map(([id, icon, label]) => (
-              <button key={id} aria-pressed={mainTab === id} onClick={() => navigate(id)}>
+              <button
+                key={id}
+                data-tab={id}
+                aria-pressed={
+                  mainTab === id ||
+                  (id === 'home' && mainTab === 'live') ||
+                  (id === 'me' && ['mine', 'season', 'community', 'results', 'account', 'admin'].includes(mainTab))
+                }
+                onClick={() => {
+                  setArenaMore(false);
+                  navigate(id);
+                }}
+              >
                 <span aria-hidden="true">{icon}</span>
                 {label}
               </button>
             ))}
+            {
+              <button className="arena-more" aria-expanded={arenaMore} onClick={() => setArenaMore(!arenaMore)}>
+                <span aria-hidden="true">⋯</span>Plus
+              </button>
+            }
+            {club.name && (
+              <div className="arena-club">
+                <span>VOTRE CLUB</span>
+                <strong>{club.name}</strong>
+                <button onClick={() => navigate('community')}>Retrouver le groupe →</button>
+              </div>
+            )}
           </nav>
+          {arenaMore && (
+            <nav className="arena-mobile-menu" aria-label="Autres sections">
+              {[
+                ['mine', 'Mes pronostics'],
+                ['season', 'Ma saison'],
+                ['results', 'Résultats'],
+                ['account', 'Mon compte'],
+                ...(user.isAdmin ? [['admin', 'Administration']] : []),
+              ].map(([id, label]) => (
+                <button
+                  key={id}
+                  onClick={() => {
+                    setArenaMore(false);
+                    navigate(id);
+                  }}
+                >
+                  {label} →
+                </button>
+              ))}
+              <button onClick={() => setArenaMore(false)}>Fermer</button>
+            </nav>
+          )}
           {error && <p role="alert">{error}</p>}
           <ErrorBoundary zone="contenu" resetKey={`${mainTab}:${playTab}:${selectedCompetitionId}`}>
             <Suspense fallback={tabFallback}>
@@ -439,6 +491,54 @@ export default function App() {
                   <CircuitSettings />
                   <FtlTournamentSetup onConfigured={() => setEventListVersion((v) => v + 1)} />
                 </Suspense>
+              )}
+              {mainTab === 'me' && (
+                <section className="piste-me feature-panel">
+                  <p className="arena-eyebrow">MON ESPACE</p>
+                  <h1>{user.name || user.username}</h1>
+                  <p>Votre jeu, votre communauté et votre saison.</p>
+                  <PisteFencers key={user.id} userId={user.id} roster={competition?.podiumRoster || []} />
+                  <div className="piste-shortcuts">
+                    {[
+                      ['live', 'Suivi des pistes', 'Résultats synchronisés et points'],
+                      ['mine', 'Mes pronostics', 'Vos choix, résultats et points'],
+                      ['season', 'Ma saison', 'Votre bilan et vos médailles'],
+                      ['community', 'Ma communauté', 'Ligues, clubs et duels'],
+                      ['results', 'Résultats', 'Les classements officiels'],
+                      ['account', 'Mes réglages', 'Profil, apparence et notifications'],
+                      ...(user.isAdmin ? [['admin', 'Administration', 'Gérer les épreuves et le suivi']] : []),
+                    ].map(([id, title, description]) => (
+                      <button className="button-secondary" key={id} onClick={() => navigate(id)}>
+                        <strong>{title} →</strong>
+                        <span>{description}</span>
+                      </button>
+                    ))}
+                  </div>
+                </section>
+              )}
+              {mainTab === 'home' && (
+                <ArenaHome
+                  user={user}
+                  matches={matches}
+                  competition={competition}
+                  tournament={tournamentInfo}
+                  onPlay={() => navigate('play')}
+                  onMine={() => navigate('mine')}
+                  onCommunity={() => navigate('community')}
+                  onLive={() => navigate('live')}
+                />
+              )}
+              {mainTab === 'live' && (
+                <PisteLive
+                  key={selectedCompetitionId}
+                  matches={matches}
+                  competition={competition}
+                  userId={user.id}
+                  ready={matchesReady}
+                  error={matchesError}
+                  stale={matchesStale}
+                  onPlay={() => navigate('play')}
+                />
               )}
               {mainTab === 'season' && <MySeason userId={user.id} playerName={user.name || user.username} />}
               {mainTab === 'results' && <Results />}
@@ -467,10 +567,10 @@ export default function App() {
                   </button>
                 </p>
               )}
-              {!['season', 'account', 'mine', 'results', 'leaderboard', 'community'].includes(mainTab) && (
+              {!['me', 'season', 'account', 'mine', 'results', 'leaderboard', 'community'].includes(mainTab) && (
                 <EventSelector
-                  key={`${user.id}:${eventListVersion}:${mainTab === 'play' ? 'active' : 'history'}`}
-                  includeArchived={mainTab !== 'play'}
+                  key={`${user.id}:${eventListVersion}:${['play', 'home', 'live'].includes(mainTab) ? 'active' : 'history'}`}
+                  includeArchived={!['play', 'home', 'live'].includes(mainTab)}
                   {...(mainTab === 'admin'
                     ? {
                         title: 'Épreuve à administrer',
@@ -603,6 +703,7 @@ export default function App() {
                         ].map(([id, label]) => (
                           <button
                             key={id}
+                            data-section={id}
                             aria-pressed={playTab === id}
                             onClick={() =>
                               runNavigation(() => {

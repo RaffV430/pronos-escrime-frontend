@@ -1,29 +1,42 @@
+import '@fontsource/barlow-condensed/600.css';
+import '@fontsource/barlow-condensed/700.css';
+import '@fontsource/barlow-condensed/800.css';
+import '@fontsource/barlow/400.css';
+import '@fontsource/barlow/500.css';
+import '@fontsource/barlow/600.css';
+import '@fontsource/barlow/700.css';
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import './index.css';
 import App from './App.jsx';
+import './components/club-arena.css';
+import './components/piste-tokens.css';
 import ErrorBoundary from './components/ErrorBoundary.jsx';
 import { startMonitoring, reportError } from './lib/monitoring.js';
 import { initTheme } from './lib/theme.js';
 
 initTheme();
 
+document.documentElement.classList.add('club-arena');
 startMonitoring();
 
 // Adresse de référence de la page (sans paramètres) : une seule URL par contenu pour les moteurs de recherche.
 const canonical = document.querySelector('link[rel="canonical"]');
 if (canonical) canonical.href = `https://www.pronos-escrime.fr${location.pathname.replace(/\/+$/, '') || '/'}`;
 
-createRoot(document.getElementById('root'), {
-  onUncaughtError: (error, info) => reportError(error, { componentStack: info.componentStack }),
-  onCaughtError: (error, info) => reportError(error, { componentStack: info.componentStack }),
-}).render(
-  <StrictMode>
-    <ErrorBoundary zone="application">
-      <App />
-    </ErrorBoundary>
-  </StrictMode>,
-);
+async function renderApp() {
+  createRoot(document.getElementById('root'), {
+    onUncaughtError: (error, info) => reportError(error, { componentStack: info.componentStack }),
+    onCaughtError: (error, info) => reportError(error, { componentStack: info.componentStack }),
+  }).render(
+    <StrictMode>
+      <ErrorBoundary zone="application">
+        <App />
+      </ErrorBoundary>
+    </StrictMode>,
+  );
+}
+renderApp();
 
 if (import.meta.env.PROD && 'serviceWorker' in navigator) {
   window.addEventListener('load', () => navigator.serviceWorker.register('/sw.js').catch(() => {}));

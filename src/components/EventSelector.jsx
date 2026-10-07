@@ -88,6 +88,11 @@ export default function EventSelector({
               if (data.some((event) => Number(event.id) === saved.eventId)) {
                 setEventId(String(saved.eventId));
                 setConfirmed(true);
+                try {
+                  localStorage.setItem(storageKey, JSON.stringify(saved));
+                } catch {
+                  /* Préférence facultative. */
+                }
                 onSelectRef.current(
                   saved.tournamentId,
                   saved.eventId,

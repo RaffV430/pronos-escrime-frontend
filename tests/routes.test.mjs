@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { tabFromPath, pathForTab } from '../src/lib/routes.js';
 
 test('une adresse par section, et retour', () => {
-  assert.equal(tabFromPath('/'), 'play');
+  assert.equal(tabFromPath('/'), 'home');
   assert.equal(tabFromPath('/resultats'), 'results');
   assert.equal(tabFromPath('/classements/'), 'leaderboard');
   assert.equal(tabFromPath('/tournoi/3'), null);
@@ -12,7 +12,19 @@ test('une adresse par section, et retour', () => {
   assert.equal(pathForTab('play'), '/pronostiquer');
   assert.equal(tabFromPath('/pronostiquer'), 'play');
   assert.equal(pathForTab('inconnu'), '/');
-  for (const tab of ['play', 'mine', 'season', 'results', 'leaderboard', 'community', 'account', 'admin'])
+  for (const tab of [
+    'home',
+    'me',
+    'live',
+    'play',
+    'mine',
+    'season',
+    'results',
+    'leaderboard',
+    'community',
+    'account',
+    'admin',
+  ])
     assert.equal(tabFromPath(pathForTab(tab)), tab);
 });
 
