@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import API from '../api';
 import { withCount } from '../lib/plural';
 import { pollWhileVisible } from '../lib/polling';
+import { parseLocation } from '../lib/routes';
 
 const readSelection = (key) => {
   try {
@@ -28,8 +29,9 @@ export default function EventSelector({
   submitLabel = null,
 }) {
   const storageKey = 'pronos:last-event:' + userId;
-  const link = new URLSearchParams(location.search);
-  const linked = { tournamentId: Number(link.get('tournament')), eventId: Number(link.get('event')) };
+  // Épreuve de l'adresse (/pronostiquer/<tournoi>/<épreuve>, ou ancien lien ?tournament=…&event=…).
+  const fromUrl = parseLocation(location.pathname, location.search);
+  const linked = { tournamentId: Number(fromUrl.tournamentId), eventId: Number(fromUrl.eventId) };
   const pendingRestore = useRef(
     Number.isSafeInteger(linked.tournamentId) &&
       linked.tournamentId > 0 &&
@@ -54,6 +56,10 @@ export default function EventSelector({
     }
   };
   const [tournaments, setTournaments] = useState([]);
+  const tournamentsRef = useRef([]);
+  useEffect(() => {
+    tournamentsRef.current = tournaments;
+  }, [tournaments]);
   const [events, setEvents] = useState([]);
   const [tournamentId, setTournamentId] = useState('');
   const [eventId, setEventId] = useState('');
@@ -86,6 +92,7 @@ export default function EventSelector({
                   saved.tournamentId,
                   saved.eventId,
                   data.find((event) => Number(event.id) === saved.eventId),
+                  tournamentsRef.current.find((t) => Number(t.id) === saved.tournamentId) || null,
                 );
               } else {
                 try {
@@ -187,7 +194,12 @@ export default function EventSelector({
                 setEvents(entries);
                 setEventId(String(event.id));
                 remember({ tournamentId: Number(chosenTournamentId), eventId: Number(event.id) });
-                onSelect(Number(chosenTournamentId), Number(event.id), event);
+                onSelect(
+                  Number(chosenTournamentId),
+                  Number(event.id),
+                  event,
+                  tournaments.find((t) => String(t.id) === String(chosenTournamentId)) || null,
+                );
               });
             }}
           />
@@ -221,6 +233,7 @@ export default function EventSelector({
               Number(tournamentId),
               Number(eventId),
               events.find((event) => String(event.id) === eventId),
+              tournaments.find((t) => String(t.id) === tournamentId) || null,
             );
             setConfirmed(true);
           }

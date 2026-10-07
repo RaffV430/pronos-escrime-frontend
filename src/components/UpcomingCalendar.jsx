@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import API from '../api';
-import { calendarDates, calendarCategories, calendarFormat, GENDERS, monthLabel } from '../lib/calendar';
+import { calendarDates, calendarCategories, calendarFormat, calendarLink, GENDERS, monthLabel } from '../lib/calendar';
+import { publicPath } from '../lib/routes';
 
 // Prochaines épreuves du calendrier (sélection FFE) : dates, lieu, hommes / dames, catégories.
 // Une épreuve déjà suivie par l'application renvoie vers sa page.
@@ -60,10 +61,7 @@ export default function UpcomingCalendar({
                     </span>
                   </span>
                   {e.tournamentId && (
-                    <a
-                      className="calendar-live"
-                      href={`/tournoi/${e.tournamentId}${e.competitionIds?.length ? `?epreuves=${e.competitionIds.join(',')}` : ''}`}
-                    >
+                    <a className="calendar-live" href={calendarLink(e, publicPath)}>
                       Sur l’appli
                     </a>
                   )}

@@ -4,6 +4,7 @@ import PublicHeader from './PublicHeader';
 import InvitationBanner from './InvitationBanner';
 import UpcomingCalendar from './UpcomingCalendar';
 import { MEDALS, cityName, countryName, dateRange, flag } from './eventResults';
+import { publicPath } from '../lib/routes';
 
 const where = (t) =>
   [
@@ -72,7 +73,7 @@ export default function Landing({ children, onRegister, onLogin, invitation = nu
               DERNIERS RÉSULTATS
             </p>
             <h2>
-              <a href={`/tournoi/${latest.id}`}>{latest.name}</a>
+              <a href={publicPath(latest)}>{latest.name}</a>
             </h2>
             <p className="muted">{where(latest)}</p>
             <ul className="landing-winners">
@@ -94,7 +95,7 @@ export default function Landing({ children, onRegister, onLogin, invitation = nu
               })}
             </ul>
             <p className="landing-preview-links">
-              <a href={`/tournoi/${latest.id}`}>Tableaux et classement de ce tournoi</a>
+              <a href={publicPath(latest)}>Tableaux et classement de ce tournoi</a>
               <a className="landing-all" href="/resultats">
                 Voir tous les résultats →
               </a>
@@ -105,7 +106,7 @@ export default function Landing({ children, onRegister, onLogin, invitation = nu
                 <ul className="landing-tournaments">
                   {others.map((t) => (
                     <li key={t.id}>
-                      <a href={`/tournoi/${t.id}`}>{t.name}</a>
+                      <a href={publicPath(t)}>{t.name}</a>
                       <small>{where(t)}</small>
                     </li>
                   ))}

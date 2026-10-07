@@ -29,6 +29,17 @@
       "destination": "https://pronos-escrime.onrender.com/api/public/sitemap.xml"
     },
     {
+      "source": "/tournoi/:id/:event",
+      "has": [
+        {
+          "type": "header",
+          "key": "user-agent",
+          "value": ".*(facebookexternalhit|Facebot|WhatsApp|Twitterbot|Slackbot|LinkedInBot|Discordbot|TelegramBot|Pinterest|SkypeUriPreview|Applebot|iMessage|redditbot|Snapchat|Google-InspectionTool|bingbot|Googlebot).*"
+        }
+      ],
+      "destination": "https://pronos-escrime.onrender.com/api/public/tournaments/:id/share?event=:event"
+    },
+    {
       "source": "/tournoi/:id",
       "has": [
         {

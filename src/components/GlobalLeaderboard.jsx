@@ -1,10 +1,15 @@
 import { useEffect, useState } from 'react';
 import API from '../api';
 import DuelView from './DuelView';
+import { parseLocation, pathFor } from '../lib/routes';
+// /classements/<tournoi>[/<épreuve>] : la sélection se lit et s'écrit dans l'adresse.
+const fromUrl = () => parseLocation(location.pathname);
 export default function GlobalLeaderboard({ userId, tournamentId, competitionId }) {
-  const [scope, setScope] = useState('Général'),
-    [selectedTournament, setTournament] = useState(tournamentId ? String(tournamentId) : ''),
-    [selectedEvent, setEvent] = useState(competitionId ? String(competitionId) : ''),
+  const [scope, setScope] = useState(() =>
+      fromUrl().eventId ? 'Épreuve' : fromUrl().tournamentId ? 'Tournoi' : 'Général',
+    ),
+    [selectedTournament, setTournament] = useState(() => String(fromUrl().tournamentId || tournamentId || '')),
+    [selectedEvent, setEvent] = useState(() => String(fromUrl().eventId || competitionId || '')),
     [tournaments, setTournaments] = useState([]),
     [events, setEvents] = useState([]),
     [rows, setRows] = useState(null),
@@ -104,6 +109,20 @@ export default function GlobalLeaderboard({ userId, tournamentId, competitionId 
       setDuelError(e.response?.data?.error || 'Comparaison indisponible. Réessayez.');
     }
   };
+  useEffect(() => {
+    if (!/^\/classements(\/|$)/.test(location.pathname)) return;
+    const tournament = tournaments.find((t) => String(t.id) === selectedTournament);
+    const event = events.find((e) => String(e.id) === selectedEvent);
+    const path =
+      scope === 'Tournoi' && tournament
+        ? pathFor('leaderboard', { tournament })
+        : scope === 'Épreuve' && tournament && event
+          ? pathFor('leaderboard', { tournament, event })
+          : scope === 'Général' || scope === 'Circuit'
+            ? '/classements'
+            : null;
+    if (path && path !== location.pathname) history.replaceState(null, '', path);
+  }, [scope, selectedTournament, selectedEvent, tournaments, events]);
   const me = rows?.find((r) => r.id === userId),
     previous = me ? rows.filter((r) => (r.rank || 0) < me.rank).at(-1) : null;
   return (

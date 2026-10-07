@@ -9,7 +9,7 @@ import NotificationBanner from './components/NotificationBanner';
 import { ForgotPassword, ResetPassword } from './components/AccountRecovery';
 import { LegalPage, LegalLinks } from './components/LegalPages';
 import { legalPageFor } from './lib/legal.js';
-import { TAB_TITLES, pathForTab, tabFromPath } from './lib/routes.js';
+import { TAB_TITLES, idOf, parseLocation, pathFor, pathForTab, tabFromPath } from './lib/routes.js';
 import { captureInvitation, clearInvitation } from './lib/invitation.js';
 import ResultFreshness from './components/ResultFreshness';
 import ClosingCountdown from './components/ClosingCountdown';
@@ -80,25 +80,35 @@ export default function App() {
   // Navigation principale
   const [mainTab, setMainTab] = useState(() => tabFromPath(location.pathname) || 'play');
   // Une adresse par section : l'onglet suit l'adresse (retour arrière du navigateur) et inversement.
-  useEffect(() => {
-    const back = () => {
-      const tab = tabFromPath(location.pathname);
-      if (tab) setMainTab(tab);
-    };
-    window.addEventListener('popstate', back);
-    return () => window.removeEventListener('popstate', back);
-  }, []);
   const [matchTarget, setMatchTarget] = useState(null);
 
   // Gestion des compétitions et tournoi actif
   const [tournamentId, setTournamentId] = useState(null);
   const [eventListVersion, setEventListVersion] = useState(0);
   const [selectedCompetitionId, setSelectedCompetitionId] = useState(null);
+  const [tournamentInfo, setTournamentInfo] = useState(null);
+  const selectedRef = useRef(null);
+  useEffect(() => {
+    selectedRef.current = selectedCompetitionId;
+  }, [selectedCompetitionId]);
 
   const [matches, setMatches] = useState([]);
   const [resultsVersion, setResultsVersion] = useState(0);
   const [competition, setCompetition] = useState(null);
   const [playTab, setPlayTab] = useState('tableau');
+  // Retour arrière vers une autre épreuve : le sélecteur relit l'adresse.
+  useEffect(() => {
+    const back = () => {
+      const loc = parseLocation(location.pathname, location.search);
+      if (!loc.tab) return;
+      setMainTab(loc.tab);
+      if (['play', 'admin'].includes(loc.tab) && loc.eventId && loc.eventId !== selectedRef.current)
+        setEventListVersion((v) => v + 1);
+      if (loc.tab === 'play' && loc.view) setPlayTab(loc.view);
+    };
+    window.addEventListener('popstate', back);
+    return () => window.removeEventListener('popstate', back);
+  }, []);
   const [landingPending, setLandingPending] = useState(false);
   const [landingFilter, setLandingFilter] = useState('Tous');
   const [dirty, setDirty] = useState(false);
@@ -127,17 +137,41 @@ export default function App() {
     setLandingPending(false);
   }, [landingPending, matchesReady, matches, user?.id, competition]);
 
+  // Une adresse par section, tournoi, épreuve et vue (/pronostiquer/<tournoi>/<épreuve>/poules).
   useEffect(() => {
     if (!user || !tabFromPath(location.pathname)) return;
-    const path = pathForTab(mainTab);
-    const target = `${path}${mainTab === 'play' ? location.search : ''}`;
-    // Accueil « / » d'un joueur connecté : remplacé par /pronostiquer (pas d'étape en plus dans l'historique).
-    if (location.pathname === '/') history.replaceState(null, '', target);
-    else if (location.pathname !== path) history.pushState(null, '', target);
-    document.title = `${TAB_TITLES[mainTab]} · Pronos Escrime`;
+    const current = parseLocation(location.pathname, location.search);
+    const legacy = /[?&](tournament|event|view)=/.test(location.search);
+    let target;
+    if (['play', 'admin'].includes(mainTab)) {
+      target =
+        selectedCompetitionId && tournamentInfo?.id && competition
+          ? pathFor(mainTab, {
+              tournament: tournamentInfo,
+              event: { id: selectedCompetitionId, name: competition.name },
+              view: mainTab === 'play' ? playTab : null,
+            })
+          : pathForTab(mainTab);
+      // Épreuve de l'adresse en cours de chargement : l'adresse est gardée.
+      if (!selectedCompetitionId && current.tab === mainTab && current.eventId) target = location.pathname;
+    } else target = current.tab === mainTab ? location.pathname : pathForTab(mainTab);
+    const url = target + (legacy ? '' : location.search);
+    if (location.pathname + location.search !== url) {
+      const next = parseLocation(target);
+      // Accueil « / », ancien lien, simple changement de vue ou de nom : pas d'étape en plus dans l'historique.
+      const replace =
+        location.pathname === '/' ||
+        legacy ||
+        (current.tab === next.tab && current.eventId === next.eventId && current.tournamentId === next.tournamentId);
+      history[replace ? 'replaceState' : 'pushState'](null, '', url);
+    }
+    document.title = [competition && ['play', 'admin'].includes(mainTab) ? competition.name : null, TAB_TITLES[mainTab]]
+      .filter(Boolean)
+      .concat('Pronos Escrime')
+      .join(' · ');
     const canonical = document.querySelector('link[rel="canonical"]');
-    if (canonical) canonical.href = `https://www.pronos-escrime.fr${path}`;
-  }, [mainTab, user]);
+    if (canonical) canonical.href = `https://www.pronos-escrime.fr${target}`;
+  }, [mainTab, user, selectedCompetitionId, tournamentInfo, competition, playTab]);
 
   // Connecté avec une invitation en attente : le groupe est rejoint, puis Communauté s'ouvre sur son tournoi.
   useEffect(() => {
@@ -302,12 +336,13 @@ export default function App() {
     setSelectedCompetitionId(competitionId);
   };
 
-  // Page publique d'un tournoi (/tournoi/12), lisible sans compte.
-  const publicTournament = Number(/^\/tournoi\/(\d+)\/?$/.exec(location.pathname)?.[1]) || null;
+  // Page publique d'un tournoi ou d'une épreuve (/tournoi/etampes-4, /tournoi/etampes-4/fleuret-dames-13).
+  const publicMatch = /^\/tournoi\/([^/]+)(?:\/([^/]+))?\/?$/.exec(location.pathname);
+  const publicTournament = publicMatch ? idOf(publicMatch[1]) : null;
   if (publicTournament)
     return (
       <Suspense fallback={<p style={{ textAlign: 'center', marginTop: '100px' }}>Chargement…</p>}>
-        <PublicTournament id={publicTournament} />
+        <PublicTournament id={publicTournament} eventId={idOf(publicMatch[2])} />
       </Suspense>
     );
   if (legalPage) return <LegalPage page={legalPage} />;
@@ -447,17 +482,22 @@ export default function App() {
                   beforeChange={runNavigation}
                   onReset={() => {
                     setTournamentId(null);
+                    setTournamentInfo(null);
                     selectCompetition(null);
                     setCompetition(null);
                   }}
-                  onSelect={(tId, cId, entry) => {
+                  onSelect={(tId, cId, entry, tournament) => {
                     setTournamentId(tId);
-                    selectCompetition(cId);
-                    setCompetition(entry);
+                    setTournamentInfo(tournament ? { id: tId, name: tournament.name } : { id: tId, name: '' });
                     if (cId !== selectedCompetitionId) {
-                      const view = new URLSearchParams(location.search).get('view');
-                      setPlayTab(view === 'pools' ? 'pools' : view === 'podium' ? 'podium' : 'tableau');
+                      const loc = parseLocation(location.pathname, location.search);
+                      const view = loc.eventId === cId ? loc.view : null;
+                      selectCompetition(cId);
+                      setPlayTab(view || 'tableau');
+                      // Vue demandée par l'adresse : elle prime sur l'ouverture automatique.
+                      if (view) setLandingPending(false);
                     }
+                    setCompetition(entry);
                     setMainTab((current) =>
                       current !== 'play'
                         ? current
@@ -505,7 +545,7 @@ export default function App() {
                       history.replaceState(
                         null,
                         '',
-                        `${location.pathname}?tournament=${target.tournamentId}&event=${target.competitionId}${wanted === 'pools' ? '&view=pools' : ''}`,
+                        `/pronostiquer/${target.tournamentId}/${target.competitionId}${wanted === 'pools' ? '/poules' : ''}`,
                       );
                     setMainTab('play');
                     setPlayTab(wanted);

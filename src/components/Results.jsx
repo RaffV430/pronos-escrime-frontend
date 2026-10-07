@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { parseLocation, pathFor, publicPath } from '../lib/routes';
 import API from '../api';
 import { groupMatches, stripLabel } from './matchPresentation';
 import { matchTotal, plural } from './resultPresentation';
@@ -171,11 +172,22 @@ function CompetitionMatches({ competitionId }) {
   );
 }
 
-function Competition({ c, tournament }) {
-  const [view, setView] = useState(null); // null | 'tableau' | 'pools'
-  const toggle = (v) => setView((current) => (current === v ? null : v));
+function Competition({ c, tournament, focused = false }) {
+  const [view, setView] = useState(focused ? 'tableau' : null); // null | 'tableau' | 'pools'
+  const ref = useRef(null);
+  useEffect(() => {
+    if (focused) ref.current?.scrollIntoView({ block: 'start' });
+  }, [focused]);
+  // Adresse de l'épreuve ouverte (/resultats/<tournoi>/<épreuve>) : à garder en favori ou à partager.
+  const toggle = (v) =>
+    setView((current) => {
+      const next = current === v ? null : v;
+      if (/^\/resultats(\/|$)/.test(location.pathname))
+        history.replaceState(null, '', next ? pathFor('results', { tournament, event: c }) : '/resultats');
+      return next;
+    });
   return (
-    <div className="result-competition">
+    <div className="result-competition" ref={ref}>
       <h3>
         {c.name}
         {tournament.start !== tournament.end && <small> · {dateRange(c.date)}</small>}
@@ -224,7 +236,7 @@ function Competition({ c, tournament }) {
 // Lien vers la page publique du tournoi (sans compte), à partager sur les réseaux du club.
 function PublicLink({ tournament }) {
   const [copied, setCopied] = useState(false);
-  const url = `${location.origin}/tournoi/${tournament.id}`;
+  const url = `${location.origin}${publicPath(tournament)}`;
   const share = async () => {
     try {
       if (navigator.share) await navigator.share({ title: tournament.name, url });
@@ -250,10 +262,12 @@ function PublicLink({ tournament }) {
 
 export default function Results() {
   const publicMode = usePublicMode();
+  // Épreuve de l'adresse (/resultats/<tournoi>/<épreuve>) : tournoi déplié, tableau ouvert.
+  const [focus] = useState(() => parseLocation(location.pathname));
   const [data, setData] = useState(null);
   const [error, setError] = useState('');
   const [revision, setRevision] = useState(0);
-  const [season, setSeason] = useState(null);
+  const [season, setSeason] = useState(() => (focus.tournamentId ? 'all' : null));
   const [country, setCountry] = useState('all');
   const [order, setOrder] = useState('desc');
   const [query, setQuery] = useState('');
@@ -341,7 +355,11 @@ export default function Results() {
           {!data.length && <p>Aucun tournoi terminé pour l’instant.</p>}
           {data.length > 0 && !list.length && <p>Aucun tournoi ne correspond à cette sélection.</p>}
           {list.map((t, index) => (
-            <details key={t.id} className="result-tournament" open={index === 0 || !!query}>
+            <details
+              key={t.id}
+              className="result-tournament"
+              open={(focus.tournamentId ? t.id === focus.tournamentId : index === 0) || !!query}
+            >
               <summary>
                 <span>
                   <strong>{t.name}</strong>
@@ -351,7 +369,7 @@ export default function Results() {
                 </span>
               </summary>
               {t.competitions.map((c) => (
-                <Competition key={c.id} c={c} tournament={t} />
+                <Competition key={c.id} c={c} tournament={t} focused={c.id === focus.eventId} />
               ))}
               <PublicLink tournament={t} />
             </details>
