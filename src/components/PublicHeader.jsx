@@ -32,7 +32,7 @@ export default function PublicHeader({ current = null, onLogin = null }) {
             Se connecter
           </button>
         ) : (
-          <a className="button-link-strong" href="/#connexion">
+          <a className="button-link-strong" href="/connexion">
             Se connecter
           </a>
         )}

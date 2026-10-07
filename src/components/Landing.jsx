@@ -6,6 +6,7 @@ import InvitationBanner from './InvitationBanner';
 import UpcomingCalendar from './UpcomingCalendar';
 import { MEDALS, cityName, countryName, dateRange, flag } from './eventResults';
 import { publicPath } from '../lib/routes';
+import { authPath, isAuthPath } from '../lib/authNavigation';
 
 const where = (t) =>
   [
@@ -17,11 +18,13 @@ const where = (t) =>
     .join(' · ');
 
 // Accueil sans compte : deux portes d'entrée (le jeu et les résultats), aperçu des derniers résultats,
-// puis le formulaire de connexion. Contenu lisible par les moteurs de recherche.
-export default function Landing({ children, onRegister, onLogin, invitation = null, onInvitationInvalid }) {
+// Connexion et inscription disposent de leur propre page.
+export default function Landing({ children, invitation = null, onInvitationInvalid }) {
+  const authOnly = isAuthPath(location.pathname);
   const [results, setResults] = useState(null);
   const [tournaments, setTournaments] = useState([]);
   useEffect(() => {
+    if (authOnly) return;
     const c = new AbortController();
     API.get('/public/results', { signal: c.signal })
       .then(({ data }) => setResults(Array.isArray(data) ? data : []))
@@ -30,28 +33,37 @@ export default function Landing({ children, onRegister, onLogin, invitation = nu
       .then(({ data }) => setTournaments(Array.isArray(data) ? data : []))
       .catch(() => {});
     return () => c.abort();
-  }, []);
+  }, [authOnly]);
   const latest = results?.[0];
   const others = tournaments.filter((t) => t.id !== latest?.id).slice(0, 5);
-  const focusLogin = (register) => {
-    (register ? onRegister : onLogin)?.();
-    setTimeout(() => {
-      document.getElementById('connexion')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      document.querySelector('#connexion input')?.focus({ preventScroll: true });
-    }, 50);
-  };
+  const openAuth = (register) => location.assign(authPath(register, location.search));
+  const invite = invitation && (
+    <InvitationBanner
+      code={invitation}
+      onRegister={() => openAuth(true)}
+      onLogin={() => openAuth(false)}
+      onInvalid={onInvitationInvalid}
+    />
+  );
+  if (authOnly)
+    return (
+      <div className="landing-page">
+        <PublicHeader />
+        <main
+          className="dedicated-auth"
+          aria-label={location.pathname.startsWith('/inscription') ? 'Inscription' : 'Connexion'}
+        >
+          <a className="auth-back" href="/">← Retour à l’accueil</a>
+          {invite}
+          {children}
+        </main>
+      </div>
+    );
   return (
     <div className="landing-page">
-      <PublicHeader onLogin={() => focusLogin(false)} />
+      <PublicHeader onLogin={() => openAuth(false)} />
       <div className="landing">
-        {invitation && (
-          <InvitationBanner
-            code={invitation}
-            onRegister={() => focusLogin(true)}
-            onLogin={() => focusLogin(false)}
-            onInvalid={onInvitationInvalid}
-          />
-        )}
+        {invite}
         <section className="landing-hero" aria-labelledby="landing-title">
           <h1 id="landing-title">Pronostics d’escrime entre passionnés</h1>
           <p className="landing-lead">
@@ -70,7 +82,7 @@ export default function Landing({ children, onRegister, onLogin, invitation = nu
             />
           }
           <p className="landing-ctas">
-            <button type="button" onClick={() => focusLogin(true)}>
+            <button type="button" onClick={() => openAuth(true)}>
               Créer un compte
             </button>
             <a className="button-link-strong landing-cta-secondary" href="/resultats">
@@ -140,10 +152,6 @@ export default function Landing({ children, onRegister, onLogin, invitation = nu
               </p>
             }
           />
-        </div>
-
-        <div className="landing-card" id="connexion">
-          {children}
         </div>
 
         <section className="landing-more" aria-labelledby="landing-more-title">

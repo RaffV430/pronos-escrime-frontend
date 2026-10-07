@@ -459,3 +459,14 @@
   background: var(--lamp-right);
   border-color: var(--lamp-right);
 }
+
+/* Une page de connexion courte, indépendante du contenu de l’accueil. */
+.club-arena .dedicated-auth {
+  width: min(440px, calc(100% - 32px));
+  padding: 0;
+  margin: clamp(24px, 6vh, 64px) auto 40px;
+}
+.club-arena .dedicated-auth .auth-card { width: 100%; margin: 16px 0 0; }
+.club-arena .auth-back { display: inline-block; margin-bottom: 8px; }
+.club-arena .landing { grid-template-columns: 1fr; grid-template-areas: 'hero' 'preview' 'calendar' 'more'; }
+.club-arena .landing-calendar { grid-area: calendar; }
