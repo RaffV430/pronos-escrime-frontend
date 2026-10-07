@@ -748,3 +748,19 @@ button[aria-pressed='true'] {
     justify-content: center;
   }
 }
+
+/* Navigation publique adaptée : aucune action hors écran sur smartphone. */
+@media (max-width: 600px) {
+  .public-header {
+    flex-wrap: wrap;
+  }
+  .public-nav {
+    width: 100%;
+    flex-wrap: wrap;
+    gap: 10px 16px;
+  }
+  .public-nav .button-link-strong,
+  .public-nav button {
+    margin-left: auto;
+  }
+}
