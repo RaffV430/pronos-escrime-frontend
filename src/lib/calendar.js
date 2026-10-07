@@ -42,5 +42,14 @@ export function calendarCategories(cats = []) {
   if (cats.some((c) => c.startsWith('V'))) list.push('Vétérans');
   return list;
 }
+// Lien d'une entrée du calendrier : sa page d'épreuve, ou ses épreuves dans la page du tournoi.
+export function calendarLink(e, publicPath) {
+  if (!e.tournamentId) return null;
+  const t = { id: e.tournamentId, name: e.tournamentName || '' };
+  const comps = e.competitions || [];
+  if (comps.length === 1) return publicPath(t, comps[0]);
+  const ids = comps.length ? comps.map((c) => c.id) : e.competitionIds || [];
+  return `${publicPath(t)}${ids.length ? `?epreuves=${ids.join(',')}` : ''}`;
+}
 export const calendarFormat = (format) =>
   format === 'TEAM' ? 'Équipes' : format === 'BOTH' ? 'Individuel et équipes' : 'Individuel';

@@ -8,6 +8,7 @@ import { LegalLinks } from './LegalPages';
 import './Results.css';
 import PublicHeader from './PublicHeader';
 import { closeOnBackdrop } from './dialogBackdrop';
+import { publicPath } from '../lib/routes';
 
 // Résultat d'un match (page publique : pas de pronostic personnel).
 function PublicMatchDialog({ match, onClose }) {
@@ -65,13 +66,13 @@ function PublicMatchDialog({ match, onClose }) {
   );
 }
 
-function PublicCompetition({ c }) {
+function PublicCompetition({ c, href = null }) {
   const [open, setOpen] = useState(null);
   const [showTableau, setShowTableau] = useState(false);
   const hasTree = Boolean(buildTree(c.matches));
   return (
     <section className="result-competition public-competition">
-      <h3>{c.name}</h3>
+      <h3>{href ? <a href={href}>{c.name}</a> : c.name}</h3>
       {c.podium.length ? (
         <ol className="result-podium">
           {c.podium.map((p, i) => (
@@ -114,8 +115,9 @@ const onlyEvents = () =>
     .map(Number)
     .filter((n) => Number.isSafeInteger(n) && n > 0);
 
-export default function PublicTournament({ id }) {
-  const [only, setOnly] = useState(onlyEvents);
+// /tournoi/<tournoi> ou /tournoi/<tournoi>/<épreuve> : une page par tournoi et par épreuve.
+export default function PublicTournament({ id, eventId = null }) {
+  const [only, setOnly] = useState(() => (eventId ? [eventId] : onlyEvents()));
   const [data, setData] = useState(null);
   const [error, setError] = useState('');
   useEffect(() => {
@@ -123,7 +125,15 @@ export default function PublicTournament({ id }) {
     API.get(`/public/tournaments/${id}`, { signal: c.signal })
       .then(({ data }) => {
         setData(data);
-        document.title = `${data.name} : résultats et pronostics · Pronos Escrime`;
+        const event = eventId ? data.competitions.find((c) => c.id === eventId) : null;
+        // Adresse lisible définitive (nom du tournoi et de l'épreuve), sans étape en plus dans l'historique.
+        const canonicalPath = publicPath(data, event);
+        if (!location.search && location.pathname !== canonicalPath) history.replaceState(null, '', canonicalPath);
+        const canonical = document.querySelector('link[rel="canonical"]');
+        if (canonical) canonical.href = `https://www.pronos-escrime.fr${canonicalPath}`;
+        document.title = event
+          ? `${event.name} · ${data.name} : résultats · Pronos Escrime`
+          : `${data.name} : résultats et pronostics · Pronos Escrime`;
         const golds = data.competitions
           .map((c) => c.podium.find((p) => p.place === 1))
           .filter(Boolean)
@@ -145,7 +155,7 @@ export default function PublicTournament({ id }) {
       })
       .catch((e) => !c.signal.aborted && setError(e.response?.data?.error || 'Page indisponible.'));
     return () => c.abort();
-  }, [id]);
+  }, [id, eventId]);
   return (
     <div className="app-shell redesigned public-page">
       <PublicHeader />
@@ -189,10 +199,10 @@ export default function PublicTournament({ id }) {
                 {data.competitions.filter((c) => only.includes(c.id)).length} épreuve(s) affichée(s) sur{' '}
                 {data.competitions.length}.{' '}
                 <a
-                  href={`/tournoi/${id}`}
+                  href={publicPath(data)}
                   onClick={(e) => {
                     e.preventDefault();
-                    history.replaceState(null, '', `/tournoi/${id}`);
+                    history.pushState(null, '', publicPath(data));
                     setOnly([]);
                   }}
                 >
@@ -203,7 +213,11 @@ export default function PublicTournament({ id }) {
             {data.competitions
               .filter((c) => !only.length || only.includes(c.id))
               .map((c) => (
-                <PublicCompetition key={c.id} c={c} />
+                <PublicCompetition
+                  key={c.id}
+                  c={c}
+                  href={only.length === 1 && only[0] === c.id ? null : publicPath(data, c)}
+                />
               ))}
             <p className="public-join">
               Envie de jouer ? <a href="/">Créez votre compte</a> et pronostiquez les prochaines épreuves.

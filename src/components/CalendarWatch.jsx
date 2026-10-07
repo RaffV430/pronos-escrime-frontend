@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import API from '../api';
-import { calendarDates, GENDERS } from '../lib/calendar';
+import { calendarDates, calendarLink, GENDERS } from '../lib/calendar';
+import { publicPath } from '../lib/routes';
 
 // Administration : surveillance automatique du calendrier sur FencingTimeLive et engarde-service.
 export default function CalendarWatch() {
@@ -61,7 +62,7 @@ export default function CalendarWatch() {
               {GENDERS[e.gender]?.icon} {e.categories.join(', ')}
             </span>
             {e.tournamentId ? (
-              <a href={`/tournoi/${e.tournamentId}?epreuves=${(e.competitionIds || []).join(',')}`}>✅ sur l’appli</a>
+              <a href={calendarLink(e, publicPath)}>✅ sur l’appli</a>
             ) : (
               <span className="muted">⏳ en attente de publication</span>
             )}
