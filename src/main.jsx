@@ -1,3 +1,4 @@
+import { restoreReadingPosition } from './lib/readingPosition';
 import { legacyLoginPath } from './lib/authNavigation';
 import '@fontsource/barlow-condensed/600.css';
 import '@fontsource/barlow-condensed/700.css';
@@ -41,6 +42,7 @@ async function renderApp() {
   );
 }
 renderApp();
+restoreReadingPosition();
 
 if (import.meta.env.PROD && 'serviceWorker' in navigator) {
   window.addEventListener('load', () => navigator.serviceWorker.register('/sw.js').catch(() => {}));

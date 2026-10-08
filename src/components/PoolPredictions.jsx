@@ -618,7 +618,6 @@ function PoolList({ competitionId, user, onDirtyChange, refreshVersion }) {
         </p>
       )}
       {!loading &&
-        !error &&
         pools.length > 0 &&
         [
           {
