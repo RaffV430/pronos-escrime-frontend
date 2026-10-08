@@ -21,6 +21,7 @@ const readSelection = (key) => {
 
 export default function EventSelector({
   userId,
+  hideCompact = false,
   onSelect,
   onReset,
   beforeChange = (action) => action(),
@@ -169,7 +170,7 @@ export default function EventSelector({
   if (confirmed)
     return (
       <>
-        <section className="compact-event">
+        {!hideCompact && <section className="compact-event">
           <div>
             <p className="eyebrow">{tournaments.find((t) => String(t.id) === tournamentId)?.name}</p>
             <strong>{eventNameFr(events.find((e) => String(e.id) === eventId)?.name)}</strong>
@@ -182,7 +183,7 @@ export default function EventSelector({
           <button className="button-secondary" onClick={() => setChooserOpen(true)}>
             Changer ⌄
           </button>
-        </section>
+        </section>}
         {chooserOpen && (
           <EventChooser
             userId={userId}

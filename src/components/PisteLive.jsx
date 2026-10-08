@@ -1,3 +1,4 @@
+import AdaptiveFencerName from './AdaptiveFencerName';
 import { eventNameFr } from '../lib/eventName';
 import { useState } from 'react';
 import CrowdTrend from './CrowdTrend';
@@ -105,10 +106,7 @@ export default function PisteLive({
                       .map((s) => s[0])
                       .join('')}
                   </span>
-                  <h2>
-                    {match[`player${i}`]}
-                    {match[`player${i}Country`] ? ` · ${match[`player${i}Country`]}` : ''}
-                  </h2>
+                  <AdaptiveFencerName name={match[`player${i}`]} country={match[`player${i}Country`]} />
                   <strong className="piste-live-score-number">
                     {match.isFinished && Number.isInteger(match[`score${i}`]) ? match[`score${i}`] : '—'}
                   </strong>

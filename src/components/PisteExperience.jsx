@@ -1,3 +1,4 @@
+import HomeFollowedFencers from './HomeFollowedFencers';
 import { eventNameFr } from '../lib/eventName';
 import { remainingLocalFollows } from '../lib/fencerFollowMigration';
 import { useFencerFollows } from '../lib/fencerFollows';
@@ -93,11 +94,7 @@ export function ArenaLeague({ userId, onCommunity }) {
   );
 }
 
-export function ArenaHome({ user, matches, competition, tournament, onPlay, onMine, onCommunity, onLive }) {
-  const follows = useFencerFollows();
-  const participantNames = (competition?.podiumRoster || [])
-    .filter((e) => follows?.links.some((l) => l.entryId === String(e.id)))
-    .map((e) => e.name);
+export function ArenaHome({ user, matches, competition, tournament, onPlay, onMine, onCommunity, onLive, onFollowedFencer }) {
   const [scheduledEvent, setScheduledEvent] = useState(null);
   const scheduledStart = scheduledEvent?.startsAt;
   useEffect(() => {
@@ -125,13 +122,7 @@ export function ArenaHome({ user, matches, competition, tournament, onPlay, onMi
           <p className="arena-eyebrow">VOTRE ÉPREUVE</p>
           <h2>{tournament?.name || scheduledEvent?.tournamentName || 'Votre tournoi'}</h2>
           <p>{eventNameFr(competition?.name || scheduledEvent?.name) || 'Choisissez une épreuve pour commencer'}</p>
-        {!!participantNames.length && (
-          <p className="muted arena-followed-note">
-            <span className="favorite-star" aria-label="Favoris">★</span> {participantNames.slice(0, 3).join(', ')}
-            {participantNames.length > 3 ? ` et ${participantNames.length - 3} autre(s)` : ''} participe
-            {participantNames.length > 1 ? 'nt' : ''} à cette épreuve
-          </p>
-        )}
+        <HomeFollowedFencers tournamentId={tournament?.id || competition?.tournamentId} userId={user.id} onOpen={onFollowedFencer} />
         </div>
         <PisteCountdown
           deadline={
