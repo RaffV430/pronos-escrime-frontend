@@ -1,4 +1,4 @@
-import { readPreviewFollows } from '../lib/previewFollows';
+import { useFencerFollows } from '../lib/fencerFollows';
 import CrowdTrend from './CrowdTrend';
 import { matchTotal } from './resultPresentation';
 import { roundLabel, stripLabel } from './matchPresentation';
@@ -33,7 +33,7 @@ export default function MatchBoard({
 }) {
   const clock = useNow(5000);
   const club = useClub();
-  const [followed] = useState(() => readPreviewFollows(localStorage, `pronos:followed:${userId}`));
+  const follows = useFencerFollows();
   const now = fixedNow ?? clock;
   const deepLink = new URLSearchParams(location.search);
   const linkedIds =
@@ -352,11 +352,11 @@ export default function MatchBoard({
                     .join('')}
                 </span>
               }
-              {(club.isClubFencer(name) || followed.some((a) => a.name === name)) && (
+              {(club.isClubFencer(name) || follows?.matchNames.includes(name)) && (
                 <span
                   className="club-star"
                   title={
-                    followed.some((a) => a.name === name)
+                    follows?.matchNames.includes(name)
                       ? 'Tireur suivi'
                       : `Tireur du club${club.name ? ` ${club.name}` : ''}`
                   }
