@@ -2772,3 +2772,18 @@
 .club-arena .fencer-secondary { margin-top: 16px; border-top: 1px solid var(--border); padding-top: 10px; }
 .club-arena .fencer-secondary > summary { font-size: 12px; color: var(--muted); cursor: pointer; }
 .club-arena .fencer-secondary .followed-category-heading { margin-top: 12px; }
+
+/* Keep the deadline ahead of long favorite lists on every screen. */
+.club-arena .arena-home-event { grid-template-columns: minmax(0, 1fr); gap: 20px; }
+.club-arena .arena-home-event > .arena-home-event-details { display: contents; }
+.club-arena .arena-home-event-identity { grid-column: 1; grid-row: 1; }
+.club-arena .arena-home-event > .piste-countdown { grid-column: 1; grid-row: 2; }
+.club-arena .arena-home-event-details > .home-followed-fencers { grid-column: 1; grid-row: 3; }
+.club-arena .arena-home-event > button { grid-column: 1; grid-row: 4; }
+
+.account-club-panel {margin:18px 0;padding:18px;border:1px solid var(--border);border-radius:16px;background:var(--surface);color:var(--text);}
+.club-choice {border:0;padding:0;min-width:0;}
+.club-choice label,.club-choice-custom,.account-club-panel label {display:grid;gap:8px;margin:12px 0;}
+.club-choice input,.club-choice select,.account-club-panel select,.account-club-panel textarea {width:100%;box-sizing:border-box;min-width:0;}
+.club-choice-actions {display:flex;flex-wrap:wrap;gap:12px;}
+.account-club-panel article {border-bottom:1px solid var(--border);padding:12px 0;}

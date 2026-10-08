@@ -1,3 +1,4 @@
+import ClubProfile from './ClubProfile';
 import { useState } from 'react';
 import API from '../api';
 import { LegalLinks } from './LegalPages';
@@ -80,6 +81,7 @@ export default function AccountSettings({ user, onDeleted }) {
     <section className="feature-panel">
       <p className="eyebrow">MON COMPTE</p>
       <h1>{user.name || user.username}</h1>
+      <ClubProfile key={user.id} />
       <p>
         Adresse e-mail : <strong>{user.email}</strong>
       </p>

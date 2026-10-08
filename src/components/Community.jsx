@@ -1,3 +1,4 @@
+import ClubProfile from './ClubProfile';
 import { useState, useEffect, useRef } from 'react';
 import { PistePodium } from './PisteExperience';
 import API from '../api';
@@ -49,6 +50,7 @@ export default function Community({ tournamentId: preferred = null, userId }) {
     [message, setMessage] = useState(''),
     [busy, setBusy] = useState(false),
     [revision, setRevision] = useState(0);
+  useEffect(()=>{const changed=()=>{setRevision(n=>n+1);setDetail(null);};window.addEventListener('club-profile-changed',changed);return()=>window.removeEventListener('club-profile-changed',changed);},[]);
   useEffect(() => {
     const c = new AbortController();
     API.get('/community/favorite', { signal: c.signal })
@@ -151,6 +153,7 @@ export default function Community({ tournamentId: preferred = null, userId }) {
             <svg className={`delegation-foil ${favoriteId === l.id ? 'is-favorite' : ''}`} aria-hidden="true" width="24" height="24" viewBox="0 0 30 30"><path d="M5 25L25 5M4 19L11 26M3 27L6 24" fill="none" stroke="currentColor" strokeWidth="2" /><circle className="foil-tip" cx="25" cy="5" r="3" /></svg>{favoriteId === l.id ? 'Favorite' : 'Choisir comme favorite'}
           </button>
           <button className="delegation-open-ranking" disabled={busy} aria-expanded={detail?.league.id === l.id} onClick={() => openDetail(l.id, detail?.league.id === l.id ? detailScope : '')}>Voir le classement →</button>
+          {l.registeredClub?.description && <p>{l.registeredClub.description}</p>}
           <details className="delegation-share"><summary>Inviter des membres</summary><p>Code : <code>{l.code}</code></p>
           <button
             className="button-secondary"
@@ -187,7 +190,7 @@ export default function Community({ tournamentId: preferred = null, userId }) {
             Inviter (WhatsApp, SMS…)
           </button>
           </details>
-          {l.ownerId !== userId && (
+          {(l.kind === 'CLUB' || l.ownerId !== userId) && (
             <button
               className="button-secondary"
               disabled={busy}
@@ -239,6 +242,7 @@ export default function Community({ tournamentId: preferred = null, userId }) {
           {duel && duel.league.id === detail.league.id && <DuelView duel={duel} onClose={() => setDuel(null)} />}
         </section>
       )}
+      <ClubProfile />
       <details className="delegation-manage"><summary>Créer ou rejoindre une délégation ou un club</summary>
       <div className="feature-grid">
         <form
@@ -263,7 +267,7 @@ export default function Community({ tournamentId: preferred = null, userId }) {
             Type
             <select value={kind} onChange={(e) => setKind(e.target.value)}>
               <option value="PRIVATE">Délégation d’amis</option>
-              <option value="CLUB">Club</option>
+
             </select>
           </label>
           <p className="muted">
