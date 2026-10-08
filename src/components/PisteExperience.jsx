@@ -50,6 +50,7 @@ export function ArenaLeague({ userId, onCommunity }) {
   const [detail, setDetail] = useState(null);
   const [failed, setFailed] = useState(false);
   const [revision, setRevision] = useState(0);
+  useEffect(()=>{const changed=()=>setRevision(n=>n+1);window.addEventListener('club-profile-changed',changed);return()=>window.removeEventListener('club-profile-changed',changed);},[]);
   const gesture = useRef(null);
   const cardRef = useRef(null);
   const cache = useRef(new Map());
@@ -175,10 +176,12 @@ export function ArenaHome({ user, matches, competition, tournament, onPlay, onMi
       <ClubArenaWelcome user={user} matches={matches} greetingOnly />
       {pending.length > 0 && <ClubArenaWelcome user={user} matches={matches} progressOnly />}
       <section className="arena-home-event">
-        <div>
+        <div className="arena-home-event-details">
+          <div className="arena-home-event-identity">
           <p className="arena-eyebrow">VOTRE ÉPREUVE</p>
           <h2>{tournament?.name || scheduledEvent?.tournamentName || 'Votre tournoi'}</h2>
           <p>{eventNameFr(competition?.name || scheduledEvent?.name) || 'Choisissez une épreuve pour commencer'}</p>
+          </div>
         <HomeFollowedFencers tournamentId={tournament?.id || competition?.tournamentId} userId={user.id} onOpen={onFollowedFencer} />
         </div>
         <PisteCountdown
@@ -277,6 +280,9 @@ export function PisteFencers({ userId, tournamentId: currentTournamentId, onOpen
   }, []);
   const [eventId, setEventId] = useState('');
   const [clubOnly, setClubOnly] = useState(false);
+  const [clubFilter,setClubFilter]=useState('');
+  const [clubs,setClubs]=useState([]);
+  useEffect(()=>{const c=new AbortController();API.get('/clubs',{signal:c.signal}).then(({data})=>setClubs(data)).catch(()=>{});return()=>c.abort();},[]);
   const [offset, setOffset] = useState(0);
   const [directory, setDirectory] = useState({ results: [], events: [], total: 0 });
   const [loading, setLoading] = useState(false);
@@ -308,7 +314,7 @@ export function PisteFencers({ userId, tournamentId: currentTournamentId, onOpen
             do {
               ({ data: page } = await API.get('/me/fencers/directory', {
                 signal: controller.signal,
-                params: { tournamentId: tournament.id, query, ...(clubOnly ? { clubOnly: '1' } : {}), offset: next },
+                params: { tournamentId: tournament.id, query, ...(clubOnly ? { clubOnly: '1' } : {}), ...(clubFilter ? {clubId:clubFilter}:{}), offset: next },
               }));
               rows.push(...page.results.map(row => ({ ...row, key: `${tournament.id}:${row.key}`,
                 events: row.events.map(event => ({ ...event, name: `${eventNameFr(event.name)} · ${tournament.name}` })) })));
@@ -323,7 +329,7 @@ export function PisteFencers({ userId, tournamentId: currentTournamentId, onOpen
           ({ data } = await API.get('/me/fencers/directory', {
             signal: controller.signal,
             params: { tournamentId, ...(eventId ? { competitionId: eventId } : {}), query,
-              ...(clubOnly ? { clubOnly: '1' } : {}), offset },
+              ...(clubOnly ? { clubOnly: '1' } : {}), ...(clubFilter ? {clubId:clubFilter}:{}), offset },
           }));
         }
         if (!controller.signal.aborted) setDirectory(data);
@@ -337,7 +343,7 @@ export function PisteFencers({ userId, tournamentId: currentTournamentId, onOpen
       clearTimeout(timer);
       controller.abort();
     };
-  }, [manageOpen, tournamentId, tournaments, eventId, query, clubOnly, offset, revision, follows.favorites]);
+  }, [manageOpen, tournamentId, tournaments, eventId, query, clubOnly, clubFilter, offset, revision, follows.favorites]);
   const favoriteOf = (athlete) => directory.results.find((row) => row.key === athlete.key)?.favoriteId;
   async function toggle(athlete) {
     const id = favoriteOf(athlete);
@@ -433,11 +439,13 @@ export function PisteFencers({ userId, tournamentId: currentTournamentId, onOpen
             }}
           />
         </label>
+        <label>Filtrer par club<select disabled={bulkBusy} value={clubFilter} onChange={e=>{setClubFilter(e.target.value);setClubOnly(false);setOffset(0);setSelected(null);}}><option value="">Tous les clubs</option>{clubs.map(c=><option key={c.id} value={c.id}>{c.name}</option>)}</select></label>
         <button
           disabled={bulkBusy}
           aria-pressed={clubOnly}
           onClick={() => {
             setClubOnly(!clubOnly);
+            setClubFilter('');
             setOffset(0);
             setSelected(null);
           }}
@@ -447,9 +455,10 @@ export function PisteFencers({ userId, tournamentId: currentTournamentId, onOpen
       </div>
       {clubOnly && (
         <p className="muted">
-          Club de l’application : {directory.clubName || 'non configuré'}. Vérifiez les identités avant de suivre.
+          Mon club : {directory.clubName || 'non configuré'}. Vérifiez les identités avant de suivre.
         </p>
       )}
+      {directory.missingClubData && <p className="muted">Certains clubs ne sont pas renseignés dans les listes officielles. Ces tireurs restent accessibles sans filtre par club.</p>}
       <h3>Tireurs suivis · {follows.favorites.length}</h3>
       <div className="piste-followed">
         {follows.favorites.map((a) => (
@@ -484,7 +493,7 @@ export function PisteFencers({ userId, tournamentId: currentTournamentId, onOpen
         <p>
           {!tournamentId
             ? 'Choisissez un tournoi pour rechercher ses engagés.'
-            : query.trim().length < 2 && !clubOnly
+            : query.trim().length < 2 && !clubOnly && !clubFilter
               ? 'Saisissez au moins deux lettres pour rechercher dans les listes sélectionnées.'
               : 'Aucun engagé correspondant.'}
         </p>

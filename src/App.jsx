@@ -1,3 +1,6 @@
+import ClubChoice from './components/ClubChoice';
+import ClubProfile from './components/ClubProfile';
+import ClubAdministration from './components/ClubAdministration';
 import { FollowedEventFencers, CompetitionFollow } from './components/EventWorkspace';
 import { FencerFollowsProvider } from './components/FencerFollowsProvider';
 import { isAuthPath, authPath } from './lib/authNavigation';
@@ -316,6 +319,7 @@ export default function App() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+    if (isRegister && !formData.clubChoice) { setError('Choisissez votre club ou « sans club / accompagnant ».'); return; }
     const endpoint = isRegister ? '/auth/register' : '/auth/login';
 
     try {
@@ -522,6 +526,7 @@ export default function App() {
                   <SyncHealth />
                   <CalendarWatch />
                   <ClubSettings />
+                  <ClubAdministration />
                   <CircuitSettings />
                   <FtlTournamentSetup onConfigured={() => setEventListVersion((v) => v + 1)} />
                 </Suspense>
@@ -535,6 +540,8 @@ export default function App() {
                 </section>
               )}
               {mainTab === 'home' && (
+                <>
+                <ClubProfile key={user.id} prompt />
                 <ArenaHome
                   onFollowedFencer={openFollowedFencer}
                   user={user}
@@ -546,6 +553,7 @@ export default function App() {
                   onCommunity={() => navigate('community')}
                   onLive={() => navigate('live')}
                 />
+                </>
               )}
               {mainTab === 'live' && (
                 <PisteLive
@@ -987,6 +995,7 @@ export default function App() {
                   onChange={(e) => setTwoFactorCode(e.target.value)}
                 />
               )}
+              {isRegister && <ClubChoice value={formData.clubChoice} onChange={clubChoice => setFormData({...formData,clubChoice})} />}
               <button type="submit">{isRegister ? "S'inscrire" : 'Se connecter'}</button>
             </form>
             {!isRegister && passwordReset && (
