@@ -1,3 +1,5 @@
+import { remainingLocalFollows } from '../lib/fencerFollowMigration';
+import { useFencerFollows } from '../lib/fencerFollows';
 import { readPreviewFollows } from '../lib/previewFollows';
 import { useEffect, useRef, useState } from 'react';
 import API from '../api';
@@ -167,23 +169,35 @@ export function ArenaHome({ user, matches, competition, tournament, onPlay, onMi
   );
 }
 
-export function PisteFencers({ userId, roster = [] }) {
+export function PisteFencers({ userId, roster = [], onChooseEvent }) {
   const key = `pronos:followed:${userId}`;
   const [query, setQuery] = useState('');
-  const [storageError, setStorageError] = useState('');
   const [selected, setSelected] = useState(null);
-  const [followed, setFollowed] = useState(() => readPreviewFollows(localStorage, key));
+  const follows = useFencerFollows();
+  const [legacy, setLegacy] = useState(() => readPreviewFollows(localStorage, key));
+  const [migrationNotice, setMigrationNotice] = useState('');
+  const favoriteOf = (athlete) => follows.links.find((link) => link.entryId === String(athlete.id))?.favoriteId;
   function toggle(athlete) {
-    const next = followed.some((a) => a.id === athlete.id)
-      ? followed.filter((a) => a.id !== athlete.id)
-      : [...followed, athlete];
-    setFollowed(next);
+    const id = favoriteOf(athlete);
+    if (id) follows.remove(id);
+    else follows.follow(athlete.id);
+  }
+  async function importLegacy() {
+    const submitted = legacy.slice(0, 200);
+    const result = await follows.importLocal(submitted);
+    if (!result) return;
+    const remaining = remainingLocalFollows(legacy, submitted.length, result);
     try {
-      localStorage.setItem(key, JSON.stringify(next));
-      setStorageError('');
+      localStorage.setItem(key, JSON.stringify(remaining));
+      setLegacy(remaining);
     } catch {
-      setStorageError('Le suivi reste actif pour cette session, mais cet appareil ne permet pas de le mémoriser.');
+      /* Les anciens favoris restent récupérables ; l’import serveur est idempotent. */
     }
+    setMigrationNotice(
+      remaining.length
+        ? `${remaining.length} ${remaining.length === 1 ? 'favori reste à récupérer. Il reste' : 'favoris restent à récupérer. Ils restent'} sur cet appareil ; retrouvez-les dans la liste officielle pour les suivre.`
+        : 'Vos anciens favoris ont été rattachés à votre compte.',
+    );
   }
   const results = roster
     .filter((a) => a.name.toLocaleLowerCase('fr').includes(query.toLocaleLowerCase('fr')))
@@ -192,7 +206,10 @@ export function PisteFencers({ userId, roster = [] }) {
     <section className="piste-fencers arena-featured">
       <p className="arena-eyebrow">VOTRE BORD DE PISTE</p>
       <h2>Mes tireurs</h2>
-      <p>Recherchez parmi les engagés de l’épreuve sélectionnée. Vos suivis restent sur cet appareil.</p>
+      <p>
+        Recherchez parmi les engagés de l’épreuve sélectionnée. Vos suivis sont enregistrés dans votre compte, sur tous
+        vos appareils et pour les prochains tournois.
+      </p>
       <input
         aria-label="Rechercher un tireur"
         placeholder="Nom ou prénom…"
@@ -200,22 +217,49 @@ export function PisteFencers({ userId, roster = [] }) {
         onChange={(e) => setQuery(e.target.value)}
       />
       <div className="piste-followed">
-        {followed.map((a) => (
-          <button key={a.id} aria-label={`Ne plus suivre ${a.name}`} onClick={() => toggle(a)}>
-            ★ {a.name} ×
+        {follows.favorites.map((a) => (
+          <button
+            key={a.id}
+            aria-label={`Ne plus suivre ${a.name}`}
+            disabled={follows.busy}
+            onClick={() => follows.remove(a.id)}
+          >
+            ★ {a.name} · {[a.country, a.club].filter(Boolean).join(' · ')} ×
           </button>
         ))}
       </div>
       {results.map((a) => (
         <div className="piste-fencer-row" key={a.id}>
           <button className="button-link" onClick={() => setSelected(a)}>
-            {a.name} · {a.country || 'Nation non renseignée'}
+            {a.name} · {[a.country, a.club].filter(Boolean).join(' · ') || 'Nation et club non renseignés'}
           </button>
-          <button onClick={() => toggle(a)}>{followed.some((f) => f.id === a.id) ? 'Retirer' : 'Suivre'}</button>
+          <button disabled={follows.busy || !follows.ready} onClick={() => toggle(a)}>
+            {favoriteOf(a) ? 'Retirer' : 'Suivre'}
+          </button>
         </div>
       ))}
-      {!results.length && <p>Aucun engagé correspondant.</p>}
-      {storageError && <p role="status">{storageError}</p>}
+      {!results.length && (
+        <p>{roster.length ? 'Aucun engagé correspondant.' : 'Choisissez une épreuve pour rechercher ses engagés.'}</p>
+      )}
+      {!roster.length && onChooseEvent && <button onClick={onChooseEvent}>Choisir une épreuve</button>}
+      {!follows.ready && !follows.error && <p role="status">Chargement de vos favoris…</p>}
+      {follows.error && (
+        <p role="alert">
+          {follows.error} <button onClick={follows.refresh}>Réessayer</button>
+        </p>
+      )}
+      {follows.ambiguousIds.length > 0 && (
+        <p role="status">
+          Certains favoris portent le même nom qu’un engagé sans identité concordante. Vérifiez la nation et le club
+          avant de le suivre dans cette épreuve.
+        </p>
+      )}
+      {legacy.length > 0 && (
+        <button disabled={follows.busy || !follows.ready} onClick={importLegacy}>
+          Récupérer mes {legacy.length} favoris de cet appareil
+        </button>
+      )}
+      {migrationNotice && <p role="status">{migrationNotice}</p>}
       <p className="muted">
         {roster.length} engagés · {results.length}{' '}
         {results.length === 1 ? 'suggestion affichée' : 'suggestions affichées'}. Affinez votre recherche pour trouver
@@ -224,7 +268,8 @@ export function PisteFencers({ userId, roster = [] }) {
       {selected && (
         <AthleteDialog
           athlete={selected}
-          followed={followed.some((f) => f.id === selected.id)}
+          followed={Boolean(favoriteOf(selected))}
+          busy={follows.busy || !follows.ready}
           onToggle={() => toggle(selected)}
           onClose={() => setSelected(null)}
         />
@@ -276,7 +321,7 @@ export function PisteCountdown({ deadline }) {
   );
 }
 
-function AthleteDialog({ athlete, followed, onToggle, onClose }) {
+function AthleteDialog({ athlete, followed, busy, onToggle, onClose }) {
   const dialog = useRef(null);
   useEffect(() => {
     const trigger = document.activeElement;
@@ -314,7 +359,7 @@ function AthleteDialog({ athlete, followed, onToggle, onClose }) {
         </div>
       </dl>
       <p className="muted">Club et autres informations non renseignés dans la liste importée.</p>
-      <button aria-pressed={followed} onClick={onToggle}>
+      <button disabled={busy} aria-pressed={followed} onClick={onToggle}>
         {followed ? '★ Tireur suivi' : '☆ Suivre ce tireur'}
       </button>
     </dialog>

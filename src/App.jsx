@@ -1,3 +1,4 @@
+import { FencerFollowsProvider } from './components/FencerFollowsProvider';
 import { isAuthPath, authPath } from './lib/authNavigation';
 import { ArenaHome, PisteFencers } from './components/PisteExperience';
 import PisteLive from './components/PisteLive';
@@ -394,6 +395,7 @@ export default function App() {
     const team = competition?.podiumFormat === 'TEAM';
     return (
       <ClubContext.Provider value={club}>
+        <FencerFollowsProvider key={user.id} userId={user.id} competitionId={selectedCompetitionId}>
         <div className="app-shell redesigned">
           <header className="app-header">
             <div className="brand">
@@ -501,7 +503,7 @@ export default function App() {
                   <p className="arena-eyebrow">MON ESPACE</p>
                   <h1>{user.name || user.username}</h1>
                   <p>Votre jeu, votre communauté et votre saison.</p>
-                  <PisteFencers key={user.id} userId={user.id} roster={competition?.podiumRoster || []} />
+                  <PisteFencers key={user.id} userId={user.id} roster={competition?.podiumRoster || []} onChooseEvent={() => navigate('play')} />
                   <div className="piste-shortcuts">
                     {[
                       ['live', 'Suivi des pistes', 'Résultats synchronisés et points'],
@@ -828,6 +830,7 @@ export default function App() {
             </div>
           )}
         </div>
+              </FencerFollowsProvider>
       </ClubContext.Provider>
     );
   }
