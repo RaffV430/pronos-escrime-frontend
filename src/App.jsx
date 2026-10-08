@@ -429,7 +429,7 @@ export default function App() {
                   onClick={e => { if (e.detail > 0 && matchMedia('(hover: hover)').matches) setAccountOpen(true); else setAccountOpen(v => !v); }}>{user.name || user.username} ⌄</button>
                 {accountOpen && <nav id="user-options" className="user-menu-panel" aria-label="Mon espace">
                   {[
-                    ['me', 'Mes tireurs'], ['live', 'Suivi des pistes'], ['mine', 'Mes pronostics'],
+                    ['live', 'Suivi des pistes'], ['mine', 'Mes pronostics'],
                     ['season', 'Ma saison'],
                     ['account', 'Mes réglages'], ...(user.isAdmin ? [['admin', 'Administration']] : []),
                   ].map(([id, label]) => <button key={id} onClick={() => { setAccountOpen(false); navigate(id); }}>{label}</button>)}
@@ -453,8 +453,7 @@ export default function App() {
                 data-tab={id}
                 aria-pressed={
                   mainTab === id ||
-                  (id === 'home' && mainTab === 'live') ||
-                    (id === 'me' && ['mine', 'season', 'results', 'account', 'admin'].includes(mainTab))
+                  (id === 'home' && mainTab === 'live')
                 }
                 onClick={() => {
                   setArenaMore(false);
@@ -518,22 +517,7 @@ export default function App() {
                   <h1>{user.name || user.username}</h1>
                   <p>Votre jeu, votre communauté et votre saison.</p>
                   <PisteFencers key={user.id} userId={user.id} tournamentId={tournamentId} />
-                  <div className="piste-shortcuts">
-                    {[
-                      ['live', 'Suivi des pistes', 'Résultats synchronisés et points'],
-                      ['mine', 'Mes pronostics', 'Vos choix, résultats et points'],
-                      ['season', 'Ma saison', 'Votre bilan et vos médailles'],
-                        ['community', 'Ma communauté', 'Délégations, clubs et duels'],
-                      ['results', 'Résultats', 'Les classements officiels'],
-                      ['account', 'Mes réglages', 'Profil, apparence et notifications'],
-                      ...(user.isAdmin ? [['admin', 'Administration', 'Gérer les épreuves et le suivi']] : []),
-                    ].map(([id, title, description]) => (
-                      <button className="button-secondary" key={id} onClick={() => navigate(id)}>
-                        <strong>{title} →</strong>
-                        <span>{description}</span>
-                      </button>
-                    ))}
-                  </div>
+
                 </section>
               )}
               {mainTab === 'home' && (
@@ -557,7 +541,7 @@ export default function App() {
                   competition={competition}
                   tournament={tournamentInfo}
                   onPlay={() => navigate('play')}
-                  onMine={() => navigate('mine')}
+                  onMine={() => navigate('season')}
                   onCommunity={() => navigate('community')}
                   onLive={() => navigate('live')}
                 />
