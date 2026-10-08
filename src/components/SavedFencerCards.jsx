@@ -18,7 +18,7 @@ export default function SavedFencerCards({ tournaments, userId, onOpen }) {
     setLoading(false);
     if (!tournaments.length || !follows.favorites.length) return () => controller.abort();
     setLoading(true);
-    Promise.all(tournaments.map(async tournament => {
+    Promise.all(tournaments.filter(tournament => !tournament.archivedAt).map(async tournament => {
       const { data: events } = await API.get(`/podium/competitions/${tournament.id}`, { signal: controller.signal });
       return (await Promise.all(events.map(async event => {
         const { data: followed } = await API.get('/me/fencers', { params: { competitionId: event.id }, signal: controller.signal });
