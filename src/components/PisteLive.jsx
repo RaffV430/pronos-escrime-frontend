@@ -1,3 +1,4 @@
+import { eventNameFr } from '../lib/eventName';
 import { useState } from 'react';
 import CrowdTrend from './CrowdTrend';
 import { roundLabel, groupMatches } from './matchPresentation';
@@ -38,7 +39,7 @@ export default function PisteLive({
         <div>
           <p className="arena-eyebrow">AU BORD DES PISTES</p>
           <h1>Suivi des rencontres</h1>
-          <p>{competition?.name || 'Choisissez une épreuve'}</p>
+          <p>{eventNameFr(competition?.name) || 'Choisissez une épreuve'}</p>
         </div>
         <button className="button-secondary" onClick={onPlay}>
           Pronostiquer →

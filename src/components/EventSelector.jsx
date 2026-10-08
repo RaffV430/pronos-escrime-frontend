@@ -1,3 +1,4 @@
+import { eventNameFr } from '../lib/eventName';
 import { useEffect, useRef, useState } from 'react';
 import API from '../api';
 import { withCount } from '../lib/plural';
@@ -171,7 +172,7 @@ export default function EventSelector({
         <section className="compact-event">
           <div>
             <p className="eyebrow">{tournaments.find((t) => String(t.id) === tournamentId)?.name}</p>
-            <strong>{events.find((e) => String(e.id) === eventId)?.name}</strong>
+            <strong>{eventNameFr(events.find((e) => String(e.id) === eventId)?.name)}</strong>
             <p>
               {events.find((e) => String(e.id) === eventId)?.podiumFormat === 'TEAM'
                 ? 'Par équipes · trois médailles'
@@ -283,7 +284,7 @@ export default function EventSelector({
               <option value="">Choisir une épreuve</option>
               {events.map((event) => (
                 <option key={event.id} value={event.id}>
-                  {event.name}
+                  {eventNameFr(event.name)}
                 </option>
               ))}
             </select>
@@ -392,7 +393,7 @@ function EventChooser({ userId, tournaments, currentTournamentId, currentEventId
                   }
                   onClick={() => onChoose(chosenTournamentId, event, entries)}
                 >
-                  <strong>{event.name}</strong>
+                  <strong>{eventNameFr(event.name)}</strong>
                   {newCount(event, userId) > 0 && (
                     <span className="status-pill saved">
                       {withCount(newCount(event, userId), 'nouvelle rencontre', 'nouvelles rencontres')}

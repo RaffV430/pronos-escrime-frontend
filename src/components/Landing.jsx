@@ -1,3 +1,4 @@
+import { eventNameFr } from '../lib/eventName';
 import { nextEventStart } from '../lib/eventCountdown';
 import { useNow } from '../lib/polling';
 import { PisteCountdown } from './PisteExperience';
@@ -102,7 +103,7 @@ export default function Landing({ children, invitation = null, onInvitationInval
                 const gold = c.podium.find((p) => p.place === 1);
                 return (
                   <li key={c.id}>
-                    <span className="landing-event">{c.name}</span>
+                    <span className="landing-event">{eventNameFr(c.name)}</span>
                     {gold ? (
                       <span>
                         <span aria-label="Vainqueur">{MEDALS[1]}</span> <strong>{gold.name}</strong>
