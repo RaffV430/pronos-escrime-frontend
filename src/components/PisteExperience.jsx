@@ -6,21 +6,21 @@ import API from '../api';
 import { useNow } from '../lib/polling';
 import { isMatchClosed } from './matchPresentation';
 
-export function ClubArenaWelcome({ user, matches }) {
+export function ClubArenaWelcome({ user, matches, greetingOnly = false, progressOnly = false }) {
   const now = useNow(5000);
   const open = matches.filter((match) => !isMatchClosed(match, now));
   const remaining = open.filter((match) => !match.predictions?.some((p) => p.userId === user.id)).length;
   const saved = open.length - remaining;
   return (
-    <section className="arena-welcome">
-      <div>
+    <section className={`arena-welcome${greetingOnly ? " greeting-only" : ""}${progressOnly ? " progress-only" : ""}`}>
+      {!progressOnly && <div>
         <p className="arena-eyebrow">LE CLUB EST À VOUS</p>
         <h1>
           Salut {user.name || user.username},<br /> <em>en garde !</em>
         </h1>
-        <p className="arena-intro">Vos favoris. Vos scores. Votre prochain beau coup.</p>
-      </div>
-      <div className="arena-progress">
+        <p className="arena-intro">Vos favoris. Vos scores. Votre prochaine belle touche.</p>
+      </div>}
+      {!greetingOnly && <div className="arena-progress">
         <span className="arena-live">
           <i /> À VOUS DE JOUER
         </span>
@@ -36,7 +36,7 @@ export function ClubArenaWelcome({ user, matches }) {
             ? `${saved} / ${open.length} pronostics enregistrés sur les matchs ouverts`
             : 'Retrouvez le podium, les poules et le tableau ci-dessous.'}
         </span>
-      </div>
+      </div>}
     </section>
   );
 }
@@ -45,10 +45,14 @@ export function ArenaLeague({ userId, onCommunity }) {
   const [failed, setFailed] = useState(false);
   useEffect(() => {
     const controller = new AbortController();
-    API.get('/community/leagues', { signal: controller.signal })
-      .then(({ data }) =>
-        data.length ? API.get(`/community/leagues/${data[0].id}`, { signal: controller.signal }) : null,
-      )
+    Promise.all([
+      API.get('/community/leagues', { signal: controller.signal }),
+      API.get('/community/favorite', { signal: controller.signal }),
+    ])
+      .then(([{ data }, { data: favorite }]) => {
+        const league = data.find((l) => l.id === favorite.leagueId) || data[0];
+        return league ? API.get(`/community/leagues/${league.id}`, { signal: controller.signal }) : null;
+      })
       .then((response) => setDetail(response?.data || { rows: [] }))
       .catch(() => {
         if (!controller.signal.aborted) setFailed(true);
@@ -59,7 +63,7 @@ export function ArenaLeague({ userId, onCommunity }) {
   return (
     <aside className="arena-league-card">
       <p className="arena-eyebrow">L’ESPRIT CLUB</p>
-      <h2>Votre ligue</h2>
+      <h2>Votre délégation</h2>
       <p className="muted">{detail?.league?.name || 'Vos partenaires de jeu'}</p>
       {failed ? (
         <p>Classement indisponible pour le moment.</p>
@@ -77,12 +81,12 @@ export function ArenaLeague({ userId, onCommunity }) {
               </li>
             ))}
           </ol>
-          {!rows.length && <p>Rejoignez une ligue depuis la communauté.</p>}
+          {!rows.length && <p>Rejoignez une délégation depuis la communauté.</p>}
         </>
       )}
       {onCommunity && (
         <button className="button-link arena-community-link" onClick={onCommunity}>
-          Retrouver ma communauté →
+          Mes délégations →
         </button>
       )}
     </aside>
@@ -90,18 +94,44 @@ export function ArenaLeague({ userId, onCommunity }) {
 }
 
 export function ArenaHome({ user, matches, competition, tournament, onPlay, onMine, onCommunity, onLive }) {
+  const follows = useFencerFollows();
+  const participantNames = (competition?.podiumRoster || [])
+    .filter((e) => follows?.links.some((l) => l.entryId === String(e.id)))
+    .map((e) => e.name);
+  const [scheduledEvent, setScheduledEvent] = useState(null);
+  const scheduledStart = scheduledEvent?.startsAt;
+  useEffect(() => {
+    setScheduledEvent(null);
+    const controller = new AbortController();
+    API.get('/public/tournaments', { signal: controller.signal })
+      .then(({ data }) => {
+        const events = data.flatMap(t => (t.competitions || []).map(c => ({...c,tournamentName:t.name})));
+        const event = competition?.id ? events.find(c => c.id === competition.id) : events.filter(c => Date.parse(c.startsAt) > Date.now()).sort((a,b) => Date.parse(a.startsAt)-Date.parse(b.startsAt))[0];
+        setScheduledEvent(event || null);
+      })
+      .catch(() => {});
+    return () => controller.abort();
+  }, [competition?.id]);
   const now = useNow(5000);
   const open = matches.filter((m) => !isMatchClosed(m, now));
   const pending = open.filter((m) => !m.predictions?.some((p) => p.userId === user.id));
   const latest = matches.filter((m) => m.isFinished && m.predictions?.some((p) => p.userId === user.id)).at(-1);
   return (
     <div className="arena-home">
-      <ClubArenaWelcome user={user} matches={matches} />
+      <ClubArenaWelcome user={user} matches={matches} greetingOnly />
+      {pending.length > 0 && <ClubArenaWelcome user={user} matches={matches} progressOnly />}
       <section className="arena-home-event">
         <div>
           <p className="arena-eyebrow">VOTRE ÉPREUVE</p>
-          <h2>{tournament?.name || 'Votre tournoi'}</h2>
-          <p>{competition?.name || 'Choisissez une épreuve pour commencer'}</p>
+          <h2>{tournament?.name || scheduledEvent?.tournamentName || 'Votre tournoi'}</h2>
+          <p>{competition?.name || scheduledEvent?.name || 'Choisissez une épreuve pour commencer'}</p>
+        {!!participantNames.length && (
+          <p className="muted arena-followed-note">
+            <span className="favorite-star" aria-label="Favoris">★</span> {participantNames.slice(0, 3).join(', ')}
+            {participantNames.length > 3 ? ` et ${participantNames.length - 3} autre(s)` : ''} participe
+            {participantNames.length > 1 ? 'nt' : ''} à cette épreuve
+          </p>
+        )}
         </div>
         <PisteCountdown
           deadline={
@@ -109,16 +139,17 @@ export function ArenaHome({ user, matches, competition, tournament, onPlay, onMi
               .filter((m) => !m.awaitingPreviousRound && !m.timingUnverified)
               .map((m) => m.manualUnlockUntil || m.closesAt)
               .filter(Boolean)
-              .sort()[0]
+              .sort()[0] || (Date.parse(scheduledStart) > now ? scheduledStart : null)
           }
         />
         <button onClick={onPlay}>Continuer mes pronostics →</button>
       </section>
+      {pending.length === 0 && <ClubArenaWelcome user={user} matches={matches} progressOnly />}
       <div className="arena-dashboard">
         <div className="arena-home-column">
           <section className="arena-featured">
             <p className="arena-eyebrow">À VOUS DE JOUER</p>
-            <h2>Votre prochain beau coup.</h2>
+            <h2>Votre prochaine belle touche.</h2>
             <p>
               {pending.length} {pending.length === 1 ? 'rencontre à compléter' : 'rencontres à compléter'} dans cette
               épreuve.
@@ -210,7 +241,11 @@ export function PisteFencers({ userId, tournamentId: currentTournamentId }) {
     setSelected(null);
   }, [tournamentId]);
   useEffect(() => {
-    if (!tournamentId) { setLoading(false); setSearchError(''); return; }
+    if (!tournamentId) {
+      setLoading(false);
+      setSearchError('');
+      return;
+    }
     const controller = new AbortController();
     setLoading(true);
     setSearchError('');
@@ -472,13 +507,13 @@ export function PistePodium({ rows }) {
   );
 }
 
-export function PisteCountdown({ deadline }) {
+export function PisteCountdown({ deadline, label = 'PROCHAINE ÉCHÉANCE' }) {
   const now = useNow(1000);
   const remaining = Math.max(0, Math.floor((new Date(deadline).getTime() - now) / 1000));
   if (!deadline || !Number.isFinite(remaining) || !remaining) return null;
   return (
     <div className="piste-countdown">
-      <p>PROCHAINE ÉCHÉANCE</p>
+      <p>{label}</p>
       <div>
         {[
           [Math.floor(remaining / 86400), 'jours'],

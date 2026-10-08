@@ -37,11 +37,11 @@ export default function InvitationBanner({ code, onRegister, onLogin, onInvalid 
       <p className="eyebrow">INVITATION</p>
       <h2 id="invitation-title">Rejoignez « {info.name} »</h2>
       <p className="muted">
-        {[info.kind === 'CLUB' ? 'Club' : 'Groupe d’amis', info.tournament?.name, withCount(info.members, 'membre')]
+        {[info.kind === 'CLUB' ? 'Club' : 'Délégation privée', info.tournament?.name, withCount(info.members, 'membre')]
           .filter(Boolean)
           .join(' · ')}
       </p>
-      <p>Créez votre compte ou connectez-vous : vous rejoindrez le groupe automatiquement.</p>
+      <p>Créez votre compte ou connectez-vous : vous rejoindrez la délégation automatiquement.</p>
       <p className="landing-ctas">
         <button type="button" onClick={onRegister}>
           Créer un compte

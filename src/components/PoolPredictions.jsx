@@ -655,6 +655,7 @@ function PoolList({ competitionId, user, onDirtyChange, refreshVersion }) {
               </h3>
             </summary>
             {group.items.length === 0 && <p className="pool-empty">{group.empty}</p>}
+            <div className="pool-cards-grid">
             {group.items.map((pool) => {
               const closed =
                 pool.isClosed || (pool.lockMode !== 'FIRST_RESULT' && new Date(pool.closesAt).getTime() <= now);
@@ -798,6 +799,7 @@ function PoolList({ competitionId, user, onDirtyChange, refreshVersion }) {
                 </article>
               );
             })}
+            </div>
           </details>
         ))}
       {user.isAdmin && <CreatePool competitionId={competitionId} onRefresh={reload} />}

@@ -3,11 +3,20 @@ import CrowdTrend from './CrowdTrend';
 import { roundLabel, groupMatches } from './matchPresentation';
 import { officialLink, pisteMatches, pistePrediction, pisteStatus } from '../lib/pisteLive';
 
-export default function PisteLive({ matches, competition, userId, ready, error, stale, onPlay }) {
+export default function PisteLive({
+  matches,
+  competition,
+  userId,
+  ready,
+  error,
+  stale,
+  onPlay,
+  initialMatchId = null,
+}) {
   const [round, setRound] = useState('');
   const [strip, setStrip] = useState('');
   const [mine, setMine] = useState(false);
-  const [selectedId, setSelectedId] = useState(null);
+  const [selectedId, setSelectedId] = useState(initialMatchId);
   const filtered = pisteMatches(matches, { round, strip, mine, userId });
   const match =
     filtered.find((m) => m.id === selectedId) ||

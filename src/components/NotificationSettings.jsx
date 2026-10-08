@@ -15,6 +15,8 @@ export default function NotificationSettings({ userId }) {
     [ready, setReady] = useState(false);
   const [preferences, setPreferences] = useState({
       followAll: true,
+      fencersOnly: false,
+      fencerEntries: false,
       newMatches: true,
       reminders: true,
       roundResults: false,
@@ -171,6 +173,8 @@ export default function NotificationSettings({ userId }) {
               <fieldset>
                 <legend>Mes alertes</legend>
                 {[
+                  ['fencersOnly', 'Uniquement les matchs et poules de Mes tireurs'],
+                  ['fencerEntries', 'Me prévenir lorsqu’un de Mes tireurs est engagé dans une prochaine épreuve'],
                   ['newMatches', 'Une alerte lorsque la moitié du tour est pronosticable'],
                   ['reminders', 'Rappel à 10 minutes de la clôture, si un pronostic manque'],
                   ['roundResults', 'Mon bilan après chaque tour'],

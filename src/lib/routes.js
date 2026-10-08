@@ -21,7 +21,7 @@ export const TAB_TITLES = {
   season: 'Ma saison',
   results: 'Résultats des compétitions d’escrime',
   leaderboard: 'Classements',
-  community: 'Communauté',
+  community: 'Délégations',
   account: 'Mon compte',
   admin: 'Administration',
 };

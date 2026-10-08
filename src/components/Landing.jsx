@@ -1,3 +1,5 @@
+import { nextEventStart } from '../lib/eventCountdown';
+import { useNow } from '../lib/polling';
 import { PisteCountdown } from './PisteExperience';
 import { useEffect, useState } from 'react';
 import API from '../api';
@@ -20,6 +22,7 @@ const where = (t) =>
 // Accueil sans compte : deux portes d'entrée (le jeu et les résultats), aperçu des derniers résultats,
 // Connexion et inscription disposent de leur propre page.
 export default function Landing({ children, invitation = null, onInvitationInvalid }) {
+  const now = useNow(1000);
   const authOnly = isAuthPath(location.pathname);
   const [results, setResults] = useState(null);
   const [tournaments, setTournaments] = useState([]);
@@ -34,6 +37,8 @@ export default function Landing({ children, invitation = null, onInvitationInval
       .catch(() => {});
     return () => c.abort();
   }, [authOnly]);
+  const nextStart = nextEventStart(tournaments, now);
+  const nextTournament = tournaments.find(t => t.competitions?.some(c => c.startsAt === nextStart));
   const latest = results?.[0];
   const others = tournaments.filter((t) => t.id !== latest?.id).slice(0, 5);
   const openAuth = (register) => location.assign(authPath(register, location.search));
@@ -53,7 +58,9 @@ export default function Landing({ children, invitation = null, onInvitationInval
           className="dedicated-auth"
           aria-label={location.pathname.startsWith('/inscription') ? 'Inscription' : 'Connexion'}
         >
-          <a className="auth-back" href="/">← Retour à l’accueil</a>
+          <a className="auth-back" href="/">
+            ← Retour à l’accueil
+          </a>
           {invite}
           {children}
         </main>
@@ -70,17 +77,7 @@ export default function Landing({ children, invitation = null, onInvitationInval
             Pronostiquez les tableaux, les poules et les podiums des compétitions d’escrime, au fleuret, à l’épée et au
             sabre, et défiez votre club au classement.
           </p>
-          {
-            <PisteCountdown
-              deadline={
-                tournaments
-                  .flatMap((t) => t.competitions || [])
-                  .map((c) => c.startsAt)
-                  .filter(Boolean)
-                  .sort()[0]
-              }
-            />
-          }
+          <PisteCountdown deadline={nextStart} label={`PROCHAINE ÉPREUVE${nextTournament ? ` · ${nextTournament.name}` : ''}`} />
           <p className="landing-ctas">
             <button type="button" onClick={() => openAuth(true)}>
               Créer un compte

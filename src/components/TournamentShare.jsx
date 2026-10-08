@@ -77,7 +77,7 @@ export default function TournamentShare({ summary, tournamentId }) {
           <option value="general">Général</option>
           {groups.map((g) => (
             <option key={g.id} value={g.id}>
-              {g.kind === 'CLUB' ? 'Club' : 'Groupe d’amis'} · {g.name}
+              {g.kind === 'CLUB' ? 'Club' : 'Délégation privée'} · {g.name}
             </option>
           ))}
         </select>

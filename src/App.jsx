@@ -1,3 +1,4 @@
+import { FollowedEventFencers, CompetitionFollow } from './components/EventWorkspace';
 import { FencerFollowsProvider } from './components/FencerFollowsProvider';
 import { isAuthPath, authPath } from './lib/authNavigation';
 import { ArenaHome, PisteFencers } from './components/PisteExperience';
@@ -88,7 +89,8 @@ export default function App() {
   // Navigation principale
   const [mainTab, setMainTab] = useState(
     () =>
-      ((location.pathname === '/' || isAuthPath(location.pathname)) && /[?&](event|tournament|match|matches|view)=/.test(location.search)
+      ((location.pathname === '/' || isAuthPath(location.pathname)) &&
+      /[?&](event|tournament|match|matches|view)=/.test(location.search)
         ? 'play'
         : tabFromPath(location.pathname)) || 'home',
   );
@@ -122,6 +124,9 @@ export default function App() {
     window.addEventListener('popstate', back);
     return () => window.removeEventListener('popstate', back);
   }, []);
+  const [eventMode, setEventMode] = useState('predictions');
+  const [followView, setFollowView] = useState('tableau');
+  const [liveMatchId, setLiveMatchId] = useState(null);
   const [landingPending, setLandingPending] = useState(false);
   const [landingFilter, setLandingFilter] = useState('Tous');
   const [dirty, setDirty] = useState(false);
@@ -198,7 +203,7 @@ export default function App() {
         history.replaceState(null, '', '/communaute');
         setInviteNotice(`Vous avez rejoint « ${league.name} ». Bienvenue !`);
       } catch (e) {
-        setInviteNotice(e.response?.data?.error || 'Impossible de rejoindre le groupe. Réessayez avec le code.');
+        setInviteNotice(e.response?.data?.error || 'Impossible de rejoindre le délégation. Réessayez avec le code.');
       }
       setInvitation(null);
       setMainTab('community');
@@ -432,6 +437,7 @@ export default function App() {
               ['home', '⌂', 'Accueil'],
               ['play', '◎', 'Pronostiquer'],
               ['leaderboard', '↗', 'Classements'],
+                ['community', '⚑', 'Délégations'],
               ['me', '◉', 'Moi'],
             ].map(([id, icon, label]) => (
               <button
@@ -440,7 +446,7 @@ export default function App() {
                 aria-pressed={
                   mainTab === id ||
                   (id === 'home' && mainTab === 'live') ||
-                  (id === 'me' && ['mine', 'season', 'community', 'results', 'account', 'admin'].includes(mainTab))
+                    (id === 'me' && ['mine', 'season', 'results', 'account', 'admin'].includes(mainTab))
                 }
                 onClick={() => {
                   setArenaMore(false);
@@ -460,7 +466,7 @@ export default function App() {
               <div className="arena-club">
                 <span>VOTRE CLUB</span>
                 <strong>{club.name}</strong>
-                <button onClick={() => navigate('community')}>Retrouver le groupe →</button>
+                  <button onClick={() => navigate('community')}>Retrouver la délégation →</button>
               </div>
             )}
           </nav>
@@ -509,7 +515,7 @@ export default function App() {
                       ['live', 'Suivi des pistes', 'Résultats synchronisés et points'],
                       ['mine', 'Mes pronostics', 'Vos choix, résultats et points'],
                       ['season', 'Ma saison', 'Votre bilan et vos médailles'],
-                      ['community', 'Ma communauté', 'Ligues, clubs et duels'],
+                        ['community', 'Ma communauté', 'Délégations, clubs et duels'],
                       ['results', 'Résultats', 'Les classements officiels'],
                       ['account', 'Mes réglages', 'Profil, apparence et notifications'],
                       ...(user.isAdmin ? [['admin', 'Administration', 'Gérer les épreuves et le suivi']] : []),
@@ -536,7 +542,8 @@ export default function App() {
               )}
               {mainTab === 'live' && (
                 <PisteLive
-                  key={selectedCompetitionId}
+                    key={`${selectedCompetitionId}:${liveMatchId}`}
+                    initialMatchId={liveMatchId}
                   matches={matches}
                   competition={competition}
                   userId={user.id}
@@ -633,7 +640,11 @@ export default function App() {
               {/* Communauté : tous les groupes, sans choisir d'épreuve au préalable. */}
               {mainTab === 'community' && <Community tournamentId={tournamentId} userId={user.id} />}
               {mainTab === 'leaderboard' && (
-                <GlobalLeaderboard userId={user.id} tournamentId={tournamentId} competitionId={selectedCompetitionId} />
+                  <GlobalLeaderboard
+                    userId={user.id}
+                    tournamentId={tournamentId}
+                    competitionId={selectedCompetitionId}
+                  />
               )}
               {mainTab === 'mine' && (
                 <MyPredictions
@@ -700,16 +711,30 @@ export default function App() {
                           })
                         }
                       />
+                        <nav className="secondary-nav" aria-label="Espace de l’épreuve">
+                          {[
+                            ['predictions', 'Pronostics'],
+                            ['follow', 'Suivi compétition'],
+                            ['fencers', 'Mes tireurs'],
+                          ].map(([id, label]) => (
+                            <button
+                              key={id}
+                              aria-pressed={eventMode === id}
+                              onClick={() => runNavigation(() => setEventMode(id))}
+                            >
+                              {label}
+                            </button>
+                          ))}
+                        </nav>
+                        {eventMode === 'predictions' && (
                       <nav className="secondary-nav" aria-label="Type de pronostic">
                         {[
-                          ['podium', 'Podium'],
                           ...(!team ? [['pools', 'Poules']] : []),
                           ['tableau', 'Tableau'],
-                          ...(club.hasFencers ? [['club', 'Nos tireurs']] : []),
+                              ['podium', 'Podium'],
                         ].map(([id, label]) => (
                           <button
                             key={id}
-                            data-section={id}
                             aria-pressed={playTab === id}
                             onClick={() =>
                               runNavigation(() => {
@@ -722,7 +747,49 @@ export default function App() {
                           </button>
                         ))}
                       </nav>
-                      {playTab === 'club' && club.hasFencers && (
+                        )}
+                        {eventMode === 'follow' && (
+                          <>
+                            <nav className="secondary-nav" aria-label="Suivi officiel">
+                              {[
+                                ...(!team ? [['pools', 'Poules']] : []),
+                                ['tableau', 'Tableau'],
+                                ['ranking', 'Classement'],
+                              ].map(([id, label]) => (
+                                <button key={id} aria-pressed={followView === id} onClick={() => setFollowView(id)}>
+                                  {label}
+                                </button>
+                              ))}
+                            </nav>
+                            <CompetitionFollow
+                              key={selectedCompetitionId}
+                              view={followView}
+                              competition={competition}
+                              matches={matches}
+                              userId={user.id}
+                              ready={matchesReady}
+                              error={matchesError}
+                              stale={matchesStale}
+                            />
+                          </>
+                        )}
+                        {eventMode === 'fencers' && (
+                          <FollowedEventFencers
+                            userId={user.id}
+                            competition={competition}
+                            matches={matches}
+                            onMatch={(id) => {
+                              setEventMode('predictions');
+                              setPlayTab('tableau');
+                              setMatchTarget({ id, at: Date.now() });
+                            }}
+                            onLive={(id) => {
+                              setLiveMatchId(id);
+                              navigate('live');
+                            }}
+                          />
+                        )}
+                        {eventMode === 'predictions' && playTab === 'club' && club.hasFencers && (
                         <ClubDay
                           key={selectedCompetitionId}
                           competitionId={selectedCompetitionId}
@@ -730,7 +797,7 @@ export default function App() {
                           team={team}
                         />
                       )}
-                      {playTab === 'podium' && (
+                        {eventMode === 'predictions' && playTab === 'podium' && (
                         <PodiumPrediction
                           key={selectedCompetitionId}
                           tournamentId={tournamentId}
@@ -739,7 +806,7 @@ export default function App() {
                           onDirtyChange={setDirty}
                         />
                       )}
-                      {playTab === 'pools' && (
+                        {eventMode === 'predictions' && playTab === 'pools' && (
                         <PoolPredictions
                           refreshVersion={resultsVersion}
                           key={selectedCompetitionId}
@@ -749,7 +816,7 @@ export default function App() {
                           onDirtyChange={setDirty}
                         />
                       )}
-                      {playTab === 'tableau' && !matchesReady && (
+                        {eventMode === 'predictions' && playTab === 'tableau' && !matchesReady && (
                         <div className="load-state" role={matchesError ? 'alert' : 'status'}>
                           {matchesError ? (
                             <>
@@ -768,7 +835,7 @@ export default function App() {
                           )}
                         </div>
                       )}
-                      {playTab === 'tableau' && matchesReady && !landingPending && (
+                        {eventMode === 'predictions' && playTab === 'tableau' && matchesReady && !landingPending && (
                         <>
                           <ScoringRules type="matches" />
                           <MatchBoard
