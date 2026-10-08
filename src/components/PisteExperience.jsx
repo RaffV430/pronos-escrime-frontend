@@ -1,3 +1,4 @@
+import { eventNameFr } from '../lib/eventName';
 import { remainingLocalFollows } from '../lib/fencerFollowMigration';
 import { useFencerFollows } from '../lib/fencerFollows';
 import { readPreviewFollows } from '../lib/previewFollows';
@@ -124,7 +125,7 @@ export function ArenaHome({ user, matches, competition, tournament, onPlay, onMi
         <div>
           <p className="arena-eyebrow">VOTRE ÉPREUVE</p>
           <h2>{tournament?.name || scheduledEvent?.tournamentName || 'Votre tournoi'}</h2>
-          <p>{competition?.name || scheduledEvent?.name || 'Choisissez une épreuve pour commencer'}</p>
+          <p>{eventNameFr(competition?.name || scheduledEvent?.name) || 'Choisissez une épreuve pour commencer'}</p>
         {!!participantNames.length && (
           <p className="muted arena-followed-note">
             <span className="favorite-star" aria-label="Favoris">★</span> {participantNames.slice(0, 3).join(', ')}
@@ -349,7 +350,7 @@ export function PisteFencers({ userId, tournamentId: currentTournamentId }) {
             <option value="">Toutes les épreuves du tournoi</option>
             {directory.events.map((event) => (
               <option key={event.id} value={event.id}>
-                {event.name}
+                {eventNameFr(event.name)}
               </option>
             ))}
           </select>
@@ -401,7 +402,7 @@ export function PisteFencers({ userId, tournamentId: currentTournamentId }) {
         <div className="piste-fencer-row" key={a.key}>
           <button className="button-link" onClick={() => setSelected(a)}>
             {a.name} · {[a.country, a.club].filter(Boolean).join(' · ') || 'Nation et club non renseignés'}
-            <small className="piste-fencer-events">{a.events.map((event) => event.name).join(' · ')}</small>
+            <small className="piste-fencer-events">{a.events.map((event) => eventNameFr(event.name)).join(' · ')}</small>
           </button>
           <button disabled={busy || !follows.ready} onClick={() => toggle(a)}>
             {favoriteOf(a) ? 'Retirer' : 'Suivre'}

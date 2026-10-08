@@ -1,3 +1,4 @@
+import { eventNameFr } from '../lib/eventName';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { parseLocation, pathFor, publicPath } from '../lib/routes';
 import API from '../api';
@@ -189,7 +190,7 @@ function Competition({ c, tournament, focused = false }) {
   return (
     <div className="result-competition" ref={ref}>
       <h3>
-        {c.name}
+        {eventNameFr(c.name)}
         {tournament.start !== tournament.end && <small> · {dateRange(c.date)}</small>}
       </h3>
       {c.podium.length ? (

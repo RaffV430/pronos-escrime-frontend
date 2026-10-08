@@ -2539,3 +2539,11 @@
 
 .followed-event-toolbar > p, .followed-event-filters { flex-basis: 100%; margin: 0; }
 .followed-event-filters { display: flex; flex-wrap: wrap; gap: 8px; }
+
+.club-arena .followed-category { grid-column:1/-1; min-width:0; padding-top:20px; border-top:2px solid var(--border); }
+.club-arena .followed-category-heading { display:flex; align-items:center; flex-wrap:wrap; gap:10px 16px; margin-bottom:16px; padding-left:12px; border-left:4px solid var(--accent, #329fff); }
+.club-arena .followed-category-heading h3 { margin:0; font-size:1.5rem; }
+.club-arena .followed-category-heading > span { color:var(--muted); font-size:.85rem; }
+.club-arena .followed-category-cards { display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,340px),480px)); gap:16px; }
+.club-arena .followed-event-fencers { grid-template-columns:minmax(0,1fr); }
+.club-arena .followed-category .arena-home-match small { display:block; margin-top:4px; }

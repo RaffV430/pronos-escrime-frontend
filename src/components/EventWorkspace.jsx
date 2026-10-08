@@ -1,3 +1,4 @@
+import { eventNameFr } from '../lib/eventName';
 import { useFencerFollows } from '../lib/fencerFollows';
 import { isMatchClosed } from './matchPresentation';
 import ResultsPools from './ResultsPools';
@@ -55,24 +56,34 @@ export function FollowedEventFencers({ competition, userId, onMatch, onLive, onE
         <p className="muted">Tous vos favoris du tournoi, indépendamment de l’épreuve choisie pour les pronostics.</p>
         <div className="filter-row followed-event-filters" aria-label="Filtrer mes tireurs par épreuve">
           <button aria-pressed={eventId === 'all'} onClick={() => setEventId('all')}>Toutes les épreuves</button>
-          {events.map(event => <button key={event.id} aria-pressed={eventId === event.id} onClick={() => setEventId(event.id)}>{event.name}</button>)}
+          {events.map(event => <button key={event.id} aria-pressed={eventId === event.id} onClick={() => setEventId(event.id)}>{eventNameFr(event.name)}</button>)}
         </div>
       </header>
       {loading && <p role="status">Chargement de vos tireurs dans toutes les épreuves…</p>}
       {error && <p role="alert">{error}</p>}
       {!loading && !error && !visible.some(e => e.followedRoster.length) && <p>Aucun de vos tireurs suivis dans ces épreuves. Ajoutez-en depuis Moi → Mes tireurs.</p>}
-      {visible.flatMap(event => event.followedRoster.map(e => (
+      {visible.filter(event => event.followedRoster.length).map(event => (
+        <section className="followed-category" key={event.id} aria-labelledby={`followed-category-${event.id}`}>
+          <header className="followed-category-heading">
+            <h3 id={`followed-category-${event.id}`}>{eventNameFr(event.name).replace(/cadettes/gi, 'Cadettes (dames)').replace(/cadets/gi, 'Cadets (hommes)')}</h3>
+            <span>{event.followedRoster.length} {event.followedRoster.length > 1 ? 'tireurs suivis' : 'tireur suivi'}</span>
+          </header>
+          <div className="followed-category-cards">
+          {event.followedRoster.map(e => (
         <article className="arena-home-match" key={`${event.id}:${e.id}`}>
           <span>
             <strong><span className="favorite-star">★</span> {e.name}</strong>
             <small>{[e.nation || e.country, e.club].filter(Boolean).join(' · ')}</small>
-            <small>{event.name}</small>
+            <small>{eventNameFr(event.name)}</small>
           </span>
           <button className="button-secondary" disabled={busy !== null} onClick={() => openFencer(event, e)}>
             {busy === `${event.id}:${e.id}` ? 'Chargement…' : 'Voir son match →'}
           </button>
         </article>
-      )))}
+          ))}
+          </div>
+        </section>
+      ))}
     </section>
   );
 }
