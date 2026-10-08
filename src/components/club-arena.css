@@ -872,7 +872,7 @@
   fill: var(--primary);
 }
 .club-arena .brand-mark > circle {
-  fill: var(--arena-accent);
+  fill: #f4b73f;
 }
 .club-arena .brand-mark > path,
 .club-arena .brand-mark > rect:last-child {
@@ -1459,9 +1459,7 @@
 .club-arena .primary-nav {
   background: linear-gradient(180deg, var(--surface), var(--arena-bg));
 }
-.club-arena button:not(.button-secondary):not(.button-link):not([aria-pressed]):not(.tree-card):not(.arena-more) {
-  color: var(--text);
-}
+
 @media (max-width: 760px) {
   .club-arena .arena-welcome {
     display: flex;
@@ -2581,3 +2579,119 @@
 }
 
 .home-fencer-foil { width: 18px; height: 18px; margin-left: 4px; vertical-align: -4px; flex-shrink: 0; }
+
+/* Délégations : navigation, cartes compactes et classement des joueurs. */
+.club-arena .delegation-carousel-heading { display:flex; align-items:center; justify-content:space-between; gap:8px; flex-wrap:wrap; }
+.club-arena .delegation-carousel-heading .arena-eyebrow { margin:0; }
+.club-arena .delegation-arrows { display:flex; align-items:center; gap:8px; }
+.club-arena .delegation-arrows button { width:36px; min-height:36px; padding:0; font-size:26px; line-height:1; background:var(--surface); color:var(--accent-link); }
+.club-arena .delegation-arrows > span { font-size:12px; color:var(--muted); }
+.club-arena .delegation-carousel h2 { margin-top:16px; }
+.delegation-kind { display:flex; align-items:center; flex-wrap:wrap; gap:12px; font-size:12px; color:var(--muted); }
+.club-arena .delegation-favorite-badge { color:var(--success); font-size:12px; }
+.club-arena .pool-toolbar .pool-secondary { background:var(--surface); color:var(--accent-link); border:1px solid var(--border); }
+.club-arena .pool-toolbar .pool-secondary:hover:not(:disabled) { background:var(--surface-2); }
+.club-arena .community-panel { background:transparent; border:0; padding:0; box-shadow:none; }
+.club-arena .community-panel h1, .club-arena .community-panel h2 { color:var(--text); }
+.delegations-page-heading { display:flex; align-items:center; justify-content:space-between; gap:20px; margin-bottom:18px; }
+.delegations-page-heading h1 { margin:8px 0; }
+.delegations-page-heading p { margin:0; }
+.delegation-count { border:1px solid var(--border); border-radius:24px; padding:8px 12px; white-space:nowrap; color:var(--muted); font-size:13px; }
+.delegation-help { font-size:13px; }
+.delegation-cards { display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,270px),1fr)); gap:14px; margin:18px 0 24px; }
+.delegation-card { display:flex; flex-direction:column; gap:12px; background:var(--surface); border:1px solid var(--border); border-radius:18px; padding:18px; min-width:0; }
+.delegation-card-heading { display:flex; align-items:center; gap:12px; }
+.club-arena .delegation-card h2 { font-size:24px; margin:0 0 4px; overflow-wrap:anywhere; }
+.delegation-card-heading p { font-size:12px; color:var(--muted); margin:0; }
+.delegation-card-avatar { display:grid; place-items:center; flex:0 0 42px; height:42px; border-radius:12px; color:var(--accent-link); background:var(--surface-2); font-weight:700; }
+.club-arena .delegation-card .delegation-favorite-toggle { display:flex; align-items:center; justify-content:flex-start; gap:8px; font-size:12px; padding:6px 0; min-height:32px; border:0; box-shadow:none; background:transparent; color:var(--muted); text-align:left; }
+.club-arena .delegation-card .delegation-favorite-toggle[aria-pressed='true'] { color:var(--success); }
+.club-arena .delegation-card .delegation-open-ranking { margin-top:auto; color:var(--on-accent); background:var(--accent); width:100%; }
+.delegation-share { font-size:12px; }
+.delegation-share summary { color:var(--accent-link); cursor:pointer; padding:5px 0; }
+.delegation-share code { overflow-wrap:anywhere; }
+.club-arena .delegation-share button { font-size:12px; padding:8px 10px; margin:4px 0; width:100%; }
+.delegation-detail { scroll-margin-top:88px; }
+.club-arena .delegation-detail > h3 { font-size:30px; margin:8px 0 16px; }
+.delegation-ranking .piste-podium { max-width:540px; margin:24px auto; }
+.delegation-ranking .piste-place > div { height:100px; }
+.delegation-ranking .piste-place.place-1 > div { height:140px; }
+.delegation-ranking .piste-place.place-3 > div { height:80px; }
+.delegation-my-progress { display:grid; grid-template-columns:1fr 1fr 2fr; gap:16px; padding:18px; border-radius:14px; background:var(--surface-2); margin:20px 0; }
+.delegation-my-progress small { display:block; margin-bottom:4px; font-size:12px; }
+.delegation-my-progress strong { display:block; font-size:18px; line-height:1.3; }
+.delegation-rankings-list { list-style:none; padding:0; margin:20px 0; }
+.delegation-rankings-list li { display:flex; align-items:center; gap:14px; padding:14px 12px; border-bottom:1px solid var(--divider); }
+.delegation-rankings-list li.is-me { background:var(--surface-2); border:1px solid var(--accent); border-radius:12px; }
+.delegation-rank-number { font-size:20px; font-weight:700; width:25px; color:var(--muted); }
+.delegation-member { flex:1; min-width:0; }
+.delegation-member > strong { display:block; overflow-wrap:anywhere; }
+.delegation-member > small { display:block; font-size:12px; margin:3px 0; }
+.delegation-score-track { display:block; height:4px; width:100%; background:var(--surface-2); border-radius:8px; overflow:hidden; }
+.delegation-score-track > span { display:block; height:100%; background:var(--accent); }
+.delegation-member-score { text-align:right; white-space:nowrap; font-size:18px; }
+.delegation-member-score small { font-size:12px; }
+.club-arena .delegation-rankings-list .duel-button { margin:0; min-height:36px; padding:8px 12px; }
+.delegation-manage { border:1px solid var(--border); border-radius:16px; background:var(--surface); padding:16px; margin:24px 0; }
+.delegation-manage > summary { font-weight:600; color:var(--accent-link); cursor:pointer; }
+.delegation-manage .feature-grid { margin-top:16px; }
+@media(max-width:600px) {
+  .delegations-page-heading { align-items:flex-start; flex-direction:column; gap:10px; }
+  .delegation-my-progress { grid-template-columns:1fr 1fr; gap:12px; }
+  .delegation-my-progress > span:last-child { grid-column:1/-1; }
+  .delegation-rankings-list li { gap:8px; padding:12px 8px; flex-wrap:wrap; }
+  .delegation-member { flex:1 1 120px; }
+  .delegation-member-score { font-size:16px; }
+  .club-arena .delegation-rankings-list .duel-button { font-size:12px; padding:6px 10px; }
+}
+
+/* Espace personnel disponible sans quitter la page courante. */
+.club-arena .user-menu { position: relative; }
+.club-arena .user-menu-panel { position: absolute; right: 0; top: 100%; z-index: 100; width: min(280px, calc(100vw - 32px)); padding: 8px; background: var(--surface, #fff); border: 1px solid var(--border); border-radius: 14px; box-shadow: 0 12px 32px #14244026; display: grid; }
+.club-arena .user-menu-panel button { background: transparent; color: var(--text); text-align: left; border: 0; border-radius: 8px; padding: 12px; }
+.club-arena .user-menu-panel button:hover, .club-arena .user-menu-panel button:focus-visible { background: #eaf1fa; color: #225da8; }
+.club-arena .user-menu-panel .user-menu-logout { border-top: 1px solid var(--border); border-radius: 0; margin-top: 4px; }
+@media(max-width: 700px) {
+ .club-arena .account-actions > button { display: none; }
+ .club-arena .account-actions .user-menu-trigger { min-height: 42px; padding: 8px 12px; }
+ .club-arena .primary-nav { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+}
+
+@media(max-width: 700px) {
+ .club-arena .account-actions > button:first-child { display: inline-flex; padding: 8px; min-height: 42px; font-size: 12px; }
+}
+
+.club-arena .piste-bracket-layout { display: block; }
+.club-arena .tree-slot:has(.tree-inline-detail) { z-index: 20; }
+.club-arena .tree-inline-detail { position: absolute; top: calc(50% + 36px); left: 0; width: min(420px, calc(100vw - 54px)); min-width: 0; padding: 12px; background: var(--surface, #fff); border: 1px solid var(--border); border-radius: 14px; box-shadow: 0 12px 30px #14244026; }
+.club-arena .tree-inline-detail.align-right { left: auto; right: 0; }
+.club-arena .tree-inline-detail > button { display: block; margin: 0 0 10px auto; }
+@media(max-width: 700px) {
+ .club-arena .app-header { height: 102px; display: flex; flex-direction: column; align-items: stretch; justify-content: space-between; padding: 10px 16px; }
+ .club-arena .app-header .brand { position: static; align-self: flex-start; font-size: 17px; }
+ .club-arena .app-header .account-actions { position: static; align-self: flex-end; display: flex; gap: 6px; }
+ .club-arena .account-actions > button, .club-arena .account-actions > button:first-child { display: inline-flex; min-height: 34px; padding: 6px 10px; font-size: 11px; }
+ .club-arena .account-actions .user-menu-trigger { min-height: 34px; padding: 6px 10px; font-size: 12px; }
+ .club-arena .app-shell.redesigned { padding-top: 118px; }
+}
+
+@media(max-width: 700px) {
+ .club-arena .primary-nav { inset: auto 0 0; bottom: 0; grid-template-columns: repeat(5, minmax(0, 1fr)); height: calc(68px + env(safe-area-inset-bottom, 0px)); padding-bottom: calc(4px + env(safe-area-inset-bottom, 0px)); }
+}
+
+.club-arena .primary-nav button[aria-pressed='true'],
+.club-arena .primary-nav button[aria-pressed='true']:hover:not(:disabled) {
+  background: #eaf1fa;
+  color: #225da8;
+  border: 0;
+  border-radius: 10px;
+  box-shadow: none;
+}
+.club-arena .app-shell.redesigned .primary-nav button[aria-pressed='true'],
+.club-arena .app-shell.redesigned .primary-nav button[aria-pressed='true']:hover:not(:disabled) {
+  background: #eaf1fa;
+  color: #225da8;
+  border: 0;
+  border-radius: 10px;
+  box-shadow: none;
+}

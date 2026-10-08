@@ -43,53 +43,81 @@ export function ClubArenaWelcome({ user, matches, greetingOnly = false, progress
   );
 }
 export function ArenaLeague({ userId, onCommunity }) {
+  const [leagues, setLeagues] = useState([]);
+  const [selectedId, setSelectedId] = useState(null);
+  const [favoriteId, setFavoriteId] = useState(null);
   const [detail, setDetail] = useState(null);
   const [failed, setFailed] = useState(false);
+  const [revision, setRevision] = useState(0);
+  const gesture = useRef(null);
   useEffect(() => {
     const controller = new AbortController();
+    setFailed(false);
     Promise.all([
       API.get('/community/leagues', { signal: controller.signal }),
       API.get('/community/favorite', { signal: controller.signal }),
-    ])
-      .then(([{ data }, { data: favorite }]) => {
-        const league = data.find((l) => l.id === favorite.leagueId) || data[0];
-        return league ? API.get(`/community/leagues/${league.id}`, { signal: controller.signal }) : null;
-      })
-      .then((response) => setDetail(response?.data || { rows: [] }))
-      .catch(() => {
-        if (!controller.signal.aborted) setFailed(true);
-      });
+    ]).then(([{ data }, { data: favorite }]) => {
+      if (controller.signal.aborted) return;
+      setLeagues(data);
+      setFavoriteId(favorite.leagueId);
+      setSelectedId(data.find(l => l.id === favorite.leagueId)?.id || data[0]?.id || null);
+      if (!data.length) setDetail({ ranking: [] });
+    }).catch(() => { if (!controller.signal.aborted) setFailed(true); });
     return () => controller.abort();
-  }, []);
-  const rows = detail?.rows || detail?.ranking || [];
+  }, [revision]);
+  useEffect(() => {
+    if (!selectedId) return;
+    const controller = new AbortController();
+    setDetail(null);
+    setFailed(false);
+    API.get(`/community/leagues/${selectedId}`, { signal: controller.signal })
+      .then(({ data }) => { if (!controller.signal.aborted) setDetail(data); })
+      .catch(() => { if (!controller.signal.aborted) setFailed(true); });
+    return () => controller.abort();
+  }, [selectedId, revision]);
+  const index = leagues.findIndex(l => l.id === selectedId);
+  const current = leagues[index];
+  const move = delta => {
+    if (leagues.length > 1) setSelectedId(leagues[(index + delta + leagues.length) % leagues.length].id);
+  };
+  const rows = detail?.league?.id === selectedId ? detail?.rows || detail?.ranking || [] : [];
   return (
-    <aside className="arena-league-card">
-      <p className="arena-eyebrow">L’ESPRIT CLUB</p>
-      <h2>{detail?.league?.name || 'Votre délégation'}</h2>
-      {failed ? (
-        <p>Classement indisponible pour le moment.</p>
-      ) : !detail ? (
-        <p>Chargement…</p>
-      ) : (
-        <>
+    <aside className="arena-league-card delegation-carousel"
+      onTouchStart={e => { const t = e.touches[0]; gesture.current = { x: t.clientX, y: t.clientY }; }}
+      onTouchCancel={() => { gesture.current = null; }}
+      onTouchEnd={e => {
+        const start = gesture.current;
+        gesture.current = null;
+        if (!start) return;
+        const t = e.changedTouches[0];
+        const x = t.clientX - start.x, y = t.clientY - start.y;
+        if (Math.abs(x) > 50 && Math.abs(x) > Math.abs(y) * 1.5) move(x < 0 ? 1 : -1);
+      }}>
+      <div className="delegation-carousel-heading">
+        <p className="arena-eyebrow">L’ESPRIT CLUB</p>
+        {leagues.length > 1 && <div className="delegation-arrows">
+          <button className="button-secondary" aria-label="Délégation précédente" onClick={() => move(-1)}>‹</button>
+          <span aria-live="polite">{index + 1} / {leagues.length}</span>
+          <button className="button-secondary" aria-label="Délégation suivante" onClick={() => move(1)}>›</button>
+        </div>}
+      </div>
+      <h2 aria-live="polite">{current?.name || 'Votre délégation'}</h2>
+      {current && <p className="delegation-kind">{current.kind === 'CLUB' ? 'Club' : 'Délégation d’amis'}
+        {current.id === favoriteId && <span className="delegation-favorite-badge">● Favorite</span>}
+      </p>}
+      {failed ? <p role="status">Classement indisponible. <button className="button-link" onClick={() => setRevision(n => n + 1)}>Réessayer</button></p>
+        : !detail || (selectedId && detail.league?.id !== selectedId) ? <p role="status">Chargement…</p> : <>
           <PistePodium rows={rows} />
           <ol className="arena-league-rows">
             {rows.slice(0, 6).map((row, index) => (
               <li key={row.id} className={row.id === userId ? 'is-me' : ''}>
-                <span>{row.rank || index + 1}</span>
-                <strong>{row.name}</strong>
-                <b>{row.totalPoints} pts</b>
+                <span>{row.rank || index + 1}</span><strong>{row.name}</strong><b>{row.totalPoints} pts</b>
               </li>
             ))}
           </ol>
-          {!rows.length && <p>Rejoignez une délégation depuis la communauté.</p>}
-        </>
-      )}
-      {onCommunity && (
-        <button className="button-link arena-community-link" onClick={onCommunity}>
-          Mes délégations →
-        </button>
-      )}
+          {!rows.length && <p>{current ? 'Le premier point reste à marquer. À vous de jouer !' : 'Rejoignez une délégation depuis la communauté.'}</p>}
+        </>}
+      {onCommunity && <button className="button-link arena-community-link" onClick={onCommunity}>Mes délégations →</button>}
     </aside>
   );
 }
@@ -135,11 +163,10 @@ export function ArenaHome({ user, matches, competition, tournament, onPlay, onMi
         />
         <button onClick={onPlay}>Continuer mes pronostics →</button>
       </section>
-      {pending.length === 0 && <ClubArenaWelcome user={user} matches={matches} progressOnly />}
       <div className="arena-dashboard">
         <div className="arena-home-column">
           <section className="arena-featured">
-            <p className="arena-eyebrow">À VOUS DE JOUER</p>
+            <p className="arena-eyebrow">VOS PRONOSTICS</p>
             <h2>Votre prochaine belle touche.</h2>
             <p>
               {pending.length} {pending.length === 1 ? 'rencontre à compléter' : 'rencontres à compléter'} dans cette
@@ -242,16 +269,33 @@ export function PisteFencers({ userId, tournamentId: currentTournamentId }) {
     setSearchError('');
     const timer = setTimeout(async () => {
       try {
-        const { data } = await API.get('/me/fencers/directory', {
-          signal: controller.signal,
-          params: {
-            tournamentId,
-            ...(eventId ? { competitionId: eventId } : {}),
-            query,
-            ...(clubOnly ? { clubOnly: '1' } : {}),
-            offset,
-          },
-        });
+        let data;
+        if (tournamentId === 'all') {
+          const pages = await Promise.all(tournaments.map(async tournament => {
+            const rows = [];
+            let next = 0;
+            let page;
+            do {
+              ({ data: page } = await API.get('/me/fencers/directory', {
+                signal: controller.signal,
+                params: { tournamentId: tournament.id, query, ...(clubOnly ? { clubOnly: '1' } : {}), offset: next },
+              }));
+              rows.push(...page.results.map(row => ({ ...row, key: `${tournament.id}:${row.key}`,
+                events: row.events.map(event => ({ ...event, name: `${eventNameFr(event.name)} · ${tournament.name}` })) })));
+              next = page.nextOffset;
+            } while (next != null);
+            return { rows, clubName: page.clubName };
+          }));
+          const rows = pages.flatMap(page => page.rows).sort((a, b) => a.name.localeCompare(b.name, 'fr'));
+          data = { results: rows.slice(offset, offset + 20), events: [], total: rows.length,
+            clubName: pages[0]?.clubName, nextOffset: offset + 20 < rows.length ? offset + 20 : null };
+        } else {
+          ({ data } = await API.get('/me/fencers/directory', {
+            signal: controller.signal,
+            params: { tournamentId, ...(eventId ? { competitionId: eventId } : {}), query,
+              ...(clubOnly ? { clubOnly: '1' } : {}), offset },
+          }));
+        }
         if (!controller.signal.aborted) setDirectory(data);
       } catch (e) {
         if (!controller.signal.aborted) setSearchError(e.response?.data?.error || 'Recherche indisponible. Réessayez.');
@@ -263,7 +307,7 @@ export function PisteFencers({ userId, tournamentId: currentTournamentId }) {
       clearTimeout(timer);
       controller.abort();
     };
-  }, [tournamentId, eventId, query, clubOnly, offset, revision, follows.favorites]);
+  }, [tournamentId, tournaments, eventId, query, clubOnly, offset, revision, follows.favorites]);
   const favoriteOf = (athlete) => directory.results.find((row) => row.key === athlete.key)?.favoriteId;
   async function toggle(athlete) {
     const id = favoriteOf(athlete);
@@ -301,7 +345,7 @@ export function PisteFencers({ userId, tournamentId: currentTournamentId }) {
       <p className="arena-eyebrow">VOTRE BORD DE PISTE</p>
       <h2>Mes tireurs</h2>
       <p>
-        Recherchez parmi les engagés de tout le tournoi, ou choisissez une épreuve ici. Vos suivis sont enregistrés dans
+        Recherchez parmi les engagés de tous les tournois enregistrés, ou choisissez un tournoi et une épreuve. Vos suivis sont enregistrés dans
         votre compte, sur tous vos appareils et pour les prochains tournois.
       </p>
       {tournamentError && <p role="alert">{tournamentError}</p>}
@@ -319,6 +363,7 @@ export function PisteFencers({ userId, tournamentId: currentTournamentId }) {
             }}
           >
             <option value="">Choisir un tournoi</option>
+            <option value="all">Tous les tournois enregistrés</option>
             {tournaments.map((t) => (
               <option key={t.id} value={t.id}>
                 {t.name}
@@ -337,7 +382,7 @@ export function PisteFencers({ userId, tournamentId: currentTournamentId }) {
               setSelected(null);
             }}
           >
-            <option value="">Toutes les épreuves du tournoi</option>
+            <option value="">{tournamentId === 'all' ? 'Toutes les épreuves' : 'Toutes les épreuves du tournoi'}</option>
             {directory.events.map((event) => (
               <option key={event.id} value={event.id}>
                 {eventNameFr(event.name)}
@@ -410,7 +455,7 @@ export function PisteFencers({ userId, tournamentId: currentTournamentId }) {
           {!tournamentId
             ? 'Choisissez un tournoi pour rechercher ses engagés.'
             : query.trim().length < 2 && !clubOnly
-              ? 'Saisissez au moins deux lettres pour rechercher dans le tournoi.'
+              ? 'Saisissez au moins deux lettres pour rechercher dans les listes sélectionnées.'
               : 'Aucun engagé correspondant.'}
         </p>
       )}
@@ -489,7 +534,7 @@ export function PistePodium({ rows }) {
               <strong>{rows[index].name}</strong>
               <div>
                 <b>{rows[index].rank || index + 1}</b>
-                <span>{rows[index].totalPoints} pts</span>
+                <span>{Number(rows[index].totalPoints).toLocaleString('fr-FR', { maximumFractionDigits: 2 })} pts</span>
               </div>
             </div>
           ),

@@ -56,7 +56,20 @@ export default function BracketTree({
   onOpen,
   openId,
   revealId,
+  renderDetail,
+  onCloseDetail,
 }) {
+  const detailRef = useRef(null);
+  useEffect(() => {
+    if (!openId) return;
+    const close = e => {
+      if (!detailRef.current?.contains(e.target) && !e.target.closest('.tree-card')) onCloseDetail?.();
+    };
+    const escape = e => { if (e.key === 'Escape') onCloseDetail?.(); };
+    document.addEventListener('pointerdown', close);
+    document.addEventListener('keydown', escape);
+    return () => { document.removeEventListener('pointerdown', close); document.removeEventListener('keydown', escape); };
+  }, [openId, onCloseDetail]);
   const valueOf = (m) => values(m);
   const perView = usePerView();
   // Tour affiché en premier : choisi par le joueur, sinon le premier tour encore ouvert aux pronostics
@@ -309,6 +322,12 @@ export default function BracketTree({
                         id={slot.match ? `match-${slot.match.id}` : undefined}
                       >
                         {slotCard(index, slot)}
+                        {slot.match?.id === openId && renderDetail && <section ref={detailRef}
+                          className={`tree-inline-detail tree-detail${j === shown.length - 1 ? ' align-right' : ''}`}
+                          aria-label="Détail du match">
+                          <button className="button-secondary" onClick={onCloseDetail}>Fermer le détail</button>
+                          {renderDetail(slot.match)}
+                        </section>}
                       </div>
                     ))}
                   </div>

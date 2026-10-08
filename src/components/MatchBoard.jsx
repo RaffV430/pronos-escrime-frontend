@@ -307,7 +307,6 @@ export default function MatchBoard({
     };
   const checked = [...new Set(valid.map((m) => m.sourceCheckedAt).filter(Boolean))];
   const tree = buildTree(valid);
-  const openMatch = openId ? valid.find((m) => m.id === openId) : null;
   const card = (m) => {
     const p = mine(m),
       v = values(m),
@@ -631,6 +630,8 @@ export default function MatchBoard({
                 onOpen={(m) => setOpenId((old) => (old === m.id ? null : m.id))}
                 openId={openId}
                 revealId={reveal}
+                renderDetail={card}
+                onCloseDetail={() => setOpenId(null)}
               />
               {tree.bronze && (
                 <section className="round-column tree-bronze">
@@ -638,14 +639,7 @@ export default function MatchBoard({
                   <div className="match-grid">{card(tree.bronze)}</div>
                 </section>
               )}
-              {openMatch && (
-                <section className="tree-detail" aria-label="Détail du match">
-                  <button className="button-link" onClick={() => setOpenId(null)}>
-                    Fermer le détail
-                  </button>
-                  {card(openMatch)}
-                </section>
-              )}
+
             </div>
           ) : (
             <div className="rounds">
