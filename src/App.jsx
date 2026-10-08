@@ -55,6 +55,16 @@ const tabFallback = <p className="muted load-state">Chargement…</p>;
 
 export default function App() {
   // Lien d'invitation (/rejoindre/<code>) : lu avant tout le reste, l'adresse redevient « / ».
+  const [accountOpen, setAccountOpen] = useState(false);
+  const accountMenu = useRef(null);
+  useEffect(() => {
+    if (!accountOpen) return;
+    const close = e => { if (!accountMenu.current?.contains(e.target)) setAccountOpen(false); };
+    const escape = e => { if (e.key === 'Escape') setAccountOpen(false); };
+    document.addEventListener('pointerdown', close);
+    document.addEventListener('keydown', escape);
+    return () => { document.removeEventListener('pointerdown', close); document.removeEventListener('keydown', escape); };
+  }, [accountOpen]);
   const [arenaMore, setArenaMore] = useState(false);
   const [invitation, setInvitation] = useState(() => captureInvitation());
   const [inviteNotice, setInviteNotice] = useState('');
@@ -409,26 +419,23 @@ export default function App() {
               pronos<span>escrime</span>
             </div>
             <div className="account-actions">
-              <span>{user.name || user.username}</span>
-              {user.isAdmin && (
-                <button
-                  className="button-secondary"
-                  aria-current={mainTab === 'admin' ? 'page' : undefined}
-                  onClick={() => navigate('admin')}
-                >
-                  Administration
-                </button>
-              )}
-              <button
-                className="button-link"
-                aria-current={mainTab === 'account' ? 'page' : undefined}
-                onClick={() => navigate('account')}
-              >
-                Mon compte
-              </button>
-              <button className="button-link" onClick={() => runNavigation(handleLogout)}>
-                Déconnexion
-              </button>
+              <button className="button-secondary" onClick={() => navigate('results')}>Résultats</button>
+              <button className="button-link" onClick={() => navigate('account')}>Mon compte</button>
+              <div className="user-menu" ref={accountMenu}
+                onMouseEnter={() => { if (matchMedia('(hover: hover)').matches) setAccountOpen(true); }}
+                onMouseLeave={() => { if (matchMedia('(hover: hover)').matches) setAccountOpen(false); }}
+                onBlur={e => { if (!e.currentTarget.contains(e.relatedTarget)) setAccountOpen(false); }}>
+                <button className="button-secondary user-menu-trigger" aria-expanded={accountOpen} aria-controls="user-options"
+                  onClick={e => { if (e.detail > 0 && matchMedia('(hover: hover)').matches) setAccountOpen(true); else setAccountOpen(v => !v); }}>{user.name || user.username} ⌄</button>
+                {accountOpen && <nav id="user-options" className="user-menu-panel" aria-label="Mon espace">
+                  {[
+                    ['me', 'Mes tireurs'], ['live', 'Suivi des pistes'], ['mine', 'Mes pronostics'],
+                    ['season', 'Ma saison'],
+                    ['account', 'Mes réglages'], ...(user.isAdmin ? [['admin', 'Administration']] : []),
+                  ].map(([id, label]) => <button key={id} onClick={() => { setAccountOpen(false); navigate(id); }}>{label}</button>)}
+                  <button className="user-menu-logout" onClick={() => { setAccountOpen(false); runNavigation(handleLogout); }}>Déconnexion</button>
+                </nav>}
+              </div>
             </div>
           </header>
           <UpdateBanner onReload={runNavigation} />
@@ -437,9 +444,9 @@ export default function App() {
             {[
               ['home', '⌂', 'Accueil'],
               ['play', '◎', 'Pronostiquer'],
-              ['leaderboard', '↗', 'Classements'],
+              ['leaderboard', <svg key="podium" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden="true"><path d="M2 21V11h6V5h8v10h6v6ZM8 11v10M16 15v6" /><path d="M12 8v6" /></svg>, 'Classements'],
                 ['community', '⚑', 'Délégations'],
-              ['me', '◉', 'Moi'],
+              ['me', <svg key="fencers" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden="true"><path d="M9 15 21 3M6 13c2-1 5 1 4 5M7.5 16.5 4 20" /></svg>, 'Mes tireurs'],
             ].map(([id, icon, label]) => (
               <button
                 key={id}

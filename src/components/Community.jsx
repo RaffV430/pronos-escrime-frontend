@@ -1,34 +1,38 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
+import { PistePodium } from './PisteExperience';
 import API from '../api';
 import DuelView from './DuelView';
 import ClubLeague from './ClubLeague';
 import { withCount } from '../lib/plural';
 import { invitationFromPath, invitationUrl } from '../lib/invitation';
 function Ranking({ rows, onDuel, userId }) {
-  return (
-    <ol className="ranking-list">
-      {rows.map((r) => (
-        <li key={r.id}>
-          <span>
-            #{r.rank} · {r.name}
-          </span>
-          <strong>
-            {Number.isInteger(r.totalPoints) ? r.totalPoints : r.totalPoints.toFixed(2)} pts
-            {r.members ? ` · ${r.members} membres` : ''}
-            {onDuel && r.id !== userId && (
-              <button className="button-secondary duel-button" onClick={() => onDuel(r)}>
-                Duel
-              </button>
-            )}
-          </strong>
-        </li>
-      ))}
+  const me = rows.find(r => r.id === userId);
+  const ahead = me && rows.findLast(r => r.totalPoints > me.totalPoints);
+  const points = value => Number(value).toLocaleString('fr-FR', { maximumFractionDigits: 2 });
+  return <div className="delegation-ranking">
+    <PistePodium rows={rows} />
+    {me && <div className="delegation-my-progress">
+      <span><small>Votre position</small><strong>#{me.rank}</strong></span>
+      <span><small>Votre score</small><strong>{points(me.totalPoints)} pts</strong></span>
+      <span><small>Prochain objectif</small><strong>{ahead ? `${points(ahead.totalPoints - me.totalPoints)} pts pour rejoindre ${ahead.name}` : 'Vous êtes en tête !'}</strong></span>
+    </div>}
+    <ol className="delegation-rankings-list">
+      {rows.map(r => <li key={r.id} className={r.id === userId ? 'is-me' : ''}>
+        <span className="delegation-rank-number">{r.rank}</span>
+        <span className="delegation-member"><strong>{r.name}{r.id === userId ? ' · Vous' : ''}</strong>
+          <small>{r.members ? `${r.members} membres` : r.rank === 1 ? 'En tête' : `${points(rows[0].totalPoints - r.totalPoints)} pts de la tête`}</small>
+          <span className="delegation-score-track"><span style={{ width: `${rows[0].totalPoints ? Math.max(0, Math.min(100, r.totalPoints / rows[0].totalPoints * 100)) : 0}%` }} /></span>
+        </span>
+        <strong className="delegation-member-score">{points(r.totalPoints)} <small>pts</small></strong>
+        {onDuel && r.id !== userId && <button className="button-secondary duel-button" aria-label={`Duel avec ${r.name}`} onClick={() => onDuel(r)}>Duel</button>}
+      </li>)}
     </ol>
-  );
+  </div>;
 }
 // Communauté : mes groupes d'amis et clubs (permanents) avec leur lien d'invitation et leur classement
 // par tournoi ou sur la saison, création et adhésion, puis le classement des clubs et les défis d'un tournoi.
 export default function Community({ tournamentId: preferred = null, userId }) {
+  const rankingSection = useRef(null);
   const [favoriteId, setFavoriteId] = useState(null);
   const [favoriteBusy, setFavoriteBusy] = useState(false);
   const [leagues, setLeagues] = useState(null),
@@ -114,48 +118,24 @@ export default function Community({ tournamentId: preferred = null, userId }) {
   const scoped = (scope) => (scope ? `?tournamentId=${scope}` : '');
   const openDetail = (leagueId, scope) =>
     action(async () => {
-      setDetailScope(scope);
       setDuel(null);
-      setDetail((await API.get(`/community/leagues/${leagueId}${scoped(scope)}`)).data);
+      const { data } = await API.get(`/community/leagues/${leagueId}${scoped(scope)}`);
+      setDetailScope(scope);
+      setDetail(data);
     });
+  const detailId = detail?.league?.id;
+  useEffect(() => {
+    if (detailId) rankingSection.current?.scrollIntoView({ block: 'start', behavior: 'smooth' });
+  }, [detailId]);
   return (
     <section className="feature-panel community-panel">
-      {!!leagues?.length && (
-        <section className="delegation-favorites" aria-label="Ma délégation favorite">
-          <h2>Ma délégation favorite</h2>
-          <p>Elle apparaît sur votre accueil.</p>
-          {leagues.map((l) => (
-            <button
-              className="button-secondary"
-              key={l.id}
-              disabled={favoriteBusy}
-              aria-pressed={favoriteId === l.id}
-              onClick={() => favorite(l.id)}
-            >
-              <svg
-                className={`delegation-foil ${favoriteId === l.id ? 'is-favorite' : ''}`}
-                aria-hidden="true"
-                width="30"
-                height="30"
-                viewBox="0 0 30 30"
-              >
-                <path d="M5 25L25 5M4 19L11 26M3 27L6 24" fill="none" stroke="currentColor" strokeWidth="2" />
-                <circle className="foil-tip" cx="25" cy="5" r="3" />
-              </svg>
-              {l.name}
-              {favoriteId === l.id ? ' · Favorite' : ''}
-            </button>
-          ))}
-        </section>
-      )}
-      <h2>Délégations d’amis et clubs</h2>
-      <p>
-        Créés une fois, ils durent toute la saison : invitez vos proches avec le lien, puis suivez le classement sur
-        chaque tournoi ou sur la saison entière. Après chaque match, comparez-vous en duel.
-      </p>
+      <header className="delegations-page-heading">
+        <div><p className="arena-eyebrow">L’ESPRIT CLUB</p><h1>Mes délégations</h1><p>Vos proches, vos points, vos duels.</p></div>
+        <span className="delegation-count">{leagues?.length || 0} {leagues?.length === 1 ? 'délégation' : 'délégations'}</span>
+      </header>
       {message && <p role="status">{message}</p>}
       <ClubLeague onJoined={() => setRevision((n) => n + 1)} />
-      <h3>Mes délégations et clubs</h3>
+      <p className="muted delegation-help">Ouvrez un classement ou choisissez votre favorite : elle apparaît en premier sur l’accueil.</p>
       {!leagues && <p className="muted">Chargement…</p>}
       {leagues?.length === 0 && (
         <p className="muted">
@@ -163,13 +143,15 @@ export default function Community({ tournamentId: preferred = null, userId }) {
           WhatsApp ou SMS, apparaîtra ici.
         </p>
       )}
+      <div className="delegation-cards">
       {ordered.map((l) => (
-        <article className="prediction-summary" key={l.id}>
-          <strong>{l.name}</strong> · {l.kind === 'CLUB' ? 'Club' : 'Délégation privée'} ·{' '}
-          {withCount(l._count.members, 'membre')}
-          <p>
-            Code d’invitation : <code>{l.code}</code>
-          </p>
+        <article className="delegation-card" key={l.id} aria-label={l.name}>
+          <div className="delegation-card-heading"><span className="delegation-card-avatar" aria-hidden="true">{l.name.slice(0, 2).toUpperCase()}</span><div><h2>{l.name}</h2><p>{l.kind === 'CLUB' ? 'Club' : 'Délégation d’amis'} · {withCount(l._count.members, 'membre')}</p></div></div>
+          <button className="button-secondary delegation-favorite-toggle" disabled={favoriteBusy} aria-pressed={favoriteId === l.id} aria-label={`${favoriteId === l.id ? 'Retirer des favorites' : 'Définir comme favorite'} : ${l.name}`} onClick={() => favorite(l.id)}>
+            <svg className={`delegation-foil ${favoriteId === l.id ? 'is-favorite' : ''}`} aria-hidden="true" width="24" height="24" viewBox="0 0 30 30"><path d="M5 25L25 5M4 19L11 26M3 27L6 24" fill="none" stroke="currentColor" strokeWidth="2" /><circle className="foil-tip" cx="25" cy="5" r="3" /></svg>{favoriteId === l.id ? 'Favorite' : 'Choisir comme favorite'}
+          </button>
+          <button className="delegation-open-ranking" disabled={busy} aria-expanded={detail?.league.id === l.id} onClick={() => openDetail(l.id, detail?.league.id === l.id ? detailScope : String(preferred || ''))}>Voir le classement →</button>
+          <details className="delegation-share"><summary>Inviter des membres</summary><p>Code : <code>{l.code}</code></p>
           <button
             className="button-secondary"
             onClick={async () => {
@@ -204,12 +186,7 @@ export default function Community({ tournamentId: preferred = null, userId }) {
           >
             Inviter (WhatsApp, SMS…)
           </button>
-          <button
-            disabled={busy}
-            onClick={() => openDetail(l.id, detail?.league.id === l.id ? detailScope : String(preferred || ''))}
-          >
-            Voir le classement
-          </button>
+          </details>
           {l.ownerId !== userId && (
             <button
               className="button-secondary"
@@ -227,12 +204,14 @@ export default function Community({ tournamentId: preferred = null, userId }) {
           )}
         </article>
       ))}
+      </div>
       {detail && (
-        <div className="feature-panel">
+        <section ref={rankingSection} className="feature-panel delegation-detail" aria-label={`Classement de ${detail.league.name}`}>
+          <p className="arena-eyebrow">LE CLASSEMENT · {detailScope ? 'TOURNOI' : 'SAISON'}</p>
           <h3>{detail.league.name}</h3>
           <label className="community-tournament">
             Classement
-            <select value={detailScope} onChange={(e) => openDetail(detail.league.id, e.target.value)}>
+            <select disabled={busy} value={detailScope} onChange={(e) => openDetail(detail.league.id, e.target.value)}>
               <option value="">Toute la saison</option>
               {tournaments.map((t) => (
                 <option key={t.id} value={t.id}>
@@ -258,8 +237,9 @@ export default function Community({ tournamentId: preferred = null, userId }) {
             <p>Aucun point pour l’instant sur cette sélection.</p>
           )}
           {duel && duel.league.id === detail.league.id && <DuelView duel={duel} onClose={() => setDuel(null)} />}
-        </div>
+        </section>
       )}
+      <details className="delegation-manage"><summary>Créer ou rejoindre une délégation ou un club</summary>
       <div className="feature-grid">
         <form
           className="feature-panel"
@@ -319,6 +299,7 @@ export default function Community({ tournamentId: preferred = null, userId }) {
           <button disabled={busy}>Rejoindre</button>
         </form>
       </div>
+      </details>
       <h3>Classement des clubs et défis</h3>
       <label className="community-tournament">
         Tournoi
@@ -340,16 +321,16 @@ export default function Community({ tournamentId: preferred = null, userId }) {
       {import.meta.env.DEV && (
         <section className="club-duel-preview" aria-labelledby="club-duel-title">
           <p className="arena-eyebrow">APERÇU · DONNÉES D’EXEMPLE</p>
-          <h3 id="club-duel-title">Duel entre clubs</h3>
+          <h3 id="club-duel-title">La course des clubs</h3>
           <p>Étampes · Fleuret cadets · Tableau de 32</p>
-          <div className="club-duel-score">
-            <div><span className="club-duel-avatar">PA</span><h4>Club Paris</h4><strong>128 <small>pts</small></strong><p>6 joueurs</p></div>
-            <span className="muted">VS</span>
-            <div><span className="club-duel-avatar rival">ME</span><h4>Club Melun</h4><strong>116 <small>pts</small></strong><p>6 joueurs</p></div>
-          </div>
-          <p className="club-duel-lead">Club Paris mène de 12 points</p>
-          <div className="club-duel-progress" aria-label="Répartition des points : Paris 52 %, Melun 48 %"><span /></div>
-          <p className="muted">Proposition : mêmes épreuves et même nombre de joueurs par club. Points définitifs après les résultats officiels.</p>
+          <p>Avec plusieurs clubs, chacun figure au classement général. Un duel compare toujours deux clubs, tandis que la course commune les réunit tous.</p>
+          <Ranking rows={[
+            { leagueId: 'preview-paris', name: 'Club Paris', rank: 1, totalPoints: 128, members: 6 },
+            { leagueId: 'preview-melun', name: 'Club Melun', rank: 2, totalPoints: 116, members: 6 },
+            { leagueId: 'preview-lyon', name: 'Club Lyon', rank: 3, totalPoints: 109, members: 6 },
+            { leagueId: 'preview-lille', name: 'Club Lille', rank: 4, totalPoints: 94, members: 6 },
+          ]} />
+          <p className="muted">Illustration avec quatre clubs et des points fictifs. Le classement réel au-dessus conserve son calcul actuel par moyenne ; cet aperçu ne distribue aucun point.</p>
           <button disabled>Voir les contributions · aperçu</button>
         </section>
       )}
