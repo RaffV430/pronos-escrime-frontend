@@ -4,7 +4,7 @@ import { isMatchClosed } from './matchPresentation';
 import ResultsPools from './ResultsPools';
 import ResultsBracket from './ResultsBracket';
 import PisteLive from './PisteLive';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import API from '../api';
 
 export function FollowedEventFencers({ competition, userId, onMatch, onLive, onEventChange }) {
@@ -87,8 +87,13 @@ export function FollowedEventFencers({ competition, userId, onMatch, onLive, onE
     </section>
   );
 }
-export function CompetitionFollow({ view, competition, matches, userId, ready, error, stale }) {
-  const [matchId, setMatchId] = useState(null);
+export function CompetitionFollow({ view, competition, matches, userId, ready, error, stale, initialMatchId = null }) {
+  const [matchId, setMatchId] = useState(initialMatchId);
+  const initialDetail = useRef(null);
+  const initialMatch = initialMatchId && matchId === initialMatchId ? matches.find(m => m.id === initialMatchId) : null;
+  useEffect(() => {
+    if (initialMatch) initialDetail.current?.scrollIntoView({ block: 'start', behavior: 'smooth' });
+  }, [initialMatch?.id]);
   if (view === 'pools') return <section className="feature-panel competition-follow"><ResultsPools competitionId={competition.id} /></section>;
   if (view === 'ranking')
     return (
@@ -124,7 +129,13 @@ export function CompetitionFollow({ view, competition, matches, userId, ready, e
     );
   return (
     <section className="feature-panel competition-follow">
-      <ResultsBracket matches={matches} selectedId={matchId} onCloseDetail={() => setMatchId(null)}
+      {initialMatch && <section ref={initialDetail} className="followed-initial-detail" aria-label="Match de mon tireur">
+        <button className="button-secondary" onClick={() => setMatchId(null)}>Refermer le détail ×</button>
+        <PisteLive key={initialMatch.id} initialMatchId={initialMatch.id} matches={[initialMatch]}
+          competition={competition} userId={userId} ready={ready} error={error} stale={stale}
+          onPlay={() => setMatchId(null)} />
+      </section>}
+      <ResultsBracket matches={matches} selectedId={initialMatch ? null : matchId} onCloseDetail={() => setMatchId(null)}
         onOpen={(m) => setMatchId((old) => old === m.id ? null : m.id)}
         renderDetail={(match) => (
           <section aria-label="Détail du match sélectionné">

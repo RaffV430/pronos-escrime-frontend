@@ -126,6 +126,7 @@ export default function App() {
   }, []);
   const [eventMode, setEventMode] = useState('predictions');
   const [followView, setFollowView] = useState('tableau');
+  const [followMatchId, setFollowMatchId] = useState(null);
   const [liveMatchId, setLiveMatchId] = useState(null);
   const [landingPending, setLandingPending] = useState(false);
   const [landingFilter, setLandingFilter] = useState('Tous');
@@ -530,6 +531,20 @@ export default function App() {
               )}
               {mainTab === 'home' && (
                 <ArenaHome
+                  onFollowedFencer={({ event, match, mode }) => runNavigation(() => {
+                    setDirty(false);
+                    selectCompetition(event.id);
+                    setCompetition(event);
+                    setLandingPending(false);
+                    setEventListVersion(v => v + 1);
+                    setEventMode(mode);
+                    setPlayTab('tableau');
+                    setFollowView(match ? 'tableau' : 'pools');
+                    setFollowMatchId(match?.id || null);
+                    if (mode === 'predictions') setMatchTarget({ id: match.id, at: Date.now() });
+                    history.replaceState(null, '', pathFor('play', { tournament: tournamentInfo, event, view: 'tableau' }));
+                    setMainTab('play');
+                  })}
                   user={user}
                   matches={matches}
                   competition={competition}
@@ -582,6 +597,7 @@ export default function App() {
               )}
               {!['me', 'season', 'account', 'mine', 'results', 'leaderboard', 'community'].includes(mainTab) && (
                 <EventSelector
+                  hideCompact={mainTab === 'home'}
                   key={`${user.id}:${eventListVersion}:${['play', 'home', 'live'].includes(mainTab) ? 'active' : 'history'}`}
                   includeArchived={!['play', 'home', 'live'].includes(mainTab)}
                   {...(mainTab === 'admin'
@@ -762,7 +778,8 @@ export default function App() {
                               ))}
                             </nav>
                             <CompetitionFollow
-                              key={selectedCompetitionId}
+                              key={`${selectedCompetitionId}:${followMatchId}`}
+                              initialMatchId={followMatchId}
                               view={followView}
                               competition={competition}
                               matches={matches}
