@@ -1,3 +1,4 @@
+import { eventNameFr } from '../lib/eventName';
 import { useEffect, useRef, useState } from 'react';
 import API from '../api';
 import ResultsBracket from './ResultsBracket';
@@ -72,7 +73,7 @@ function PublicCompetition({ c, href = null }) {
   const hasTree = Boolean(buildTree(c.matches));
   return (
     <section className="result-competition public-competition">
-      <h3>{href ? <a href={href}>{c.name}</a> : c.name}</h3>
+      <h3>{href ? <a href={href}>{eventNameFr(c.name)}</a> : eventNameFr(c.name)}</h3>
       {c.podium.length ? (
         <ol className="result-podium">
           {c.podium.map((p, i) => (
@@ -132,7 +133,7 @@ export default function PublicTournament({ id, eventId = null }) {
         const canonical = document.querySelector('link[rel="canonical"]');
         if (canonical) canonical.href = `https://www.pronos-escrime.fr${canonicalPath}`;
         document.title = event
-          ? `${event.name} · ${data.name} : résultats · Pronos Escrime`
+          ? `${eventNameFr(event.name)} · ${data.name} : résultats · Pronos Escrime`
           : `${data.name} : résultats et pronostics · Pronos Escrime`;
         const golds = data.competitions
           .map((c) => c.podium.find((p) => p.place === 1))
