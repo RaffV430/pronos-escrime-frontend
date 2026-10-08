@@ -60,7 +60,7 @@ export function FollowedEventFencers({ competition, userId, onMatch, onLive, onE
       </header>
       {loading && <p role="status">Chargement de vos tireurs dans toutes les épreuves…</p>}
       {error && <p role="alert">{error}</p>}
-      {!loading && !error && !visible.some(e => e.followedRoster.length) && <p>Aucun de vos tireurs suivis dans ces épreuves. Ajoutez-en depuis Moi → Mes tireurs.</p>}
+      {!loading && !error && !visible.some(e => e.followedRoster.length) && <p>Aucun de vos tireurs suivis dans ces épreuves. Ajoutez-en depuis l’onglet Mes tireurs.</p>}
       {visible.filter(event => event.followedRoster.length).map(event => (
         <section className="followed-category" key={event.id} aria-labelledby={`followed-category-${event.id}`}>
           <header className="followed-category-heading">
@@ -80,7 +80,7 @@ export function FollowedEventFencers({ competition, userId, onMatch, onLive, onE
             <small className="followed-fencer-meta"><span>{e.nation || e.country || '—'}</span><span>{eventNameFr(event.name)}</span></small>
             <small className="followed-fencer-schedule"><span>{time}</span><span>{match?.strip ? `Piste ${match.strip}` : 'Piste à confirmer'}</span></small>
           </span>
-          <button className="button-secondary" disabled={busy !== null} onClick={() => openFencer(event, e)}>
+          <button className="button-secondary" aria-label={`Voir le match de ${e.name}`} disabled={busy !== null} onClick={() => openFencer(event, e)}>
             {busy === `${event.id}:${e.id}` ? 'Chargement…' : 'Match →'}
           </button>
         </article>

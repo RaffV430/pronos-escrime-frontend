@@ -2715,12 +2715,12 @@
 .club-arena .delegation-slide.is-dragging { transition: none; }
 @media(prefers-reduced-motion: reduce) { .club-arena .delegation-slide { transition: none; } }
 
-/* Compact followed fencers: six rows fit in a mobile content viewport. */
-.club-arena .followed-category-cards { gap:6px; }
-.club-arena .followed-event-fencers .arena-home-match { padding:9px 10px; gap:8px; flex-direction:row; align-items:center; min-height:76px; box-sizing:border-box; }
+/* Compact followed fencers keep names, event and match details together. */
+.club-arena .followed-category-cards { gap:4px; }
+.club-arena .followed-event-fencers .arena-home-match { padding:6px 8px; gap:6px; flex-direction:row; align-items:center; min-height:64px; box-sizing:border-box; }
 .club-arena .followed-category .arena-home-match > span { flex:1; min-width:0; }
 .club-arena .followed-category .arena-home-match strong { display:block; font-family:inherit; font-size:13px; line-height:1.25; }
-.club-arena .followed-category .arena-home-match small { display:flex; gap:8px; margin-top:3px; font-family:inherit; font-size:11px; line-height:1.3; color:var(--muted); }
+.club-arena .followed-category .arena-home-match small { display:flex; gap:6px; margin-top:2px; font-family:inherit; font-size:11px; line-height:1.3; color:var(--muted); }
 .club-arena .followed-fencer-meta > span:first-child { flex-shrink:0; }
 .club-arena .followed-category .arena-home-match .button-secondary { flex-shrink:0; padding:0 8px; min-height:44px; font-size:11px; line-height:1; margin:0; }
 .club-arena .followed-category { padding-top:8px; border-top-width:1px; }
@@ -2740,3 +2740,24 @@
 @media (prefers-color-scheme: dark) {
  .club-arena { --nav-selected-bg: #19232f; --nav-selected-text: #9ebcde; }
 }
+
+@media (max-width: 760px) {
+  .club-arena .followed-event-fencers { gap: 8px; }
+  .club-arena .followed-event-toolbar { gap: 6px; }
+  .club-arena .followed-event-filters { flex-wrap: nowrap; overflow-x: auto; padding-bottom: 4px; }
+  .club-arena .followed-event-filters > button { flex-shrink: 0; white-space: nowrap; min-height: 44px; margin: 0; }
+  .club-arena .followed-category-heading { border-left-width: 2px; margin-bottom: 4px; }
+  .club-arena .followed-category-heading h3 { font-size: 13px; line-height: 1.3; }
+}
+
+/* Saved favorites remain readable in the application's selected theme. */
+.club-arena .followed-category .arena-home-match strong { color: var(--text, #10151e); overflow-wrap: anywhere; }
+.club-arena .fencer-manage { padding: 12px 14px; border: 1px solid var(--border); border-radius: 12px; background: var(--surface); margin-bottom: 16px; }
+.club-arena .fencer-manage > summary { cursor: pointer; min-height: 44px; display: list-item; align-content: center; color: var(--text); font-weight: 600; }
+.club-arena .fencer-manage[open] > summary { margin-bottom: 12px; }
+.club-arena .saved-fencer-cards h2 { font-size: 18px; margin: 0; }
+.club-arena .saved-fencer-cards > .followed-category { padding: 0; border: 0; }
+.club-arena .piste-me > .piste-fencers { padding: 0; border: 0; background: none; }
+.club-arena .piste-me.feature-panel { padding: 0; background: none; border: 0; box-shadow: none; }
+.club-arena .piste-me > h1 { margin: 6px 0 12px; }
+.club-arena .piste-me .fencer-manage { padding: 0 12px; margin-bottom: 12px; }
