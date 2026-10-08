@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { usePerView } from './usePerView';
 import { buildTree, officialWinner, seedOf } from './bracketTree';
 import { roundName, shortName, shortRoundName } from './eventResults';
@@ -51,11 +51,25 @@ function Card({ slot, onOpen }) {
 
 // Tableau en arbre : un tour et les suivants côte à côte, chaque match centré entre les deux matchs
 // d'où viennent ses tireurs. Onglets ou glissement du doigt pour changer de tour.
-export default function ResultsBracket({ matches, onOpen }) {
+export default function ResultsBracket({ matches, onOpen, selectedId, renderDetail, onCloseDetail }) {
   const tree = useMemo(() => buildTree(matches), [matches]);
   const perView = usePerView();
   const [focus, setFocus] = useState(0);
   const touch = useRef(null);
+  useEffect(() => {
+    if (!selectedId || !onCloseDetail) return;
+    const closeOutside = (event) => {
+      if (!event.target.closest('.rb-inline-detail, .rb-card')) onCloseDetail();
+    };
+    const closeEscape = (event) => { if (event.key === 'Escape') onCloseDetail(); };
+    document.addEventListener('pointerdown', closeOutside);
+    document.addEventListener('keydown', closeEscape);
+    return () => {
+      document.removeEventListener('pointerdown', closeOutside);
+      document.removeEventListener('keydown', closeEscape);
+    };
+  }, [selectedId, onCloseDetail]);
+
   if (!tree) return null;
   const last = Math.max(0, tree.rounds.length - Math.min(perView, tree.rounds.length));
   const start = Math.min(focus, last);
@@ -80,7 +94,7 @@ export default function ResultsBracket({ matches, onOpen }) {
             type="button"
             role="tab"
             aria-selected={i >= start && i < start + shown.length}
-            className="rb-tab"
+            className={`rb-tab${i === start ? " is-focus" : ""}`}
             onClick={() => go(i)}
           >
             {shortRoundName(r.round)}
@@ -120,6 +134,9 @@ export default function ResultsBracket({ matches, onOpen }) {
                   style={{ '--rb-span': 2 ** j }}
                 >
                   <Card slot={slot} onOpen={onOpen} />
+                  {slot.match?.id === selectedId && renderDetail && (
+                    <div className="rb-inline-detail">{renderDetail(slot.match)}</div>
+                  )}
                 </div>
               ))}
             </div>

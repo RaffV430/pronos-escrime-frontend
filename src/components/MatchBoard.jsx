@@ -286,7 +286,7 @@ export default function MatchBoard({
   };
   const visible = (m) =>
     filter === 'Nos tireurs'
-      ? club.isClubFencer(m.player1) || club.isClubFencer(m.player2)
+      ? club.isClubFencer(m.player1) || club.isClubFencer(m.player2) || follows?.matchNames.includes(m.player1) || follows?.matchNames.includes(m.player2)
       : filter === 'Nouveaux'
         ? newMatches.some((n) => n.id === m.id)
         : filter === 'À venir'
@@ -525,7 +525,7 @@ export default function MatchBoard({
             <div className="filter-row filter-scroll" role="group" aria-label="Filtrer les matchs">
               {[
                 'Tous',
-                ...(club.hasFencers ? ['Nos tireurs'] : []),
+                ...(club.hasFencers || follows?.matchNames.length ? ['Nos tireurs'] : []),
                 'À compléter',
                 'À venir',
                 'Ferment bientôt',
