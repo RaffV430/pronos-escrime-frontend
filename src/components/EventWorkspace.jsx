@@ -1,61 +1,78 @@
-import { useNow } from '../lib/polling';
 import { useFencerFollows } from '../lib/fencerFollows';
 import { isMatchClosed } from './matchPresentation';
 import ResultsPools from './ResultsPools';
 import ResultsBracket from './ResultsBracket';
 import PisteLive from './PisteLive';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import API from '../api';
 
-export function FollowedEventFencers({ competition, matches, userId, onMatch, onLive }) {
-  const now = useNow(5000);
+export function FollowedEventFencers({ competition, userId, onMatch, onLive, onEventChange }) {
+  const [events, setEvents] = useState([]);
+  const [eventId, setEventId] = useState('all');
+  const [loading, setLoading] = useState(true);
+  const [busy, setBusy] = useState(null);
+  const [error, setError] = useState('');
   const follows = useFencerFollows();
-  const roster = (competition?.podiumRoster || []).filter((e) =>
-    follows?.links.some((l) => l.entryId === String(e.id)),
-  );
-  if (!follows?.ready) return <p>Chargement de vos tireurs…</p>;
+  useEffect(() => {
+    const controller = new AbortController();
+    setLoading(true);
+    setEvents([]);
+    setEventId('all');
+    setError('');
+    API.get(`/podium/competitions/${competition.tournamentId}`, { signal: controller.signal })
+      .then(async ({ data }) => {
+        const entries = await Promise.all(data.map(async (event) => {
+          const { data: followed } = await API.get('/me/fencers', { params: { competitionId: event.id }, signal: controller.signal });
+          return { ...event, followedRoster: (event.podiumRoster || []).filter(e => followed.links.some(l => l.entryId === String(e.id))) };
+        }));
+        if (!controller.signal.aborted) setEvents(entries);
+      })
+      .catch(() => { if (!controller.signal.aborted) setError('Impossible de charger les tireurs du tournoi. Réessayez en rouvrant cette section.'); })
+      .finally(() => { if (!controller.signal.aborted) setLoading(false); });
+    return () => controller.abort();
+  }, [competition.tournamentId, follows?.favorites]);
+  const visible = events.filter(e => eventId === 'all' || e.id === eventId);
+  const openFencer = async (event, fencer) => {
+    setBusy(`${event.id}:${fencer.id}`);
+    setError('');
+    try {
+      const { data: matches } = await API.get('/matches', { params: { competitionId: event.id } });
+      const appearances = matches.filter(m => m.player1 === fencer.name || m.player2 === fencer.name);
+      const open = appearances.filter(m => !isMatchClosed(m, Date.now()))
+        .sort((a, b) => (Date.parse(a.closesAt || a.startsAt) || Infinity) - (Date.parse(b.closesAt || b.startsAt) || Infinity));
+      const target = open.find(m => !m.predictions?.some(p => p.userId === userId)) || open[0];
+      const latest = appearances.filter(m => !m.isFinished).sort((a,b) => (Date.parse(a.startsAt) || Infinity) - (Date.parse(b.startsAt) || Infinity))[0] || appearances.at(-1);
+      if (!target && !latest) { setError('Aucun match publié pour ce tireur pour le moment.'); return; }
+      onEventChange(event);
+      if (target) onMatch(target.id); else onLive(latest.id);
+    } catch { setError('Impossible de charger le match. Réessayez.'); }
+    finally { setBusy(null); }
+  };
   return (
-    <section className="followed-event-fencers" aria-label="Mes tireurs dans cette épreuve">
-      <h2>Mes tireurs</h2>
-      {!roster.length && (
-        <p>Aucun de vos tireurs suivis n’est identifié dans cette épreuve. Ajoutez-en depuis Moi → Mes tireurs.</p>
-      )}
-      {roster.map((e) => {
-        const appearances = matches.filter((m) => m.player1 === e.name || m.player2 === e.name);
-        const open = appearances
-          .filter((m) => !isMatchClosed(m, now))
-          .sort((a, b) => Date.parse(a.closesAt || a.startsAt) - Date.parse(b.closesAt || b.startsAt));
-        const target = open.find((m) => !m.predictions?.some((p) => p.userId === userId)) || open[0];
-        const upcoming = appearances.filter((m) => !m.isFinished)
-          .sort((a, b) => (Date.parse(a.startsAt) || Infinity) - (Date.parse(b.startsAt) || Infinity))[0];
-        const latest = upcoming || appearances.at(-1);
-        const scheduled = upcoming?.startsAt && Number.isFinite(Date.parse(upcoming.startsAt));
-        return (
-          <article className="arena-home-match" key={e.id}>
-            <span>
-              <strong><span className="favorite-star">★</span> {e.name}</strong>
-              <small>{[e.nation || e.country, e.club].filter(Boolean).join(' · ')}</small>
-              <small className="followed-next-match">
-                {upcoming ? <>
-                  Prochain match · {scheduled ? new Date(upcoming.startsAt).toLocaleString('fr-FR', { day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit' }) : 'Horaire non publié'}
-                  {' · '}{upcoming.strip ? `Piste ${upcoming.strip}` : 'Piste non publiée'}
-                </> : 'Prochain match non publié'}
-              </small>
-            </span>
-            {target ? (
-              <button onClick={() => onMatch(target.id)}>Pronostiquer →</button>
-            ) : latest ? (
-              <button className="button-secondary" onClick={() => onLive(latest.id)}>
-                Suivre le match →
-              </button>
-            ) : (
-              <span>En attente de son prochain match</span>
-            )}
-          </article>
-        );
-      })}
-      {!!follows.ambiguousIds.length && (
-        <p>Certains noms demandent une confirmation : consultez Mes tireurs dans Moi.</p>
-      )}
+    <section className="followed-event-fencers" aria-label="Mes tireurs du tournoi">
+      <header className="followed-event-toolbar">
+        <h2>Mes tireurs</h2>
+        <p className="muted">Tous vos favoris du tournoi, indépendamment de l’épreuve choisie pour les pronostics.</p>
+        <div className="filter-row followed-event-filters" aria-label="Filtrer mes tireurs par épreuve">
+          <button aria-pressed={eventId === 'all'} onClick={() => setEventId('all')}>Toutes les épreuves</button>
+          {events.map(event => <button key={event.id} aria-pressed={eventId === event.id} onClick={() => setEventId(event.id)}>{event.name}</button>)}
+        </div>
+      </header>
+      {loading && <p role="status">Chargement de vos tireurs dans toutes les épreuves…</p>}
+      {error && <p role="alert">{error}</p>}
+      {!loading && !error && !visible.some(e => e.followedRoster.length) && <p>Aucun de vos tireurs suivis dans ces épreuves. Ajoutez-en depuis Moi → Mes tireurs.</p>}
+      {visible.flatMap(event => event.followedRoster.map(e => (
+        <article className="arena-home-match" key={`${event.id}:${e.id}`}>
+          <span>
+            <strong><span className="favorite-star">★</span> {e.name}</strong>
+            <small>{[e.nation || e.country, e.club].filter(Boolean).join(' · ')}</small>
+            <small>{event.name}</small>
+          </span>
+          <button className="button-secondary" disabled={busy !== null} onClick={() => openFencer(event, e)}>
+            {busy === `${event.id}:${e.id}` ? 'Chargement…' : 'Voir son match →'}
+          </button>
+        </article>
+      )))}
     </section>
   );
 }

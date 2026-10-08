@@ -778,6 +778,13 @@ export default function App() {
                             userId={user.id}
                             competition={competition}
                             matches={matches}
+                            onEventChange={(entry) => runNavigation(() => {
+                              history.replaceState(null, '', pathFor('play', { tournament:tournamentInfo, event:entry, view:playTab }));
+                              selectCompetition(entry.id);
+                              setCompetition(entry);
+                              setLandingPending(false);
+                              setEventListVersion((v) => v + 1);
+                            })}
                             onMatch={(id) => {
                               setEventMode('predictions');
                               setPlayTab('tableau');

@@ -2531,3 +2531,11 @@
  .club-arena .pool-cards-grid .pool-card td { padding:7px 5px; }
  .club-arena .pool-cards-grid .pool-card td:first-child { white-space:normal; overflow-wrap:anywhere; }
 }
+
+.club-arena .followed-event-toolbar { grid-column:1/-1; display:flex; align-items:center; flex-wrap:wrap; gap:12px; }
+.club-arena .followed-event-toolbar h2 { margin:0; }
+.club-arena .followed-event-chooser { flex-basis:100%; display:flex; gap:10px; flex-wrap:wrap; padding:16px; border:1px solid var(--border); border-radius:12px; background:var(--surface); }
+.club-arena .followed-event-chooser > p, .club-arena .followed-event-chooser .filter-row { flex-basis:100%; }
+
+.followed-event-toolbar > p, .followed-event-filters { flex-basis: 100%; margin: 0; }
+.followed-event-filters { display: flex; flex-wrap: wrap; gap: 8px; }
