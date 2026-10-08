@@ -503,7 +503,7 @@ export default function App() {
                   <p className="arena-eyebrow">MON ESPACE</p>
                   <h1>{user.name || user.username}</h1>
                   <p>Votre jeu, votre communauté et votre saison.</p>
-                  <PisteFencers key={user.id} userId={user.id} roster={competition?.podiumRoster || []} onChooseEvent={() => navigate('play')} />
+                  <PisteFencers key={user.id} userId={user.id} tournamentId={tournamentId} />
                   <div className="piste-shortcuts">
                     {[
                       ['live', 'Suivi des pistes', 'Résultats synchronisés et points'],
