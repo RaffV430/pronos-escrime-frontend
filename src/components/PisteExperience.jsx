@@ -64,8 +64,7 @@ export function ArenaLeague({ userId, onCommunity }) {
   return (
     <aside className="arena-league-card">
       <p className="arena-eyebrow">L’ESPRIT CLUB</p>
-      <h2>Votre délégation</h2>
-      <p className="muted">{detail?.league?.name || 'Vos partenaires de jeu'}</p>
+      <h2>{detail?.league?.name || 'Votre délégation'}</h2>
       {failed ? (
         <p>Classement indisponible pour le moment.</p>
       ) : !detail ? (
