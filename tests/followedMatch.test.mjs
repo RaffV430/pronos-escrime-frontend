@@ -17,3 +17,12 @@ test('favori : verrouillage, résultat publié et identité du prochain tour res
   assert.equal(followedMatchTarget([entry(1, { resultType: 'CANCELLED' })], 2, now), null);
   assert.equal(followedMatchTarget([], 2, now), null);
 });
+
+test('favori : aucun accès aux matchs des tournois archivés', () => {
+  const archived = { id: 4, archivedAt: '2026-10-01T10:00:00Z' };
+  const oldOpen = { ...entry(3), tournament: archived };
+  const oldFinished = { ...entry(4, { isFinished: true }), tournament: archived };
+  assert.equal(followedMatchTarget([oldOpen, oldFinished], 2, now), null);
+  const active = { ...entry(5), tournament: { id: 6, archivedAt: null } };
+  assert.equal(followedMatchTarget([oldOpen, oldFinished, active], 2, now).match.id, 5);
+});
