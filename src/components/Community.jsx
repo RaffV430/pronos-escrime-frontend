@@ -150,7 +150,7 @@ export default function Community({ tournamentId: preferred = null, userId }) {
           <button className="button-secondary delegation-favorite-toggle" disabled={favoriteBusy} aria-pressed={favoriteId === l.id} aria-label={`${favoriteId === l.id ? 'Retirer des favorites' : 'Définir comme favorite'} : ${l.name}`} onClick={() => favorite(l.id)}>
             <svg className={`delegation-foil ${favoriteId === l.id ? 'is-favorite' : ''}`} aria-hidden="true" width="24" height="24" viewBox="0 0 30 30"><path d="M5 25L25 5M4 19L11 26M3 27L6 24" fill="none" stroke="currentColor" strokeWidth="2" /><circle className="foil-tip" cx="25" cy="5" r="3" /></svg>{favoriteId === l.id ? 'Favorite' : 'Choisir comme favorite'}
           </button>
-          <button className="delegation-open-ranking" disabled={busy} aria-expanded={detail?.league.id === l.id} onClick={() => openDetail(l.id, detail?.league.id === l.id ? detailScope : String(preferred || ''))}>Voir le classement →</button>
+          <button className="delegation-open-ranking" disabled={busy} aria-expanded={detail?.league.id === l.id} onClick={() => openDetail(l.id, detail?.league.id === l.id ? detailScope : '')}>Voir le classement →</button>
           <details className="delegation-share"><summary>Inviter des membres</summary><p>Code : <code>{l.code}</code></p>
           <button
             className="button-secondary"

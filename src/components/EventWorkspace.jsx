@@ -1,6 +1,6 @@
 import { eventNameFr } from '../lib/eventName';
 import { useFencerFollows } from '../lib/fencerFollows';
-import { isMatchClosed } from './matchPresentation';
+import { followedMatchTarget } from '../lib/followedMatch';
 import ResultsPools from './ResultsPools';
 import ResultsBracket from './ResultsBracket';
 import PisteLive from './PisteLive';
@@ -23,8 +23,11 @@ export function FollowedEventFencers({ competition, userId, onMatch, onLive, onE
     API.get(`/podium/competitions/${competition.tournamentId}`, { signal: controller.signal })
       .then(async ({ data }) => {
         const entries = await Promise.all(data.map(async (event) => {
-          const { data: followed } = await API.get('/me/fencers', { params: { competitionId: event.id }, signal: controller.signal });
-          return { ...event, followedRoster: (event.podiumRoster || []).filter(e => followed.links.some(l => l.entryId === String(e.id))) };
+          const [{ data: followed }, { data: matches }] = await Promise.all([
+            API.get('/me/fencers', { params: { competitionId: event.id }, signal: controller.signal }),
+            API.get('/matches', { params: { competitionId: event.id }, signal: controller.signal }),
+          ]);
+          return { ...event, matches, followedRoster: (event.podiumRoster || []).filter(e => followed.links.some(l => l.entryId === String(e.id))) };
         }));
         if (!controller.signal.aborted) setEvents(entries);
       })
@@ -38,14 +41,10 @@ export function FollowedEventFencers({ competition, userId, onMatch, onLive, onE
     setError('');
     try {
       const { data: matches } = await API.get('/matches', { params: { competitionId: event.id } });
-      const appearances = matches.filter(m => m.player1 === fencer.name || m.player2 === fencer.name);
-      const open = appearances.filter(m => !isMatchClosed(m, Date.now()))
-        .sort((a, b) => (Date.parse(a.closesAt || a.startsAt) || Infinity) - (Date.parse(b.closesAt || b.startsAt) || Infinity));
-      const target = open.find(m => !m.predictions?.some(p => p.userId === userId)) || open[0];
-      const latest = appearances.filter(m => !m.isFinished).sort((a,b) => (Date.parse(a.startsAt) || Infinity) - (Date.parse(b.startsAt) || Infinity))[0] || appearances.at(-1);
-      if (!target && !latest) { setError('Aucun match publié pour ce tireur pour le moment.'); return; }
+      const target = followedMatchTarget(matches.filter(m => m.player1 === fencer.name || m.player2 === fencer.name).map(match => ({ match })), userId);
+      if (!target) { setError('Aucun match publié pour ce tireur pour le moment.'); return; }
       onEventChange(event);
-      if (target) onMatch(target.id); else onLive(latest.id);
+      if (target.mode === 'predictions') onMatch(target.match.id); else onLive(target.match.id);
     } catch { setError('Impossible de charger le match. Réessayez.'); }
     finally { setBusy(null); }
   };
@@ -69,18 +68,24 @@ export function FollowedEventFencers({ competition, userId, onMatch, onLive, onE
             <span>{event.followedRoster.length} {event.followedRoster.length > 1 ? 'tireurs suivis' : 'tireur suivi'}</span>
           </header>
           <div className="followed-category-cards">
-          {event.followedRoster.map(e => (
+          {event.followedRoster.map(e => {
+            const target = followedMatchTarget((event.matches || []).filter(m => m.player1 === e.name || m.player2 === e.name).map(match => ({ match })), userId);
+            const match = target?.match;
+            const date = match?.startsAt ? new Date(match.startsAt) : null;
+            const time = date && !Number.isNaN(date.getTime()) ? date.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) : 'Horaire à confirmer';
+            return (
         <article className="arena-home-match" key={`${event.id}:${e.id}`}>
           <span>
             <strong><span className="favorite-star">★</span> {e.name}</strong>
-            <small>{[e.nation || e.country, e.club].filter(Boolean).join(' · ')}</small>
-            <small>{eventNameFr(event.name)}</small>
+            <small className="followed-fencer-meta"><span>{e.nation || e.country || '—'}</span><span>{eventNameFr(event.name)}</span></small>
+            <small className="followed-fencer-schedule"><span>{time}</span><span>{match?.strip ? `Piste ${match.strip}` : 'Piste à confirmer'}</span></small>
           </span>
           <button className="button-secondary" disabled={busy !== null} onClick={() => openFencer(event, e)}>
-            {busy === `${event.id}:${e.id}` ? 'Chargement…' : 'Voir son match →'}
+            {busy === `${event.id}:${e.id}` ? 'Chargement…' : 'Match →'}
           </button>
         </article>
-          ))}
+            );
+          })}
           </div>
         </section>
       ))}

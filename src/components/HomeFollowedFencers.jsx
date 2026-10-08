@@ -55,7 +55,7 @@ export default function HomeFollowedFencers({ tournamentId, userId, onOpen }) {
       <p className="home-followed-label"><span className="favorite-star" aria-hidden="true">★</span> Mes tireurs engagés</p>
       <div className="home-followed-names">
         {fencers.map(fencer => <button className="button-link" key={fencer.key} disabled={busy !== null} onClick={() => open(fencer)}>
-          {busy === fencer.key ? 'Chargement…' : fencer.name}<svg className="home-fencer-foil" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M9 15 21 3M6 13c-1 2 1 5 4 5M7.5 16.5 4 20" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" /></svg>
+          {busy === fencer.key ? 'Chargement…' : fencer.name}<svg className="home-fencer-foil" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M9 15 21 3M6 13c2-1 5 1 4 5M7.5 16.5 4 20" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" /></svg>
         </button>)}
       </div>
     </>}

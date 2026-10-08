@@ -50,15 +50,32 @@ export function ArenaLeague({ userId, onCommunity }) {
   const [failed, setFailed] = useState(false);
   const [revision, setRevision] = useState(0);
   const gesture = useRef(null);
+  const cardRef = useRef(null);
+  const cache = useRef(new Map());
+  const [minHeight, setMinHeight] = useState(0);
+  const [drag, setDrag] = useState(0);
+  useEffect(() => {
+    const observer = new ResizeObserver(entries => {
+      const height = entries[0]?.borderBoxSize?.[0]?.blockSize || cardRef.current?.offsetHeight || 0;
+      setMinHeight(previous => Math.max(previous, height));
+    });
+    if (cardRef.current) observer.observe(cardRef.current);
+    return () => observer.disconnect();
+  }, []);
   useEffect(() => {
     const controller = new AbortController();
     setFailed(false);
+    cache.current.clear();
     Promise.all([
       API.get('/community/leagues', { signal: controller.signal }),
       API.get('/community/favorite', { signal: controller.signal }),
     ]).then(([{ data }, { data: favorite }]) => {
       if (controller.signal.aborted) return;
       setLeagues(data);
+      // Précharger les cartes évite de les vider à chaque balayage.
+      for (const league of data) API.get(`/community/leagues/${league.id}`, { signal: controller.signal })
+        .then(({ data: ranking }) => { if (!controller.signal.aborted) cache.current.set(league.id, ranking); })
+        .catch(() => {});
       setFavoriteId(favorite.leagueId);
       setSelectedId(data.find(l => l.id === favorite.leagueId)?.id || data[0]?.id || null);
       if (!data.length) setDetail({ ranking: [] });
@@ -68,10 +85,10 @@ export function ArenaLeague({ userId, onCommunity }) {
   useEffect(() => {
     if (!selectedId) return;
     const controller = new AbortController();
-    setDetail(null);
+    setDetail(cache.current.get(selectedId) || null);
     setFailed(false);
     API.get(`/community/leagues/${selectedId}`, { signal: controller.signal })
-      .then(({ data }) => { if (!controller.signal.aborted) setDetail(data); })
+      .then(({ data }) => { if (!controller.signal.aborted) { cache.current.set(selectedId, data); setDetail(data); } })
       .catch(() => { if (!controller.signal.aborted) setFailed(true); });
     return () => controller.abort();
   }, [selectedId, revision]);
@@ -82,16 +99,25 @@ export function ArenaLeague({ userId, onCommunity }) {
   };
   const rows = detail?.league?.id === selectedId ? detail?.rows || detail?.ranking || [] : [];
   return (
-    <aside className="arena-league-card delegation-carousel"
-      onTouchStart={e => { const t = e.touches[0]; gesture.current = { x: t.clientX, y: t.clientY }; }}
-      onTouchCancel={() => { gesture.current = null; }}
+    <aside ref={cardRef} style={{ minHeight: minHeight || undefined }} className="arena-league-card delegation-carousel"
+      onTouchStart={e => { if (e.touches.length !== 1 || e.target.closest('button')) return;
+        const t = e.touches[0]; gesture.current = { x: t.clientX, y: t.clientY, axis: null }; }}
+      onTouchMove={e => {
+        const start = gesture.current; if (!start) return;
+        if (e.touches.length !== 1) { gesture.current = null; setDrag(0); return; }
+        const x = e.touches[0].clientX - start.x, y = e.touches[0].clientY - start.y;
+        if (!start.axis && Math.max(Math.abs(x), Math.abs(y)) > 10) start.axis = Math.abs(x) > Math.abs(y) * 1.5 ? 'x' : 'y';
+        if (start.axis === 'x') setDrag(Math.max(-36, Math.min(36, x * 0.25)));
+      }}
+      onTouchCancel={() => { gesture.current = null; setDrag(0); }}
       onTouchEnd={e => {
         const start = gesture.current;
         gesture.current = null;
+        setDrag(0);
         if (!start) return;
         const t = e.changedTouches[0];
         const x = t.clientX - start.x, y = t.clientY - start.y;
-        if (Math.abs(x) > 50 && Math.abs(x) > Math.abs(y) * 1.5) move(x < 0 ? 1 : -1);
+        if (start.axis === 'x' && Math.abs(x) > 50 && Math.abs(x) > Math.abs(y) * 1.5) move(x < 0 ? 1 : -1);
       }}>
       <div className="delegation-carousel-heading">
         <p className="arena-eyebrow">L’ESPRIT CLUB</p>
@@ -101,6 +127,7 @@ export function ArenaLeague({ userId, onCommunity }) {
           <button className="button-secondary" aria-label="Délégation suivante" onClick={() => move(1)}>›</button>
         </div>}
       </div>
+      <div className={`delegation-slide${drag ? ' is-dragging' : ''}`} style={{ transform: `translateX(${drag}px)` }}>
       <h2 aria-live="polite">{current?.name || 'Votre délégation'}</h2>
       {current && <p className="delegation-kind">{current.kind === 'CLUB' ? 'Club' : 'Délégation d’amis'}
         {current.id === favoriteId && <span className="delegation-favorite-badge">● Favorite</span>}
@@ -117,6 +144,7 @@ export function ArenaLeague({ userId, onCommunity }) {
           </ol>
           {!rows.length && <p>{current ? 'Le premier point reste à marquer. À vous de jouer !' : 'Rejoignez une délégation depuis la communauté.'}</p>}
         </>}
+      </div>
       {onCommunity && <button className="button-link arena-community-link" onClick={onCommunity}>Mes délégations →</button>}
     </aside>
   );
