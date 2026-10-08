@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { pollWhileVisible } from '../lib/polling';
+import { rememberReadingPosition } from '../lib/readingPosition';
 import { currentEntry, newerVersion } from '../lib/version';
 
 // Vérifie toutes les 5 minutes (et au retour sur l'application) si une nouvelle version est en ligne.
@@ -24,7 +25,7 @@ export default function UpdateBanner({ onReload }) {
   return (
     <div className="update-banner" role="status">
       <span>Une nouvelle version de l’application est disponible.</span>
-      <button onClick={() => onReload(() => window.location.reload())}>Actualiser</button>
+      <button onClick={() => onReload(() => { rememberReadingPosition(); window.location.reload(); })}>Actualiser</button>
     </div>
   );
 }
