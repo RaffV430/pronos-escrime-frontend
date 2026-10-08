@@ -2362,3 +2362,30 @@
   border: 1px solid var(--border);
   color: var(--text);
 }
+
+.club-arena .piste-fencer-search {
+  display: grid;
+  gap: 14px;
+  margin: 20px 0;
+}
+.club-arena .piste-fencer-search label {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+}
+.club-arena .piste-fencer-search select,
+.club-arena .piste-fencer-search input {
+  width: 100%;
+  min-width: 0;
+}
+.club-arena .piste-fencer-events {
+  display: block;
+  margin-top: 4px;
+  color: var(--muted);
+}
+.club-arena .piste-fencer-pages {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 16px;
+}

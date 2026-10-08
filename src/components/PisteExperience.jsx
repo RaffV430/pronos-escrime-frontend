@@ -173,18 +173,83 @@ export function ArenaHome({ user, matches, competition, tournament, onPlay, onMi
   );
 }
 
-export function PisteFencers({ userId, roster = [], onChooseEvent }) {
+export function PisteFencers({ userId, tournamentId: currentTournamentId }) {
   const key = `pronos:followed:${userId}`;
   const [query, setQuery] = useState('');
   const [selected, setSelected] = useState(null);
   const follows = useFencerFollows();
   const [legacy, setLegacy] = useState(() => readPreviewFollows(localStorage, key));
   const [migrationNotice, setMigrationNotice] = useState('');
-  const favoriteOf = (athlete) => follows.links.find((link) => link.entryId === String(athlete.id))?.favoriteId;
-  function toggle(athlete) {
+  const [tournamentId, setTournamentId] = useState(currentTournamentId || '');
+  const [tournaments, setTournaments] = useState([]);
+  const [tournamentError, setTournamentError] = useState('');
+  useEffect(() => {
+    if (currentTournamentId) setTournamentId(currentTournamentId);
+  }, [currentTournamentId]);
+  useEffect(() => {
+    const c = new AbortController();
+    API.get('/tournaments', { signal: c.signal })
+      .then(({ data }) => setTournaments(data))
+      .catch(() => {
+        if (!c.signal.aborted)
+          setTournamentError('Impossible de charger les tournois. Réessayez en rouvrant cette section.');
+      });
+    return () => c.abort();
+  }, []);
+  const [eventId, setEventId] = useState('');
+  const [clubOnly, setClubOnly] = useState(false);
+  const [offset, setOffset] = useState(0);
+  const [directory, setDirectory] = useState({ results: [], events: [], total: 0 });
+  const [loading, setLoading] = useState(false);
+  const [searchError, setSearchError] = useState('');
+  const [revision, setRevision] = useState(0);
+  const [bulkBusy, setBulkBusy] = useState(false);
+  useEffect(() => {
+    setEventId('');
+    setOffset(0);
+    setSelected(null);
+  }, [tournamentId]);
+  useEffect(() => {
+    if (!tournamentId) { setLoading(false); setSearchError(''); return; }
+    const controller = new AbortController();
+    setLoading(true);
+    setSearchError('');
+    const timer = setTimeout(async () => {
+      try {
+        const { data } = await API.get('/me/fencers/directory', {
+          signal: controller.signal,
+          params: {
+            tournamentId,
+            ...(eventId ? { competitionId: eventId } : {}),
+            query,
+            ...(clubOnly ? { clubOnly: '1' } : {}),
+            offset,
+          },
+        });
+        if (!controller.signal.aborted) setDirectory(data);
+      } catch (e) {
+        if (!controller.signal.aborted) setSearchError(e.response?.data?.error || 'Recherche indisponible. Réessayez.');
+      } finally {
+        if (!controller.signal.aborted) setLoading(false);
+      }
+    }, 250);
+    return () => {
+      clearTimeout(timer);
+      controller.abort();
+    };
+  }, [tournamentId, eventId, query, clubOnly, offset, revision, follows.favorites]);
+  const favoriteOf = (athlete) => directory.results.find((row) => row.key === athlete.key)?.favoriteId;
+  async function toggle(athlete) {
     const id = favoriteOf(athlete);
-    if (id) follows.remove(id);
-    else follows.follow(athlete.id);
+    if (id) await follows.remove(id);
+    else await follows.follow(athlete.id, athlete.competitionId);
+  }
+  async function followVisibleClub() {
+    setBulkBusy(true);
+    for (const athlete of directory.results.filter((a) => !a.favoriteId)) {
+      if (!(await follows.follow(athlete.id, athlete.competitionId))) break;
+    }
+    setBulkBusy(false);
   }
   async function importLegacy() {
     const submitted = legacy.slice(0, 200);
@@ -203,29 +268,94 @@ export function PisteFencers({ userId, roster = [], onChooseEvent }) {
         : 'Vos anciens favoris ont été rattachés à votre compte.',
     );
   }
-  const results = roster
-    .filter((a) => a.name.toLocaleLowerCase('fr').includes(query.toLocaleLowerCase('fr')))
-    .slice(0, 8);
+  const results = loading || searchError ? [] : directory.results;
+  const busy = follows.busy || bulkBusy || loading;
   return (
     <section className="piste-fencers arena-featured">
       <p className="arena-eyebrow">VOTRE BORD DE PISTE</p>
       <h2>Mes tireurs</h2>
       <p>
-        Recherchez parmi les engagés de l’épreuve sélectionnée. Vos suivis sont enregistrés dans votre compte, sur tous
-        vos appareils et pour les prochains tournois.
+        Recherchez parmi les engagés de tout le tournoi, ou choisissez une épreuve ici. Vos suivis sont enregistrés dans
+        votre compte, sur tous vos appareils et pour les prochains tournois.
       </p>
-      <input
-        aria-label="Rechercher un tireur"
-        placeholder="Nom ou prénom…"
-        value={query}
-        onChange={(e) => setQuery(e.target.value)}
-      />
+      {tournamentError && <p role="alert">{tournamentError}</p>}
+      <div className="piste-fencer-search">
+        <label>
+          Tournoi
+          <select
+            disabled={bulkBusy}
+            value={tournamentId}
+            onChange={(e) => {
+              setTournamentId(e.target.value);
+              setEventId('');
+              setOffset(0);
+              setDirectory({ results: [], events: [], total: 0 });
+            }}
+          >
+            <option value="">Choisir un tournoi</option>
+            {tournaments.map((t) => (
+              <option key={t.id} value={t.id}>
+                {t.name}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label>
+          Épreuve
+          <select
+            disabled={bulkBusy}
+            value={eventId}
+            onChange={(e) => {
+              setEventId(e.target.value);
+              setOffset(0);
+              setSelected(null);
+            }}
+          >
+            <option value="">Toutes les épreuves du tournoi</option>
+            {directory.events.map((event) => (
+              <option key={event.id} value={event.id}>
+                {event.name}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label>
+          Rechercher un tireur
+          <input
+            disabled={bulkBusy}
+            placeholder="Au moins 2 lettres : nom, prénom ou club…"
+            value={query}
+            onChange={(e) => {
+              setQuery(e.target.value);
+              setOffset(0);
+              setSelected(null);
+            }}
+          />
+        </label>
+        <button
+          disabled={bulkBusy}
+          aria-pressed={clubOnly}
+          onClick={() => {
+            setClubOnly(!clubOnly);
+            setOffset(0);
+            setSelected(null);
+          }}
+        >
+          {clubOnly ? '✓ ' : ''}Tireurs de mon club
+        </button>
+      </div>
+      {clubOnly && (
+        <p className="muted">
+          Club de l’application : {directory.clubName || 'non configuré'}. Vérifiez les identités avant de suivre.
+        </p>
+      )}
+      <h3>Tireurs suivis · {follows.favorites.length}</h3>
       <div className="piste-followed">
         {follows.favorites.map((a) => (
           <button
             key={a.id}
             aria-label={`Ne plus suivre ${a.name}`}
-            disabled={follows.busy}
+            disabled={busy}
             onClick={() => follows.remove(a.id)}
           >
             ★ {a.name} · {[a.country, a.club].filter(Boolean).join(' · ')} ×
@@ -233,19 +363,60 @@ export function PisteFencers({ userId, roster = [], onChooseEvent }) {
         ))}
       </div>
       {results.map((a) => (
-        <div className="piste-fencer-row" key={a.id}>
+        <div className="piste-fencer-row" key={a.key}>
           <button className="button-link" onClick={() => setSelected(a)}>
             {a.name} · {[a.country, a.club].filter(Boolean).join(' · ') || 'Nation et club non renseignés'}
+            <small className="piste-fencer-events">{a.events.map((event) => event.name).join(' · ')}</small>
           </button>
-          <button disabled={follows.busy || !follows.ready} onClick={() => toggle(a)}>
+          <button disabled={busy || !follows.ready} onClick={() => toggle(a)}>
             {favoriteOf(a) ? 'Retirer' : 'Suivre'}
           </button>
         </div>
       ))}
-      {!results.length && (
-        <p>{roster.length ? 'Aucun engagé correspondant.' : 'Choisissez une épreuve pour rechercher ses engagés.'}</p>
+      {loading && <p role="status">Recherche des engagés…</p>}
+      {searchError && (
+        <p role="alert">
+          {searchError} <button onClick={() => setRevision((n) => n + 1)}>Réessayer</button>
+        </p>
       )}
-      {!roster.length && onChooseEvent && <button onClick={onChooseEvent}>Choisir une épreuve</button>}
+      {!loading && !searchError && !results.length && (
+        <p>
+          {!tournamentId
+            ? 'Choisissez un tournoi pour rechercher ses engagés.'
+            : query.trim().length < 2 && !clubOnly
+              ? 'Saisissez au moins deux lettres pour rechercher dans le tournoi.'
+              : 'Aucun engagé correspondant.'}
+        </p>
+      )}
+      {clubOnly && results.some((a) => !a.favoriteId) && (
+        <button disabled={busy || !follows.ready} onClick={followVisibleClub}>
+          Suivre les tireurs affichés ({results.filter((a) => !a.favoriteId).length})
+        </button>
+      )}
+      <div className="piste-fencer-pages">
+        {offset > 0 && (
+          <button
+            disabled={busy}
+            onClick={() => {
+              setOffset(Math.max(0, offset - 20));
+              setSelected(null);
+            }}
+          >
+            Précédents
+          </button>
+        )}
+        {directory.nextOffset != null && (
+          <button
+            disabled={busy}
+            onClick={() => {
+              setOffset(directory.nextOffset);
+              setSelected(null);
+            }}
+          >
+            Suivants
+          </button>
+        )}
+      </div>
       {!follows.ready && !follows.error && <p role="status">Chargement de vos favoris…</p>}
       {follows.error && (
         <p role="alert">
@@ -264,16 +435,16 @@ export function PisteFencers({ userId, roster = [], onChooseEvent }) {
         </button>
       )}
       {migrationNotice && <p role="status">{migrationNotice}</p>}
-      <p className="muted">
-        {roster.length} engagés · {results.length}{' '}
-        {results.length === 1 ? 'suggestion affichée' : 'suggestions affichées'}. Affinez votre recherche pour trouver
-        un autre tireur.
-      </p>
+      {!loading && !searchError && (
+        <p className="muted">
+          {directory.total} tireurs trouvés · {results.length} affichés.
+        </p>
+      )}
       {selected && (
         <AthleteDialog
           athlete={selected}
           followed={Boolean(favoriteOf(selected))}
-          busy={follows.busy || !follows.ready}
+          busy={busy || !follows.ready}
           onToggle={() => toggle(selected)}
           onClose={() => setSelected(null)}
         />
