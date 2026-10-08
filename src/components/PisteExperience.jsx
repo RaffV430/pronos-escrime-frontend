@@ -1,3 +1,4 @@
+import SavedFencerCards from './SavedFencerCards';
 import HomeFollowedFencers from './HomeFollowedFencers';
 import { eventNameFr } from '../lib/eventName';
 import { remainingLocalFollows } from '../lib/fencerFollowMigration';
@@ -250,7 +251,8 @@ export function ArenaHome({ user, matches, competition, tournament, onPlay, onMi
   );
 }
 
-export function PisteFencers({ userId, tournamentId: currentTournamentId }) {
+export function PisteFencers({ userId, tournamentId: currentTournamentId, onOpen }) {
+  const [manageOpen, setManageOpen] = useState(false);
   const key = `pronos:followed:${userId}`;
   const [query, setQuery] = useState('');
   const [selected, setSelected] = useState(null);
@@ -287,7 +289,7 @@ export function PisteFencers({ userId, tournamentId: currentTournamentId }) {
     setSelected(null);
   }, [tournamentId]);
   useEffect(() => {
-    if (!tournamentId) {
+    if (!manageOpen || !tournamentId) {
       setLoading(false);
       setSearchError('');
       return;
@@ -335,7 +337,7 @@ export function PisteFencers({ userId, tournamentId: currentTournamentId }) {
       clearTimeout(timer);
       controller.abort();
     };
-  }, [tournamentId, tournaments, eventId, query, clubOnly, offset, revision, follows.favorites]);
+  }, [manageOpen, tournamentId, tournaments, eventId, query, clubOnly, offset, revision, follows.favorites]);
   const favoriteOf = (athlete) => directory.results.find((row) => row.key === athlete.key)?.favoriteId;
   async function toggle(athlete) {
     const id = favoriteOf(athlete);
@@ -369,9 +371,9 @@ export function PisteFencers({ userId, tournamentId: currentTournamentId }) {
   const results = loading || searchError ? [] : directory.results;
   const busy = follows.busy || bulkBusy || loading;
   return (
-    <section className="piste-fencers arena-featured">
-      <p className="arena-eyebrow">VOTRE BORD DE PISTE</p>
-      <h2>Mes tireurs</h2>
+    <section className="piste-fencers">
+      <details className="fencer-manage" onToggle={e => setManageOpen(e.currentTarget.open)}>
+      <summary>Rechercher et gérer mes tireurs</summary>
       <p>
         Recherchez parmi les engagés de tous les tournois enregistrés, ou choisissez un tournoi et une épreuve. Vos suivis sont enregistrés dans
         votre compte, sur tous vos appareils et pour les prochains tournois.
@@ -548,6 +550,8 @@ export function PisteFencers({ userId, tournamentId: currentTournamentId }) {
           onClose={() => setSelected(null)}
         />
       )}
+      </details>
+      <SavedFencerCards tournaments={tournaments} userId={userId} onOpen={onOpen} />
     </section>
   );
 }

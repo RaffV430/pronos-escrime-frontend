@@ -365,6 +365,21 @@ export default function App() {
     setSelectedCompetitionId(competitionId);
   };
 
+  const openFollowedFencer = ({ event, match, mode, tournament }) => runNavigation(() => {
+                    setDirty(false);
+                    selectCompetition(event.id);
+                    setCompetition(event);
+                    setLandingPending(false);
+                    setEventListVersion(v => v + 1);
+                    setEventMode(mode);
+                    setPlayTab('tableau');
+                    setFollowView(match ? 'tableau' : 'pools');
+                    setFollowMatchId(match?.id || null);
+                    if (mode === 'predictions') setMatchTarget({ id: match.id, at: Date.now() });
+                    history.replaceState(null, '', pathFor('play', { tournament: tournament || tournamentInfo, event, view: 'tableau' }));
+                    setMainTab('play');
+                  });
+
   // Page publique d'un tournoi ou d'une épreuve (/tournoi/etampes-4, /tournoi/etampes-4/fleuret-dames-13).
   const publicMatch = /^\/tournoi\/([^/]+)(?:\/([^/]+))?\/?$/.exec(location.pathname);
   const publicTournament = publicMatch ? idOf(publicMatch[1]) : null;
@@ -513,29 +528,15 @@ export default function App() {
               )}
               {mainTab === 'me' && (
                 <section className="piste-me feature-panel">
-                  <p className="arena-eyebrow">MON ESPACE</p>
-                  <h1>{user.name || user.username}</h1>
-                  <p>Votre jeu, votre communauté et votre saison.</p>
-                  <PisteFencers key={user.id} userId={user.id} tournamentId={tournamentId} />
+                  <p className="arena-eyebrow">VOTRE BORD DE PISTE</p>
+                  <h1>Mes tireurs</h1>
+                  <PisteFencers key={user.id} userId={user.id} tournamentId={tournamentId} onOpen={openFollowedFencer} />
 
                 </section>
               )}
               {mainTab === 'home' && (
                 <ArenaHome
-                  onFollowedFencer={({ event, match, mode }) => runNavigation(() => {
-                    setDirty(false);
-                    selectCompetition(event.id);
-                    setCompetition(event);
-                    setLandingPending(false);
-                    setEventListVersion(v => v + 1);
-                    setEventMode(mode);
-                    setPlayTab('tableau');
-                    setFollowView(match ? 'tableau' : 'pools');
-                    setFollowMatchId(match?.id || null);
-                    if (mode === 'predictions') setMatchTarget({ id: match.id, at: Date.now() });
-                    history.replaceState(null, '', pathFor('play', { tournament: tournamentInfo, event, view: 'tableau' }));
-                    setMainTab('play');
-                  })}
+                  onFollowedFencer={openFollowedFencer}
                   user={user}
                   matches={matches}
                   competition={competition}
