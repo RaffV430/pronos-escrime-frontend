@@ -1300,6 +1300,20 @@
   align-items: start;
   margin-top: 24px;
 }
+.club-arena .arena-home-column {
+  display: grid;
+  align-content: start;
+  gap: 20px;
+  min-width: 0;
+}
+.club-arena .arena-community-link {
+  margin-top: 16px;
+}
+@media (max-width: 700px) {
+  .club-arena .arena-home-column {
+    gap: 14px;
+  }
+}
 .club-arena .arena-featured,
 .club-arena .arena-league-card {
   background: linear-gradient(135deg, var(--soft), var(--surface));

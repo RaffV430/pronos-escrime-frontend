@@ -40,7 +40,7 @@ export function ClubArenaWelcome({ user, matches }) {
     </section>
   );
 }
-export function ArenaLeague({ userId }) {
+export function ArenaLeague({ userId, onCommunity }) {
   const [detail, setDetail] = useState(null);
   const [failed, setFailed] = useState(false);
   useEffect(() => {
@@ -80,6 +80,11 @@ export function ArenaLeague({ userId }) {
           {!rows.length && <p>Rejoignez une ligue depuis la communauté.</p>}
         </>
       )}
+      {onCommunity && (
+        <button className="button-link arena-community-link" onClick={onCommunity}>
+          Retrouver ma communauté →
+        </button>
+      )}
     </aside>
   );
 }
@@ -110,60 +115,59 @@ export function ArenaHome({ user, matches, competition, tournament, onPlay, onMi
         <button onClick={onPlay}>Continuer mes pronostics →</button>
       </section>
       <div className="arena-dashboard">
-        <section className="arena-featured">
-          <p className="arena-eyebrow">À VOUS DE JOUER</p>
-          <h2>Votre prochain beau coup.</h2>
-          <p>
-            {pending.length} {pending.length === 1 ? 'rencontre à compléter' : 'rencontres à compléter'} dans cette
-            épreuve.
-          </p>
-          {pending.slice(0, 3).map((m) => (
-            <button className="arena-home-match" key={m.id} onClick={onPlay}>
-              <span className="arena-avatar">
-                {m.player1
-                  .split(/\s+/)
-                  .slice(0, 2)
-                  .map((part) => part[0])
-                  .join('')}
-              </span>
-              <span>
-                <small>{m.round} · À pronostiquer</small>
-                <strong>
-                  {m.player1}
-                  <br />
-                  {m.player2}
-                </strong>
-              </span>
-              <b>→</b>
+        <div className="arena-home-column">
+          <section className="arena-featured">
+            <p className="arena-eyebrow">À VOUS DE JOUER</p>
+            <h2>Votre prochain beau coup.</h2>
+            <p>
+              {pending.length} {pending.length === 1 ? 'rencontre à compléter' : 'rencontres à compléter'} dans cette
+              épreuve.
+            </p>
+            {pending.slice(0, 3).map((m) => (
+              <button className="arena-home-match" key={m.id} onClick={onPlay}>
+                <span className="arena-avatar">
+                  {m.player1
+                    .split(/\s+/)
+                    .slice(0, 2)
+                    .map((part) => part[0])
+                    .join('')}
+                </span>
+                <span>
+                  <small>{m.round} · À pronostiquer</small>
+                  <strong>
+                    {m.player1}
+                    <br />
+                    {m.player2}
+                  </strong>
+                </span>
+                <b>→</b>
+              </button>
+            ))}
+            {!pending.length && <p>Vous êtes à jour. Les prochaines affiches apparaîtront ici.</p>}
+            <button onClick={onPlay}>Accéder aux pronostics →</button>
+          </section>
+          <section className="arena-featured">
+            <p className="arena-eyebrow">AU BORD DES PISTES</p>
+            <h2>Suivre les rencontres</h2>
+            <p>Retrouvez les résultats synchronisés, vos pronostics et vos points.</p>
+            <button onClick={onLive}>Voir les pistes →</button>
+          </section>
+          <section className="arena-home-result">
+            <p className="arena-eyebrow">VOTRE DERNIER RÉSULTAT</p>
+            <h2>{latest ? `${latest.player1} / ${latest.player2}` : 'Votre carnet de jeu'}</h2>
+            <p>
+              {latest
+                ? `Résultat : ${latest.score1} – ${latest.score2}`
+                : 'Retrouvez vos choix, vos résultats et vos points.'}
+            </p>
+            <button className="button-link" onClick={onMine}>
+              Voir mon bilan →
             </button>
-          ))}
-          {!pending.length && <p>Vous êtes à jour. Les prochaines affiches apparaîtront ici.</p>}
-          <button onClick={onPlay}>Accéder aux pronostics →</button>
-        </section>
-        <div>
-          <ArenaLeague userId={user.id} />
-          <button className="button-link" onClick={onCommunity}>
-            Retrouver ma communauté →
-          </button>
+          </section>
         </div>
-        <section className="arena-featured">
-          <p className="arena-eyebrow">AU BORD DES PISTES</p>
-          <h2>Suivre les rencontres</h2>
-          <p>Retrouvez les résultats synchronisés, vos pronostics et vos points.</p>
-          <button onClick={onLive}>Voir les pistes →</button>
-        </section>
-        <section className="arena-home-result">
-          <p className="arena-eyebrow">VOTRE DERNIER RÉSULTAT</p>
-          <h2>{latest ? `${latest.player1} / ${latest.player2}` : 'Votre carnet de jeu'}</h2>
-          <p>
-            {latest
-              ? `Résultat : ${latest.score1} – ${latest.score2}`
-              : 'Retrouvez vos choix, vos résultats et vos points.'}
-          </p>
-          <button className="button-link" onClick={onMine}>
-            Voir mon bilan →
-          </button>
-        </section>
+        <div className="arena-home-column">
+          <ArenaLeague userId={user.id} onCommunity={onCommunity} />
+        </div>
       </div>
     </div>
   );
