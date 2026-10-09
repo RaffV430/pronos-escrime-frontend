@@ -2847,3 +2847,26 @@
     padding: 14px;
   }
 }
+
+/* Historique secondaire : utiliser la largeur disponible sans étirer les fiches. */
+.club-arena .club-request-history > .club-request-list {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr));
+  align-items: start;
+  gap: 8px;
+}
+.club-arena .club-request-history .club-request-card {
+  padding: 10px 12px;
+  font-size: 14px;
+  line-height: 1.4;
+}
+.club-arena .club-request-history .club-request-card p {
+  margin: 3px 0;
+  font-size: 13px;
+  line-height: 1.4;
+}
+.club-arena .arena-home-event > .home-calendar-countdown {
+  grid-column: 1;
+  grid-row: 2;
+  min-width: 0;
+}
+.club-arena .home-next-event-name { font-size: 14px; color: var(--muted); margin: 10px 0 0; }

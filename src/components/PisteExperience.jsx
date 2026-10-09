@@ -1,5 +1,6 @@
 import SavedFencerCards from './SavedFencerCards';
 import HomeFollowedFencers from './HomeFollowedFencers';
+import { nextCalendarEvent } from '../lib/eventCountdown';
 import { eventNameFr } from '../lib/eventName';
 import { remainingLocalFollows } from '../lib/fencerFollowMigration';
 import { useFencerFollows } from '../lib/fencerFollows';
@@ -153,21 +154,24 @@ export function ArenaLeague({ userId, onCommunity }) {
 }
 
 export function ArenaHome({ user, matches, competition, tournament, onPlay, onMine, onCommunity, onLive, onFollowedFencer }) {
-  const [scheduledEvent, setScheduledEvent] = useState(null);
-  const scheduledStart = scheduledEvent?.startsAt;
+  const [calendar, setCalendar] = useState([]);
+  const [scheduledTournaments, setScheduledTournaments] = useState([]);
   useEffect(() => {
-    setScheduledEvent(null);
     const controller = new AbortController();
-    API.get('/public/tournaments', { signal: controller.signal })
-      .then(({ data }) => {
-        const events = data.flatMap(t => (t.competitions || []).map(c => ({...c,tournamentName:t.name})));
-        const event = competition?.id ? events.find(c => c.id === competition.id) : events.filter(c => Date.parse(c.startsAt) > Date.now()).sort((a,b) => Date.parse(a.startsAt)-Date.parse(b.startsAt))[0];
-        setScheduledEvent(event || null);
-      })
-      .catch(() => {});
-    return () => controller.abort();
-  }, [competition?.id]);
-  const now = useNow(5000);
+    const refresh = () => Promise.all([
+      API.get('/public/calendar', { signal: controller.signal }),
+      API.get('/public/tournaments', { signal: controller.signal }),
+    ]).then(([calendarResponse, tournamentsResponse]) => {
+      if (controller.signal.aborted) return;
+      setCalendar(calendarResponse.data?.events || []);
+      setScheduledTournaments(tournamentsResponse.data || []);
+    }).catch(() => {});
+    refresh();
+    const stop = pollWhileVisible(refresh, 60000);
+    return () => { controller.abort(); stop(); };
+  }, []);
+  const now = useNow(1000);
+  const scheduledEvent = nextCalendarEvent(calendar, scheduledTournaments, now);
   const open = matches.filter((m) => !isMatchClosed(m, now));
   const pending = open.filter((m) => !m.predictions?.some((p) => p.userId === user.id));
   const latest = matches.filter((m) => m.isFinished && m.predictions?.some((p) => p.userId === user.id)).at(-1);
@@ -184,15 +188,13 @@ export function ArenaHome({ user, matches, competition, tournament, onPlay, onMi
           </div>
         <HomeFollowedFencers tournamentId={tournament?.id || competition?.tournamentId} userId={user.id} onOpen={onFollowedFencer} />
         </div>
-        <PisteCountdown
-          deadline={
-            open
-              .filter((m) => !m.awaitingPreviousRound && !m.timingUnverified)
-              .map((m) => m.manualUnlockUntil || m.closesAt)
-              .filter(Boolean)
-              .sort()[0] || (Date.parse(scheduledStart) > now ? scheduledStart : null)
-          }
-        />
+        <div className="home-calendar-countdown">
+          <PisteCountdown deadline={scheduledEvent?.startsAt} label="PROCHAINE ÉPREUVE DU CALENDRIER" />
+          {scheduledEvent && <p className="home-next-event-name">
+            {scheduledEvent.tournamentName || scheduledEvent.city} · {eventNameFr(scheduledEvent.name || scheduledEvent.label)}
+            {!scheduledEvent.startsAt && <> · {scheduledEvent.start.split('-').reverse().join('/')} · Horaire à confirmer</>}
+          </p>}
+        </div>
         <button onClick={onPlay}>Continuer mes pronostics →</button>
       </section>
       <div className="arena-dashboard">
