@@ -34,6 +34,8 @@ test('home follows the calendar, advances after start and never invents a time',
   assert.equal(nextCalendarEvent(events, tournaments, Date.parse('2026-10-10T07:00Z')).id, 2);
   assert.equal(nextCalendarEvent(events, tournaments, Date.parse('2026-10-10T09:00Z')).id, 3);
   assert.equal(nextCalendarEvent(events, tournaments, Date.parse('2026-10-11T07:00Z')), null);
+  const partiallyKnown = [{id:'partial',start:'2026-10-10',competitionIds:[1,99]}];
+  assert.equal(nextCalendarEvent(partiallyKnown, tournaments, Date.parse('2026-10-10T08:00Z')).startsAt, null);
   const unknown = { id: 'unimported', start: '2026-10-09', city: 'Paris', competitionIds: [] };
   assert.equal(nextCalendarEvent([...events, unknown], tournaments, Date.parse('2026-10-09T20:00Z')).id, 'unimported');
   assert.equal(nextCalendarEvent([unknown], tournaments, Date.parse('2026-10-09T20:00Z')).startsAt, null);

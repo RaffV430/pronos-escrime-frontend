@@ -17,7 +17,7 @@ export function nextCalendarEvent(events, tournaments, now) {
     const linked = (event.competitionIds || []).map(id => competitions.get(id)).filter(Boolean);
     const future = linked.filter(c => typeof c.startsAt === 'string' && Date.parse(c.startsAt) > now).sort((a,b) => Date.parse(a.startsAt)-Date.parse(b.startsAt));
     if (future.length) return [{...event,...future[0]}];
-    if (linked.length && linked.every(c => Number.isFinite(Date.parse(c.startsAt)) && Date.parse(c.startsAt) <= now)) return [];
+    if (linked.length && linked.length === event.competitionIds.length && linked.every(c => Number.isFinite(Date.parse(c.startsAt)) && Date.parse(c.startsAt) <= now)) return [];
     if (event.start < new Date(now).toISOString().slice(0,10)) return [];
     return [{...event, startsAt:null}];
   });
