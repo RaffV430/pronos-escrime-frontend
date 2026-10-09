@@ -1,3 +1,5 @@
+import AdminAlerts from './components/AdminAlerts';
+import { adminDestination, adminLoginPath, loginReturn, updateBadge } from './lib/adminDestination';
 import ClubModeration from './components/ClubModeration';
 import AppTutorial from './components/AppTutorial';
 import ClubChoice from './components/ClubChoice';
@@ -84,9 +86,6 @@ export default function App() {
   const [sessionError, setSessionError] = useState(false);
   const [sessionRetry, setSessionRetry] = useState(0);
   const [isRegister] = useState(() => location.pathname.startsWith('/inscription'));
-  useEffect(() => {
-    if (user && isAuthPath(location.pathname)) history.replaceState(null, '', `/accueil${location.search}`);
-  }, [user]);
   const [showPassword, setShowPassword] = useState(false);
   const [forgotPassword, setForgotPassword] = useState(false);
   const [passwordReset, setPasswordReset] = useState(false);
@@ -107,13 +106,30 @@ export default function App() {
   const [error, setError] = useState('');
 
   // Navigation principale
+  const [adminTarget, setAdminTarget] = useState(() =>
+    adminDestination(
+      loginReturn(location.search) ? new URL(loginReturn(location.search), location.origin).search : location.search,
+    ),
+  );
   const [mainTab, setMainTab] = useState(
     () =>
-      ((location.pathname === '/' || isAuthPath(location.pathname)) &&
-      /[?&](event|tournament|match|matches|view)=/.test(location.search)
-        ? 'play'
-        : tabFromPath(location.pathname)) || 'home',
+      (loginReturn(location.search)
+        ? 'admin'
+        : (location.pathname === '/' || isAuthPath(location.pathname)) &&
+            /[?&](event|tournament|match|matches|view)=/.test(location.search)
+          ? 'play'
+          : tabFromPath(location.pathname)) || 'home',
   );
+  useEffect(() => {
+    if (user && isAuthPath(location.pathname)) {
+      const target = loginReturn(location.search);
+      history.replaceState(null, '', target || `/accueil${location.search}`);
+      if (target) {
+        setMainTab('admin');
+        setAdminTarget(adminDestination(new URL(target, location.origin).search));
+      }
+    }
+  }, [user]);
   // Une adresse par section : l'onglet suit l'adresse (retour arrière du navigateur) et inversement.
   const [matchTarget, setMatchTarget] = useState(null);
 
@@ -136,6 +152,7 @@ export default function App() {
     const back = () => {
       const loc = parseLocation(location.pathname, location.search);
       if (!loc.tab) return;
+      setAdminTarget(adminDestination(location.search));
       setMainTab(loc.tab);
       if (['play', 'admin'].includes(loc.tab) && loc.eventId && loc.eventId !== selectedRef.current)
         setEventListVersion((v) => v + 1);
@@ -201,7 +218,17 @@ export default function App() {
       // Épreuve de l'adresse en cours de chargement : l'adresse est gardée.
       if (!selectedCompetitionId && current.tab === mainTab && current.eventId) target = location.pathname;
     } else target = current.tab === mainTab ? location.pathname : pathForTab(mainTab);
-    const url = target + (legacy ? '' : location.search);
+    const query = new URLSearchParams(location.search);
+    if (legacy) {
+      query.delete('event');
+      query.delete('tournament');
+      query.delete('view');
+    }
+    if (mainTab !== 'admin') {
+      query.delete('panel');
+      query.delete('request');
+    }
+    const url = target + (query.size ? `?${query}` : '');
     if (location.pathname + location.search !== url) {
       const next = parseLocation(target);
       // Accueil « / », ancien lien, simple changement de vue ou de nom : pas d'étape en plus dans l'historique.
@@ -248,6 +275,13 @@ export default function App() {
     runNavigation(() => {
       setDirty(false);
       setMainTab(tab);
+    });
+
+  const openAdminAlert = (panel) =>
+    runNavigation(() => {
+      history.pushState(null, '', `/admin?panel=${panel}`);
+      setAdminTarget({ panel, requestId: null });
+      setMainTab('admin');
     });
 
   // 2. Charger les matchs en fonction de la compétition
@@ -312,7 +346,13 @@ export default function App() {
           }
           localStorage.removeItem('token');
           setUser(null);
+          const next = adminLoginPath(location.pathname, location.search);
+          if (next) history.replaceState(null, '', next);
         }
+      }
+      if (!token) {
+        const next = adminLoginPath(location.pathname, location.search);
+        if (next) history.replaceState(null, '', next);
       }
       setLoading(false);
     };
@@ -324,6 +364,8 @@ export default function App() {
   useEffect(() => {
     const expired = () => {
       setUser(null);
+      const next = adminLoginPath(location.pathname, location.search);
+      if (next) history.replaceState(null, '', next);
       setError('Votre session a expiré. Reconnectez-vous pour continuer.');
     };
     window.addEventListener(SESSION_EXPIRED_EVENT, expired);
@@ -367,6 +409,7 @@ export default function App() {
       return;
     }
     localStorage.removeItem('token');
+    await updateBadge(0);
     setUser(null);
     setTournamentId(null);
     selectCompetition(null);
@@ -459,6 +502,7 @@ export default function App() {
               pronos<span>escrime</span>
             </div>
             <div className="account-actions">
+              <AdminAlerts user={user} onOpen={openAdminAlert} />
               <button className="button-secondary" onClick={() => navigate('results')}>
                 Résultats
               </button>
@@ -533,6 +577,7 @@ export default function App() {
           <AppTutorial
             key={user.id}
             userId={user.id}
+            skipAutomatic={Boolean(adminTarget)}
             request={tutorialRequest}
             onNavigate={(step) =>
               runNavigation(() => {
@@ -639,9 +684,9 @@ export default function App() {
             <Suspense fallback={tabFallback}>
               {mainTab === 'admin' && user.isAdmin && (
                 <Suspense fallback={adminFallback}>
-                  <SyncHealth />
+                  <SyncHealth destination={adminTarget} />
                   <CalendarWatch />
-                  <ClubModeration />
+                  <ClubModeration destination={adminTarget} onSecurity={() => navigate('account')} />
                   <ClubAdministration />
                   <FencerAffiliationAdministration />
                   <CircuitSettings />

@@ -1,5 +1,5 @@
 import { pollWhileVisible } from '../lib/polling';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import API from '../api';
 const labels = {
   PENDING: 'En attente',
@@ -7,7 +7,10 @@ const labels = {
   REJECTED: 'Refusée',
   CANCELLED: 'Annulée par un nouveau choix',
 };
-export default function ClubModeration() {
+export default function ClubModeration({ destination, onSecurity }) {
+  const panel = useRef(null);
+  const [securityRequired, setSecurityRequired] = useState(false);
+  const focused = useRef(null);
   const [rows, setRows] = useState([]),
     [policy, setPolicy] = useState(null),
     [terms, setTerms] = useState(''),
@@ -17,14 +20,32 @@ export default function ClubModeration() {
     [message, setMessage] = useState(''),
     [busy, setBusy] = useState(false),
     [revision, setRevision] = useState(0);
+  const failure = useCallback((e) => {
+    setSecurityRequired(Boolean(e.response?.data?.twoFactorSetupRequired));
+    setError(e.response?.data?.error || 'Demandes de clubs indisponibles. Réessayez.');
+  }, []);
+  useEffect(() => {
+    if (destination?.panel !== 'clubs' || !panel.current) return;
+    const key = `${destination.panel}:${destination.requestId || ''}:${rows.length ? 'loaded' : 'initial'}`;
+    if (focused.current === key) return;
+    focused.current = key;
+    panel.current.open = true;
+    const target =
+      destination.requestId && panel.current.querySelector(`[data-club-request="${destination.requestId}"]`);
+    (target || panel.current).scrollIntoView({ block: 'start' });
+  }, [destination, rows]);
   useEffect(() => {
     const c = new AbortController();
     const stop = pollWhileVisible(
       () =>
         API.get('/clubs/admin/requests', { signal: c.signal })
-          .then(({ data }) => setRows(data))
-          .catch(() => {
-            if (!c.signal.aborted) setError('Actualisation des demandes indisponible. Réessayez.');
+          .then(({ data }) => {
+            setRows(data);
+            setError('');
+            setSecurityRequired(false);
+          })
+          .catch((e) => {
+            if (!c.signal.aborted) failure(e);
           }),
       30000,
     );
@@ -32,7 +53,7 @@ export default function ClubModeration() {
       c.abort();
       stop();
     };
-  }, []);
+  }, [failure]);
   useEffect(() => {
     const c = new AbortController();
     Promise.all([
@@ -41,6 +62,8 @@ export default function ClubModeration() {
     ])
       .then(([r, p]) => {
         setRows(r.data);
+        setError('');
+        setSecurityRequired(false);
         setPolicy(p.data);
         setTerms(
           'terme;categorie;action\n' +
@@ -56,11 +79,11 @@ export default function ClubModeration() {
         );
         setRules(p.data.rules);
       })
-      .catch(() => {
-        if (!c.signal.aborted) setError('Demandes de clubs indisponibles.');
+      .catch((e) => {
+        if (!c.signal.aborted) failure(e);
       });
     return () => c.abort();
-  }, [revision]);
+  }, [revision, failure]);
   async function run(action, success) {
     if (busy) return;
     setBusy(true);
@@ -68,6 +91,7 @@ export default function ClubModeration() {
     try {
       await action();
       setMessage(success);
+      window.dispatchEvent(new Event('pronos:admin-alerts-changed'));
       setRevision((n) => n + 1);
     } catch (e) {
       setError(e.response?.data?.error || 'Enregistrement impossible.');
@@ -87,19 +111,30 @@ export default function ClubModeration() {
     e.target.value = '';
   }
   return (
-    <details className="feature-panel club-moderation">
+    <details
+      ref={panel}
+      id="club-validation"
+      open={securityRequired || undefined}
+      className="feature-panel club-moderation"
+    >
       <summary>
-        Clubs ajoutés à vérifier · {rows.filter((r) => r.status === 'PENDING').length} demande(s) en attente
+        Clubs ajoutés à vérifier ·{' '}
+        {securityRequired
+          ? 'activation de la sécurité requise'
+          : error
+            ? 'lecture indisponible'
+            : `${rows.filter((r) => r.status === 'PENDING').length} demande(s) en attente`}
       </summary>
       {error && <p role="alert">{error}</p>}
+      {securityRequired && <button onClick={onSecurity}>Activer la double authentification dans Mon compte</button>}
       {message && <p role="status">{message}</p>}
       <button disabled={busy} onClick={() => setRevision((n) => n + 1)}>
         Actualiser
       </button>
       <h3>Demandes de clubs</h3>
-      {!rows.length && <p>Aucune demande.</p>}
+      {!rows.length && !error && <p>Aucune demande.</p>}
       {rows.map((r) => (
-        <article className="feature-panel" key={r.id}>
+        <article className="feature-panel" key={r.id} data-club-request={r.id}>
           <strong>
             {r.name} · {r.city}
           </strong>
