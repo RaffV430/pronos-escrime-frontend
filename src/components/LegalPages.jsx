@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import ClubNamingRules from './ClubNamingRules';
+import RulesAndCharter from './RulesAndCharter';
 // Mentions légales et politique de confidentialité, accessibles sans connexion
 // aux adresses /mentions-legales et /confidentialite.
 const EDITOR = 'Raffaele Venturi';
@@ -9,7 +9,8 @@ const UPDATED = '9 octobre 2026';
 export function LegalLinks() {
   return (
     <span className="legal-links">
-      <a href="/confidentialite">Confidentialité</a> · <a href="/mentions-legales">Mentions légales</a>
+      <a href="/confidentialite">Confidentialité</a> · <a href="/mentions-legales">Mentions légales</a> ·{' '}
+      <a href="/regles-et-charte">Règles et charte</a>
     </span>
   );
 }
@@ -46,7 +47,9 @@ function Legal() {
           Base de données : Neon, Inc. — <a href="https://neon.tech">neon.tech</a>
         </li>
       </ul>
-      <ClubNamingRules />
+      <p>
+        <a href="/regles-et-charte#charte">Consulter la charte des clubs</a>
+      </p>
       <h2>Résultats sportifs</h2>
       <p>
         Les résultats sont repris des publications officielles (FencingTimeLive, engarde-service). Pronos Escrime n’est
@@ -66,7 +69,9 @@ function Privacy() {
       <p>
         {EDITOR}, éditeur du site. Contact : <Contact />.
       </p>
-      <ClubNamingRules />
+      <p>
+        <a href="/regles-et-charte#charte">Consulter la charte des clubs</a>
+      </p>
       <p>
         Les demandes de clubs contiennent le nom, la ville, l’abréviation éventuelle, le compte demandeur et la décision
         avec son motif. Elles servent à vérifier les ajouts et à vous informer du refus par e-mail. Seuls les
@@ -134,14 +139,14 @@ function Privacy() {
 
 export function LegalPage({ page }) {
   useEffect(() => {
-    document.title = `${page === 'legal' ? 'Mentions légales' : 'Politique de confidentialité'} · Pronos Escrime`;
+    document.title = `${page === 'rules' ? 'Règles et charte' : page === 'legal' ? 'Mentions légales' : 'Politique de confidentialité'} · Pronos Escrime`;
   }, [page]);
   return (
     <main className="legal-page feature-panel">
       <p>
         <a href="/">← Retour à Pronos Escrime</a>
       </p>
-      {page === 'legal' ? <Legal /> : <Privacy />}
+      {page === 'rules' ? <RulesAndCharter /> : page === 'legal' ? <Legal /> : <Privacy />}
       <p className="muted">
         <LegalLinks />
       </p>
