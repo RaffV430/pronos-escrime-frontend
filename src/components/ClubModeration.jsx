@@ -1,3 +1,4 @@
+import { pollWhileVisible } from '../lib/polling';
 import { useEffect, useState } from 'react';
 import API from '../api';
 const labels = {
@@ -16,6 +17,7 @@ export default function ClubModeration() {
     [message, setMessage] = useState(''),
     [busy, setBusy] = useState(false),
     [revision, setRevision] = useState(0);
+  useEffect(() => { const c = new AbortController(); const stop = pollWhileVisible(() => API.get('/clubs/admin/requests', { signal: c.signal }).then(({data}) => setRows(data)).catch(() => {}), 30000); return () => { c.abort(); stop(); }; }, []);
   useEffect(() => {
     const c = new AbortController();
     Promise.all([
@@ -71,7 +73,7 @@ export default function ClubModeration() {
   }
   return (
     <details className="feature-panel club-moderation">
-      <summary>Demandes de nouveaux clubs et règles de nommage</summary>
+      <summary>Clubs ajoutés à vérifier · {rows.filter(r => r.status === 'PENDING').length} demande(s) en attente</summary>
       {error && <p role="alert">{error}</p>}
       {message && <p role="status">{message}</p>}
       <button disabled={busy} onClick={() => setRevision((n) => n + 1)}>

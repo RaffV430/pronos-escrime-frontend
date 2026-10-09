@@ -1,3 +1,4 @@
+import ClubModeration from './components/ClubModeration';
 import ClubChoice from './components/ClubChoice';
 import ClubProfile from './components/ClubProfile';
 import ClubAdministration from './components/ClubAdministration';
@@ -525,6 +526,7 @@ export default function App() {
                 <Suspense fallback={adminFallback}>
                   <SyncHealth />
                   <CalendarWatch />
+                  <ClubModeration />
                   <ClubAdministration />
                   <FencerAffiliationAdministration />
                   <CircuitSettings />
