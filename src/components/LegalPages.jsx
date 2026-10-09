@@ -3,8 +3,8 @@ import RulesAndCharter from './RulesAndCharter';
 // Mentions légales et politique de confidentialité, accessibles sans connexion
 // aux adresses /mentions-legales et /confidentialite.
 const EDITOR = 'Raffaele Venturi';
-const CONTACT = import.meta.env.VITE_CONTACT_EMAIL?.trim();
-const UPDATED = '9 octobre 2026';
+const CONTACT = 'contact@pronos-escrime.fr';
+const UPDATED = '10 octobre 2026';
 
 export function LegalLinks() {
   return (
@@ -15,13 +15,10 @@ export function LegalLinks() {
   );
 }
 
-const Contact = () =>
-  CONTACT ? (
+const Contact = () => (
     <>
       par e-mail à <a href={`mailto:${CONTACT}`}>{CONTACT}</a>
     </>
-  ) : (
-    <>auprès de l’éditeur</>
   );
 
 function Legal() {
@@ -71,7 +68,7 @@ function Privacy() {
         avec son motif. Elles servent à vérifier les ajouts et à vous informer du refus par e-mail. Seuls les
         administrateurs accèdent aux demandes ; les clubs acceptés apparaissent dans la liste publique. Le contrôle
         automatique compare les champs saisis à une liste de termes gérée par les administrateurs. Une demande de
-        réexamen peut être adressée à l’éditeur.
+        réexamen peut être adressée à l’éditeur <Contact />.
       </p>
       <h2>Données collectées et utilisation</h2>
       <ul>
