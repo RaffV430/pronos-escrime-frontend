@@ -61,8 +61,8 @@ export default function ClubModeration() {
   async function importTerms(e) {
     const file = e.target.files?.[0];
     if (!file) return;
-    if (file.size > 250000) {
-      setError('Fichier trop volumineux (250 Ko maximum).');
+    if (file.size > 40000) {
+      setError('Fichier trop volumineux (40 Ko maximum).');
       return;
     }
     setTerms(await file.text());
