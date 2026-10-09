@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import API from '../api';
+import ClubNamingRules from './ClubNamingRules';
 export default function ClubChoice({ value, onChange, disabled = false }) {
   const [clubs, setClubs] = useState([]),
     [query, setQuery] = useState(''),
@@ -115,9 +116,10 @@ export default function ClubChoice({ value, onChange, disabled = false }) {
               onChange={(e) => onChange({ ...value, shortName: e.target.value })}
             />
           </label>
+          <ClubNamingRules />
           <p className="muted">
-            Votre club sera utilisable immédiatement, avec la mention « à vérifier ». Cet ajout ne certifie pas une
-            affiliation FFE.
+            Votre demande doit être validée par un administrateur. Vous restez sans club / accompagnant jusqu’à sa
+            validation. Votre inscription et vos pronostics restent accessibles.
           </p>
         </div>
       )}

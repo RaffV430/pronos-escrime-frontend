@@ -2637,3 +2637,18 @@
   margin: 12px 0 0;
   color: var(--muted);
 }
+
+/* Keep the personal-club filter legible in both themes, including its pressed state. */
+.piste-fencer-search .fencer-club-filter,
+.piste-fencer-search .fencer-club-filter:hover:not(:disabled),
+.piste-fencer-search .fencer-club-filter:focus-visible {
+  background: #245da8;
+  color: #fff;
+}
+.piste-fencer-search .fencer-club-filter[aria-pressed='true'] {
+  background: #174a86;
+  color: #fff;
+}
+.club-moderation textarea {
+  min-height: 100px;
+}

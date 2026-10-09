@@ -442,6 +442,7 @@ export function PisteFencers({ userId, tournamentId: currentTournamentId, onOpen
         <label>Filtrer par club<select disabled={bulkBusy} value={clubFilter} onChange={e=>{setClubFilter(e.target.value);setClubOnly(false);setOffset(0);setSelected(null);}}><option value="">Tous les clubs</option>{clubs.map(c=><option key={c.id} value={c.id}>{c.name}</option>)}</select></label>
         <button
           disabled={bulkBusy}
+          className="fencer-club-filter"
           aria-pressed={clubOnly}
           onClick={() => {
             setClubOnly(!clubOnly);

@@ -1,9 +1,10 @@
 import { useEffect } from 'react';
+import ClubNamingRules from './ClubNamingRules';
 // Mentions légales et politique de confidentialité, accessibles sans connexion
 // aux adresses /mentions-legales et /confidentialite.
 const EDITOR = 'Raffaele Venturi';
 const CONTACT = import.meta.env.VITE_CONTACT_EMAIL?.trim();
-const UPDATED = '6 octobre 2026';
+const UPDATED = '9 octobre 2026';
 
 export function LegalLinks() {
   return (
@@ -45,6 +46,7 @@ function Legal() {
           Base de données : Neon, Inc. — <a href="https://neon.tech">neon.tech</a>
         </li>
       </ul>
+      <ClubNamingRules />
       <h2>Résultats sportifs</h2>
       <p>
         Les résultats sont repris des publications officielles (FencingTimeLive, engarde-service). Pronos Escrime n’est
@@ -63,6 +65,14 @@ function Privacy() {
       <h2>Responsable du traitement</h2>
       <p>
         {EDITOR}, éditeur du site. Contact : <Contact />.
+      </p>
+      <ClubNamingRules />
+      <p>
+        Les demandes de clubs contiennent le nom, la ville, l’abréviation éventuelle, le compte demandeur et la décision
+        avec son motif. Elles servent à vérifier les ajouts et à vous informer du refus par e-mail. Seuls les
+        administrateurs accèdent aux demandes ; les clubs acceptés apparaissent dans la liste publique. Le contrôle
+        automatique compare les champs saisis à une liste de termes gérée par les administrateurs. Une demande de
+        réexamen peut être adressée à l’éditeur.
       </p>
       <h2>Données collectées et utilisation</h2>
       <ul>

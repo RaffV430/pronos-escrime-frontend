@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import API from '../api';
+import ClubModeration from './ClubModeration';
 export default function ClubAdministration() {
   const [rows, setRows] = useState([]),
     [clubs, setClubs] = useState([]),
@@ -80,6 +81,7 @@ export default function ClubAdministration() {
         </p>
       )}
       {message && <p role="status">{message}</p>}
+      <ClubModeration />
       <h3>Demandes et responsables</h3>
       {!rows.length && <p>Aucune demande.</p>}
       {rows.map((r) => (
