@@ -416,9 +416,6 @@ export default function Community({ tournamentId: preferred = null, userId }) {
         </select>
       </label>
       <h4>Classement des clubs</h4>
-      <p>
-        <a href="/regles-et-charte#clubs">Consulter les règles du classement des clubs</a>
-      </p>
       {clubs.length ? <Ranking rows={clubs} /> : <p>Aucun club éligible pour ce tournoi.</p>}
       {import.meta.env.DEV && (
         <section className="club-duel-preview" aria-labelledby="club-duel-title">
@@ -445,9 +442,6 @@ export default function Community({ tournamentId: preferred = null, userId }) {
         </section>
       )}
       <h4>Défis du tournoi</h4>
-      <p>
-        <a href="/regles-et-charte#defis">Consulter les règles des défis</a>
-      </p>
       {!challenges.length && <p>Aucun défi proposé pour ce tournoi.</p>}
       {challenges.map((c) => (
         <article className="prediction-summary" key={c.id}>

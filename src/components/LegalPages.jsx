@@ -47,9 +47,6 @@ function Legal() {
           Base de données : Neon, Inc. — <a href="https://neon.tech">neon.tech</a>
         </li>
       </ul>
-      <p>
-        <a href="/regles-et-charte#charte">Consulter la charte des clubs</a>
-      </p>
       <h2>Résultats sportifs</h2>
       <p>
         Les résultats sont repris des publications officielles (FencingTimeLive, engarde-service). Pronos Escrime n’est
@@ -68,9 +65,6 @@ function Privacy() {
       <h2>Responsable du traitement</h2>
       <p>
         {EDITOR}, éditeur du site. Contact : <Contact />.
-      </p>
-      <p>
-        <a href="/regles-et-charte#charte">Consulter la charte des clubs</a>
       </p>
       <p>
         Les demandes de clubs contiennent le nom, la ville, l’abréviation éventuelle, le compte demandeur et la décision

@@ -1,13 +1,5 @@
-export default function ScoringRules({ type = 'pools', full = false }) {
+export default function ScoringRules({ type = 'pools' }) {
   const pools = type === 'pools';
-  if (!full)
-    return (
-      <p className="scoring-rules">
-        <a href={`/regles-et-charte#${pools ? 'poules' : 'tableau'}`}>
-          Consulter le barème des {pools ? 'poules' : 'matchs'}
-        </a>
-      </p>
-    );
   return (
     <details className="scoring-rules" open>
       <summary>

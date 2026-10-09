@@ -180,9 +180,6 @@ export default function PodiumPrediction({ selectedCompetitionId, user, adminOnl
               <p className="muted">
                 {options.entries.length} engagés · liste complète, y compris les exemptions du premier tour.
               </p>
-              <p>
-                <a href="/regles-et-charte#podium">Consulter les règles du podium</a>
-              </p>
             </>
           )}
           {user?.isAdmin && (
