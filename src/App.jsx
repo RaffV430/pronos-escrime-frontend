@@ -1,6 +1,7 @@
 import ClubChoice from './components/ClubChoice';
 import ClubProfile from './components/ClubProfile';
 import ClubAdministration from './components/ClubAdministration';
+import FencerAffiliationAdministration from './components/FencerAffiliationAdministration';
 import { FollowedEventFencers, CompetitionFollow } from './components/EventWorkspace';
 import { FencerFollowsProvider } from './components/FencerFollowsProvider';
 import { isAuthPath, authPath } from './lib/authNavigation';
@@ -527,6 +528,7 @@ export default function App() {
                   <CalendarWatch />
                   <ClubSettings />
                   <ClubAdministration />
+                  <FencerAffiliationAdministration />
                   <CircuitSettings />
                   <FtlTournamentSetup onConfigured={() => setEventListVersion((v) => v + 1)} />
                 </Suspense>
