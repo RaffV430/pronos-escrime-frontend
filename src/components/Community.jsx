@@ -3,7 +3,6 @@ import { useState, useEffect, useRef } from 'react';
 import { PistePodium } from './PisteExperience';
 import API from '../api';
 import DuelView from './DuelView';
-import ClubLeague from './ClubLeague';
 import { withCount } from '../lib/plural';
 import { invitationFromPath, invitationUrl } from '../lib/invitation';
 function Ranking({ rows, onDuel, userId }) {
@@ -136,7 +135,6 @@ export default function Community({ tournamentId: preferred = null, userId }) {
         <span className="delegation-count">{leagues?.length || 0} {leagues?.length === 1 ? 'délégation' : 'délégations'}</span>
       </header>
       {message && <p role="status">{message}</p>}
-      <ClubLeague onJoined={() => setRevision((n) => n + 1)} />
       <p className="muted delegation-help">Ouvrez un classement ou choisissez votre favorite : elle apparaît en premier sur l’accueil.</p>
       {!leagues && <p className="muted">Chargement…</p>}
       {leagues?.length === 0 && (

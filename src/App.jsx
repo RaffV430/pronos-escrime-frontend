@@ -8,7 +8,7 @@ import { isAuthPath, authPath } from './lib/authNavigation';
 import { ArenaHome, PisteFencers } from './components/PisteExperience';
 import PisteLive from './components/PisteLive';
 import { eventLanding } from './components/matchPresentation';
-import { useState, useEffect, useRef, useMemo, lazy, Suspense } from 'react';
+import { useState, useEffect, useRef, lazy, Suspense } from 'react';
 import API, { SESSION_EXPIRED_EVENT } from './api';
 import { shouldRefresh } from './lib/session.js';
 import ScoringRules from './components/ScoringRules';
@@ -29,7 +29,6 @@ import MatchBoard from './components/MatchBoard';
 import './interface.css';
 import ErrorBoundary from './components/ErrorBoundary';
 import { pollWhileVisible } from './lib/polling';
-import { ClubContext, clubValue } from './lib/club';
 import BrandMark from './components/BrandMark';
 import Landing from './components/Landing';
 import UpcomingCalendar from './components/UpcomingCalendar';
@@ -37,7 +36,6 @@ import UpcomingCalendar from './components/UpcomingCalendar';
 const AdminPanel = lazy(() => import('./components/AdminPanel'));
 const FtlControl = lazy(() => import('./components/FtlControl'));
 const CircuitSettings = lazy(() => import('./components/CircuitSettings'));
-const ClubSettings = lazy(() => import('./components/ClubSettings'));
 const SyncHealth = lazy(() => import('./components/SyncHealth'));
 const CalendarWatch = lazy(() => import('./components/CalendarWatch'));
 const FtlTournamentSetup = lazy(() => import('./components/FtlTournamentSetup'));
@@ -47,7 +45,6 @@ const PodiumPrediction = lazy(() => import('./components/PodiumPrediction'));
 const PoolPredictions = lazy(() => import('./components/PoolPredictions'));
 const GlobalLeaderboard = lazy(() => import('./components/GlobalLeaderboard'));
 const MyPredictions = lazy(() => import('./components/MyPredictions'));
-const ClubDay = lazy(() => import('./components/ClubDay'));
 const MySeason = lazy(() => import('./components/MySeason'));
 const Results = lazy(() => import('./components/Results'));
 const PublicTournament = lazy(() => import('./components/PublicTournament'));
@@ -151,17 +148,21 @@ export default function App() {
   const [matchesStale, setMatchesStale] = useState(false);
   const [matchesAttempt, setMatchesAttempt] = useState(0);
   const matchesLoaded = useRef(false);
-  const [clubData, setClubData] = useState(null);
-  const [clubVersion, setClubVersion] = useState(0);
-  const club = useMemo(() => ({ ...clubValue(clubData), reload: () => setClubVersion((n) => n + 1) }), [clubData]);
+  const [accountClub, setAccountClub] = useState(null);
   useEffect(() => {
+    setAccountClub(null);
     if (!user) return;
     const c = new AbortController();
-    API.get('/community/club', { signal: c.signal })
-      .then(({ data }) => setClubData(data))
+    const refresh = () => API.get('/clubs/me', { signal: c.signal })
+      .then(({ data }) => { if (!c.signal.aborted) setAccountClub(data.club || null); })
       .catch(() => {});
-    return () => c.abort();
-  }, [user, clubVersion]);
+    refresh();
+    window.addEventListener('club-profile-changed', refresh);
+    return () => {
+      c.abort();
+      window.removeEventListener('club-profile-changed', refresh);
+    };
+  }, [user]);
   useEffect(() => {
     if (!landingPending || !matchesReady) return;
     const next = eventLanding(matches, user?.id, Date.now(), competition?.podiumFormat === 'TEAM');
@@ -430,7 +431,6 @@ export default function App() {
   if (user) {
     const team = competition?.podiumFormat === 'TEAM';
     return (
-      <ClubContext.Provider value={club}>
         <FencerFollowsProvider key={user.id} userId={user.id} competitionId={selectedCompetitionId}>
         <div className="app-shell redesigned">
           <header className="app-header">
@@ -489,10 +489,10 @@ export default function App() {
                 <span aria-hidden="true">⋯</span>Plus
               </button>
             }
-            {club.name && (
+            {accountClub?.name && (
               <div className="arena-club">
                 <span>VOTRE CLUB</span>
-                <strong>{club.name}</strong>
+                <strong>{accountClub.name}</strong>
                   <button onClick={() => navigate('community')}>Retrouver la délégation →</button>
               </div>
             )}
@@ -526,7 +526,6 @@ export default function App() {
                 <Suspense fallback={adminFallback}>
                   <SyncHealth />
                   <CalendarWatch />
-                  <ClubSettings />
                   <ClubAdministration />
                   <FencerAffiliationAdministration />
                   <CircuitSettings />
@@ -815,14 +814,6 @@ export default function App() {
                             }}
                           />
                         )}
-                        {eventMode === 'predictions' && playTab === 'club' && club.hasFencers && (
-                        <ClubDay
-                          key={selectedCompetitionId}
-                          competitionId={selectedCompetitionId}
-                          matches={matches}
-                          team={team}
-                        />
-                      )}
                         {eventMode === 'predictions' && playTab === 'podium' && (
                         <PodiumPrediction
                           key={selectedCompetitionId}
@@ -924,7 +915,6 @@ export default function App() {
           )}
         </div>
               </FencerFollowsProvider>
-      </ClubContext.Provider>
     );
   }
 

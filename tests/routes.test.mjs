@@ -61,3 +61,11 @@ test('adresses par tournoi et par épreuve, lisibles, anciens liens compris', ()
   assert.equal(tabFromPath('/tournoi/etampes-4'), null);
   assert.equal(publicPath(t, e), '/tournoi/etampes-cn-m17-m20-4/junior-womens-foil-16');
 });
+
+test('ancien suivi commun : conserver l’épreuve et revenir au tableau actif', () => {
+  assert.deepEqual(parseLocation('/pronostiquer/etampes-4/juniors-15/nos-tireurs'), {
+    tab: 'play', tournamentId: 4, eventId: 15, view: 'tableau',
+  });
+  assert.equal(pathFor('play', { tournament: { id: 4, name: 'Etampes' }, event: { id: 15, name: 'Juniors' }, view: 'tableau' }),
+    '/pronostiquer/etampes-4/juniors-15/tableau');
+});

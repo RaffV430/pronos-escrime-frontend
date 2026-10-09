@@ -14,7 +14,7 @@ const Box = ({ value }) => (
 );
 
 // Ligne d'un tireur (composant de module : identité stable, les champs gardent le focus pendant la frappe).
-function Row({ name, country, seed, win, extra = '', club, children }) {
+function Row({ name, country, seed, win, extra = '', isFollowed, children }) {
   return (
     <div className={`tree-row${win ? ' is-win' : ''}${extra}`}>
       <span className="tree-seed" title={seed ? `Classement d’entrée dans le tableau : ${seed}` : undefined}>
@@ -29,7 +29,7 @@ function Row({ name, country, seed, win, extra = '', club, children }) {
       </span>
       <span className="tree-country">{country}</span>
       <span className="tree-name" title={name}>
-        {club?.isClubFencer(name) && <span className="club-star">★ </span>}
+        {isFollowed?.(name) && <span className="club-star">★ </span>}
         <span className="tree-full">{name}</span>
         <span className="tree-short">{shortName(name)}</span>
       </span>
@@ -48,7 +48,7 @@ export default function BracketTree({
   mine,
   isClosed,
   visible,
-  club,
+  isFollowed,
   onType,
   onKey,
   onKeyUp,
@@ -108,7 +108,7 @@ export default function BracketTree({
       >
         {[1, 2].map((i) => (
           <Row
-            club={club}
+            isFollowed={isFollowed}
             key={i}
             name={m[`player${i}`]}
             country={m[`player${i}Country`]}
@@ -161,7 +161,7 @@ export default function BracketTree({
         }}
       >
         {[1, 2].map((i) => (
-          <Row club={club} key={i} name={m[`player${i}`]} country={m[`player${i}Country`]} seed={seedOf(m, i)}>
+          <Row isFollowed={isFollowed} key={i} name={m[`player${i}`]} country={m[`player${i}Country`]} seed={seedOf(m, i)}>
             {closed ? (
               <Box value={p?.[`predictedScore${i}`]} />
             ) : (
@@ -198,10 +198,10 @@ export default function BracketTree({
 
   const advanceCard = (a, first) => (
     <div className="tree-card is-bye">
-      <Row club={club} name={a.name} country={a.country} seed={a.seed} win>
+      <Row isFollowed={isFollowed} name={a.name} country={a.country} seed={a.seed} win>
         <span />
       </Row>
-      <Row club={club} name={first ? 'Exempt' : 'Qualifié'} country="" extra=" is-tbd">
+      <Row isFollowed={isFollowed} name={first ? 'Exempt' : 'Qualifié'} country="" extra=" is-tbd">
         <span />
       </Row>
       <div className="tree-meta">

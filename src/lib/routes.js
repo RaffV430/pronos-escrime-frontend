@@ -58,7 +58,7 @@ export function idOf(seg) {
 }
 
 // Vues de « Pronostiquer » dans l'adresse.
-const VIEWS = { tableau: 'tableau', poules: 'pools', podium: 'podium', 'nos-tireurs': 'club' };
+const VIEWS = { tableau: 'tableau', poules: 'pools', podium: 'podium' };
 const VIEW_PATHS = Object.fromEntries(Object.entries(VIEWS).map(([path, view]) => [view, path]));
 
 // Lecture d'une adresse : section, tournoi, épreuve et vue. Les anciens liens (?tournament=…&event=…&view=…)
@@ -80,7 +80,7 @@ export function parseLocation(pathname, search = '') {
     tab,
     tournamentId: idOf(parts[1]),
     eventId: idOf(parts[2]),
-    view: VIEWS[parts[3]] || null,
+    view: parts[3] === 'nos-tireurs' ? 'tableau' : VIEWS[parts[3]] || null,
   };
 }
 
