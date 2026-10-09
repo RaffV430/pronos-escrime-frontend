@@ -47,9 +47,11 @@ export default function ClubProfile({ prompt = false }) {
       setMessage(
         data.clubRequest?.status === 'PENDING'
           ? 'Demande de club envoyée à l’administration.'
-          : data.club
-            ? 'Club enregistré : vous avez rejoint son groupe dans Délégations.'
-            : 'Choix enregistré.',
+          : value.name && data.clubRequest?.status === 'REJECTED'
+            ? 'Demande refusée automatiquement. Le motif est indiqué ci-dessous et un e-mail est programmé.'
+            : data.club
+              ? 'Club enregistré : vous avez rejoint son groupe dans Délégations.'
+              : 'Choix enregistré.',
       );
       window.dispatchEvent(new Event('club-profile-changed'));
     } catch (e) {

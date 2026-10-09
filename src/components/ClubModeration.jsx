@@ -25,7 +25,18 @@ export default function ClubModeration() {
       .then(([r, p]) => {
         setRows(r.data);
         setPolicy(p.data);
-        setTerms(p.data.terms.join('\n'));
+        setTerms(
+          'terme;categorie;action\n' +
+            p.data.terms
+              .map((value) => {
+                const entry =
+                  typeof value === 'string' ? { terme: value, categorie: 'regles_nommage', action: 'bloquer' } : value;
+                return [entry.terme, entry.categorie, entry.action]
+                  .map((v) => '"' + v.replaceAll('"', '""') + '"')
+                  .join(';');
+              })
+              .join('\n'),
+        );
         setRules(p.data.rules);
       })
       .catch(() => {
@@ -136,8 +147,9 @@ export default function ClubModeration() {
       ))}
       <h3>Règles publiées et mots interdits</h3>
       <p>
-        Le contrôle s’applique automatiquement aux nouvelles demandes et à leur acceptation. Les demandes existantes ne
-        sont pas refusées rétroactivement. Un mot est recherché entier, sans distinction de casse ni d’accent.
+        « bloquer » refuse une correspondance exacte et programme un e-mail motivé. « revoir » et les ressemblances
+        fortes restent en attente de validation administrative. Les termes courts et codes numériques ne font pas
+        l’objet d’une recherche approximative. Les demandes existantes ne sont pas refusées rétroactivement.
       </p>
       <form
         onSubmit={(e) => {
@@ -146,10 +158,7 @@ export default function ClubModeration() {
             () =>
               API.put('/clubs/admin/name-policy', {
                 revision: policy.revision,
-                terms: terms
-                  .split(/\r?\n/)
-                  .map((t) => t.trim())
-                  .filter(Boolean),
+                csv: terms,
                 rules,
               }),
             'Règles publiées et contrôle automatique mis à jour.',
@@ -161,12 +170,12 @@ export default function ClubModeration() {
           <textarea required minLength={20} maxLength={5000} value={rules} onChange={(e) => setRules(e.target.value)} />
         </label>
         <label>
-          Mots ou expressions interdits (un par ligne, 2 000 maximum)
+          Liste de modération CSV : terme;categorie;action (2 000 lignes maximum)
           <textarea value={terms} onChange={(e) => setTerms(e.target.value)} />
         </label>
         <label>
-          Importer une liste de texte
-          <input disabled={busy} type="file" accept=".txt,text/plain" onChange={importTerms} />
+          Importer une liste CSV
+          <input disabled={busy} type="file" accept=".csv,text/csv" onChange={importTerms} />
         </label>
         <button disabled={busy || !policy}>Enregistrer les règles et la liste</button>
       </form>
