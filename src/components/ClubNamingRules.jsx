@@ -19,8 +19,8 @@ export default function ClubNamingRules() {
       <p>
         Un contrôle automatique des termes interdits peut refuser une demande. Le motif apparaît dans Mon compte et est
         envoyé par e-mail. Un terme à revoir ou une ressemblance forte avec un terme de la liste entraîne un examen
-        administratif, sans refus automatique. Vous pouvez demander un réexamen auprès de l’éditeur via les mentions
-        légales.
+        administratif, sans refus automatique. Vous pouvez demander un réexamen auprès de l’éditeur à{' '}
+        <a href="mailto:contact@pronos-escrime.fr">contact@pronos-escrime.fr</a>.
       </p>
     </div>
   );
