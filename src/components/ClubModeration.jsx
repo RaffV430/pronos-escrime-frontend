@@ -17,7 +17,22 @@ export default function ClubModeration() {
     [message, setMessage] = useState(''),
     [busy, setBusy] = useState(false),
     [revision, setRevision] = useState(0);
-  useEffect(() => { const c = new AbortController(); const stop = pollWhileVisible(() => API.get('/clubs/admin/requests', { signal: c.signal }).then(({data}) => setRows(data)).catch(() => {}), 30000); return () => { c.abort(); stop(); }; }, []);
+  useEffect(() => {
+    const c = new AbortController();
+    const stop = pollWhileVisible(
+      () =>
+        API.get('/clubs/admin/requests', { signal: c.signal })
+          .then(({ data }) => setRows(data))
+          .catch(() => {
+            if (!c.signal.aborted) setError('Actualisation des demandes indisponible. Réessayez.');
+          }),
+      30000,
+    );
+    return () => {
+      c.abort();
+      stop();
+    };
+  }, []);
   useEffect(() => {
     const c = new AbortController();
     Promise.all([
@@ -73,7 +88,9 @@ export default function ClubModeration() {
   }
   return (
     <details className="feature-panel club-moderation">
-      <summary>Clubs ajoutés à vérifier · {rows.filter(r => r.status === 'PENDING').length} demande(s) en attente</summary>
+      <summary>
+        Clubs ajoutés à vérifier · {rows.filter((r) => r.status === 'PENDING').length} demande(s) en attente
+      </summary>
       {error && <p role="alert">{error}</p>}
       {message && <p role="status">{message}</p>}
       <button disabled={busy} onClick={() => setRevision((n) => n + 1)}>
@@ -92,6 +109,29 @@ export default function ClubModeration() {
           {r.reason && <p>Motif : {r.reason}</p>}
           {r.status === 'PENDING' && (
             <>
+              <p>
+                Alerte administrateur :{' '}
+                {{
+                  PENDING: 'en attente d’envoi',
+                  SENDING: 'en cours d’envoi',
+                  SENT: 'envoyée',
+                  FAILED: 'échec après plusieurs tentatives',
+                }[r.adminAlertStatus] || 'en attente d’envoi'}
+                .
+              </p>
+              {r.adminAlertStatus === 'FAILED' && (
+                <button
+                  disabled={busy}
+                  onClick={() =>
+                    run(
+                      () => API.post(`/clubs/admin/requests/${r.id}/retry-alert`),
+                      'Alerte remise en attente d’envoi.',
+                    )
+                  }
+                >
+                  Réessayer l’alerte
+                </button>
+              )}
               <label>
                 Motif en cas de refus
                 <textarea
