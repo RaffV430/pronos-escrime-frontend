@@ -745,6 +745,7 @@ export default function App() {
               {mainTab === 'account' && (
                 <AccountSettings
                   user={user}
+                  onPublicListingSaved={(publicListing) => setUser((current) => ({ ...current, publicListing }))}
                   onDeleted={() => {
                     localStorage.removeItem('token');
                     setUser(null);

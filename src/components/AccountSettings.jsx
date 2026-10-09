@@ -7,8 +7,8 @@ import SessionSettings from './SessionSettings';
 import ThemeSettings from './ThemeSettings';
 
 // Page publique d'un tournoi : le joueur choisit d'apparaître (pseudo abrégé) dans son classement.
-function PublicListing({ initial }) {
-  const [on, setOn] = useState(initial !== false);
+function PublicListing({ initial, onSaved }) {
+  const [on, setOn] = useState(initial === true);
   const [state, setState] = useState({ busy: false, message: '', error: '' });
   const change = async (value) => {
     setOn(value);
@@ -16,6 +16,7 @@ function PublicListing({ initial }) {
     try {
       const { data } = await API.put('/auth/me/public-listing', { publicListing: value });
       setOn(data.publicListing);
+      onSaved?.(data.publicListing);
       setState({ busy: false, message: 'Choix enregistré.', error: '' });
     } catch (err) {
       setOn(!value);
@@ -44,7 +45,7 @@ function PublicListing({ initial }) {
   );
 }
 
-export default function AccountSettings({ user, onDeleted }) {
+export default function AccountSettings({ user, onDeleted, onPublicListingSaved }) {
   const [password, setPassword] = useState('');
   const [confirm, setConfirm] = useState('');
   const [status, setStatus] = useState({ busy: false, error: '' });
@@ -102,7 +103,7 @@ export default function AccountSettings({ user, onDeleted }) {
 
       <ThemeSettings />
 
-      <PublicListing initial={user.publicListing} />
+      <PublicListing initial={user.publicListing} onSaved={onPublicListingSaved} />
 
       <SessionSettings />
 
