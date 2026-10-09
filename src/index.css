@@ -432,10 +432,16 @@ button[aria-pressed='true'] {
   color: var(--danger);
   font-weight: 600;
 }
-.legal-page {
-  max-width: 760px;
+.legal-page.feature-panel {
+  width: min(960px, calc(100% - 32px));
+  max-width: none;
   margin: 24px auto;
+  padding: clamp(16px, 3vw, 40px);
   line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+.legal-page section {
+  scroll-margin-top: 24px;
 }
 .legal-page h2 {
   font-size: 1.1rem;

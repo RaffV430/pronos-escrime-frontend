@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import IndicatorInput from './IndicatorInput';
 import { parseIndicator } from '../lib/indicator.js';
-import ScoringRules from './ScoringRules';
 import API from '../api';
 import useLocalDraft, { draftKey } from './useLocalDraft';
 import DraftNotice from './DraftNotice';
@@ -811,7 +810,6 @@ export default function PoolPredictions({ selectedCompetitionId, user, onDirtyCh
     <section className="pool-section" aria-labelledby="pool-title">
       <h2 id="pool-title">Pronostics de poules</h2>
       <p>Pour chaque tireur, prévoyez son bilan et son indice : touches données − touches reçues.</p>
-      <ScoringRules />
       {selectedCompetitionId ? (
         <PoolList
           refreshVersion={refreshVersion}

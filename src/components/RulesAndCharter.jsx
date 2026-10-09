@@ -12,7 +12,7 @@ export default function RulesAndCharter() {
       </nav>
       <section id="poules">
         <h2>Pronostics de poules</h2>
-        <ScoringRules full />
+        <ScoringRules />
         <p>
           Les assauts annulés sont pris en compte lors du calcul : le nombre de victoires pronostiqué est plafonné au
           nombre d’assauts disputés et l’indice est ajusté de cinq touches par assaut annulé.
@@ -20,7 +20,7 @@ export default function RulesAndCharter() {
       </section>
       <section id="tableau">
         <h2>Pronostics de matchs</h2>
-        <ScoringRules type="matches" full />
+        <ScoringRules type="matches" />
         <p>
           Un bonus outsider de 1 point s’ajoute pour un bon vainqueur choisi par moins de 25 % des pronostics valides, à
           partir de 8 pronostics valides. Il ne s’applique pas aux matchs annulés ou aux retraits médicaux.

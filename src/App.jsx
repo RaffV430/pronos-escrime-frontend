@@ -11,7 +11,6 @@ import { eventLanding } from './components/matchPresentation';
 import { useState, useEffect, useRef, lazy, Suspense } from 'react';
 import API, { SESSION_EXPIRED_EVENT } from './api';
 import { shouldRefresh } from './lib/session.js';
-import ScoringRules from './components/ScoringRules';
 import EventSelector from './components/EventSelector';
 import UpdateBanner from './components/UpdateBanner';
 import NotificationBanner from './components/NotificationBanner';
@@ -854,7 +853,6 @@ export default function App() {
                       )}
                         {eventMode === 'predictions' && playTab === 'tableau' && matchesReady && !landingPending && (
                         <>
-                          <ScoringRules type="matches" />
                           <MatchBoard
                             initialFilter={landingFilter}
                             focusTarget={matchTarget}
