@@ -8,7 +8,7 @@ import DraftNotice from './DraftNotice';
 import './PoolPredictions.css';
 import { withCount } from '../lib/plural';
 import { pollWhileVisible, useNow } from '../lib/polling';
-import { useClub } from '../lib/club';
+import { useFencerFollows, isFollowedFencer } from '../lib/fencerFollows';
 import { stripLabel } from './matchPresentation';
 
 const message = (error) => error.response?.data?.error || 'Connexion impossible. Réessayez.';
@@ -67,7 +67,7 @@ function LiveCell({ fencer, bouts }) {
 }
 
 function PredictionRow({ userId, pool, fencer, closed, onRefresh, reportDirty, live = false }) {
-  const club = useClub();
+  const follows = useFencerFollows();
   const localDraft = useLocalDraft(draftKey(userId, pool.competitionId, `pool-${fencer.id}`));
   const [wins, setWins] = useState(fencer.prediction?.wins ?? '');
   const [indicator, setIndicator] = useState(fencer.prediction?.indicator ?? '');
@@ -145,8 +145,8 @@ function PredictionRow({ userId, pool, fencer, closed, onRefresh, reportDirty, l
     <tr id={`pool-${fencer.id}`} className={closed ? 'pool-table-row is-closed' : 'pool-table-row'}>
       <th scope="row" className="pool-name-cell">
         <span className="pool-position">{fencer.position}</span>{' '}
-        {club.isClubFencer(fencer.name) && (
-          <span className="club-star" title="Tireur du club">
+        {isFollowedFencer(follows, fencer.name) && (
+          <span className="club-star" title="Tireur suivi">
             ★{' '}
           </span>
         )}

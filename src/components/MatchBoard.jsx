@@ -1,4 +1,4 @@
-import { useFencerFollows } from '../lib/fencerFollows';
+import { useFencerFollows, isFollowedFencer } from '../lib/fencerFollows';
 import CrowdTrend from './CrowdTrend';
 import { matchTotal } from './resultPresentation';
 import { roundLabel, stripLabel } from './matchPresentation';
@@ -10,7 +10,6 @@ import { withCount } from '../lib/plural';
 import MatchTiming from './MatchTiming';
 import { groupMatches, isMatchClosed, isUpcoming, validateScores, nextMatchId } from './matchPresentation';
 import { useNow } from '../lib/polling';
-import { useClub } from '../lib/club';
 import HeadToHead from './HeadToHead';
 import MatchSocial from './MatchSocial';
 import BracketTree from './BracketTree.jsx';
@@ -32,7 +31,6 @@ export default function MatchBoard({
   onPreviewRemove,
 }) {
   const clock = useNow(5000);
-  const club = useClub();
   const follows = useFencerFollows();
   const now = fixedNow ?? clock;
   const deepLink = new URLSearchParams(location.search);
@@ -285,8 +283,8 @@ export default function MatchBoard({
     }
   };
   const visible = (m) =>
-    filter === 'Nos tireurs'
-      ? club.isClubFencer(m.player1) || club.isClubFencer(m.player2) || follows?.matchNames.includes(m.player1) || follows?.matchNames.includes(m.player2)
+    filter === 'Mes tireurs'
+      ? isFollowedFencer(follows, m.player1) || isFollowedFencer(follows, m.player2)
       : filter === 'Nouveaux'
         ? newMatches.some((n) => n.id === m.id)
         : filter === 'À venir'
@@ -351,14 +349,10 @@ export default function MatchBoard({
                     .join('')}
                 </span>
               }
-              {(club.isClubFencer(name) || follows?.matchNames.includes(name)) && (
+              {isFollowedFencer(follows, name) && (
                 <span
                   className="club-star"
-                  title={
-                    follows?.matchNames.includes(name)
-                      ? 'Tireur suivi'
-                      : `Tireur du club${club.name ? ` ${club.name}` : ''}`
-                  }
+                  title="Tireur suivi"
                 >
                   ★{' '}
                 </span>
@@ -524,7 +518,7 @@ export default function MatchBoard({
             <div className="filter-row filter-scroll" role="group" aria-label="Filtrer les matchs">
               {[
                 'Tous',
-                ...(club.hasFencers || follows?.matchNames.length ? ['Nos tireurs'] : []),
+                ...(follows?.matchNames.length ? ['Mes tireurs'] : []),
                 'À compléter',
                 'À venir',
                 'Ferment bientôt',
@@ -622,7 +616,7 @@ export default function MatchBoard({
                 mine={mine}
                 isClosed={(m) => isMatchClosed(m, now)}
                 visible={visible}
-                club={club}
+                isFollowed={(name) => isFollowedFencer(follows, name)}
                 onType={type}
                 onKey={keyDown}
                 onKeyUp={keyUp}
