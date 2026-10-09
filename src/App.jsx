@@ -1,4 +1,5 @@
 import ClubModeration from './components/ClubModeration';
+import AppTutorial from './components/AppTutorial';
 import ClubChoice from './components/ClubChoice';
 import ClubProfile from './components/ClubProfile';
 import ClubAdministration from './components/ClubAdministration';
@@ -56,15 +57,23 @@ const tabFallback = <p className="muted load-state">Chargement…</p>;
 
 export default function App() {
   // Lien d'invitation (/rejoindre/<code>) : lu avant tout le reste, l'adresse redevient « / ».
+  const [tutorialRequest, setTutorialRequest] = useState(0);
   const [accountOpen, setAccountOpen] = useState(false);
   const accountMenu = useRef(null);
   useEffect(() => {
     if (!accountOpen) return;
-    const close = e => { if (!accountMenu.current?.contains(e.target)) setAccountOpen(false); };
-    const escape = e => { if (e.key === 'Escape') setAccountOpen(false); };
+    const close = (e) => {
+      if (!accountMenu.current?.contains(e.target)) setAccountOpen(false);
+    };
+    const escape = (e) => {
+      if (e.key === 'Escape') setAccountOpen(false);
+    };
     document.addEventListener('pointerdown', close);
     document.addEventListener('keydown', escape);
-    return () => { document.removeEventListener('pointerdown', close); document.removeEventListener('keydown', escape); };
+    return () => {
+      document.removeEventListener('pointerdown', close);
+      document.removeEventListener('keydown', escape);
+    };
   }, [accountOpen]);
   const [arenaMore, setArenaMore] = useState(false);
   const [invitation, setInvitation] = useState(() => captureInvitation());
@@ -153,9 +162,12 @@ export default function App() {
     setAccountClub(null);
     if (!user) return;
     const c = new AbortController();
-    const refresh = () => API.get('/clubs/me', { signal: c.signal })
-      .then(({ data }) => { if (!c.signal.aborted) setAccountClub(data.club || null); })
-      .catch(() => {});
+    const refresh = () =>
+      API.get('/clubs/me', { signal: c.signal })
+        .then(({ data }) => {
+          if (!c.signal.aborted) setAccountClub(data.club || null);
+        })
+        .catch(() => {});
     refresh();
     window.addEventListener('club-profile-changed', refresh);
     return () => {
@@ -321,7 +333,10 @@ export default function App() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
-    if (isRegister && !formData.clubChoice) { setError('Choisissez votre club ou « sans club / accompagnant ».'); return; }
+    if (isRegister && !formData.clubChoice) {
+      setError('Choisissez votre club ou « sans club / accompagnant ».');
+      return;
+    }
     const endpoint = isRegister ? '/auth/register' : '/auth/login';
 
     try {
@@ -371,20 +386,25 @@ export default function App() {
     setSelectedCompetitionId(competitionId);
   };
 
-  const openFollowedFencer = ({ event, match, mode, tournament }) => runNavigation(() => {
-                    setDirty(false);
-                    selectCompetition(event.id);
-                    setCompetition(event);
-                    setLandingPending(false);
-                    setEventListVersion(v => v + 1);
-                    setEventMode(mode);
-                    setPlayTab('tableau');
-                    setFollowView(match ? 'tableau' : 'pools');
-                    setFollowMatchId(match?.id || null);
-                    if (mode === 'predictions') setMatchTarget({ id: match.id, at: Date.now() });
-                    history.replaceState(null, '', pathFor('play', { tournament: tournament || tournamentInfo, event, view: 'tableau' }));
-                    setMainTab('play');
-                  });
+  const openFollowedFencer = ({ event, match, mode, tournament }) =>
+    runNavigation(() => {
+      setDirty(false);
+      selectCompetition(event.id);
+      setCompetition(event);
+      setLandingPending(false);
+      setEventListVersion((v) => v + 1);
+      setEventMode(mode);
+      setPlayTab('tableau');
+      setFollowView(match ? 'tableau' : 'pools');
+      setFollowMatchId(match?.id || null);
+      if (mode === 'predictions') setMatchTarget({ id: match.id, at: Date.now() });
+      history.replaceState(
+        null,
+        '',
+        pathFor('play', { tournament: tournament || tournamentInfo, event, view: 'tableau' }),
+      );
+      setMainTab('play');
+    });
 
   // Page publique d'un tournoi ou d'une épreuve (/tournoi/etampes-4, /tournoi/etampes-4/fleuret-dames-13).
   const publicMatch = /^\/tournoi\/([^/]+)(?:\/([^/]+))?\/?$/.exec(location.pathname);
@@ -431,7 +451,7 @@ export default function App() {
   if (user) {
     const team = competition?.podiumFormat === 'TEAM';
     return (
-        <FencerFollowsProvider key={user.id} userId={user.id} competitionId={selectedCompetitionId}>
+      <FencerFollowsProvider key={user.id} userId={user.id} competitionId={selectedCompetitionId}>
         <div className="app-shell redesigned">
           <header className="app-header">
             <div className="brand">
@@ -439,42 +459,137 @@ export default function App() {
               pronos<span>escrime</span>
             </div>
             <div className="account-actions">
-              <button className="button-secondary" onClick={() => navigate('results')}>Résultats</button>
-              <button className="button-link" onClick={() => navigate('account')}>Mon compte</button>
-              <div className="user-menu" ref={accountMenu}
-                onMouseEnter={() => { if (matchMedia('(hover: hover)').matches) setAccountOpen(true); }}
-                onMouseLeave={() => { if (matchMedia('(hover: hover)').matches) setAccountOpen(false); }}
-                onBlur={e => { if (!e.currentTarget.contains(e.relatedTarget)) setAccountOpen(false); }}>
-                <button className="button-secondary user-menu-trigger" aria-expanded={accountOpen} aria-controls="user-options"
-                  onClick={e => { if (e.detail > 0 && matchMedia('(hover: hover)').matches) setAccountOpen(true); else setAccountOpen(v => !v); }}>{user.name || user.username} ⌄</button>
-                {accountOpen && <nav id="user-options" className="user-menu-panel" aria-label="Mon espace">
-                  {[
-                    ['live', 'Suivi des pistes'], ['mine', 'Mes pronostics'],
-                    ['season', 'Ma saison'],
-                    ['account', 'Mes réglages'], ...(user.isAdmin ? [['admin', 'Administration']] : []),
-                  ].map(([id, label]) => <button key={id} onClick={() => { setAccountOpen(false); navigate(id); }}>{label}</button>)}
-                  <button className="user-menu-logout" onClick={() => { setAccountOpen(false); runNavigation(handleLogout); }}>Déconnexion</button>
-                </nav>}
+              <button className="button-secondary" onClick={() => navigate('results')}>
+                Résultats
+              </button>
+              <button className="button-link" onClick={() => navigate('account')}>
+                Mon compte
+              </button>
+              <div
+                className="user-menu"
+                ref={accountMenu}
+                onMouseEnter={() => {
+                  if (matchMedia('(hover: hover)').matches) setAccountOpen(true);
+                }}
+                onMouseLeave={() => {
+                  if (matchMedia('(hover: hover)').matches) setAccountOpen(false);
+                }}
+                onBlur={(e) => {
+                  if (!e.currentTarget.contains(e.relatedTarget)) setAccountOpen(false);
+                }}
+              >
+                <button
+                  className="button-secondary user-menu-trigger"
+                  aria-expanded={accountOpen}
+                  aria-controls="user-options"
+                  onClick={(e) => {
+                    if (e.detail > 0 && matchMedia('(hover: hover)').matches) setAccountOpen(true);
+                    else setAccountOpen((v) => !v);
+                  }}
+                >
+                  {user.name || user.username} ⌄
+                </button>
+                {accountOpen && (
+                  <nav id="user-options" className="user-menu-panel" aria-label="Mon espace">
+                    {[
+                      ['live', 'Suivi des pistes'],
+                      ['mine', 'Mes pronostics'],
+                      ['season', 'Ma saison'],
+                      ['account', 'Mes réglages'],
+                      ...(user.isAdmin ? [['admin', 'Administration']] : []),
+                    ].map(([id, label]) => (
+                      <button
+                        key={id}
+                        onClick={() => {
+                          setAccountOpen(false);
+                          navigate(id);
+                        }}
+                      >
+                        {label}
+                      </button>
+                    ))}
+                    <button
+                      onClick={() => {
+                        setAccountOpen(false);
+                        setTutorialRequest((v) => v + 1);
+                      }}
+                    >
+                      Tutoriel d’utilisation
+                    </button>
+                    <button
+                      className="user-menu-logout"
+                      onClick={() => {
+                        setAccountOpen(false);
+                        runNavigation(handleLogout);
+                      }}
+                    >
+                      Déconnexion
+                    </button>
+                  </nav>
+                )}
               </div>
             </div>
           </header>
+          <AppTutorial
+            key={user.id}
+            userId={user.id}
+            request={tutorialRequest}
+            onNavigate={(step) =>
+              runNavigation(() => {
+                setMainTab(step.tab);
+                if (step.view) {
+                  setEventMode('predictions');
+                  setPlayTab(step.view);
+                  setLandingPending(false);
+                }
+              })
+            }
+          />
           <UpdateBanner onReload={runNavigation} />
           <NotificationBanner userId={user.id} />
           <nav className="primary-nav" aria-label="Navigation principale">
             {[
               ['home', '⌂', 'Accueil'],
               ['play', '◎', 'Pronostiquer'],
-              ['leaderboard', <svg key="podium" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden="true"><path d="M2 21V11h6V5h8v10h6v6ZM8 11v10M16 15v6" /><path d="M12 8v6" /></svg>, 'Classements'],
-                ['community', '⚑', 'Délégations'],
-              ['me', <svg key="fencers" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden="true"><path d="M9 15 21 3M6 13c2-1 5 1 4 5M7.5 16.5 4 20" /></svg>, 'Mes tireurs'],
+              [
+                'leaderboard',
+                <svg
+                  key="podium"
+                  viewBox="0 0 24 24"
+                  width="24"
+                  height="24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.6"
+                  aria-hidden="true"
+                >
+                  <path d="M2 21V11h6V5h8v10h6v6ZM8 11v10M16 15v6" />
+                  <path d="M12 8v6" />
+                </svg>,
+                'Classements',
+              ],
+              ['community', '⚑', 'Délégations'],
+              [
+                'me',
+                <svg
+                  key="fencers"
+                  viewBox="0 0 24 24"
+                  width="24"
+                  height="24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.6"
+                  aria-hidden="true"
+                >
+                  <path d="M9 15 21 3M6 13c2-1 5 1 4 5M7.5 16.5 4 20" />
+                </svg>,
+                'Mes tireurs',
+              ],
             ].map(([id, icon, label]) => (
               <button
                 key={id}
                 data-tab={id}
-                aria-pressed={
-                  mainTab === id ||
-                  (id === 'home' && mainTab === 'live')
-                }
+                aria-pressed={mainTab === id || (id === 'home' && mainTab === 'live')}
                 onClick={() => {
                   setArenaMore(false);
                   navigate(id);
@@ -493,7 +608,7 @@ export default function App() {
               <div className="arena-club">
                 <span>VOTRE CLUB</span>
                 <strong>{accountClub.name}</strong>
-                  <button onClick={() => navigate('community')}>Retrouver la délégation →</button>
+                <button onClick={() => navigate('community')}>Retrouver la délégation →</button>
               </div>
             )}
           </nav>
@@ -537,30 +652,34 @@ export default function App() {
                 <section className="piste-me feature-panel">
                   <p className="arena-eyebrow">VOTRE BORD DE PISTE</p>
                   <h1>Mes tireurs</h1>
-                  <PisteFencers key={user.id} userId={user.id} tournamentId={tournamentId} onOpen={openFollowedFencer} />
-
+                  <PisteFencers
+                    key={user.id}
+                    userId={user.id}
+                    tournamentId={tournamentId}
+                    onOpen={openFollowedFencer}
+                  />
                 </section>
               )}
               {mainTab === 'home' && (
                 <>
-                <ClubProfile key={user.id} prompt />
-                <ArenaHome
-                  onFollowedFencer={openFollowedFencer}
-                  user={user}
-                  matches={matches}
-                  competition={competition}
-                  tournament={tournamentInfo}
-                  onPlay={() => navigate('play')}
-                  onMine={() => navigate('season')}
-                  onCommunity={() => navigate('community')}
-                  onLive={() => navigate('live')}
-                />
+                  <ClubProfile key={user.id} prompt />
+                  <ArenaHome
+                    onFollowedFencer={openFollowedFencer}
+                    user={user}
+                    matches={matches}
+                    competition={competition}
+                    tournament={tournamentInfo}
+                    onPlay={() => navigate('play')}
+                    onMine={() => navigate('season')}
+                    onCommunity={() => navigate('community')}
+                    onLive={() => navigate('live')}
+                  />
                 </>
               )}
               {mainTab === 'live' && (
                 <PisteLive
-                    key={`${selectedCompetitionId}:${liveMatchId}`}
-                    initialMatchId={liveMatchId}
+                  key={`${selectedCompetitionId}:${liveMatchId}`}
+                  initialMatchId={liveMatchId}
                   matches={matches}
                   competition={competition}
                   userId={user.id}
@@ -658,11 +777,7 @@ export default function App() {
               {/* Communauté : tous les groupes, sans choisir d'épreuve au préalable. */}
               {mainTab === 'community' && <Community tournamentId={tournamentId} userId={user.id} />}
               {mainTab === 'leaderboard' && (
-                  <GlobalLeaderboard
-                    userId={user.id}
-                    tournamentId={tournamentId}
-                    competitionId={selectedCompetitionId}
-                  />
+                <GlobalLeaderboard userId={user.id} tournamentId={tournamentId} competitionId={selectedCompetitionId} />
               )}
               {mainTab === 'mine' && (
                 <MyPredictions
@@ -729,93 +844,97 @@ export default function App() {
                           })
                         }
                       />
-                        <nav className="secondary-nav" aria-label="Espace de l’épreuve">
-                          {[
-                            ['predictions', 'Pronostics'],
-                            ['follow', 'Suivi compétition'],
-                            ['fencers', 'Mes tireurs'],
-                          ].map(([id, label]) => (
-                            <button
-                              key={id}
-                              aria-pressed={eventMode === id}
-                              onClick={() => runNavigation(() => setEventMode(id))}
-                            >
-                              {label}
-                            </button>
-                          ))}
-                        </nav>
-                        {eventMode === 'predictions' && (
-                      <nav className="secondary-nav" aria-label="Type de pronostic">
+                      <nav className="secondary-nav" aria-label="Espace de l’épreuve">
                         {[
-                          ...(!team ? [['pools', 'Poules']] : []),
-                          ['tableau', 'Tableau'],
-                              ['podium', 'Podium'],
+                          ['predictions', 'Pronostics'],
+                          ['follow', 'Suivi compétition'],
+                          ['fencers', 'Mes tireurs'],
                         ].map(([id, label]) => (
                           <button
                             key={id}
-                            aria-pressed={playTab === id}
-                            onClick={() =>
-                              runNavigation(() => {
-                                setDirty(false);
-                                setPlayTab(id);
-                              })
-                            }
+                            aria-pressed={eventMode === id}
+                            onClick={() => runNavigation(() => setEventMode(id))}
                           >
                             {label}
                           </button>
                         ))}
                       </nav>
-                        )}
-                        {eventMode === 'follow' && (
-                          <>
-                            <nav className="secondary-nav" aria-label="Suivi officiel">
-                              {[
-                                ...(!team ? [['pools', 'Poules']] : []),
-                                ['tableau', 'Tableau'],
-                                ['ranking', 'Classement'],
-                              ].map(([id, label]) => (
-                                <button key={id} aria-pressed={followView === id} onClick={() => setFollowView(id)}>
-                                  {label}
-                                </button>
-                              ))}
-                            </nav>
-                            <CompetitionFollow
-                              key={`${selectedCompetitionId}:${followMatchId}`}
-                              initialMatchId={followMatchId}
-                              view={followView}
-                              competition={competition}
-                              matches={matches}
-                              userId={user.id}
-                              ready={matchesReady}
-                              error={matchesError}
-                              stale={matchesStale}
-                            />
-                          </>
-                        )}
-                        {eventMode === 'fencers' && (
-                          <FollowedEventFencers
-                            userId={user.id}
+                      {eventMode === 'predictions' && (
+                        <nav className="secondary-nav" aria-label="Type de pronostic">
+                          {[...(!team ? [['pools', 'Poules']] : []), ['tableau', 'Tableau'], ['podium', 'Podium']].map(
+                            ([id, label]) => (
+                              <button
+                                key={id}
+                                aria-pressed={playTab === id}
+                                onClick={() =>
+                                  runNavigation(() => {
+                                    setDirty(false);
+                                    setPlayTab(id);
+                                  })
+                                }
+                              >
+                                {label}
+                              </button>
+                            ),
+                          )}
+                        </nav>
+                      )}
+                      {eventMode === 'follow' && (
+                        <>
+                          <nav className="secondary-nav" aria-label="Suivi officiel">
+                            {[
+                              ...(!team ? [['pools', 'Poules']] : []),
+                              ['tableau', 'Tableau'],
+                              ['ranking', 'Classement'],
+                            ].map(([id, label]) => (
+                              <button key={id} aria-pressed={followView === id} onClick={() => setFollowView(id)}>
+                                {label}
+                              </button>
+                            ))}
+                          </nav>
+                          <CompetitionFollow
+                            key={`${selectedCompetitionId}:${followMatchId}`}
+                            initialMatchId={followMatchId}
+                            view={followView}
                             competition={competition}
                             matches={matches}
-                            onEventChange={(entry) => runNavigation(() => {
-                              history.replaceState(null, '', pathFor('play', { tournament:tournamentInfo, event:entry, view:playTab }));
+                            userId={user.id}
+                            ready={matchesReady}
+                            error={matchesError}
+                            stale={matchesStale}
+                          />
+                        </>
+                      )}
+                      {eventMode === 'fencers' && (
+                        <FollowedEventFencers
+                          userId={user.id}
+                          competition={competition}
+                          matches={matches}
+                          onEventChange={(entry) =>
+                            runNavigation(() => {
+                              history.replaceState(
+                                null,
+                                '',
+                                pathFor('play', { tournament: tournamentInfo, event: entry, view: playTab }),
+                              );
                               selectCompetition(entry.id);
                               setCompetition(entry);
                               setLandingPending(false);
                               setEventListVersion((v) => v + 1);
-                            })}
-                            onMatch={(id) => {
-                              setEventMode('predictions');
-                              setPlayTab('tableau');
-                              setMatchTarget({ id, at: Date.now() });
-                            }}
-                            onLive={(id) => {
-                              setLiveMatchId(id);
-                              navigate('live');
-                            }}
-                          />
-                        )}
-                        {eventMode === 'predictions' && playTab === 'podium' && (
+                            })
+                          }
+                          onMatch={(id) => {
+                            setEventMode('predictions');
+                            setPlayTab('tableau');
+                            setMatchTarget({ id, at: Date.now() });
+                          }}
+                          onLive={(id) => {
+                            setLiveMatchId(id);
+                            navigate('live');
+                          }}
+                        />
+                      )}
+                      {eventMode === 'predictions' && playTab === 'podium' && (
                         <PodiumPrediction
                           key={selectedCompetitionId}
                           tournamentId={tournamentId}
@@ -824,7 +943,7 @@ export default function App() {
                           onDirtyChange={setDirty}
                         />
                       )}
-                        {eventMode === 'predictions' && playTab === 'pools' && (
+                      {eventMode === 'predictions' && playTab === 'pools' && (
                         <PoolPredictions
                           refreshVersion={resultsVersion}
                           key={selectedCompetitionId}
@@ -834,7 +953,7 @@ export default function App() {
                           onDirtyChange={setDirty}
                         />
                       )}
-                        {eventMode === 'predictions' && playTab === 'tableau' && !matchesReady && (
+                      {eventMode === 'predictions' && playTab === 'tableau' && !matchesReady && (
                         <div className="load-state" role={matchesError ? 'alert' : 'status'}>
                           {matchesError ? (
                             <>
@@ -853,7 +972,7 @@ export default function App() {
                           )}
                         </div>
                       )}
-                        {eventMode === 'predictions' && playTab === 'tableau' && matchesReady && !landingPending && (
+                      {eventMode === 'predictions' && playTab === 'tableau' && matchesReady && !landingPending && (
                         <>
                           <MatchBoard
                             initialFilter={landingFilter}
@@ -914,7 +1033,7 @@ export default function App() {
             </div>
           )}
         </div>
-              </FencerFollowsProvider>
+      </FencerFollowsProvider>
     );
   }
 
@@ -987,7 +1106,12 @@ export default function App() {
                   onChange={(e) => setTwoFactorCode(e.target.value)}
                 />
               )}
-              {isRegister && <ClubChoice value={formData.clubChoice} onChange={clubChoice => setFormData({...formData,clubChoice})} />}
+              {isRegister && (
+                <ClubChoice
+                  value={formData.clubChoice}
+                  onChange={(clubChoice) => setFormData({ ...formData, clubChoice })}
+                />
+              )}
               <button type="submit">{isRegister ? "S'inscrire" : 'Se connecter'}</button>
             </form>
             {!isRegister && passwordReset && (
