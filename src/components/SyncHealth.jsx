@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import API from '../api';
 
 const LEVELS = {
@@ -19,7 +19,11 @@ const inText = (date, now) => {
 };
 
 // État du suivi FencingTimeLive de toutes les épreuves en cours : une panne se voit au premier coup d'œil.
-export default function SyncHealth() {
+export default function SyncHealth({ destination }) {
+  const panel = useRef(null);
+  useEffect(() => {
+    if (destination?.panel === 'sync') panel.current?.scrollIntoView({ block: 'start' });
+  }, [destination]);
   const [data, setData] = useState(null);
   const [error, setError] = useState('');
   const [now, setNow] = useState(0); // heure du serveur au moment de la lecture
@@ -52,7 +56,12 @@ export default function SyncHealth() {
     data?.mailConfigured === false ||
     data?.pushConfigured === false;
   return (
-    <details className={`feature-panel sync-health ${s?.error ? 'has-error' : ''}`} open={open}>
+    <details
+      ref={panel}
+      className={`feature-panel sync-health ${s?.error ? 'has-error' : ''}`}
+      id="sync-alerts"
+      open={open || destination?.panel === 'sync'}
+    >
       <summary>
         Suivi des sites officiels{' '}
         {s && (

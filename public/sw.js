@@ -61,14 +61,22 @@ self.addEventListener('push', (event) => {
     return;
   }
   event.waitUntil(
-    self.registration.showNotification(data.title.slice(0, 120), {
-      body: notificationBody(data).slice(0, 200),
-      icon: '/app-icon-192.png',
-      badge: '/app-icon-192.png',
-      tag: String(data.tag || 'pronos'),
-      renotify: false,
-      data: { url: url.href },
-    }),
+    Promise.all([
+      data.adminAlert && self.navigator.setAppBadge
+        ? (data.badgeCount === 0
+            ? self.navigator.clearAppBadge()
+            : self.navigator.setAppBadge(Number.isInteger(data.badgeCount) ? data.badgeCount : undefined)
+          ).catch(() => {})
+        : Promise.resolve(),
+      self.registration.showNotification(data.title.slice(0, 120), {
+        body: notificationBody(data).slice(0, 200),
+        icon: '/app-icon-192.png',
+        badge: '/app-icon-192.png',
+        tag: String(data.tag || 'pronos'),
+        renotify: false,
+        data: { url: url.href },
+      }),
+    ]),
   );
 });
 self.addEventListener('notificationclick', (event) => {

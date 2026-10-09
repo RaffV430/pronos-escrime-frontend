@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import TutorialPractice from './TutorialPractice';
 import { TUTORIAL_STEPS, tutorialKey } from '../lib/tutorial';
-export default function AppTutorial({ userId, request, onNavigate }) {
+export default function AppTutorial({ userId, request, onNavigate, skipAutomatic = false }) {
   const [step, setStep] = useState(0);
   const [open, setOpen] = useState(false);
   const [box, setBox] = useState(null);
@@ -17,11 +17,11 @@ export default function AppTutorial({ userId, request, onNavigate }) {
     } catch {
       seen = true;
     }
-    if (request || !seen) {
+    if (request || (!seen && !skipAutomatic)) {
       setStep(0);
       setOpen(true);
     }
-  }, [userId, request]);
+  }, [userId, request, skipAutomatic]);
   useEffect(() => {
     if (!open) return;
     const current = TUTORIAL_STEPS[step];

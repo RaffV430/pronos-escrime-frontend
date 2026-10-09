@@ -2834,3 +2834,10 @@
     }
   }
 }
+
+/* Keep notification destinations below the sticky account header. */
+#club-validation,
+#sync-alerts,
+[data-club-request] {
+  scroll-margin-top: 140px;
+}
