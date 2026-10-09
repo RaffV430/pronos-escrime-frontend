@@ -95,7 +95,7 @@ export default function AdminPanel({ competitionId, tournamentId, user, matches,
       <EngagementPanel tournamentId={tournamentId} competitionId={competitionId} />
       <FtlSetup competitionId={competitionId} tournamentId={tournamentId} />
       <ScheduleSettings competitionId={competitionId} />
-      <IdentityReview key={competitionId} competitionId={competitionId} onRefresh={onRefresh} />
+      <IdentityReview key={`identity-review:${competitionId}`} competitionId={competitionId} onRefresh={onRefresh} />
       <ArchiveTournament tournamentId={tournamentId} />
       <form className="feature-panel" onSubmit={adjust}>
         <h3>Ajustement manuel des points</h3>
@@ -325,7 +325,7 @@ export default function AdminPanel({ competitionId, tournamentId, user, matches,
         <PoolPredictions selectedCompetitionId={competitionId} user={user} />
       </details>
       <PodiumPrediction
-        key={competitionId}
+        key={`podium:${competitionId}`}
         tournamentId={tournamentId}
         selectedCompetitionId={competitionId}
         user={user}
