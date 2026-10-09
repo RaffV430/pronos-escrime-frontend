@@ -11,15 +11,19 @@ export function LegalLinks() {
     <span className="legal-links">
       <a href="/confidentialite">Confidentialité</a> · <a href="/mentions-legales">Mentions légales</a> ·{' '}
       <a href="/regles-et-charte">Règles et charte</a>
+      {' · '}
+      <a href="mailto:clubs@pronos-escrime.fr">Contact clubs</a>
+      {' · '}
+      <a href="mailto:support@pronos-escrime.fr">Support</a>
     </span>
   );
 }
 
 const Contact = () => (
-    <>
-      par e-mail à <a href={`mailto:${CONTACT}`}>{CONTACT}</a>
-    </>
-  );
+  <>
+    par e-mail à <a href={`mailto:${CONTACT}`}>{CONTACT}</a>
+  </>
+);
 
 function Legal() {
   return (
@@ -30,6 +34,15 @@ function Legal() {
         Pronos Escrime est un site personnel, non commercial, édité par {EDITOR}. Contact : <Contact />.
       </p>
       <p>Directeur de la publication : {EDITOR}.</p>
+      <h2>Nous contacter</h2>
+      <p>
+        Pour les clubs, affiliations et demandes de création :{' '}
+        <a href="mailto:clubs@pronos-escrime.fr">clubs@pronos-escrime.fr</a>.
+      </p>
+      <p>
+        Pour un souci d’utilisation : <a href="mailto:support@pronos-escrime.fr">support@pronos-escrime.fr</a>, ou «
+        Signaler un problème » dans le menu utilisateur.
+      </p>
       <h2>Hébergement</h2>
       <ul>
         <li>
