@@ -1,4 +1,5 @@
 import AdminAlerts from './components/AdminAlerts';
+import SupportContact from './components/SupportContact';
 import { adminDestination, adminLoginPath, loginReturn, updateBadge } from './lib/adminDestination';
 import ClubModeration from './components/ClubModeration';
 import AppTutorial from './components/AppTutorial';
@@ -61,6 +62,7 @@ export default function App() {
   // Lien d'invitation (/rejoindre/<code>) : lu avant tout le reste, l'adresse redevient « / ».
   const [tutorialRequest, setTutorialRequest] = useState(0);
   const [accountOpen, setAccountOpen] = useState(false);
+  const [supportOpen, setSupportOpen] = useState(false);
   const accountMenu = useRef(null);
   useEffect(() => {
     if (!accountOpen) return;
@@ -569,11 +571,20 @@ export default function App() {
                     >
                       Déconnexion
                     </button>
+                    <button
+                      onClick={() => {
+                        setAccountOpen(false);
+                        setSupportOpen(true);
+                      }}
+                    >
+                      Signaler un problème
+                    </button>
                   </nav>
                 )}
               </div>
             </div>
           </header>
+          {supportOpen && <SupportContact onClose={() => setSupportOpen(false)} />}
           <AppTutorial
             key={user.id}
             userId={user.id}
