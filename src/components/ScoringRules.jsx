@@ -1,7 +1,15 @@
-export default function ScoringRules({ type = 'pools' }) {
+export default function ScoringRules({ type = 'pools', full = false }) {
   const pools = type === 'pools';
+  if (!full)
+    return (
+      <p className="scoring-rules">
+        <a href={`/regles-et-charte#${pools ? 'poules' : 'tableau'}`}>
+          Consulter le barème des {pools ? 'poules' : 'matchs'}
+        </a>
+      </p>
+    );
   return (
-    <details className="scoring-rules">
+    <details className="scoring-rules" open>
       <summary>
         Barème · jusqu’à {pools ? 8 : 4} points par {pools ? 'tireur' : 'match'}
       </summary>

@@ -181,17 +181,8 @@ export default function PodiumPrediction({ selectedCompetitionId, user, adminOnl
                 {options.entries.length} engagés · liste complète, y compris les exemptions du premier tour.
               </p>
               <p>
-                {team
-                  ? 'Par équipes : or, argent et un bronze, attribué au vainqueur de la petite finale.'
-                  : 'En individuel : or, argent et deux bronzes ex æquo. L’ordre des deux bronzes est indifférent.'}
+                <a href="/regles-et-charte#podium">Consulter les règles du podium</a>
               </p>
-              <details>
-                <summary>Barème podium · jusqu’à {team ? 45 : 60} points</summary>
-                <p>
-                  15 points par médaille correcte ; 5 points si l’engagé est médaillé à une autre place. Les paliers ne
-                  se cumulent pas.
-                </p>
-              </details>
             </>
           )}
           {user?.isAdmin && (

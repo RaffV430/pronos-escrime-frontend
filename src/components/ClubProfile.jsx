@@ -24,6 +24,14 @@ export default function ClubProfile({ prompt = false }) {
       });
     return () => c.abort();
   }, [revision]);
+  useEffect(() => {
+    if (profile?.clubRequest?.status !== 'PENDING' || editing) return;
+    const timer = setInterval(() => setRevision((n) => n + 1), 60000);
+    return () => clearInterval(timer);
+  }, [profile?.clubRequest?.status, editing]);
+  useEffect(() => {
+    window.dispatchEvent(new Event('club-profile-changed'));
+  }, [profile?.club?.id, profile?.clubRequest?.status]);
   async function save(e) {
     e.preventDefault();
     if (!value) {
@@ -36,7 +44,15 @@ export default function ClubProfile({ prompt = false }) {
       const { data } = await API.put('/clubs/me', value);
       setProfile(data);
       setEditing(false);
-      setMessage(data.club ? 'Club enregistré : vous avez rejoint son groupe dans Délégations.' : 'Choix enregistré.');
+      setMessage(
+        data.clubRequest?.status === 'PENDING'
+          ? 'Demande de club envoyée à l’administration.'
+          : value.name && data.clubRequest?.status === 'REJECTED'
+            ? 'Demande refusée automatiquement. Le motif est indiqué ci-dessous et un e-mail est programmé.'
+            : data.club
+              ? 'Club enregistré : vous avez rejoint son groupe dans Délégations.'
+              : 'Choix enregistré.',
+      );
       window.dispatchEvent(new Event('club-profile-changed'));
     } catch (e) {
       setError(e.response?.data?.error || 'Enregistrement impossible.');
@@ -79,6 +95,16 @@ export default function ClubProfile({ prompt = false }) {
       <h2>{choose ? 'À quel club es-tu rattaché ?' : 'Mon club'}</h2>
       {message && <p role="status">{message}</p>}
       {error && <p role="alert">{error}</p>}
+      {profile.clubRequest?.status === 'PENDING' && (
+        <p role="status">
+          Demande « {profile.clubRequest.name} » en attente de validation. Vous restez sans club / accompagnant.
+        </p>
+      )}
+      {profile.clubRequest?.status === 'REJECTED' && (
+        <p role="status">
+          Demande « {profile.clubRequest.name} » refusée : {profile.clubRequest.reason}
+        </p>
+      )}
       {choose ? (
         <form onSubmit={save}>
           <ClubChoice value={value} onChange={setValue} disabled={busy} />
