@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
 import API from '../api';
-import ClubModeration from './ClubModeration';
 export default function ClubAdministration() {
   const [rows, setRows] = useState([]),
     [clubs, setClubs] = useState([]),
@@ -81,7 +80,6 @@ export default function ClubAdministration() {
         </p>
       )}
       {message && <p role="status">{message}</p>}
-      <ClubModeration />
       <h3>Demandes et responsables</h3>
       {!rows.length && <p>Aucune demande.</p>}
       {rows.map((r) => (
@@ -139,7 +137,7 @@ export default function ClubAdministration() {
       >
         Nommer responsable
       </button>
-      <h3>Clubs ajoutés à vérifier</h3>
+      <h3>Anciens clubs à vérifier</h3>
       {clubs
         .filter((c) => c.status === 'PENDING')
         .map((c) => (

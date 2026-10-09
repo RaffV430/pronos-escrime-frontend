@@ -6,7 +6,7 @@ import { useFencerFollows } from '../lib/fencerFollows';
 import { readPreviewFollows } from '../lib/previewFollows';
 import { useEffect, useRef, useState } from 'react';
 import API from '../api';
-import { useNow } from '../lib/polling';
+import { useNow, pollWhileVisible } from '../lib/polling';
 import { isMatchClosed } from './matchPresentation';
 
 export function ClubArenaWelcome({ user, matches, greetingOnly = false, progressOnly = false }) {
@@ -50,7 +50,7 @@ export function ArenaLeague({ userId, onCommunity }) {
   const [detail, setDetail] = useState(null);
   const [failed, setFailed] = useState(false);
   const [revision, setRevision] = useState(0);
-  useEffect(()=>{const changed=()=>setRevision(n=>n+1);window.addEventListener('club-profile-changed',changed);return()=>window.removeEventListener('club-profile-changed',changed);},[]);
+  useEffect(()=>{const changed=()=>setRevision(n=>n+1); const stop=pollWhileVisible(changed,30000); window.addEventListener('club-profile-changed',changed);return()=>{stop();window.removeEventListener('club-profile-changed',changed);};},[]);
   const gesture = useRef(null);
   const cardRef = useRef(null);
   const cache = useRef(new Map());
@@ -79,7 +79,7 @@ export function ArenaLeague({ userId, onCommunity }) {
         .then(({ data: ranking }) => { if (!controller.signal.aborted) cache.current.set(league.id, ranking); })
         .catch(() => {});
       setFavoriteId(favorite.leagueId);
-      setSelectedId(data.find(l => l.id === favorite.leagueId)?.id || data[0]?.id || null);
+      setSelectedId(previous => data.find(l => l.id === previous)?.id || data.find(l => l.id === favorite.leagueId)?.id || data[0]?.id || null);
       if (!data.length) setDetail({ ranking: [] });
     }).catch(() => { if (!controller.signal.aborted) setFailed(true); });
     return () => controller.abort();
