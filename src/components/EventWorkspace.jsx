@@ -16,8 +16,14 @@ export function FollowedEventFencers({ competition, userId, onMatch, onLive, onE
   const [error, setError] = useState('');
   const [revision, setRevision] = useState(0);
   const follows = useFencerFollows();
+  const loadedTournament = useRef(null);
   useEffect(() => {
     const controller = new AbortController();
+    if (loadedTournament.current !== competition.tournamentId) {
+      loadedTournament.current = competition.tournamentId;
+      setEvents([]);
+      setEventId('all');
+    }
     setLoading(true);
     setError('');
     API.get(`/podium/competitions/${competition.tournamentId}`, { signal: controller.signal })
