@@ -1,12 +1,6 @@
+import { reducedData } from './lib/fieldCache';
 import { restoreReadingPosition } from './lib/readingPosition';
 import { legacyLoginPath } from './lib/authNavigation';
-import '@fontsource/barlow-condensed/600.css';
-import '@fontsource/barlow-condensed/700.css';
-import '@fontsource/barlow-condensed/800.css';
-import '@fontsource/barlow/400.css';
-import '@fontsource/barlow/500.css';
-import '@fontsource/barlow/600.css';
-import '@fontsource/barlow/700.css';
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import './index.css';
@@ -21,6 +15,8 @@ const loginDestination = legacyLoginPath(location.pathname, location.search, loc
 if (loginDestination) history.replaceState(null, '', loginDestination);
 
 initTheme();
+if (!reducedData()) import('./brandFonts');
+document.documentElement.classList.toggle('reduced-data', reducedData());
 
 document.documentElement.classList.add('club-arena');
 startMonitoring();

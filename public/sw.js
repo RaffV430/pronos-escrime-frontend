@@ -1,10 +1,10 @@
-/* No authenticated page, API response, token or prediction is cached. */
-const CACHE = 'pronos-public-v3';
+/* Only the public SPA shell and immutable assets are cached here. Account data uses the scoped consultation cache. */
+const CACHE = 'pronos-public-v4';
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches
       .open(CACHE)
-      .then((cache) => cache.addAll(['/offline.html', '/app-icon.svg']))
+      .then((cache) => cache.addAll(['/', '/offline.html', '/app-icon.svg']))
       .then(() => self.skipWaiting()),
   );
 });
@@ -19,13 +19,29 @@ self.addEventListener('activate', (event) => {
   );
 });
 self.addEventListener('fetch', (event) => {
-  if (
-    event.request.method !== 'GET' ||
-    new URL(event.request.url).origin !== self.location.origin ||
-    event.request.mode !== 'navigate'
-  )
-    return;
-  event.respondWith(fetch(event.request).catch(() => caches.match('/offline.html')));
+  const url = new URL(event.request.url);
+  if (event.request.method !== 'GET' || url.origin !== self.location.origin) return;
+  if (url.pathname.startsWith('/assets/')) {
+    event.respondWith(
+      caches.open(CACHE).then(async (cache) => {
+        const known = await cache.match(event.request);
+        if (known) return known;
+        const response = await fetch(event.request);
+        if (response.ok) await cache.put(event.request, response.clone());
+        return response;
+      }),
+    );
+  } else if (event.request.mode === 'navigate') {
+    const update = fetch(event.request).then(async (response) => {
+      if (response.ok && response.headers.get('content-type')?.includes('text/html')) {
+        const cache = await caches.open(CACHE);
+        await cache.put('/', response.clone());
+      }
+      return response;
+    });
+    event.waitUntil(update.catch(() => {}));
+    event.respondWith(caches.match('/').then((shell) => shell || update.catch(() => caches.match('/offline.html'))));
+  }
 });
 
 function notificationBody(data, now = new Date()) {

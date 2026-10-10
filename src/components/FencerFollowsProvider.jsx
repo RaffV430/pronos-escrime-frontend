@@ -20,7 +20,7 @@ export function FencerFollowsProvider({ userId, competitionId, children }) {
       }
     } catch (e) {
       if (seq === sequence.current) {
-        setReady(false);
+        if ([401, 403, 404].includes(e.response?.status)) { setData(empty); setReady(false); }
         setError(e.response?.data?.error || 'Impossible de charger vos tireurs suivis. Réessayez.');
       }
     }

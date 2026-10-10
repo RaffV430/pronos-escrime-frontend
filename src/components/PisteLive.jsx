@@ -13,6 +13,7 @@ export default function PisteLive({
   error,
   stale,
   onPlay,
+  onFollow,
   initialMatchId = null,
 }) {
   const [round, setRound] = useState('');
@@ -42,7 +43,7 @@ export default function PisteLive({
           <h1>Suivi des rencontres</h1>
           <p>{eventNameFr(competition?.name) || 'Choisissez une épreuve'}</p>
         </div>
-        <button className="button-secondary" onClick={onPlay}>
+        <button className="button-secondary" onClick={() => onPlay(match)}>
           Pronostiquer →
         </button>
       </header>
@@ -134,6 +135,10 @@ export default function PisteLive({
                 )}
               </section>
             </div>
+            {onFollow && <div className="filter-row">
+              <button className="button-secondary" onClick={() => onFollow?.(match)}>Suivi compétition →</button>
+              <button className="button-secondary" onClick={() => onPlay(match)}>Pronostic de ce match →</button>
+            </div>}
             {source && (
               <a href={source} target="_blank" rel="noreferrer">
                 Voir le suivi officiel ↗

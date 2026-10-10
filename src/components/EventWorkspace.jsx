@@ -10,7 +10,6 @@ import API from '../api';
 
 export function FollowedEventFencers({ competition, userId, onMatch, onLive, onEventChange }) {
   const [events, setEvents] = useState([]);
-  const [eventId, setEventId] = useState('all');
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(null);
   const [error, setError] = useState('');
@@ -22,13 +21,12 @@ export function FollowedEventFencers({ competition, userId, onMatch, onLive, onE
     if (loadedTournament.current !== competition.tournamentId) {
       loadedTournament.current = competition.tournamentId;
       setEvents([]);
-      setEventId('all');
     }
     setLoading(true);
     setError('');
     API.get(`/podium/competitions/${competition.tournamentId}`, { signal: controller.signal })
       .then(async ({ data }) => {
-        const entries = await Promise.all(data.map(async (event) => {
+        const entries = await Promise.all(data.filter(event => event.id === competition.id).map(async (event) => {
           const [{ data: followed }, { data: matches }, { data: pools }] = await Promise.all([
             API.get('/me/fencers', { params: { competitionId: event.id }, signal: controller.signal }),
             API.get('/matches', { params: { competitionId: event.id }, signal: controller.signal }),
@@ -41,7 +39,7 @@ export function FollowedEventFencers({ competition, userId, onMatch, onLive, onE
       .catch(() => { if (!controller.signal.aborted) setError('Impossible de charger les tireurs du tournoi. Réessayez en rouvrant cette section.'); })
       .finally(() => { if (!controller.signal.aborted) setLoading(false); });
     return () => controller.abort();
-  }, [competition.tournamentId, follows?.favorites, revision]);
+  }, [competition.id, competition.tournamentId, follows?.favorites, revision]);
   useEffect(() => {
     const refresh = () => { if (!document.hidden) setRevision(n => n + 1); };
     const timer = window.setInterval(refresh, 30000);
@@ -53,7 +51,7 @@ export function FollowedEventFencers({ competition, userId, onMatch, onLive, onE
       document.removeEventListener('visibilitychange', refresh);
     };
   }, []);
-  const visible = events.filter(e => eventId === 'all' || e.id === eventId);
+  const visible = events.filter(e => e.id === competition.id);
   const openFencer = async (event, fencer) => {
     setBusy(`${event.id}:${fencer.id}`);
     setError('');
@@ -68,16 +66,12 @@ export function FollowedEventFencers({ competition, userId, onMatch, onLive, onE
     finally { setBusy(null); }
   };
   return (
-    <section className="followed-event-fencers" aria-label="Mes tireurs du tournoi">
+    <section className="followed-event-fencers" aria-label="Mes tireurs de l’épreuve">
       <header className="followed-event-toolbar">
         <h2>Mes tireurs</h2>
-        <p className="muted">Tous vos favoris du tournoi, indépendamment de l’épreuve choisie pour les pronostics.</p>
-        <div className="filter-row followed-event-filters" aria-label="Filtrer mes tireurs par épreuve">
-          <button aria-pressed={eventId === 'all'} onClick={() => setEventId('all')}>Toutes les épreuves</button>
-          {events.map(event => <button key={event.id} aria-pressed={eventId === event.id} onClick={() => setEventId(event.id)}>{eventNameFr(event.name)}</button>)}
-        </div>
+        <p className="muted">Vos favoris engagés dans cette épreuve. Retrouvez tous vos tireurs dans la navigation principale.</p>
       </header>
-      {loading && <p role="status">Chargement de vos tireurs dans toutes les épreuves…</p>}
+      {loading && <p role="status">Chargement de vos tireurs dans cette épreuve…</p>}
       {error && <p role="alert">{error}</p>}
       {!loading && !error && !visible.some(e => e.followedRoster.length) && <p>Aucun de vos tireurs suivis dans ces épreuves. Ajoutez-en depuis l’onglet Mes tireurs.</p>}
       {visible.filter(event => event.followedRoster.length).map(event => (
