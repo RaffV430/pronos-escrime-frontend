@@ -26,3 +26,15 @@ export function fencerProgress(appearance, entryName) {
     tied: Boolean(rank?.tied),
   };
 }
+
+// Finished fencers sort globally by name, regardless of event or elimination time.
+export function sortFencerCards(cards) {
+  return cards
+    .slice()
+    .sort(
+      (a, b) =>
+        Number(a.progress.finished) - Number(b.progress.finished) ||
+        (!a.progress.finished && (a.priority ?? 0) - (b.priority ?? 0)) ||
+        a.favorite.name.localeCompare(b.favorite.name, 'fr', { sensitivity: 'base' }),
+    );
+}

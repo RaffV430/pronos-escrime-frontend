@@ -1,4 +1,4 @@
-import { fencerProgress } from '../lib/fencerProgress';
+import { fencerProgress, sortFencerCards } from '../lib/fencerProgress';
 import FencerHistory from './FencerHistory';
 import { pollWhileVisible } from '../lib/polling';
 import { useEffect, useState } from 'react';
@@ -138,103 +138,89 @@ export default function SavedFencerCards({ tournaments, userId, onOpen }) {
   const continuing = orderedGroups
     .map((g) => ({ ...g, cards: g.cards.filter((c) => !c.progress.finished) }))
     .filter((g) => g.cards.length);
-  const finished = orderedGroups
-    .map((g) => ({ ...g, key: g.key + ':finished', cards: g.cards.filter((c) => c.progress.finished) }))
-    .filter((g) => g.cards.length);
-  const { featured, upcoming, unknown, live } = prioritizeFencerGroups(continuing, observedAt);
-  const renderGroup = (group) => (
-    <div className="followed-category" key={group.key}>
-      <div className="followed-category-heading">
-        <h3>{group.appearance ? eventNameFr(group.appearance.event.name) : 'Sans épreuve active'}</h3>
-        <span>
-          {group.cards.length} tireur{group.cards.length > 1 ? 's' : ''}
-        </span>
-        {group.appearance && (
-          <small>
-            {group.appearance.tournament.name}
-            {group.appearance.event.startsAt &&
-              ` · ${new Date(group.appearance.event.startsAt).toLocaleString('fr-FR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}`}
-          </small>
-        )}
-      </div>
-      <div className="followed-category-cards">
-        {group.cards
-          .slice()
-          .sort((a, b) => Number(a.progress.finished) - Number(b.progress.finished))
-          .map(({ favorite, appearance, target, progress }) => {
-            const schedule = followedSchedule(target?.match, appearance?.pool);
-            const time = appearance ? schedule.time : 'En attente d’un engagement';
-            return (
-              <article
-                className={`arena-home-match ${progress.finished ? 'fencer-finished' : ''}`}
-                key={favorite.id}
-                title={appearance?.tournament.name}
-              >
-                <span>
-                  <strong>
-                    <span className="favorite-star" aria-hidden="true">
-                      ★
-                    </span>{' '}
-                    {favorite.name}
-                  </strong>
-                  <small className="followed-fencer-meta">
-                    <span>{favorite.country || 'Nation non renseignée'}</span>
-                  </small>
-                  <small className="followed-fencer-schedule">
-                    <span>
-                      {progress.finished ? (
-                        progress.rank ? (
-                          `Classement officiel : ${progress.rank}${progress.rank === 1 ? 'er' : 'e'}${progress.tied ? ' ex æquo' : ''}`
-                        ) : progress.eliminated ? (
-                          'Éliminé · classement officiel en attente'
-                        ) : (
-                          'Épreuve terminée · classement officiel en attente'
-                        )
-                      ) : (
-                        <>
-                          {schedule.poolName && `${schedule.poolName} · `}
-                          {time}
-                        </>
-                      )}
-                    </span>
-                    <span>
-                      {progress.finished
-                        ? 'Épreuve terminée pour ce tireur'
-                        : appearance
-                          ? schedule.strip
-                          : 'Favori conservé'}
-                    </span>
-                  </small>
-                </span>
-                <div className="fencer-card-actions">
-                  {target && !progress.finished && (
-                    <button
-                      className="button-secondary"
-                      aria-label={`Voir le match de ${favorite.name}`}
-                      onClick={() => onOpen(target)}
-                    >
-                      Match →
-                    </button>
-                  )}
-                  <button
-                    className="button-secondary"
-                    onClick={() => setHistoryFavorite(favorite)}
-                    aria-label={`Voir le parcours et la dernière compétition de ${favorite.name}`}
-                  >
-                    Parcours →
-                  </button>
-                </div>
-              </article>
-            );
-          })}
-      </div>
-    </div>
+  const { featured, upcoming, unknown } = prioritizeFencerGroups(continuing, observedAt);
+  const priorities = new Map([...featured, ...upcoming, ...unknown].map((group, index) => [group.key, index]));
+  const cards = sortFencerCards(
+    orderedGroups.flatMap((group) =>
+      group.cards.map((card) => ({
+        ...card,
+        key: `${group.key}:${card.favorite.id}`,
+        priority: priorities.get(group.key) ?? Infinity,
+      })),
+    ),
   );
+  const renderCard = ({ favorite, appearance, target, progress, key }) => {
+    const schedule = followedSchedule(target?.match, appearance?.pool);
+    const time = appearance ? schedule.time : 'En attente d’un engagement';
+    return (
+      <article
+        className={`arena-home-match ${progress.finished ? 'fencer-finished' : ''}`}
+        key={key}
+        title={appearance?.tournament.name}
+      >
+        <span>
+          <strong>
+            <span className="favorite-star" aria-hidden="true">
+              ★
+            </span>{' '}
+            {favorite.name}
+          </strong>
+          <small className="followed-fencer-meta">
+            <span>{favorite.country || 'Nation non renseignée'}</span>
+            {appearance && (
+              <span>
+                {eventNameFr(appearance.event.name)} · {appearance.tournament.name}
+              </span>
+            )}
+          </small>
+          <small className="followed-fencer-schedule">
+            <span>
+              {progress.finished ? (
+                progress.rank ? (
+                  `Classement officiel : ${progress.rank}${progress.rank === 1 ? 'er' : 'e'}${progress.tied ? ' ex æquo' : ''}`
+                ) : progress.eliminated ? (
+                  'Éliminé · classement officiel en attente'
+                ) : (
+                  'Épreuve terminée · classement officiel en attente'
+                )
+              ) : (
+                <>
+                  {schedule.poolName && `${schedule.poolName} · `}
+                  {time}
+                </>
+              )}
+            </span>
+            <span>
+              {progress.finished ? 'Épreuve terminée pour ce tireur' : appearance ? schedule.strip : 'Favori conservé'}
+            </span>
+          </small>
+        </span>
+        <div className="fencer-card-actions">
+          {target && !progress.finished && (
+            <button
+              className="button-secondary"
+              aria-label={`Voir le match de ${favorite.name}`}
+              onClick={() => onOpen(target)}
+            >
+              Match →
+            </button>
+          )}
+          <button
+            className="button-secondary"
+            onClick={() => setHistoryFavorite(favorite)}
+            aria-label={`Voir le parcours et la dernière compétition de ${favorite.name}`}
+          >
+            Parcours →
+          </button>
+        </div>
+      </article>
+    );
+  };
   return (
     <section className="saved-fencer-cards followed-event-fencers" aria-label="Mes tireurs enregistrés">
       <h2>Mes tireurs · {follows.favorites.length}</h2>
       {historyFavorite && <FencerHistory favorite={historyFavorite} onClose={() => setHistoryFavorite(null)} />}
-      <p className="saved-fencer-refresh">Par épreuve active · mise à jour automatique</p>
+      <p className="saved-fencer-refresh">Mise à jour automatique</p>
       {!follows.ready && <p role="status">Chargement de vos favoris…</p>}
       {follows.error && (
         <p role="alert">
@@ -250,30 +236,7 @@ export default function SavedFencerCards({ tournaments, userId, onOpen }) {
       {follows.ready && !follows.favorites.length && (
         <p>Aucun tireur enregistré. Ouvrez « Rechercher et gérer mes tireurs » pour ajouter vos favoris.</p>
       )}
-      <div className="fencer-live">
-        <h3>{live ? 'Suivi en cours' : 'Prochaine épreuve'}</h3>
-        {featured.length ? featured.map(renderGroup) : <p>Aucune épreuve avec horaire confirmé pour vos tireurs.</p>}
-      </div>
-      {!!upcoming.length && (
-        <details className="fencer-secondary">
-          <summary>
-            À venir · {upcoming.length} épreuve{upcoming.length > 1 ? 's' : ''}
-          </summary>
-          {upcoming.map(renderGroup)}
-        </details>
-      )}
-      {!!unknown.length && (
-        <details className="fencer-secondary">
-          <summary>Autres favoris · horaires à confirmer</summary>
-          {unknown.map(renderGroup)}
-        </details>
-      )}
-      {!!finished.length && (
-        <div className="fencer-finished-list">
-          <h3>Tireurs ayant terminé leur épreuve</h3>
-          {finished.map(renderGroup)}
-        </div>
-      )}
+      <div className="followed-category-cards">{cards.map(renderCard)}</div>
     </section>
   );
 }

@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { fencerProgress } from '../src/lib/fencerProgress.js';
+import { fencerProgress, sortFencerCards } from '../src/lib/fencerProgress.js';
 const loss = { id: 3, round: 'T32', player1: 'A', player2: 'B', winner: 2, isFinished: true };
 const appearance = { entryId: 'a', event: {}, matches: [loss] };
 test('official loser is finished without inventing a ranking', () => {
@@ -29,4 +29,19 @@ test('winner of final finishes too, and rank requires a verified official classi
     },
   };
   assert.equal(fencerProgress(ranked, 'A').rank, 18);
+});
+
+test('one list keeps active fencers first and all finished fencers alphabetical', () => {
+  const card = (name, finished, priority) => ({ favorite: { name }, progress: { finished }, priority });
+  const input = [card('ZOLA', true, 0), card('BESLIER', false, 0), card('ACOSTA', true, 2), card('BRUNET', false, 1)];
+  assert.deepEqual(
+    sortFencerCards(input).map((c) => c.favorite.name),
+    ['BESLIER', 'BRUNET', 'ACOSTA', 'ZOLA'],
+  );
+  assert.equal(input[0].favorite.name, 'ZOLA');
+  input[1].progress.finished = true;
+  assert.deepEqual(
+    sortFencerCards(input).map((c) => c.favorite.name),
+    ['BRUNET', 'ACOSTA', 'BESLIER', 'ZOLA'],
+  );
 });
