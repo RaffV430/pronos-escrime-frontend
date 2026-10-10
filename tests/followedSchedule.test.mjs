@@ -24,7 +24,20 @@ test('un match du tableau publié prend le relais sans mélanger sa piste avec l
   assert.equal(followedSchedule(match, pool).strip, 'Piste 12');
   assert.equal(followedSchedule(match, pool).poolName, null);
   assert.equal(followedSchedule({ startsAt: match.startsAt }, pool).strip, 'Piste à confirmer');
-  assert.equal(followedSchedule({ ...match, isFinished: true }, pool).strip, 'Piste 4');
+  assert.equal(followedSchedule({ ...match, isFinished: true }, pool).strip, 'Piste 12');
+});
+test('un résultat du tableau conserve son horaire et sa piste au lieu de revenir à la poule', () => {
+  const match = { startsAt: '2026-10-10T12:10:00Z', strip: '25', isFinished: true };
+  assert.equal(followedSchedule(match, pool).poolName, null);
+  assert.equal(followedSchedule(match, pool).strip, 'Piste 25');
+  assert.equal(followedSchedule(match, pool).time, new Date(match.startsAt).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }));
+  assert.equal(followedSchedule({ ...match, startsAt: null, strip: null }, pool).strip, 'Piste à confirmer');
+});
+test('une nouvelle poule postérieure au tableau terminé peut prendre le relais', () => {
+  const match = { startsAt: '2026-10-10T10:00:00Z', strip: '12', isFinished: true };
+  const nextPool = { ...pool, name: 'Tour 2 · Poule 1', startsAt: '2026-10-10T13:00:00Z' };
+  assert.equal(followedSchedule(match, nextPool).poolName, nextPool.name);
+  assert.equal(followedSchedule({ ...match, isFinished: false }, nextPool).poolName, null);
 });
 test('données absentes ou invalides restent explicitement inconnues', () => {
   assert.deepEqual(followedSchedule(null, null), { time: 'Horaire à confirmer', strip: 'Piste à confirmer', poolName: undefined });
