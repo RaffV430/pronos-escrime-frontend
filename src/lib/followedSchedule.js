@@ -12,8 +12,11 @@ export function followedPool(pools, name, allowedNames = []) {
 }
 
 export function followedSchedule(match, pool) {
-  // A current pool takes precedence over a previously completed tableau match.
-  const source = match && (!match.isFinished || !pool) ? match : pool;
+  // Finishing a tableau match must not restore an earlier pool schedule.
+  // A later pool round can still take over after a completed tableau match.
+  const laterPool = match?.isFinished && pool &&
+    Date.parse(pool.startsAt) > Date.parse(match.startsAt);
+  const source = match && !laterPool ? match : pool;
   const date = source?.startsAt ? new Date(source.startsAt) : null;
   return {
     time: date && !Number.isNaN(date.getTime())
