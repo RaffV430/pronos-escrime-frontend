@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import API from '../api';
 import { useFencerFollows } from '../lib/fencerFollows';
 import { followedMatchTarget } from '../lib/followedMatch';
+import { followedPool, followedSchedule } from '../lib/followedSchedule';
 import { eventNameFr } from '../lib/eventName';
 import { prioritizeFencerGroups } from '../lib/fencerGroups';
 
@@ -42,10 +43,10 @@ export default function SavedFencerCards({ tournaments, userId, onOpen }) {
                       signal: controller.signal,
                     });
                     if (!followed.links.length) return [];
-                    const { data: matches } = await API.get('/matches', {
-                      params: { competitionId: event.id },
-                      signal: controller.signal,
-                    });
+                    const [{ data: matches }, { data: pools }] = await Promise.all([
+                      API.get('/matches', { params: { competitionId: event.id }, signal: controller.signal }),
+                      API.get('/pools', { params: { competitionId: event.id }, signal: controller.signal }),
+                    ]);
                     return followed.links.flatMap((link) => {
                       const fencer = (event.podiumRoster || []).find((entry) => String(entry.id) === link.entryId);
                       if (!fencer) return [];
@@ -62,6 +63,7 @@ export default function SavedFencerCards({ tournaments, userId, onOpen }) {
                           event: { ...event, startsAt: scheduled?.startsAt },
                           tournament,
                           matches: matching,
+                          pool: followedPool(pools, fencer.name, followed.matchNames),
                         },
                       ];
                     });
@@ -140,13 +142,8 @@ export default function SavedFencerCards({ tournaments, userId, onOpen }) {
       </div>
       <div className="followed-category-cards">
         {group.cards.map(({ favorite, appearance, target }) => {
-          const date = target?.match.startsAt ? new Date(target.match.startsAt) : null;
-          const time =
-            date && !Number.isNaN(date.getTime())
-              ? date.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
-              : appearance
-                ? 'Horaire à confirmer'
-                : 'En attente d’un engagement';
+          const schedule = followedSchedule(target?.match, appearance?.pool);
+          const time = appearance ? schedule.time : 'En attente d’un engagement';
           return (
             <article className="arena-home-match" key={favorite.id} title={appearance?.tournament.name}>
               <span>
@@ -160,13 +157,9 @@ export default function SavedFencerCards({ tournaments, userId, onOpen }) {
                   <span>{favorite.country || 'Nation non renseignée'}</span>
                 </small>
                 <small className="followed-fencer-schedule">
-                  <span>{time}</span>
+                  <span>{schedule.poolName && `${schedule.poolName} · `}{time}</span>
                   <span>
-                    {target?.match.strip
-                      ? `Piste ${target.match.strip}`
-                      : appearance
-                        ? 'Piste à confirmer'
-                        : 'Favori conservé'}
+                    {appearance ? schedule.strip : 'Favori conservé'}
                   </span>
                 </small>
               </span>
