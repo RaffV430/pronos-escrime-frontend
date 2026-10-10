@@ -21,9 +21,10 @@ export function cachePath(config) {
 }
 export function cacheLifetime(path, reduced = false) {
   if (/^\/auth\/me$/.test(path)) return 0;
-  if (/^\/(matches|pools)(\?|$)/.test(path)) return reduced ? 60000 : 15000;
+  if (/^\/(matches|pools)(\?|$)/.test(path) || /^\/podium\/competitions\/\d+(\?|$)/.test(path))
+    return reduced ? 60000 : 15000;
   if (/^\/me\/fencers(\?|$)/.test(path)) return 60000;
-  if (/^\/(tournaments|podium\/competitions\/\d+|public\/tournaments|clubs)(\?|$)/.test(path)) return 300000;
+  if (/^\/(tournaments|public\/tournaments|clubs)(\?|$)/.test(path)) return 300000;
   return null;
 }
 export function createFieldCache(storage, now = Date.now) {

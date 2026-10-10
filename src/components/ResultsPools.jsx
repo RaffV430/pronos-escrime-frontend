@@ -139,13 +139,14 @@ function PoolMatrix({ pool, onOpen }) {
 }
 
 // Poules d'une épreuve, regroupées par tour : classement de chaque poule (victoires, indice).
-export default function ResultsPools({ competitionId }) {
+export default function ResultsPools({ competitionId, poolsOverride }) {
   const follows = useFencerFollows();
   const publicMode = usePublicMode();
   const [pools, setPools] = useState(null);
   const [error, setError] = useState('');
   const [open, setOpen] = useState(null);
   useEffect(() => {
+    if (poolsOverride) { setPools(poolsOverride); return; }
     const c = new AbortController();
     const refresh = () => (publicMode
       ? API.get(`/public/competitions/${competitionId}/pools`, { signal: c.signal })
@@ -156,7 +157,7 @@ export default function ResultsPools({ competitionId }) {
     refresh();
     const stop = pollWhileVisible(refresh, 30000);
     return () => { c.abort(); stop(); };
-  }, [competitionId, publicMode]);
+  }, [competitionId, publicMode, poolsOverride]);
   if (error) return <p className="muted">{error}</p>;
   if (!pools) return <p className="muted">Chargement…</p>;
   if (!pools.length) return <p className="muted">Aucune poule suivie pour cette épreuve.</p>;
