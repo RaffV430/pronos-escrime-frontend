@@ -1,6 +1,7 @@
 import { eventNameFr } from '../lib/eventName';
 import { useFencerFollows } from '../lib/fencerFollows';
 import { followedMatchTarget } from '../lib/followedMatch';
+import { followedPool, followedSchedule } from '../lib/followedSchedule';
 import ResultsPools from './ResultsPools';
 import ResultsBracket from './ResultsBracket';
 import PisteLive from './PisteLive';
@@ -13,34 +14,52 @@ export function FollowedEventFencers({ competition, userId, onMatch, onLive, onE
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(null);
   const [error, setError] = useState('');
+  const [revision, setRevision] = useState(0);
   const follows = useFencerFollows();
+  const loadedTournament = useRef(null);
   useEffect(() => {
     const controller = new AbortController();
+    if (loadedTournament.current !== competition.tournamentId) {
+      loadedTournament.current = competition.tournamentId;
+      setEvents([]);
+      setEventId('all');
+    }
     setLoading(true);
-    setEvents([]);
-    setEventId('all');
     setError('');
     API.get(`/podium/competitions/${competition.tournamentId}`, { signal: controller.signal })
       .then(async ({ data }) => {
         const entries = await Promise.all(data.map(async (event) => {
-          const [{ data: followed }, { data: matches }] = await Promise.all([
+          const [{ data: followed }, { data: matches }, { data: pools }] = await Promise.all([
             API.get('/me/fencers', { params: { competitionId: event.id }, signal: controller.signal }),
             API.get('/matches', { params: { competitionId: event.id }, signal: controller.signal }),
+            API.get('/pools', { params: { competitionId: event.id }, signal: controller.signal }),
           ]);
-          return { ...event, matches, followedRoster: (event.podiumRoster || []).filter(e => followed.links.some(l => l.entryId === String(e.id))) };
+          return { ...event, matches, pools, matchNames: followed.matchNames, followedRoster: (event.podiumRoster || []).filter(e => followed.links.some(l => l.entryId === String(e.id))) };
         }));
         if (!controller.signal.aborted) setEvents(entries);
       })
       .catch(() => { if (!controller.signal.aborted) setError('Impossible de charger les tireurs du tournoi. Réessayez en rouvrant cette section.'); })
       .finally(() => { if (!controller.signal.aborted) setLoading(false); });
     return () => controller.abort();
-  }, [competition.tournamentId, follows?.favorites]);
+  }, [competition.tournamentId, follows?.favorites, revision]);
+  useEffect(() => {
+    const refresh = () => { if (!document.hidden) setRevision(n => n + 1); };
+    const timer = window.setInterval(refresh, 30000);
+    window.addEventListener('focus', refresh);
+    document.addEventListener('visibilitychange', refresh);
+    return () => {
+      window.clearInterval(timer);
+      window.removeEventListener('focus', refresh);
+      document.removeEventListener('visibilitychange', refresh);
+    };
+  }, []);
   const visible = events.filter(e => eventId === 'all' || e.id === eventId);
   const openFencer = async (event, fencer) => {
     setBusy(`${event.id}:${fencer.id}`);
     setError('');
     try {
       const { data: matches } = await API.get('/matches', { params: { competitionId: event.id } });
+      if (!event.matchNames?.includes(fencer.name)) { setError('Identité du tireur à vérifier.'); return; }
       const target = followedMatchTarget(matches.filter(m => m.player1 === fencer.name || m.player2 === fencer.name).map(match => ({ match })), userId);
       if (!target) { setError('Aucun match publié pour ce tireur pour le moment.'); return; }
       onEventChange(event);
@@ -69,16 +88,15 @@ export function FollowedEventFencers({ competition, userId, onMatch, onLive, onE
           </header>
           <div className="followed-category-cards">
           {event.followedRoster.map(e => {
-            const target = followedMatchTarget((event.matches || []).filter(m => m.player1 === e.name || m.player2 === e.name).map(match => ({ match })), userId);
+            const target = followedMatchTarget((event.matchNames?.includes(e.name) ? event.matches || [] : []).filter(m => m.player1 === e.name || m.player2 === e.name).map(match => ({ match })), userId);
             const match = target?.match;
-            const date = match?.startsAt ? new Date(match.startsAt) : null;
-            const time = date && !Number.isNaN(date.getTime()) ? date.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) : 'Horaire à confirmer';
+            const schedule = followedSchedule(match, followedPool(event.pools || [], e.name, event.matchNames));
             return (
         <article className="arena-home-match" key={`${event.id}:${e.id}`}>
           <span>
             <strong><span className="favorite-star">★</span> {e.name}</strong>
             <small className="followed-fencer-meta"><span>{e.nation || e.country || '—'}</span><span>{eventNameFr(event.name)}</span></small>
-            <small className="followed-fencer-schedule"><span>{time}</span><span>{match?.strip ? `Piste ${match.strip}` : 'Piste à confirmer'}</span></small>
+            <small className="followed-fencer-schedule"><span>{schedule.poolName && `${schedule.poolName} · `}{schedule.time}</span><span>{schedule.strip}</span></small>
           </span>
           <button className="button-secondary" aria-label={`Voir le match de ${e.name}`} disabled={busy !== null} onClick={() => openFencer(event, e)}>
             {busy === `${event.id}:${e.id}` ? 'Chargement…' : 'Match →'}
