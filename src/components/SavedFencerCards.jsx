@@ -22,7 +22,7 @@ export default function SavedFencerCards({ tournaments, userId, onOpen }) {
   const follows = useFencerFollows();
   const [historyFavorite, setHistoryFavorite] = useState(null);
   const [appearances, setAppearances] = useState([]);
-  useResultSync(appearances.map(a => a.event.id));
+  useResultSync(appearances.map((a) => a.event.id));
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [revision, setRevision] = useState(0);
@@ -143,15 +143,21 @@ export default function SavedFencerCards({ tournaments, userId, onOpen }) {
     .filter((g) => g.cards.length);
   const { featured, upcoming, unknown } = prioritizeFencerGroups(continuing, observedAt);
   const priorities = new Map([...featured, ...upcoming, ...unknown].map((group, index) => [group.key, index]));
-  const cards = sortFencerCards(
-    orderedGroups.flatMap((group) =>
-      group.cards.map((card) => ({
-        ...card,
-        key: `${group.key}:${card.favorite.id}`,
-        priority: priorities.get(group.key) ?? Infinity,
-      })),
-    ),
-  );
+  // Un bloc par épreuve (catégorie et sexe lisibles d'un coup d'œil) : épreuves avec des tireurs encore
+  // en lice d'abord, dans l'ordre de priorité ; à l'intérieur, tireurs en lice puis terminés (alphabétique).
+  const blocks = orderedGroups
+    .map((group) => ({
+      ...group,
+      priority: priorities.get(group.key) ?? Infinity,
+      cards: sortFencerCards(
+        group.cards.map((card) => ({
+          ...card,
+          key: `${group.key}:${card.favorite.id}`,
+          priority: priorities.get(group.key) ?? Infinity,
+        })),
+      ),
+    }))
+    .sort((a, b) => !a.appearance - !b.appearance || a.priority - b.priority);
   const renderCard = ({ favorite, appearance, target, progress, key }) => {
     const schedule = followedSchedule(target?.match, appearance?.pool);
     const time = appearance ? schedule.time : 'En attente d’un engagement';
@@ -170,11 +176,6 @@ export default function SavedFencerCards({ tournaments, userId, onOpen }) {
           </strong>
           <small className="followed-fencer-meta">
             <span>{favorite.country || 'Nation non renseignée'}</span>
-            {appearance && (
-              <span>
-                {eventNameFr(appearance.event.name)} · {appearance.tournament.name}
-              </span>
-            )}
           </small>
           <small className="followed-fencer-schedule">
             <span>
@@ -239,7 +240,24 @@ export default function SavedFencerCards({ tournaments, userId, onOpen }) {
       {follows.ready && !follows.favorites.length && (
         <p>Aucun tireur enregistré. Ouvrez « Rechercher et gérer mes tireurs » pour ajouter vos favoris.</p>
       )}
-      <div className="followed-category-cards">{cards.map(renderCard)}</div>
+      {blocks.map((group) => (
+        <div className="followed-category" key={group.key}>
+          <div className="followed-category-heading">
+            <h3>{group.appearance ? eventNameFr(group.appearance.event.name) : 'Sans épreuve active'}</h3>
+            <span>
+              {group.cards.length} tireur{group.cards.length > 1 ? 's' : ''}
+            </span>
+            {group.appearance && (
+              <small>
+                {group.appearance.tournament.name}
+                {group.appearance.event.startsAt &&
+                  ` · ${new Date(group.appearance.event.startsAt).toLocaleString('fr-FR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}`}
+              </small>
+            )}
+          </div>
+          <div className="followed-category-cards">{group.cards.map(renderCard)}</div>
+        </div>
+      ))}
     </section>
   );
 }
