@@ -1,31 +1,16 @@
 /* Pronostic simplifié : toucher le nom du vainqueur suffit, le score reste facultatif. */
 .opponent-row .winner-pick {
-  all: unset;
-  box-sizing: border-box;
-  display: flex;
-  align-items: center;
-  flex: 1 1 auto;
-  min-width: 0;
   cursor: pointer;
-  border-radius: 10px;
   -webkit-tap-highlight-color: transparent;
-}
-.opponent-row .winner-pick:disabled {
-  cursor: default;
 }
 .opponent-row .winner-pick:focus-visible {
   outline: 2px solid var(--primary);
   outline-offset: 2px;
 }
-.opponent-row .winner-pick > strong {
-  flex: 1 1 auto;
-  min-width: 0;
-}
-.opponent-row.is-picked {
+/* Vainqueur choisi : nom encadré en vert (le bloc du nom porte le style dans les cartes). */
+.opponent-row.is-picked > strong {
   box-shadow: inset 0 0 0 2px var(--success, #13744e);
   border-radius: 12px;
-}
-.club-arena .opponent-row.is-picked {
   background: color-mix(in srgb, var(--success, #13744e) 10%, var(--surface, #fff));
 }
 .winner-tag {
@@ -56,4 +41,38 @@
   .pool-section:focus-within .save-dock {
     display: none;
   }
+}
+
+/* Barre au-dessus du clavier : état du match en cours et « Match suivant ». */
+.keyboard-bar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  transform: translateY(-100%);
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  background: var(--surface, #fff);
+  border-top: 1px solid var(--border, #dce0e6);
+  box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.08);
+}
+.keyboard-bar[style*='bottom'] {
+  transform: none;
+}
+.keyboard-bar-status {
+  flex: 1;
+  min-width: 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--success, #13744e);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.keyboard-bar button {
+  min-height: 40px;
+  padding: 8px 14px;
+  white-space: nowrap;
 }

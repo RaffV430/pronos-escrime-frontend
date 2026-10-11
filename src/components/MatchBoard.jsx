@@ -16,6 +16,33 @@ import MatchSocial from './MatchSocial';
 import BracketTree from './BracketTree.jsx';
 import { buildTree } from './bracketTree';
 
+// Barre collée au-dessus du clavier du téléphone (suit la zone visible quand le clavier s'ouvre).
+function KeyboardBar({ children }) {
+  const [top, setTop] = useState(null);
+  useEffect(() => {
+    const vv = window.visualViewport;
+    if (!vv) return;
+    const place = () => setTop(vv.offsetTop + vv.height);
+    place();
+    vv.addEventListener('resize', place);
+    vv.addEventListener('scroll', place);
+    return () => {
+      vv.removeEventListener('resize', place);
+      vv.removeEventListener('scroll', place);
+    };
+  }, []);
+  return (
+    <div
+      className="keyboard-bar"
+      role="toolbar"
+      aria-label="Saisie du pronostic"
+      style={top === null ? { bottom: 0 } : { top }}
+    >
+      {children}
+    </div>
+  );
+}
+
 export default function MatchBoard({
   initialFilter = 'Tous',
   matches,
@@ -280,11 +307,57 @@ export default function MatchBoard({
     if (!ready || isMatchClosed(m, now)) return;
     if (pickedSide(m, values(m, draftsRef.current)) === side && !draftsRef.current[m.id]) return;
     saveDrafts((old) => ({ ...old, [m.id]: { score1: '', score2: '', winner: side } }));
-    const next = nextOpen(m.id);
     save([m.id]);
-    if (view === 'Arbre') setOpenId(null);
+    // Le joueur reste sur ce match : il peut ajouter le score (clavier ouvert), puis choisir
+    // « Match suivant » dans la barre au-dessus du clavier.
+    setReveal({ id: m.id });
+    const prefix = view === 'Arbre' ? 'detail-' : '';
+    document.getElementById(`${prefix}input-${m.id}-1`)?.focus({ preventScroll: true });
+  };
+  // Barre au-dessus du clavier (mobile) : match en cours de saisie.
+  const [typingId, setTypingId] = useState(null);
+  const touchDevice = () => typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches;
+  const scoreInputId = (el) => Number(/(?:^|-)input-(\d+)-[12]$/.exec(el?.id || '')?.[1]) || null;
+  const onFocusIn = (e) => {
+    const id = scoreInputId(e.target);
+    if (id && touchDevice()) setTypingId(id);
+  };
+  const onFocusOut = (e) => {
+    if (!scoreInputId(e.relatedTarget)) setTypingId(null);
+  };
+  // « Match suivant » : score complet → enregistré, clavier gardé pour le match suivant ;
+  // vainqueur seul → on ferme le clavier et on montre le match suivant (toucher son vainqueur).
+  const nextFromBar = () => {
+    const m = valid.find((x) => x.id === typingId);
+    if (!m) return;
+    const v = values(m, draftsRef.current);
+    const scored = v.score1 !== '' || v.score2 !== '';
+    if (scored && validateScores(v, m.maxScore || 15)) {
+      if (!mine(m)) return message(m.id, 'Score incomplet : complétez-le ou touchez le nom du vainqueur.', true);
+      saveDrafts((old) => {
+        const next = { ...old };
+        delete next[m.id];
+        return next;
+      });
+    } else if (draftsRef.current[m.id]) save([m.id]);
+    const next = nextOpen(m.id);
+    if (scored && !validateScores(v, m.maxScore || 15)) return goTo(next, true);
+    document.activeElement?.blur();
+    setTypingId(null);
     goTo(next, false);
   };
+  const typingMatch = typingId && valid.find((x) => x.id === typingId);
+  const typingStatus = typingMatch
+    ? drafts[typingMatch.id]
+      ? busy
+        ? 'Enregistrement…'
+        : 'Saisie en cours'
+      : mine(typingMatch)
+        ? mine(typingMatch).winnerOnly
+          ? '✓ Vainqueur enregistré'
+          : '✓ Enregistré'
+        : 'À compléter'
+    : '';
   // Entrée (ou Maj seule) sur un pronostic complet : enregistre puis passe au prochain match à saisir.
   const keyDown = (m, side, e) => {
     if (e.key === 'Shift') {
@@ -392,52 +465,59 @@ export default function MatchBoard({
           </span>
           <span className={`status-pill ${p && !drafts[m.id] ? 'saved' : ''}`}>{status}</span>
         </div>
-        {!closed && ready && <p className="pick-hint">Touchez le vainqueur · score facultatif</p>}
         {[m.player1, m.player2].map((name, i) => (
-          <div className={`opponent-row${picked === i + 1 ? ' is-picked' : ''}`} key={i}>
-            <button
-              type="button"
-              className="winner-pick"
-              aria-pressed={picked === i + 1}
-              aria-label={`${name} vainqueur`}
-              disabled={closed || !ready}
-              onClick={() => pick(m, i + 1)}
+          <label className={`opponent-row${picked === i + 1 ? ' is-picked' : ''}`} key={i}>
+            {/* Structure d'origine conservée (mise en page des cartes) : le nom sert de bouton « vainqueur ». */}
+            <strong
+              className={closed || !ready ? undefined : 'winner-pick'}
+              role={closed || !ready ? undefined : 'button'}
+              tabIndex={closed || !ready ? undefined : 0}
+              aria-pressed={closed || !ready ? undefined : picked === i + 1}
+              title={closed || !ready ? undefined : `${name} vainqueur`}
+              onClick={(e) => {
+                if (closed || !ready) return;
+                e.preventDefault(); // pas de transfert du clic vers le champ de score
+                pick(m, i + 1);
+              }}
+              onKeyDown={(e) => {
+                if (closed || !ready || (e.key !== 'Enter' && e.key !== ' ')) return;
+                e.preventDefault();
+                pick(m, i + 1);
+              }}
             >
-              <strong>
-                {
-                  <span className={`arena-avatar avatar-${i}`} aria-hidden="true">
-                    {name
-                      .split(/\s+/)
-                      .slice(0, 2)
-                      .map((part) => part[0])
-                      .join('')}
-                  </span>
-                }
-                {isFollowedFencer(follows, name) && (
-                  <span className="club-star" title="Tireur suivi">
-                    ★{' '}
-                  </span>
-                )}
-                <span className="match-player-name">
-                  {m[`seed${i + 1}`] != null && (
-                    <span
-                      className="match-seed"
-                      title="Place dans le tableau"
-                      aria-label={`Place ${m[`seed${i + 1}`]} dans le tableau`}
-                    >
-                      {m[`seed${i + 1}`]}
-                    </span>
-                  )}
-                  {name}
-                  {m[`player${i + 1}Country`] && ` - ${m[`player${i + 1}Country`]}`}
+              {
+                <span className={`arena-avatar avatar-${i}`} aria-hidden="true">
+                  {name
+                    .split(/\s+/)
+                    .slice(0, 2)
+                    .map((part) => part[0])
+                    .join('')}
                 </span>
-                {picked === i + 1 && (
-                  <span className="winner-tag" title="Vainqueur choisi" aria-hidden="true">
-                    ✓
+              }
+              {isFollowedFencer(follows, name) && (
+                <span className="club-star" title="Tireur suivi">
+                  ★{' '}
+                </span>
+              )}
+              <span className="match-player-name">
+                {m[`seed${i + 1}`] != null && (
+                  <span
+                    className="match-seed"
+                    title="Place dans le tableau"
+                    aria-label={`Place ${m[`seed${i + 1}`]} dans le tableau`}
+                  >
+                    {m[`seed${i + 1}`]}
                   </span>
                 )}
-              </strong>
-            </button>
+                {name}
+                {m[`player${i + 1}Country`] && ` - ${m[`player${i + 1}Country`]}`}
+              </span>
+              {picked === i + 1 && (
+                <span className="winner-tag" title="Vainqueur choisi" aria-hidden="true">
+                  ✓
+                </span>
+              )}
+            </strong>
             {view === 'Arena' && (
               <button
                 type="button"
@@ -476,8 +556,9 @@ export default function MatchBoard({
                 +
               </button>
             )}
-          </div>
+          </label>
         ))}
+        {!closed && ready && <p className="pick-hint">Touchez le vainqueur · le score rapporte plus</p>}
         {m.pointsPending ? (
           <p role="status">
             <strong>Points en attente de validation</strong>
@@ -547,6 +628,8 @@ export default function MatchBoard({
     <section
       className={`match-board ${view === 'Arena' ? 'arena-board' : ''}`}
       aria-label="Tableau d’élimination directe"
+      onFocus={onFocusIn}
+      onBlur={onFocusOut}
     >
       <>
         {newMatches.length > 0 && (
@@ -737,6 +820,32 @@ export default function MatchBoard({
             </p>
           )}
         </>
+      )}
+      {typingMatch && (
+        <KeyboardBar>
+          <span className="keyboard-bar-status">{typingStatus}</span>
+          <button
+            type="button"
+            className="button-link"
+            onPointerDown={(e) => {
+              e.preventDefault();
+              document.activeElement?.blur();
+              setTypingId(null);
+            }}
+          >
+            Fermer
+          </button>
+          <button
+            type="button"
+            onPointerDown={(e) => {
+              // Action au toucher : le champ garde le focus, le clavier reste ouvert si besoin.
+              e.preventDefault();
+              nextFromBar();
+            }}
+          >
+            Match suivant →
+          </button>
+        </KeyboardBar>
       )}
       {dirty && (
         <div className="save-dock">
