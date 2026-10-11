@@ -2,11 +2,21 @@ import { useEffect, useRef } from 'react';
 import { indicatorError, toggleSign } from '../lib/indicator.js';
 
 // Champ d'indice avec bouton ± (placé après le champ : un <label> englobant cible ainsi le champ) : utilisable avec le clavier numérique Android (sans touche « - »).
-export default function IndicatorInput({ value, onChange, minimum, maximum, disabled, label, placeholder, form }) {
+export default function IndicatorInput({
+  value,
+  onChange,
+  minimum,
+  maximum,
+  disabled,
+  label,
+  placeholder,
+  form,
+  optional = false,
+}) {
   const input = useRef(null);
   useEffect(() => {
-    input.current?.setCustomValidity(indicatorError(value, minimum, maximum));
-  }, [value, minimum, maximum]);
+    input.current?.setCustomValidity(indicatorError(value, minimum, maximum, optional));
+  }, [value, minimum, maximum, optional]);
   return (
     <span className="indicator-input">
       <input
@@ -16,7 +26,7 @@ export default function IndicatorInput({ value, onChange, minimum, maximum, disa
         type="text"
         inputMode="numeric"
         autoComplete="off"
-        required
+        required={!optional}
         placeholder={placeholder}
         value={value}
         onChange={(e) => onChange(e.target.value.replace(/[^0-9+\-−–]/g, '').slice(0, 4))}

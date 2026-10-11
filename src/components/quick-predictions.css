@@ -1,0 +1,59 @@
+/* Pronostic simplifié : toucher le nom du vainqueur suffit, le score reste facultatif. */
+.opponent-row .winner-pick {
+  all: unset;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  flex: 1 1 auto;
+  min-width: 0;
+  cursor: pointer;
+  border-radius: 10px;
+  -webkit-tap-highlight-color: transparent;
+}
+.opponent-row .winner-pick:disabled {
+  cursor: default;
+}
+.opponent-row .winner-pick:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+.opponent-row .winner-pick > strong {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.opponent-row.is-picked {
+  box-shadow: inset 0 0 0 2px var(--success, #13744e);
+  border-radius: 12px;
+}
+.club-arena .opponent-row.is-picked {
+  background: color-mix(in srgb, var(--success, #13744e) 10%, var(--surface, #fff));
+}
+.winner-tag {
+  display: inline-grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  margin-left: 6px;
+  border-radius: 50%;
+  vertical-align: middle;
+  background: var(--success, #13744e);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 800;
+  line-height: 1;
+  font-family: var(--font-body, inherit);
+  letter-spacing: 0;
+}
+.pick-hint {
+  margin: 4px 0 6px;
+  color: var(--muted);
+  font-size: 12px;
+}
+/* Mobile, clavier affiché : la barre « Tout enregistrer » se cache pendant la saisie
+   (enregistrement automatique) au lieu de sauter pendant le défilement. */
+@media (max-width: 760px) {
+  .match-board:focus-within .save-dock,
+  .pool-section:focus-within .save-dock {
+    display: none;
+  }
+}
