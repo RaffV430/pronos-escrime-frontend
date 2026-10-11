@@ -9,7 +9,9 @@ export default function ClubAdministration() {
     [error, setError] = useState(''),
     [message, setMessage] = useState(''),
     [revision, setRevision] = useState(0),
-    [busy, setBusy] = useState(false);
+    [busy, setBusy] = useState(false),
+    [refusing, setRefusing] = useState(null),
+    [motive, setMotive] = useState('');
   useEffect(() => {
     const c = new AbortController();
     Promise.all([
@@ -37,13 +39,26 @@ export default function ClubAdministration() {
       });
     return () => c.abort();
   }, [clubId, revision]);
-  async function decide(row, status) {
+  async function decide(row, status, comment) {
     setBusy(true);
     setError('');
     try {
-      await API.put('/clubs/admin/responsibility', { clubId: row.clubId, userId: row.userId, status });
+      const { data } = await API.put('/clubs/admin/responsibility', {
+        clubId: row.clubId,
+        userId: row.userId,
+        status,
+        ...(comment ? { comment } : {}),
+      });
       setRevision((n) => n + 1);
-      setMessage('Rôle mis à jour.');
+      setRefusing(null);
+      setMotive('');
+      setMessage(
+        status === 'REJECTED'
+          ? data.mailSent
+            ? 'Demande refusée. Le motif a été envoyé par e-mail.'
+            : 'Demande refusée. L’e-mail n’a pas pu être envoyé : prévenez le demandeur directement.'
+          : 'Rôle mis à jour.',
+      );
     } catch (e) {
       setError(e.response?.data?.error || 'Modification impossible.');
     } finally {
@@ -96,9 +111,49 @@ export default function ClubAdministration() {
               <button disabled={busy} onClick={() => decide(r, 'APPROVED')}>
                 Valider
               </button>
-              <button disabled={busy} onClick={() => decide(r, 'REJECTED')}>
+              <button
+                className="button-secondary"
+                disabled={busy}
+                onClick={() => {
+                  setRefusing(r.id);
+                  setMotive('');
+                }}
+              >
                 Refuser
               </button>
+              {refusing === r.id && (
+                <form
+                  className="refusal-form"
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    decide(r, 'REJECTED', motive.trim());
+                  }}
+                >
+                  <label>
+                    Motif du refus (envoyé par e-mail à {r.user.name})
+                    <textarea
+                      required
+                      minLength={5}
+                      maxLength={1000}
+                      rows={3}
+                      value={motive}
+                      onChange={(e) => setMotive(e.target.value)}
+                      placeholder="Ex. : un responsable est déjà nommé pour ce club."
+                    />
+                  </label>
+                  <div className="refusal-actions">
+                    <button disabled={busy || motive.trim().length < 5}>Refuser et envoyer le motif</button>
+                    <button
+                      type="button"
+                      className="button-secondary"
+                      disabled={busy}
+                      onClick={() => setRefusing(null)}
+                    >
+                      Annuler
+                    </button>
+                  </div>
+                </form>
+              )}
             </>
           )}
           {r.status === 'APPROVED' && (
