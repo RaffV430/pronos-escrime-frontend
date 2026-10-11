@@ -1,3 +1,5 @@
+import ConnectionStatus from './components/ConnectionStatus';
+import { reducedData } from './lib/fieldCache';
 import AdminAlerts from './components/AdminAlerts';
 import SupportContact from './components/SupportContact';
 import { adminDestination, adminLoginPath, loginReturn, updateBadge } from './lib/adminDestination';
@@ -14,7 +16,7 @@ import { ArenaHome, PisteFencers } from './components/PisteExperience';
 import PisteLive from './components/PisteLive';
 import { eventLanding } from './components/matchPresentation';
 import { useState, useEffect, useRef, lazy, Suspense } from 'react';
-import API, { SESSION_EXPIRED_EVENT } from './api';
+import API, { consultationCache, SESSION_EXPIRED_EVENT } from './api';
 import { shouldRefresh } from './lib/session.js';
 import EventSelector from './components/EventSelector';
 import UpdateBanner from './components/UpdateBanner';
@@ -85,6 +87,7 @@ export default function App() {
   const joining = useRef(false);
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const verifiedUser = useRef(null);
   const [sessionError, setSessionError] = useState(false);
   const [sessionRetry, setSessionRetry] = useState(0);
   const [isRegister] = useState(() => location.pathname.startsWith('/inscription'));
@@ -334,7 +337,7 @@ export default function App() {
       if (token) {
         try {
           const res = await API.get('/auth/me');
-          setUser(res.data);
+          setUser(res.fromCache && verifiedUser.current ? verifiedUser.current : res.data);
           // Session glissante : renouvelée à chaque visite après un jour, pour 30 jours.
           if (shouldRefresh(token))
             API.post('/auth/refresh')
@@ -346,6 +349,8 @@ export default function App() {
             setLoading(false);
             return;
           }
+          consultationCache.clear();
+          verifiedUser.current = null;
           localStorage.removeItem('token');
           setUser(null);
           const next = adminLoginPath(location.pathname, location.search);
@@ -364,14 +369,18 @@ export default function App() {
   }, [sessionRetry]);
 
   useEffect(() => {
+    const checked = event => { if (event.detail?.user) { verifiedUser.current = event.detail.user; setUser(event.detail.user); } if (event.detail?.path === '/auth/me' && [401, 403, 404].includes(event.detail?.error?.response?.status)) expired(); };
+    window.addEventListener('pronos:consultation-updated', checked);
     const expired = () => {
+      consultationCache.clear();
+      verifiedUser.current = null;
       setUser(null);
       const next = adminLoginPath(location.pathname, location.search);
       if (next) history.replaceState(null, '', next);
       setError('Votre session a expiré. Reconnectez-vous pour continuer.');
     };
     window.addEventListener(SESSION_EXPIRED_EVENT, expired);
-    return () => window.removeEventListener(SESSION_EXPIRED_EVENT, expired);
+    return () => { window.removeEventListener(SESSION_EXPIRED_EVENT, expired); window.removeEventListener('pronos:consultation-updated', checked); };
   }, []);
 
   const handleSubmit = async (e) => {
@@ -389,6 +398,8 @@ export default function App() {
       setTwoFactor(false);
       setTwoFactorCode('');
 
+      consultationCache.clear();
+      verifiedUser.current = null;
       localStorage.setItem('token', token);
       setUser(res.data.user);
       if (selectedCompetitionId) fetchMatches(selectedCompetitionId);
@@ -410,6 +421,8 @@ export default function App() {
       setError('Déconnexion impossible : les alertes de cet appareil n’ont pas pu être désactivées. Réessayez.');
       return;
     }
+    consultationCache.clear();
+    verifiedUser.current = null;
     localStorage.removeItem('token');
     await updateBadge(0);
     setUser(null);
@@ -563,6 +576,17 @@ export default function App() {
                       Tutoriel d’utilisation
                     </button>
                     <button
+                      onClick={() => {
+                        const enabled = !reducedData();
+                        localStorage.setItem('pronos:reduced-data', String(enabled));
+                        document.documentElement.classList.toggle('reduced-data', enabled);
+                        window.dispatchEvent(new Event('pronos:data-mode'));
+                        setAccountOpen(false);
+                      }}
+                    >
+                      {reducedData() ? 'Désactiver le mode connexion faible' : 'Mode connexion faible'}
+                    </button>
+                    <button
                       className="user-menu-logout"
                       onClick={() => {
                         setAccountOpen(false);
@@ -602,6 +626,7 @@ export default function App() {
             }
           />
           <UpdateBanner onReload={runNavigation} />
+          <ConnectionStatus />
           <NotificationBanner userId={user.id} />
           <nav className="primary-nav" aria-label="Navigation principale">
             {[
@@ -742,7 +767,8 @@ export default function App() {
                   ready={matchesReady}
                   error={matchesError}
                   stale={matchesStale}
-                  onPlay={() => navigate('play')}
+                  onPlay={(match) => match ? openFollowedFencer({ event: competition, match, mode: 'predictions', tournament: tournamentInfo }) : navigate('play')}
+                  onFollow={(match) => openFollowedFencer({ event: competition, match, mode: 'follow', tournament: tournamentInfo })}
                 />
               )}
               {mainTab === 'season' && <MySeason userId={user.id} playerName={user.name || user.username} />}
@@ -758,6 +784,8 @@ export default function App() {
                   user={user}
                   onPublicListingSaved={(publicListing) => setUser((current) => ({ ...current, publicListing }))}
                   onDeleted={() => {
+                    consultationCache.clear();
+                    verifiedUser.current = null;
                     localStorage.removeItem('token');
                     setUser(null);
                     setMainTab('play');

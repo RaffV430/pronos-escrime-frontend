@@ -1,0 +1,81 @@
+// Only consultation data, scoped to the signed-in account. Never queue writes.
+export const CACHE_EVENT = 'pronos:consultation-updated';
+const PREFIX = 'pronos:consultation:v1:';
+const MAX_AGE = 24 * 60 * 60 * 1000;
+const LIMIT = 2 * 1024 * 1024;
+export function accountScope(token) {
+  try {
+    const payload = JSON.parse(atob(token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')));
+    if (!payload.userId || !payload.exp || payload.exp * 1000 <= Date.now()) return null;
+    return String(payload.userId);
+  } catch {
+    return null;
+  }
+}
+export function cachePath(config) {
+  const url = new URL(config.url, 'https://cache.invalid');
+  for (const [key, value] of Object.entries(config.params || {}))
+    if (value != null) url.searchParams.set(key, String(value));
+  url.searchParams.sort();
+  return url.pathname + url.search;
+}
+export function cacheLifetime(path, reduced = false) {
+  if (/^\/auth\/me$/.test(path)) return 0;
+  if (/^\/(matches|pools)(\?|$)/.test(path)) return reduced ? 60000 : 15000;
+  if (/^\/me\/fencers(\?|$)/.test(path)) return 60000;
+  if (/^\/(tournaments|podium\/competitions\/\d+|public\/tournaments|clubs)(\?|$)/.test(path)) return 300000;
+  return null;
+}
+export function createFieldCache(storage, now = Date.now) {
+  const key = (scope, path) => PREFIX + scope + ':' + path;
+  const keys = () =>
+    Array.from({ length: storage.length }, (_, i) => storage.key(i)).filter((k) => k?.startsWith(PREFIX));
+  function clear(scope) {
+    try {
+      for (const k of keys()) if (!scope || k.startsWith(PREFIX + scope + ':')) storage.removeItem(k);
+    } catch {
+      /* Unavailable storage. */
+    }
+  }
+  function read(scope, path) {
+    try {
+      const value = JSON.parse(storage.getItem(key(scope, path)));
+      if (!value || now() - value.at > MAX_AGE) {
+        storage.removeItem(key(scope, path));
+        return null;
+      }
+      return value;
+    } catch {
+      return null;
+    }
+  }
+  function write(scope, path, data, etag) {
+    try {
+      let size = 0;
+      for (const k of keys()) {
+        const raw = storage.getItem(k);
+        const row = JSON.parse(raw);
+        if (now() - row.at > MAX_AGE) storage.removeItem(k);
+        else size += raw.length * 2;
+      }
+      const raw = JSON.stringify({ at: now(), data, etag });
+      if (raw.length * 2 > LIMIT) return;
+      if (size + raw.length * 2 > LIMIT) clear();
+      storage.setItem(key(scope, path), raw);
+    } catch {
+      /* Full or disabled storage must never break the application. */
+    }
+  }
+  return { read, write, clear };
+}
+export function reducedData() {
+  let manual = false;
+  try {
+    manual = localStorage.getItem('pronos:reduced-data') === 'true';
+  } catch {
+    /* Disabled storage. */
+  }
+  return (
+    manual || Boolean(navigator.connection?.saveData) || ['slow-2g', '2g'].includes(navigator.connection?.effectiveType)
+  );
+}

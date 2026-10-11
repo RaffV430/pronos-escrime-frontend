@@ -2880,3 +2880,9 @@
 .support-dialog {
   margin: auto;
 }
+
+.connection-status { margin: 8px 0; padding: 8px 12px; border: 1px solid var(--border, #62748c); border-radius: 8px; font-size: .9rem; }
+.reduced-data *, .reduced-data *::before, .reduced-data *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; box-shadow: none !important; }
+
+.reduced-data { font-family: system-ui, sans-serif; }
+.reduced-data body, .reduced-data h1, .reduced-data h2, .reduced-data h3, .reduced-data button, .reduced-data input { font-family: system-ui, sans-serif !important; }

@@ -1,15 +1,18 @@
+import { useFencerFollows, isFollowedFencer } from '../lib/fencerFollows';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { usePerView } from './usePerView';
 import { buildTree, officialWinner, seedOf } from './bracketTree';
 import { roundName, shortName, shortRoundName } from './eventResults';
 
 function Side({ m, n, won }) {
+  const follows = useFencerFollows();
   const seed = seedOf(m, n);
   const score = m.resultType === 'MEDICAL_WITHDRAWAL' ? (won ? '' : 'ab.') : (m[`score${n}`] ?? '');
   return (
     <span className={`rb-side${won ? ' is-win' : ''}`}>
       <span className="rb-seed">{seed ? seed : ''}</span>
       <span className="rb-name">
+        {isFollowedFencer(follows, m[`player${n}`]) && <span className="favorite-star" aria-label="Tireur favori">★ </span>}
         <span className="rb-full">{m[`player${n}`]}</span>
         <span className="rb-short">{shortName(m[`player${n}`])}</span>
       </span>

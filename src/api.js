@@ -1,3 +1,5 @@
+import { createFieldCache } from './lib/fieldCache';
+import { fieldAdapter } from './lib/fieldAdapter';
 import axios from 'axios';
 import { handleAuthError } from './lib/session.js';
 export { SESSION_EXPIRED_EVENT } from './lib/session.js';
@@ -15,6 +17,9 @@ const API = axios.create({
   timeout: 20000,
   headers: { accept: 'application/json' },
 });
+
+export const consultationCache = createFieldCache(localStorage);
+API.defaults.adapter = fieldAdapter(axios.getAdapter(API.defaults.adapter), consultationCache);
 
 API.interceptors.request.use((config) => {
   const token = localStorage.getItem('token');

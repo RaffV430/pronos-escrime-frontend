@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import IndicatorInput from './IndicatorInput';
 import { parseIndicator } from '../lib/indicator.js';
 import API from '../api';
@@ -580,11 +580,12 @@ function PoolList({ competitionId, user, onDirtyChange, refreshVersion }) {
   const [error, setError] = useState('');
   const [refresh, setRefresh] = useState(0);
   const now = useNow(5000);
-  const reload = useCallback(() => setRefresh((n) => n + 1), []);
+  const manualRefresh = useRef(false);
+  const reload = useCallback((event) => { if (event?.type === 'click') manualRefresh.current = true; setRefresh(n => n + 1); }, []);
   useEffect(() => {
     const controller = new AbortController();
     setError('');
-    API.get(`/pools?competitionId=${competitionId}`, { signal: controller.signal })
+    API.get(`/pools?competitionId=${competitionId}`, { signal: controller.signal, forceRefresh: manualRefresh.current })
       .then((res) => {
         if (!controller.signal.aborted) setPools(res.data);
       })
@@ -594,6 +595,7 @@ function PoolList({ competitionId, user, onDirtyChange, refreshVersion }) {
       .finally(() => {
         if (!controller.signal.aborted) setLoading(false);
       });
+    manualRefresh.current = false;
     return () => controller.abort();
   }, [competitionId, refresh, refreshVersion]);
   useEffect(() => pollWhileVisible(reload, 30000), [reload]);

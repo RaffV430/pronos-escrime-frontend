@@ -1,3 +1,5 @@
+import { pollWhileVisible } from '../lib/polling';
+import { useFencerFollows, isFollowedFencer } from '../lib/fencerFollows';
 import { useEffect, useRef, useState } from 'react';
 import API from '../api';
 import { plural } from './resultPresentation';
@@ -74,6 +76,7 @@ function Bout({ value }) {
 
 // Matrice officielle de la poule : chaque ligne donne les assauts d'un tireur contre les autres.
 function PoolMatrix({ pool, onOpen }) {
+  const follows = useFencerFollows();
   const fencers = [...pool.fencers].sort((a, b) => a.position - b.position);
   const place = new Map(
     [...fencers]
@@ -112,7 +115,7 @@ function PoolMatrix({ pool, onOpen }) {
             <tr key={f.id}>
               <td>
                 <button type="button" className="result-pool-name" onClick={() => onOpen(f)}>
-                  {f.name}
+                  {isFollowedFencer(follows, f.name) && <span className="favorite-star" aria-label="Tireur favori">★ </span>}{f.name}
                   {f.countryCode && <small className="muted"> {f.countryCode}</small>}
                 </button>
               </td>
@@ -137,19 +140,22 @@ function PoolMatrix({ pool, onOpen }) {
 
 // Poules d'une épreuve, regroupées par tour : classement de chaque poule (victoires, indice).
 export default function ResultsPools({ competitionId }) {
+  const follows = useFencerFollows();
   const publicMode = usePublicMode();
   const [pools, setPools] = useState(null);
   const [error, setError] = useState('');
   const [open, setOpen] = useState(null);
   useEffect(() => {
     const c = new AbortController();
-    (publicMode
+    const refresh = () => (publicMode
       ? API.get(`/public/competitions/${competitionId}/pools`, { signal: c.signal })
       : API.get('/pools', { params: { competitionId }, signal: c.signal })
     )
       .then(({ data }) => setPools(data))
       .catch(() => !c.signal.aborted && setError('Poules indisponibles.'));
-    return () => c.abort();
+    refresh();
+    const stop = pollWhileVisible(refresh, 30000);
+    return () => { c.abort(); stop(); };
   }, [competitionId, publicMode]);
   if (error) return <p className="muted">{error}</p>;
   if (!pools) return <p className="muted">Chargement…</p>;
@@ -191,7 +197,7 @@ export default function ResultsPools({ competitionId }) {
                             className="result-pool-name"
                             onClick={() => setOpen({ fencer: f, pool })}
                           >
-                            {f.name}
+                            {isFollowedFencer(follows, f.name) && <span className="favorite-star" aria-label="Tireur favori">★ </span>}{f.name}
                             {f.countryCode && <small className="muted"> {f.countryCode}</small>}
                           </button>
                         </td>
