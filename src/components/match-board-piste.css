@@ -1,0 +1,59 @@
+/* Pronostiquer › Tableau (Cartes et Liste) : couleurs de l'escrime — vert à la place du bleu,
+   lampe rouge à gauche, lampe verte à droite. */
+.club-arena .match-board {
+  --accent: #0fa35a;
+  --accent-link: #0b8a4c;
+  --on-accent: #fff;
+  --primary: var(--accent-link);
+  --primary-hover: var(--accent-link);
+  --arena-accent: var(--accent);
+  --arena-blue: var(--accent);
+  --info: var(--accent);
+}
+@media (prefers-color-scheme: dark) {
+  .club-arena .match-board {
+    --accent: #22d37a;
+    --accent-link: #22d37a;
+    --on-accent: #0b0e13;
+    --primary: var(--accent-link);
+    --primary-hover: var(--accent-link);
+    --arena-accent: var(--accent);
+    --arena-blue: var(--accent);
+    --info: var(--accent);
+  }
+}
+/* Initiales : un seul anneau net à la couleur de la lampe (plus de double halo qui se chevauche). */
+.club-arena .match-board .arena-avatar {
+  box-shadow: none;
+  border-width: 2px;
+  border-style: solid;
+  line-height: 1;
+}
+.club-arena .match-board .arena-avatar.avatar-0 {
+  background: #c64634;
+  border-color: var(--lamp-left);
+}
+.club-arena .match-board .arena-avatar.avatar-1 {
+  background: #1e8f5a;
+  border-color: var(--lamp-right);
+}
+/* Place dans le tableau, juste avant le nom. */
+.club-arena .match-seed {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  min-width: 2.2em;
+  height: 1.6em;
+  padding: 0 0.35em;
+  margin-right: 0.35em;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text-2);
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 0.8em;
+  font-variant-numeric: tabular-nums;
+  vertical-align: middle;
+}
