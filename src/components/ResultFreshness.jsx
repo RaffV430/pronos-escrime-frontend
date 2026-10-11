@@ -1,32 +1,9 @@
-import { RESULT_REFRESH_MS } from '../lib/resultSync';
-import { useEffect, useState } from 'react';
-import API from '../api';
-import { pollWhileVisible } from '../lib/polling';
+import { useFreshness } from '../lib/useResultSync';
+import { useNow } from '../lib/polling';
 export default function ResultFreshness({ competitionId, children }) {
-  const [data, setData] = useState(null),
-    [failed, setFailed] = useState(false),
-    [now, setNow] = useState(() => Date.now());
-  useEffect(() => {
-    const c = new AbortController();
-    setData(null);
-    const read = () => {
-      setNow(Date.now());
-      API.get(`/matches/freshness/${competitionId}`, { signal: c.signal })
-        .then((r) => {
-          setData(r.data);
-          setFailed(false);
-        })
-        .catch(() => {
-          if (!c.signal.aborted) setFailed(true);
-        });
-    };
-    read();
-    const stopPolling = pollWhileVisible(read, RESULT_REFRESH_MS);
-    return () => {
-      c.abort();
-      stopPolling();
-    };
-  }, [competitionId]);
+  // Lit le veilleur partagé de l'épreuve au lieu d'interroger le serveur une seconde fois.
+  const { data, failed } = useFreshness(competitionId);
+  const now = useNow(30000);
   const label = failed
     ? 'Vérification indisponible'
     : {

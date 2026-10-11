@@ -50,6 +50,7 @@ export default function ClubModeration({ destination, onSecurity }) {
             if (!c.signal.aborted) failure(e);
           }),
       30000,
+      { follow: false },
     );
     return () => {
       c.abort();

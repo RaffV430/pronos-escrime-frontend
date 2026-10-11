@@ -20,6 +20,8 @@ export function fieldAdapter(
       const response = await network(config);
       if (method !== 'get' && scope && path !== '/auth/refresh') {
         generation++;
+        // Une lecture partie avant cet enregistrement ne doit pas être réutilisée après lui.
+        pending.clear();
         const profile = !path.startsWith('/auth/') ? cache.read(scope, '/auth/me') : null;
         cache.clear(scope);
         if (profile) cache.write(scope, '/auth/me', profile.data);
@@ -30,8 +32,8 @@ export function fieldAdapter(
     const row = cache.read(scope, path);
     const key = scope + path;
     const fetchLatest = () => {
-      if (pending.has(key)) return pending.get(key);
       const version = generation;
+      if (pending.get(key)?.version === version) return pending.get(key).request;
       // Background refresh is independent of a view unmounting. Never store credentials.
       const request = network({
         ...config,
@@ -62,8 +64,10 @@ export function fieldAdapter(
           }
           return response;
         })
-        .finally(() => pending.delete(key));
-      pending.set(key, request);
+        .finally(() => {
+          if (pending.get(key)?.request === request) pending.delete(key);
+        });
+      pending.set(key, { request, version });
       return request;
     };
     if (row && !config.forceRefresh) {
@@ -73,7 +77,8 @@ export function fieldAdapter(
           if ([401, 403, 404].includes(error.response?.status)) {
             cache.clear(scope);
             notify({ path, error });
-          } else notify({ path, offline: true, checkedAt: row.at });
+          } else if (!error.response) notify({ path, offline: true, checkedAt: row.at });
+          // Erreur serveur ou limite atteinte : la copie affichée reste valable, ce n'est pas une coupure réseau.
         });
       return {
         config,

@@ -14,7 +14,9 @@ export function FencerFollowsProvider({ userId, competitionId, children }) {
     try {
       const { data: result } = await API.get('/me/fencers', { params: competitionId ? { competitionId } : {} });
       if (seq === sequence.current) {
-        setData({ ...result, competitionId });
+        // Même contenu : garder la même référence pour ne pas relancer (et vider) les listes qui en dépendent.
+        const next = { ...result, competitionId };
+        setData((prev) => (JSON.stringify(prev) === JSON.stringify(next) ? prev : next));
         setReady(true);
         setError('');
       }
