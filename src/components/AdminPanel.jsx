@@ -9,6 +9,7 @@ import { useNow } from '../lib/polling';
 import EngagementPanel from './EngagementPanel';
 import ScheduleSettings from './ScheduleSettings';
 import IdentityReview from './IdentityReview';
+import AdminReviews from './AdminReviews';
 export default function AdminPanel({ competitionId, tournamentId, user, matches, onRefresh }) {
   const now = useNow(5000);
   const [query, setQuery] = useState(''),
@@ -96,6 +97,7 @@ export default function AdminPanel({ competitionId, tournamentId, user, matches,
       <FtlSetup competitionId={competitionId} tournamentId={tournamentId} />
       <ScheduleSettings competitionId={competitionId} />
       <IdentityReview key={`identity-review:${competitionId}`} competitionId={competitionId} onRefresh={onRefresh} />
+      <AdminReviews key={`admin-reviews:${competitionId}`} competitionId={competitionId} onRefresh={onRefresh} />
       <ArchiveTournament tournamentId={tournamentId} />
       <form className="feature-panel" onSubmit={adjust}>
         <h3>Ajustement manuel des points</h3>

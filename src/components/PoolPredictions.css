@@ -540,3 +540,9 @@
   flex: 1;
   margin-top: 0;
 }
+
+/* Statut particulier d'un tireur (absent, retrait médical, exclu) */
+.pool-fencer-status { margin-left: 6px; padding: 1px 6px; border-radius: 999px; font-size: 0.75rem; font-weight: 600; background: rgba(255, 59, 71, 0.14); color: var(--danger, #c62828); white-space: nowrap; }
+.pool-status-admin { display: grid; gap: 8px; margin: 8px 0 12px; border: 1px solid var(--border, #d7dde5); border-radius: 10px; padding: 10px 12px; }
+.pool-status-admin label { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+.pool-status-admin select { min-height: 40px; }
