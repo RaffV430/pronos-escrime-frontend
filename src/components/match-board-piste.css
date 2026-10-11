@@ -57,9 +57,10 @@
   font-variant-numeric: tabular-nums;
   vertical-align: middle;
 }
-/* Filtres, choix d'affichage (Cartes, Liste, Tableau complet), « Face-à-face et forme » et
-   « Réactions et commentaires » gardent le bleu de l'application. */
-.club-arena .match-board :is(.h2h, .match-social, .filter-row) {
+/* Filtres, choix d'affichage (Cartes, Liste, Tableau complet), « Face-à-face et forme »,
+   « Réactions et commentaires », tous les boutons et liens, la barre au-dessus du clavier et le
+   vainqueur choisi gardent le bleu de l'application (le vert reste réservé au tireur de droite). */
+.club-arena .match-board :is(.h2h, .match-social, .filter-row, button, a, .button-link, .keyboard-bar) {
   --accent: #225da8;
   --accent-link: #225da8;
   --on-accent: #fff;
@@ -70,9 +71,40 @@
   --info: #3da5ff;
 }
 @media (prefers-color-scheme: dark) {
-  .club-arena .match-board :is(.h2h, .match-social, .filter-row) {
+  .club-arena .match-board :is(.h2h, .match-social, .filter-row, button, a, .button-link, .keyboard-bar) {
     --accent-link: #3da5ff;
     --primary: var(--accent-link);
     --primary-hover: var(--accent-link);
+  }
+}
+
+/* Tendance des pronostics : la part du tireur de gauche en rouge, celle du tireur de droite en vert. */
+.crowd-bar {
+  background: #1e8f5a;
+}
+.crowd-bar span {
+  background: #c64634;
+}
+.crowd-labels > span:first-child strong {
+  color: #c64634;
+}
+.crowd-labels > span:last-child strong {
+  color: #1e8f5a;
+}
+@media (prefers-color-scheme: dark) {
+  .crowd-labels > span:first-child strong {
+    color: #ff6b5b;
+  }
+  .crowd-labels > span:last-child strong {
+    color: #22d37a;
+  }
+}
+/* Tireur dont on saisit le score : nom en bleu (et non en vert, réservé au tireur de droite). */
+.club-arena .match-board .opponent-row:has(input:focus) {
+  color: #225da8;
+}
+@media (prefers-color-scheme: dark) {
+  .club-arena .match-board .opponent-row:has(input:focus) {
+    color: #3da5ff;
   }
 }

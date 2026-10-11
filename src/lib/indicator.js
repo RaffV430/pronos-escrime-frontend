@@ -15,8 +15,9 @@ export function parseIndicator(value) {
   return Number(text);
 }
 
-export function indicatorError(value, minimum, maximum) {
-  if (String(value ?? '').trim() === '') return 'Indice requis.';
+// optional : pronostic simplifié, l'indice peut rester vide (victoires seules).
+export function indicatorError(value, minimum, maximum, optional = false) {
+  if (String(value ?? '').trim() === '') return optional ? '' : 'Indice requis.';
   const n = parseIndicator(value);
   if (n === null) return 'Indice : nombre entier, négatif si besoin (bouton ±).';
   if (n < minimum || n > maximum) return `Indice entre ${minimum} et ${maximum}.`;

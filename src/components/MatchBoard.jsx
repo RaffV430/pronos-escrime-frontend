@@ -1,3 +1,4 @@
+import BoostBadge from './BoostBadge';
 import { useFencerFollows, isFollowedFencer } from '../lib/fencerFollows';
 import CrowdTrend from './CrowdTrend';
 import { matchTotal } from './resultPresentation';
@@ -14,6 +15,33 @@ import HeadToHead from './HeadToHead';
 import MatchSocial from './MatchSocial';
 import BracketTree from './BracketTree.jsx';
 import { buildTree } from './bracketTree';
+
+// Barre collée au-dessus du clavier du téléphone (suit la zone visible quand le clavier s'ouvre).
+function KeyboardBar({ children }) {
+  const [top, setTop] = useState(null);
+  useEffect(() => {
+    const vv = window.visualViewport;
+    if (!vv) return;
+    const place = () => setTop(vv.offsetTop + vv.height);
+    place();
+    vv.addEventListener('resize', place);
+    vv.addEventListener('scroll', place);
+    return () => {
+      vv.removeEventListener('resize', place);
+      vv.removeEventListener('scroll', place);
+    };
+  }, []);
+  return (
+    <div
+      className="keyboard-bar"
+      role="toolbar"
+      aria-label="Saisie du pronostic"
+      style={top === null ? { bottom: 0 } : { top }}
+    >
+      {children}
+    </div>
+  );
+}
 
 export default function MatchBoard({
   initialFilter = 'Tous',
@@ -45,7 +73,9 @@ export default function MatchBoard({
   const [drafts, setDrafts] = useState({}),
     [messages, setMessages] = useState({}),
     [busy, setBusy] = useState(false),
-    [filter, setFilter] = useState(linkedIds.length ? 'Nouveaux' : initialFilter),
+    [filter, setFilterState] = useState(linkedIds.length ? 'Nouveaux' : initialFilter),
+    // Matchs enregistrés depuis le choix du filtre : restent affichés (pas de saut d'écran avec « À compléter »).
+    [kept, setKept] = useState(() => new Set()),
     [openId, setOpenId] = useState(null),
     [reveal, setReveal] = useState(null), // match à rendre visible dans l'arbre paginé
     [view, setView] = useState(() => {
@@ -56,13 +86,20 @@ export default function MatchBoard({
         return 'Arena';
       }
     });
+  const setFilter = (value) => {
+    setKept(new Set());
+    setFilterState(value);
+  };
   const localDraft = useLocalDraft(draftKey(userId, competitionId, 'matches'));
-  const saveDrafts = (update) =>
-    setDrafts((old) => {
-      const next = typeof update === 'function' ? update(old) : update;
-      localDraft.persist(Object.keys(next).length ? next : null);
-      return next;
-    });
+  // Copie synchrone des saisies : l'enregistrement en arrière-plan et le passage au match suivant
+  // lisent toujours la dernière frappe, même avant le prochain rendu.
+  const draftsRef = useRef({});
+  const saveDrafts = (update) => {
+    const next = typeof update === 'function' ? update(draftsRef.current) : update;
+    draftsRef.current = next;
+    localDraft.persist(Object.keys(next).length ? next : null);
+    setDrafts(next);
+  };
   const seenKey = `pronos:seen-matches:${userId}:${competitionId}`;
   const [seen, setSeen] = useState(() => {
     try {
@@ -109,9 +146,9 @@ export default function MatchBoard({
     return () => clearTimeout(timer);
   }, [focusTarget]);
   const saving = useRef(false);
-  // Navigation clavier : après Entrée (ou Maj seule) sur un pronostic complet, on
-  // enregistre puis on passe au prochain match ouvert sans pronostic.
-  const pendingAdvance = useRef(null);
+  // Enregistrements demandés pendant un envoi : traités juste après (aucune saisie perdue).
+  const queued = useRef(new Set());
+  const saveRef = useRef(null);
   const shiftAlone = useRef(false);
   const valid = matches.filter(
     (m) => m.player1?.trim() && m.player2?.trim() && m.player1 !== 'En attente...' && m.player2 !== 'En attente...',
@@ -132,14 +169,23 @@ export default function MatchBoard({
     window.addEventListener('beforeunload', leave);
     return () => window.removeEventListener('beforeunload', leave);
   }, [dirty]);
-  const values = (m) => ({
-    score1: mine(m)?.predictedScore1 ?? '',
-    score2: mine(m)?.predictedScore2 ?? '',
-    ...drafts[m.id],
-  });
+  // winner : vainqueur désigné sans score (pronostic simplifié) ; un score complet l'emporte sur lui.
+  // d : saisies du rendu (affichage) ou draftsRef.current (gestionnaires d'événements, dernière frappe).
+  const values = (m, d = drafts) => {
+    const p = mine(m);
+    const base = p?.winnerOnly
+      ? { score1: '', score2: '', winner: p.predictedScore1 > p.predictedScore2 ? 1 : 2 }
+      : { score1: p?.predictedScore1 ?? '', score2: p?.predictedScore2 ?? '', winner: null };
+    return { ...base, ...d[m.id] };
+  };
+  const pickedSide = (m, v = values(m)) =>
+    !validateScores(v, m.maxScore || 15) ? (Number(v.score1) > Number(v.score2) ? 1 : 2) : v.winner || null;
   const message = (id, text, failed = false) => setMessages((old) => ({ ...old, [id]: { text, failed } }));
   const save = async (ids) => {
-    if (saving.current) return [];
+    if (saving.current) {
+      for (const id of ids) queued.current.add(Number(id));
+      return [];
+    }
     saving.current = true;
     setBusy(true);
     const saved = [];
@@ -148,10 +194,11 @@ export default function MatchBoard({
       for (const id of ids) {
         const m = valid.find((m) => m.id === Number(id));
         if (!m) continue;
-        const v = values(m),
-          invalid = validateScores(v, m.maxScore || 15);
+        const v = values(m, draftsRef.current),
+          winnerOnly = v.score1 === '' && v.score2 === '' && [1, 2].includes(v.winner),
+          invalid = winnerOnly ? null : validateScores(v, m.maxScore || 15);
         if (invalid) {
-          message(id, invalid, true);
+          message(id, `${invalid} Ou touchez simplement le nom du vainqueur.`, true);
           continue;
         }
         if (!ready || isMatchClosed(m, Date.now())) {
@@ -162,7 +209,10 @@ export default function MatchBoard({
           );
           continue;
         }
-        ready_.push([id, { predictedScore1: Number(v.score1), predictedScore2: Number(v.score2) }]);
+        ready_.push([
+          id,
+          winnerOnly ? { winner: v.winner } : { predictedScore1: Number(v.score1), predictedScore2: Number(v.score2) },
+        ]);
       }
       // Envois en parallèle (le serveur contrôle chaque clôture), puis un seul rafraîchissement.
       const results = await Promise.allSettled(
@@ -188,22 +238,23 @@ export default function MatchBoard({
           return next;
         });
         for (const id of saved) message(id, 'Pronostic enregistré.');
+        setKept((old) => new Set([...old, ...saved]));
       }
     } finally {
       saving.current = false;
       setBusy(false);
     }
+    // Saisies terminées pendant l'envoi : enregistrées à la suite, avec la version la plus récente du code.
+    const later = [...queued.current].filter((id) => draftsRef.current[id]);
+    queued.current.clear();
+    if (later.length) setTimeout(() => saveRef.current(later), 0);
     return saved;
   };
-  const advance = async (id) => {
-    const saved = await save([id]);
-    if (saved.includes(id)) pendingAdvance.current = id;
-  };
   useEffect(() => {
-    // Attend la fin de l'enregistrement (champs réactivés) avant de déplacer le focus.
-    if (busy || pendingAdvance.current === null) return;
-    const current = pendingAdvance.current;
-    pendingAdvance.current = null;
+    saveRef.current = save;
+  });
+  // Prochain match ouvert sans pronostic, dans l'ordre affiché.
+  const nextOpen = (current) => {
     // Arbre paginé : l'ordre suit le tableau entier, même les tours qui ne sont pas affichés.
     const paged = view === 'Arbre' && buildTree(valid);
     const ordered = paged
@@ -211,30 +262,102 @@ export default function MatchBoard({
       : view === 'Arena'
         ? valid.map((m) => m.id)
         : [...document.querySelectorAll('input[id^="input-"][id$="-1"]')].map((el) => Number(el.id.split('-')[1]));
-    const next = nextMatchId(ordered, current, (mid) => {
+    return nextMatchId(ordered, current, (mid) => {
       const m = valid.find((x) => x.id === mid);
-      return Boolean(m) && !isMatchClosed(m, Date.now()) && !mine(m);
+      return Boolean(m) && !isMatchClosed(m, Date.now()) && !mine(m) && !draftsRef.current[mid];
     });
-    const focusInput = () => {
-      const input = next && document.getElementById(`input-${next}-1`);
-      if (input && !input.disabled) {
-        input.focus({ preventScroll: true });
-        input.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        return true;
-      }
-      return false;
-    };
-    if (focusInput()) return;
-    if (next && (view === 'Arbre' || view === 'Arena')) {
-      setReveal({ id: next });
-      setTimeout(() => focusInput() || document.activeElement?.blur(), 50);
-    } else document.activeElement?.blur(); // plus rien à saisir : ferme le clavier sur mobile
-  });
-  // Saisie commune aux vues Liste et Arbre.
-  const type = (m, side, raw) => {
-    const value = String(raw).replace(/\D/g, '').slice(0, 2);
-    saveDrafts((old) => ({ ...old, [m.id]: { ...values(m), [`score${side}`]: value } }));
   };
+  // Passe au match suivant. Le focus est déplacé tout de suite (dans le geste de l'utilisateur) :
+  // le clavier du téléphone reste affiché, l'enregistrement se fait en arrière-plan.
+  const goTo = (next, withKeyboard) => {
+    if (!next) {
+      if (withKeyboard) document.activeElement?.blur(); // plus rien à saisir : ferme le clavier
+      return;
+    }
+    setReveal({ id: next });
+    const show = () => {
+      const input = document.getElementById(`input-${next}-1`);
+      const target = withKeyboard ? input : document.getElementById(`match-${next}`) || input;
+      if (!target) return false;
+      if (withKeyboard && !input.disabled) input.focus({ preventScroll: true });
+      target.scrollIntoView({ behavior: 'smooth', block: withKeyboard ? 'center' : 'nearest' });
+      return true;
+    };
+    if (!show()) setTimeout(show, 60);
+  };
+  const commit = (m) => {
+    const next = nextOpen(m.id);
+    save([m.id]);
+    goTo(next, true);
+  };
+  // Saisie complète : « 0 », deux chiffres, ou un chiffre qui ne peut plus être suivi d'un autre (3 sur 15).
+  const complete = (value, max) => value === '0' || value.length >= 2 || Number(value) * 10 > max;
+  // Saisie commune aux vues Liste et Arbre. Score complet : on passe seul au champ ou au match suivant.
+  const type = (m, side, raw, el = null) => {
+    const value = String(raw).replace(/\D/g, '').slice(0, 2);
+    const v = { ...values(m, draftsRef.current), [`score${side}`]: value, winner: null };
+    saveDrafts((old) => ({ ...old, [m.id]: v }));
+    if (!el || !value || !complete(value, m.maxScore || 15)) return;
+    const prefix = el.id.startsWith('detail-') ? 'detail-' : '';
+    if (side === 1 && v.score2 === '') document.getElementById(`${prefix}input-${m.id}-2`)?.focus();
+    else if (!validateScores(v, m.maxScore || 15)) commit(m);
+  };
+  // Pronostic simplifié : toucher le nom du vainqueur suffit (score facultatif).
+  const pick = (m, side) => {
+    if (!ready || isMatchClosed(m, now)) return;
+    if (pickedSide(m, values(m, draftsRef.current)) === side && !draftsRef.current[m.id]) return;
+    saveDrafts((old) => ({ ...old, [m.id]: { score1: '', score2: '', winner: side } }));
+    save([m.id]);
+    // Le joueur reste sur ce match : il peut ajouter le score (clavier ouvert), puis choisir
+    // « Match suivant » dans la barre au-dessus du clavier.
+    setReveal({ id: m.id });
+    const prefix = view === 'Arbre' ? 'detail-' : '';
+    document.getElementById(`${prefix}input-${m.id}-1`)?.focus({ preventScroll: true });
+  };
+  // Barre au-dessus du clavier (mobile) : match en cours de saisie.
+  const [typingId, setTypingId] = useState(null);
+  const touchDevice = () => typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches;
+  const scoreInputId = (el) => Number(/(?:^|-)input-(\d+)-[12]$/.exec(el?.id || '')?.[1]) || null;
+  const onFocusIn = (e) => {
+    const id = scoreInputId(e.target);
+    if (id && touchDevice()) setTypingId(id);
+  };
+  const onFocusOut = (e) => {
+    if (!scoreInputId(e.relatedTarget)) setTypingId(null);
+  };
+  // « Match suivant » : score complet → enregistré, clavier gardé pour le match suivant ;
+  // vainqueur seul → on ferme le clavier et on montre le match suivant (toucher son vainqueur).
+  const nextFromBar = () => {
+    const m = valid.find((x) => x.id === typingId);
+    if (!m) return;
+    const v = values(m, draftsRef.current);
+    const scored = v.score1 !== '' || v.score2 !== '';
+    if (scored && validateScores(v, m.maxScore || 15)) {
+      if (!mine(m)) return message(m.id, 'Score incomplet : complétez-le ou touchez le nom du vainqueur.', true);
+      saveDrafts((old) => {
+        const next = { ...old };
+        delete next[m.id];
+        return next;
+      });
+    } else if (draftsRef.current[m.id]) save([m.id]);
+    const next = nextOpen(m.id);
+    if (scored && !validateScores(v, m.maxScore || 15)) return goTo(next, true);
+    document.activeElement?.blur();
+    setTypingId(null);
+    goTo(next, false);
+  };
+  const typingMatch = typingId && valid.find((x) => x.id === typingId);
+  const typingStatus = typingMatch
+    ? drafts[typingMatch.id]
+      ? busy
+        ? 'Enregistrement…'
+        : 'Saisie en cours'
+      : mine(typingMatch)
+        ? mine(typingMatch).winnerOnly
+          ? '✓ Vainqueur enregistré'
+          : '✓ Enregistré'
+        : 'À compléter'
+    : '';
   // Entrée (ou Maj seule) sur un pronostic complet : enregistre puis passe au prochain match à saisir.
   const keyDown = (m, side, e) => {
     if (e.key === 'Shift') {
@@ -244,21 +367,22 @@ export default function MatchBoard({
     shiftAlone.current = false; // Maj+Tab, Maj+chiffre… : pas de navigation
     if (e.key !== 'Enter') return;
     e.preventDefault();
-    const v = values(m);
-    if (v.score1 !== '' && v.score2 !== '') advance(m.id);
-    else if (side === 1) document.getElementById(`input-${m.id}-2`)?.focus();
+    const v = values(m, draftsRef.current);
+    const prefix = e.currentTarget.id.startsWith('detail-') ? 'detail-' : '';
+    if (v.score1 !== '' && v.score2 !== '') commit(m);
+    else if (side === 1) document.getElementById(`${prefix}input-${m.id}-2`)?.focus();
     else save([m.id]);
   };
   const keyUp = (m, e) => {
     if (e.key !== 'Shift' || !shiftAlone.current) return;
     shiftAlone.current = false;
-    const v = values(m);
-    if (v.score1 !== '' && v.score2 !== '') advance(m.id);
+    const v = values(m, draftsRef.current);
+    if (v.score1 !== '' && v.score2 !== '') commit(m);
   };
   // Tab ou toucher ailleurs : un match quitté avec deux scores valides est enregistré.
   const leave = (m) => {
-    if (!drafts[m.id] || !ready || isMatchClosed(m, now)) return;
-    if (validateScores(values(m), m.maxScore || 15)) return;
+    if (!draftsRef.current[m.id] || !ready || isMatchClosed(m, now)) return;
+    if (validateScores(values(m, draftsRef.current), m.maxScore || 15)) return;
     save([m.id]);
   };
   const remove = async (m) => {
@@ -290,7 +414,7 @@ export default function MatchBoard({
         : filter === 'À venir'
           ? isUpcoming(m)
           : filter === 'À compléter'
-            ? !mine(m) && !isMatchClosed(m, now)
+            ? (!mine(m) && !isMatchClosed(m, now)) || kept.has(m.id)
             : filter === 'Ferment bientôt'
               ? !isMatchClosed(m, now) && m.closesAt && Date.parse(m.closesAt) - now <= 3600000
               : filter === 'Résultats publiés'
@@ -318,8 +442,11 @@ export default function MatchBoard({
             : drafts[m.id]
               ? 'Non enregistré'
               : p
-                ? 'Enregistré'
+                ? p.winnerOnly
+                  ? 'Vainqueur choisi'
+                  : 'Enregistré'
                 : 'À compléter';
+    const picked = pickedSide(m, v);
     return (
       <article
         id={view === 'Arbre' ? `match-detail-${m.id}` : `match-${m.id}`}
@@ -333,13 +460,31 @@ export default function MatchBoard({
         <div className="match-meta">
           <span>
             {m.sourceKey ? `Match ${m.sourceKey.split(':').pop()}` : `#${m.id}`} · {roundLabel(m.round)}
-            {m.strip && <span className="match-strip"> · {stripLabel(m.strip)}</span>}
+            {m.strip && <span className="match-strip"> · {stripLabel(m.strip)}</span>}{' '}
+            <BoostBadge multiplier={m.pointsMultiplier} compact />
           </span>
           <span className={`status-pill ${p && !drafts[m.id] ? 'saved' : ''}`}>{status}</span>
         </div>
         {[m.player1, m.player2].map((name, i) => (
-          <label className="opponent-row" key={i}>
-            <strong>
+          <label className={`opponent-row${picked === i + 1 ? ' is-picked' : ''}`} key={i}>
+            {/* Structure d'origine conservée (mise en page des cartes) : le nom sert de bouton « vainqueur ». */}
+            <strong
+              className={closed || !ready ? undefined : 'winner-pick'}
+              role={closed || !ready ? undefined : 'button'}
+              tabIndex={closed || !ready ? undefined : 0}
+              aria-pressed={closed || !ready ? undefined : picked === i + 1}
+              title={closed || !ready ? undefined : `${name} vainqueur`}
+              onClick={(e) => {
+                if (closed || !ready) return;
+                e.preventDefault(); // pas de transfert du clic vers le champ de score
+                pick(m, i + 1);
+              }}
+              onKeyDown={(e) => {
+                if (closed || !ready || (e.key !== 'Enter' && e.key !== ' ')) return;
+                e.preventDefault();
+                pick(m, i + 1);
+              }}
+            >
               {
                 <span className={`arena-avatar avatar-${i}`} aria-hidden="true">
                   {name
@@ -367,13 +512,18 @@ export default function MatchBoard({
                 {name}
                 {m[`player${i + 1}Country`] && ` - ${m[`player${i + 1}Country`]}`}
               </span>
+              {picked === i + 1 && (
+                <span className="winner-tag" title="Vainqueur choisi" aria-hidden="true">
+                  ✓
+                </span>
+              )}
             </strong>
             {view === 'Arena' && (
               <button
                 type="button"
                 className="score-step"
                 aria-label={`Diminuer le score de ${name}`}
-                disabled={closed || busy || !ready}
+                disabled={closed || !ready}
                 onClick={() => type(m, i + 1, String(Math.max(0, Number(v[`score${i + 1}`] || 0) - 1)))}
               >
                 −
@@ -389,8 +539,8 @@ export default function MatchBoard({
               autoComplete="off"
               placeholder="—"
               value={v[`score${i + 1}`]}
-              disabled={closed || busy || !ready}
-              onChange={(e) => type(m, i + 1, e.target.value)}
+              disabled={closed || !ready}
+              onChange={(e) => type(m, i + 1, e.target.value, e.target)}
               enterKeyHint="next"
               onKeyDown={(e) => keyDown(m, i + 1, e)}
               onKeyUp={(e) => keyUp(m, e)}
@@ -400,7 +550,7 @@ export default function MatchBoard({
                 type="button"
                 className="score-step"
                 aria-label={`Augmenter le score de ${name}`}
-                disabled={closed || busy || !ready}
+                disabled={closed || !ready}
                 onClick={() => type(m, i + 1, String(Math.min(99, Number(v[`score${i + 1}`] || 0) + 1)))}
               >
                 +
@@ -408,6 +558,7 @@ export default function MatchBoard({
             )}
           </label>
         ))}
+        {!closed && ready && <p className="pick-hint">Touchez le vainqueur · le score rapporte plus</p>}
         {m.pointsPending ? (
           <p role="status">
             <strong>Points en attente de validation</strong>
@@ -477,6 +628,8 @@ export default function MatchBoard({
     <section
       className={`match-board ${view === 'Arena' ? 'arena-board' : ''}`}
       aria-label="Tableau d’élimination directe"
+      onFocus={onFocusIn}
+      onBlur={onFocusOut}
     >
       <>
         {newMatches.length > 0 && (
@@ -649,7 +802,7 @@ export default function MatchBoard({
                 .map(({ round, items }) => (
                   <section className="round-column" key={round}>
                     <h2>
-                      {roundLabel(round)}{' '}
+                      {roundLabel(round)} {items.some((m) => m.pointsMultiplier > 1) && <BoostBadge compact />}{' '}
                       <span className="round-count">
                         {items.filter((m) => mine(m)).length}/{items.length}
                       </span>
@@ -667,6 +820,32 @@ export default function MatchBoard({
             </p>
           )}
         </>
+      )}
+      {typingMatch && (
+        <KeyboardBar>
+          <span className="keyboard-bar-status">{typingStatus}</span>
+          <button
+            type="button"
+            className="button-link"
+            onPointerDown={(e) => {
+              e.preventDefault();
+              document.activeElement?.blur();
+              setTypingId(null);
+            }}
+          >
+            Fermer
+          </button>
+          <button
+            type="button"
+            onPointerDown={(e) => {
+              // Action au toucher : le champ garde le focus, le clavier reste ouvert si besoin.
+              e.preventDefault();
+              nextFromBar();
+            }}
+          >
+            Match suivant →
+          </button>
+        </KeyboardBar>
       )}
       {dirty && (
         <div className="save-dock">

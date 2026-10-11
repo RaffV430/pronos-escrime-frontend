@@ -35,7 +35,9 @@ export function officialWinner(m) {
 export function predictedWinner(m, value) {
   const a = String(value?.score1 ?? ''),
     b = String(value?.score2 ?? '');
-  if (!/^\d{1,2}$/.test(a) || !/^\d{1,2}$/.test(b) || Number(a) === Number(b)) return null;
+  if (!/^\d{1,2}$/.test(a) || !/^\d{1,2}$/.test(b) || Number(a) === Number(b))
+    // Pronostic simplifié : vainqueur désigné sans score.
+    return [1, 2].includes(value?.winner) ? side(m, value.winner) : null;
   return side(m, Number(a) > Number(b) ? 1 : 2);
 }
 

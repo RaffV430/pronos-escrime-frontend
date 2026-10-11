@@ -1,0 +1,84 @@
+/* Pronostic simplifié : toucher le nom du vainqueur suffit, le score reste facultatif. */
+.opponent-row .winner-pick {
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.opponent-row .winner-pick:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+/* Vainqueur choisi : nom encadré en vert (le bloc du nom porte le style dans les cartes). */
+.opponent-row.is-picked > strong {
+  box-shadow: inset 0 0 0 2px var(--pick, #225da8);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--pick, #225da8) 10%, var(--surface, #fff));
+}
+.winner-tag {
+  display: inline-grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  margin-left: 6px;
+  border-radius: 50%;
+  vertical-align: middle;
+  background: var(--pick, #225da8);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 800;
+  line-height: 1;
+  font-family: var(--font-body, inherit);
+  letter-spacing: 0;
+}
+.pick-hint {
+  margin: 4px 0 6px;
+  color: var(--muted);
+  font-size: 12px;
+}
+/* Mobile, clavier affiché : la barre « Tout enregistrer » se cache pendant la saisie
+   (enregistrement automatique) au lieu de sauter pendant le défilement. */
+@media (max-width: 760px) {
+  .match-board:focus-within .save-dock,
+  .pool-section:focus-within .save-dock {
+    display: none;
+  }
+}
+
+/* Barre au-dessus du clavier : état du match en cours et « Match suivant ». */
+.keyboard-bar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  transform: translateY(-100%);
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  background: var(--surface, #fff);
+  border-top: 1px solid var(--border, #dce0e6);
+  box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.08);
+}
+.keyboard-bar[style*='bottom'] {
+  transform: none;
+}
+.keyboard-bar-status {
+  flex: 1;
+  min-width: 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--pick, #225da8);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.keyboard-bar button {
+  min-height: 40px;
+  padding: 8px 14px;
+  white-space: nowrap;
+}
+@media (prefers-color-scheme: dark) {
+  .opponent-row,
+  .keyboard-bar {
+    --pick: #3da5ff;
+  }
+}
