@@ -205,3 +205,27 @@ test('unchanged results do not trigger another screen refresh', async () => {
   await adapter({...config,forceRefresh:true});
   assert.equal(notifications[0].path,undefined);
 });
+
+test('a read started before a save is never reused for the refresh after it', async () => {
+  const cache = createFieldCache(storage());
+  let saved = false;
+  let releaseOld;
+  const network = async (c) => {
+    if ((c.method || 'get') !== 'get') {
+      saved = true;
+      return { status: 200, data: {}, headers: {}, config: c };
+    }
+    const snapshot = saved;
+    if (!snapshot) await new Promise((resolve) => (releaseOld = resolve));
+    return { status: 200, data: { saved: snapshot }, headers: {}, config: c };
+  };
+  const adapter = fieldAdapter(network, cache, { token: () => token(1), reduced: () => false, notify: () => {} });
+  const before = adapter(config);
+  await tick();
+  await adapter({ url: '/matches/9/predict', method: 'post', headers: {} });
+  const after = await adapter(config);
+  assert.equal(after.data.saved, true);
+  releaseOld();
+  assert.equal((await before).data.saved, false);
+  assert.equal(cache.read('1', cachePath(config)).data.saved, true);
+});

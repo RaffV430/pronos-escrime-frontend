@@ -4,8 +4,9 @@ import { useEffect, useState } from 'react';
 
 // Rafraîchissement périodique suspendu quand l'application est en arrière-plan (batterie et données
 // mobiles pendant une longue journée de compétition), avec une relecture immédiate au retour.
-export function pollWhileVisible(fn, ms, { network = true } = {}) {
+export function pollWhileVisible(fn, ms, { network = true, follow = network } = {}) {
   let timer = null;
+  let burst = null;
   const hidden = () => typeof document !== 'undefined' && document.hidden;
   const start = () => {
     if (!timer && !hidden()) timer = setInterval(fn, network && reducedData() ? Math.max(ms, REDUCED_RESULT_REFRESH_MS) : ms);
@@ -22,15 +23,21 @@ export function pollWhileVisible(fn, ms, { network = true } = {}) {
     }
   };
   window.addEventListener('online', onVisibility);
+  // Relecture après un changement de données : regroupée (plusieurs signaux rapprochés = une seule relecture)
+  // et réservée aux écrans qui suivent les résultats.
   const changed = (event) => {
     if (
-      network &&
+      follow &&
+      !burst &&
       (event.detail?.path || event.detail?.resultsChanged) &&
       !event.detail.offline &&
       !event.detail.error &&
       !hidden()
     )
-      fn();
+      burst = setTimeout(() => {
+        burst = null;
+        fn();
+      }, 300);
   };
   window.addEventListener(CACHE_EVENT, changed);
   const mode = () => {
@@ -42,6 +49,7 @@ export function pollWhileVisible(fn, ms, { network = true } = {}) {
   document.addEventListener('visibilitychange', onVisibility);
   return () => {
     stop();
+    clearTimeout(burst);
     window.removeEventListener(CACHE_EVENT, changed);
     window.removeEventListener('pronos:data-mode', mode);
     document.removeEventListener('visibilitychange', onVisibility);

@@ -20,6 +20,7 @@ export default function AdminAlerts({ user, onOpen }) {
           })
           .catch(() => {}),
       30000,
+      { follow: false },
     );
     const refresh = () =>
       API.get('/clubs/admin/alerts', { signal: c.signal })

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import API from '../api';
 import { useFencerFollows } from '../lib/fencerFollows';
 import { followedMatchTarget } from '../lib/followedMatch';
@@ -9,11 +9,17 @@ export default function HomeFollowedFencers({ tournamentId, userId, onOpen }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(null);
+  const shown = useRef(null);
+  const favoriteKey = (follows?.favorites || []).map((f) => f.id).sort().join(',');
   useEffect(() => {
     const controller = new AbortController();
-    setFencers([]);
+    // Rechargement du même tournoi : garder la liste affichée pendant la relecture (pas de clignotement).
+    if (shown.current !== tournamentId) {
+      setFencers([]);
+      setLoading(Boolean(tournamentId));
+    }
+    shown.current = tournamentId;
     setError('');
-    setLoading(Boolean(tournamentId));
     if (!tournamentId) return () => controller.abort();
     API.get(`/podium/competitions/${tournamentId}`, { signal: controller.signal })
       .then(async ({ data }) => {
@@ -34,7 +40,7 @@ export default function HomeFollowedFencers({ tournamentId, userId, onOpen }) {
       .catch(() => { if (!controller.signal.aborted) setError('Vos tireurs ne peuvent pas être chargés pour le moment.'); })
       .finally(() => { if (!controller.signal.aborted) setLoading(false); });
     return () => controller.abort();
-  }, [tournamentId, follows?.favorites]);
+  }, [tournamentId, favoriteKey]);
   const open = async fencer => {
     setBusy(fencer.key);
     setError('');

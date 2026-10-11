@@ -18,7 +18,7 @@ export default function UpdateBanner({ onReload }) {
           stop();
         })
         .catch(() => {});
-    stop = pollWhileVisible(check, 5 * 60000);
+    stop = pollWhileVisible(check, 5 * 60000, { follow: false });
     return () => stop();
   }, []);
   if (!available) return null;

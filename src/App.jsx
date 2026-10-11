@@ -65,6 +65,11 @@ const tabFallback = <p className="muted load-state">Chargement…</p>;
 export default function App() {
   // Lien d'invitation (/rejoindre/<code>) : lu avant tout le reste, l'adresse redevient « / ».
   const [tutorialRequest, setTutorialRequest] = useState(0);
+  // Arrivée par un lien précis (notification, partage, tableau) : ne pas lancer le tutoriel
+  // automatiquement, il ramènerait sur l'accueil ; il reste disponible depuis le menu.
+  const [landedOnLink] = useState(
+    () => !/^\/(accueil|connexion|inscription)?\/?$/.test(window.location.pathname) || /[?&](tournament|event)=/.test(window.location.search),
+  );
   const [accountOpen, setAccountOpen] = useState(false);
   const [supportOpen, setSupportOpen] = useState(false);
   const accountMenu = useRef(null);
@@ -615,7 +620,7 @@ export default function App() {
           <AppTutorial
             key={user.id}
             userId={user.id}
-            skipAutomatic={Boolean(adminTarget)}
+            skipAutomatic={Boolean(adminTarget) || landedOnLink}
             request={tutorialRequest}
             onNavigate={(step) =>
               runNavigation(() => {
