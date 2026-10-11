@@ -32,8 +32,11 @@ export default function AdminReviews({ competitionId, onRefresh }) {
     load(c.signal);
     return () => c.abort();
   }, [load]);
-  const act = async (confirmText, fn, done) => {
-    if (busy || !window.confirm(confirmText)) return;
+  // Confirmation dans la page (les fenêtres de confirmation du navigateur peuvent être bloquées).
+  const [pending, setPending] = useState(null);
+  const act = (text, fn, done) => !busy && setPending({ text, fn, done });
+  const run = async ({ fn, done }) => {
+    setPending(null);
     setBusy(true);
     setFeedback('');
     try {
@@ -52,6 +55,17 @@ export default function AdminReviews({ competitionId, onRefresh }) {
     <details className="feature-panel admin-reviews" open={count > 0}>
       <summary>À vérifier après l’épreuve {matches && duplicates ? `· ${count}` : ''}</summary>
       {feedback && <p role="status">{feedback}</p>}
+      {pending && (
+        <div className="admin-review-confirm" role="group" aria-label="Confirmer l’action">
+          <span>{pending.text}</span>
+          <button type="button" disabled={busy} onClick={() => run(pending)}>
+            Confirmer
+          </button>
+          <button type="button" className="button-secondary" disabled={busy} onClick={() => setPending(null)}>
+            Annuler
+          </button>
+        </div>
+      )}
 
       <h3>Matchs de tableau à vérifier</h3>
       {!matches ? (

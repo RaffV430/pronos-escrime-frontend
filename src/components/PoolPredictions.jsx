@@ -334,9 +334,10 @@ function PoolAdmin({ pool, closed, onRefresh }) {
   // Tireurs absents, retirés ou exclus : hors bilan officiel.
   const kept = pool.fencers.filter((f) => !f.status);
   const bouts = kept.length - 1;
+  // Confirmation dans la page (les fenêtres de confirmation du navigateur peuvent être bloquées).
+  const [pendingStatus, setPendingStatus] = useState(null);
   async function setStatus(fencer, status) {
-    const label = status ? FENCER_STATUS[status] : 'sans statut particulier';
-    if (!window.confirm(`${fencer.name} : ${label} ? Ses pronostics vaudront 0 point.`)) return;
+    setPendingStatus(null);
     setBusy(true);
     setFeedback('');
     try {
@@ -397,8 +398,11 @@ function PoolAdmin({ pool, closed, onRefresh }) {
             <select
               aria-label={`Statut de ${f.name}`}
               disabled={busy}
-              value={f.status || ''}
-              onChange={(e) => setStatus(f, e.target.value || null)}
+              value={pendingStatus?.fencer.id === f.id ? pendingStatus.status || '' : f.status || ''}
+              onChange={(e) => {
+                const status = e.target.value || null;
+                setPendingStatus(status === (f.status || null) ? null : { fencer: f, status });
+              }}
             >
               <option value="">Normal</option>
               {Object.entries(FENCER_STATUS).map(([value, label]) => (
@@ -409,6 +413,21 @@ function PoolAdmin({ pool, closed, onRefresh }) {
             </select>
           </label>
         ))}
+        {pendingStatus && (
+          <div className="pool-status-confirm" role="group" aria-label="Confirmer le statut">
+            <span>
+              {pendingStatus.fencer.name} :{' '}
+              {pendingStatus.status ? FENCER_STATUS[pendingStatus.status] : 'retour au statut normal'}
+              {pendingStatus.status ? ' — ses pronostics vaudront 0 point.' : '.'}
+            </span>
+            <button type="button" disabled={busy} onClick={() => setStatus(pendingStatus.fencer, pendingStatus.status)}>
+              Confirmer
+            </button>
+            <button type="button" className="button-secondary" disabled={busy} onClick={() => setPendingStatus(null)}>
+              Annuler
+            </button>
+          </div>
+        )}
       </fieldset>
       {!closed ? (
         <>

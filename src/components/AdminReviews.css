@@ -4,3 +4,5 @@
 .admin-review-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 4px; }
 .admin-review-actions button { min-height: 40px; }
 .admin-review-badge { justify-self: start; padding: 1px 8px; border-radius: 999px; font-size: 0.75rem; background: rgba(255, 197, 49, 0.2); }
+.admin-review-confirm { position: sticky; top: 8px; z-index: 2; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 8px 0; padding: 10px 12px; border-radius: 10px; border: 2px solid var(--accent, #22d37a); background: var(--surface, #fff); }
+.admin-review-confirm span { flex: 1 1 240px; }
