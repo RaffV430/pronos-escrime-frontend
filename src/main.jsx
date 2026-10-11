@@ -7,6 +7,7 @@ import './index.css';
 import App from './App.jsx';
 import './components/club-arena.css';
 import './components/piste-tokens.css';
+import './components/match-board-piste.css';
 import ErrorBoundary from './components/ErrorBoundary.jsx';
 import { startMonitoring, reportError } from './lib/monitoring.js';
 import { initTheme } from './lib/theme.js';

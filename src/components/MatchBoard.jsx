@@ -350,15 +350,23 @@ export default function MatchBoard({
                 </span>
               }
               {isFollowedFencer(follows, name) && (
-                <span
-                  className="club-star"
-                  title="Tireur suivi"
-                >
+                <span className="club-star" title="Tireur suivi">
                   ★{' '}
                 </span>
               )}
-              {name}
-              {m[`player${i + 1}Country`] && ` - ${m[`player${i + 1}Country`]}`}
+              <span className="match-player-name">
+                {m[`seed${i + 1}`] != null && (
+                  <span
+                    className="match-seed"
+                    title="Place dans le tableau"
+                    aria-label={`Place ${m[`seed${i + 1}`]} dans le tableau`}
+                  >
+                    {m[`seed${i + 1}`]}
+                  </span>
+                )}
+                {name}
+                {m[`player${i + 1}Country`] && ` - ${m[`player${i + 1}Country`]}`}
+              </span>
             </strong>
             {view === 'Arena' && (
               <button
@@ -633,7 +641,6 @@ export default function MatchBoard({
                   <div className="match-grid">{card(tree.bronze)}</div>
                 </section>
               )}
-
             </div>
           ) : (
             <div className="rounds">
