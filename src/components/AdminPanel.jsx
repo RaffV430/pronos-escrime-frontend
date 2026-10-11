@@ -10,6 +10,16 @@ import EngagementPanel from './EngagementPanel';
 import ScheduleSettings from './ScheduleSettings';
 import IdentityReview from './IdentityReview';
 import AdminReviews from './AdminReviews';
+const EVENT_TABS = [
+  ['setup', 'Suivi et horaires', 'Source officielle, horaires et lieu de l’épreuve, engagement des joueurs.'],
+  ['results', 'Matchs et résultats', 'Réouverture d’un tour, retrait médical, correction d’un score officiel.'],
+  ['pools', 'Poules et podium', 'Administration des poules (statut des tireurs, résultats) et du podium.'],
+  ['review', 'À vérifier', 'Écarts mis de côté pendant l’épreuve : identités, matchs, inscriptions en double.'],
+  ['points', 'Points et défis', 'Ajustement manuel des points et défis ponctuels.'],
+  ['archive', 'Archivage', 'Archivage du tournoi une fois terminé.'],
+];
+const TAB_KEY = 'pronos:admin-event-tab';
+
 export default function AdminPanel({ competitionId, tournamentId, user, matches, onRefresh }) {
   const now = useNow(5000);
   const [query, setQuery] = useState(''),
@@ -20,12 +30,28 @@ export default function AdminPanel({ competitionId, tournamentId, user, matches,
     [reason, setReason] = useState(''),
     [message, setMessage] = useState(''),
     [busy, setBusy] = useState(false),
-    [audit, setAudit] = useState([]),
     [challengeName, setChallengeName] = useState(''),
     [challengeMatch, setChallengeMatch] = useState(''),
     [medicalMatch, setMedicalMatch] = useState(''),
     [winner, setWinner] = useState('');
   const [correction, setCorrection] = useState({ matchId: '', score1: '', score2: '', reason: '' });
+  const [tab, setTab] = useState(() => {
+    try {
+      const saved = localStorage.getItem(TAB_KEY);
+      return EVENT_TABS.some(([id]) => id === saved) ? saved : 'setup';
+    } catch {
+      return 'setup';
+    }
+  });
+  const chooseTab = (id) => {
+    setTab(id);
+    setMessage('');
+    try {
+      localStorage.setItem(TAB_KEY, id);
+    } catch {
+      /* Préférence d'affichage seulement. */
+    }
+  };
   const pending = useRef(false),
     request = useRef(null);
   useEffect(() => {
@@ -46,14 +72,6 @@ export default function AdminPanel({ competitionId, tournamentId, user, matches,
       clearTimeout(timer);
     };
   }, [query]);
-  const loadAudit = () => API.get('/admin/audit').then((r) => setAudit(r.data));
-  useEffect(() => {
-    const c = new AbortController();
-    API.get('/admin/audit', { signal: c.signal })
-      .then((r) => setAudit(r.data))
-      .catch(() => {});
-    return () => c.abort();
-  }, []);
   const act = async (fn) => {
     if (pending.current) return;
     pending.current = true;
@@ -62,7 +80,6 @@ export default function AdminPanel({ competitionId, tournamentId, user, matches,
     try {
       await fn();
       await onRefresh();
-      await loadAudit();
     } catch (e) {
       setMessage(e.response?.data?.error || 'Connexion interrompue. Réessayez : une attribution ne sera pas doublée.');
     } finally {
@@ -89,331 +106,337 @@ export default function AdminPanel({ competitionId, tournamentId, user, matches,
     });
   };
   return (
-    <section className="feature-panel">
-      <h2>Administration</h2>
-      <p>Les actions concernent l’épreuve sélectionnée. Les opérations sensibles sont consignées dans le journal.</p>
+    <section className="feature-panel admin-event">
+      <nav className="admin-event-tabs" aria-label="Outils de l’épreuve">
+        {EVENT_TABS.map(([id, label]) => (
+          <button
+            key={id}
+            type="button"
+            className={id === tab ? 'is-active' : ''}
+            aria-pressed={id === tab}
+            onClick={() => chooseTab(id)}
+          >
+            {label}
+          </button>
+        ))}
+      </nav>
+      <p className="muted">{EVENT_TABS.find(([id]) => id === tab)[2]}</p>
       {message && <p role="status">{message}</p>}
-      <EngagementPanel tournamentId={tournamentId} competitionId={competitionId} />
-      <FtlSetup competitionId={competitionId} tournamentId={tournamentId} />
-      <ScheduleSettings competitionId={competitionId} />
-      <IdentityReview key={`identity-review:${competitionId}`} competitionId={competitionId} onRefresh={onRefresh} />
-      <AdminReviews key={`admin-reviews:${competitionId}`} competitionId={competitionId} onRefresh={onRefresh} />
-      <ArchiveTournament tournamentId={tournamentId} />
-      <form className="feature-panel" onSubmit={adjust}>
-        <h3>Ajustement manuel des points</h3>
-        <div className="form-grid">
-          <label>
-            Rechercher par ID ou nom
-            <input
-              value={query}
-              onChange={(e) => {
-                setQuery(e.target.value);
-                setTarget('');
-              }}
-            />
-          </label>
-          <label>
-            Joueur
-            <select required value={target} onChange={(e) => setTarget(e.target.value)}>
-              <option value="">Choisir le joueur</option>
-              {users.map((u) => (
-                <option value={u.id} key={u.id}>
-                  {u.name} · ID {u.id}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label>
-            Portée
-            <select value={scope} onChange={(e) => setScope(e.target.value)}>
-              <option value="event">Cette épreuve (et ses classements cumulés)</option>
-              <option value="tournament">Ce tournoi uniquement et saison</option>
-              <option value="global">Classement de saison uniquement</option>
-            </select>
-          </label>
-          <label>
-            Points (+ ou −)
-            <input
-              type="number"
-              min="-10000"
-              max="10000"
-              step="1"
-              required
-              value={points}
-              onChange={(e) => setPoints(e.target.value)}
-            />
-          </label>
-          <label>
-            Motif obligatoire
-            <input minLength={3} maxLength={250} required value={reason} onChange={(e) => setReason(e.target.value)} />
-          </label>
-        </div>
-        <button disabled={busy || !target}>Enregistrer l’ajustement</button>
-      </form>
-      <details className="feature-panel">
-        <summary>Réouverture d’un tour — 10 minutes</summary>
-        <p>Rouvre tous les matchs non terminés du tour choisi, puis les referme automatiquement après 10 minutes.</p>
-        {[...new Set(matches.filter((m) => !m.isFinished && m.round).map((m) => m.round))].map((round) => {
-          const until = matches.find((m) => m.round === round)?.manualUnlockUntil;
-          return (
-            <div className="prediction-summary" key={round}>
-              <p>
-                {roundLabel(round)}
-                {until && now < Date.parse(until)
-                  ? ` · Réouvert jusqu’à ${new Date(until).toLocaleTimeString('fr-FR')}`
-                  : ''}
-              </p>
-              <button
-                disabled={busy}
-                onClick={() =>
-                  act(async () => {
-                    await API.put(`/matches/rounds/${competitionId}/${encodeURIComponent(round)}/unlock`);
-                    setMessage(`${roundLabel(round)} rouvert pendant 10 minutes. La fermeture sera automatique.`);
-                  })
-                }
-              >
-                Rouvrir {roundLabel(round)} pour 10 minutes
-              </button>
-            </div>
-          );
-        })}
-      </details>
-      <details className="feature-panel">
-        <summary>Valider un retrait médical officiel</summary>
-        <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            act(async () => {
-              await API.put(`/matches/${medicalMatch}/medical-withdrawal`, { winner: Number(winner) });
-              setMessage('Retrait médical validé, vainqueur enregistré et points recalculés.');
-            });
-          }}
-        >
-          <p>
-            Vérifiez la qualification dans le tableau officiel. Cette action clôture le match, efface les scores et
-            attribue seulement le point du bon vainqueur.
-          </p>
-          <label>
-            Match
-            <select
-              value={medicalMatch}
-              required
-              onChange={(e) => {
-                setMedicalMatch(e.target.value);
-                setWinner('');
-              }}
-            >
-              <option value="">Choisir</option>
-              {matches.map((m) => (
-                <option value={m.id} key={m.id}>
-                  #{m.id} · {m.player1} / {m.player2}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label>
-            Personne ou équipe qualifiée
-            <select value={winner} required onChange={(e) => setWinner(e.target.value)}>
-              <option value="">Choisir le vainqueur officiel</option>
-              {[1, 2].map((n) => (
-                <option value={n} key={n}>
-                  {matches.find((m) => m.id === Number(medicalMatch))?.[`player${n}`] || '—'}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label>
-            <input type="checkbox" required /> Qualification et retrait médical vérifiés sur la source officielle
-          </label>
-          <button disabled={busy || !medicalMatch || !winner}>Valider et recalculer</button>
-        </form>
-      </details>
-      <details className="feature-panel">
-        <summary>Corriger un score officiel</summary>
-        <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            act(async () => {
-              const m = matches.find((m) => m.id === Number(correction.matchId));
-              await API.put(`/matches/${m.id}/result`, {
-                score1: Number(correction.score1),
-                score2: Number(correction.score2),
-                reason: correction.reason,
-                sourceUrl: m.sourceUrl,
-              });
-              setMessage(
-                'Résultat corrigé et points recalculés. Les adversaires des tours suivants restent à vérifier lors du prochain import officiel.',
-              );
-            });
-          }}
-        >
-          <div role="status">
-            {matches
-              .filter((m) => m.pointsPending)
-              .map((m) => (
-                <p key={m.id}>
-                  <strong>
-                    {roundLabel(m.round)} · {m.player1} / {m.player2}
-                  </strong>{' '}
-                  : {m.syncIssue || 'Points à valider'}{' '}
-                  <button type="button" onClick={() => setCorrection({ ...correction, matchId: String(m.id) })}>
-                    Examiner ce match
+      {tab === 'setup' && (
+        <>
+          <EngagementPanel tournamentId={tournamentId} competitionId={competitionId} />
+          <FtlSetup competitionId={competitionId} tournamentId={tournamentId} />
+          <ScheduleSettings competitionId={competitionId} />
+        </>
+      )}
+      {tab === 'results' && (
+        <>
+          <details className="feature-panel">
+            <summary>Réouverture d’un tour — 10 minutes</summary>
+            <p>
+              Rouvre tous les matchs non terminés du tour choisi, puis les referme automatiquement après 10 minutes.
+            </p>
+            {[...new Set(matches.filter((m) => !m.isFinished && m.round).map((m) => m.round))].map((round) => {
+              const until = matches.find((m) => m.round === round)?.manualUnlockUntil;
+              return (
+                <div className="prediction-summary" key={round}>
+                  <p>
+                    {roundLabel(round)}
+                    {until && now < Date.parse(until)
+                      ? ` · Réouvert jusqu’à ${new Date(until).toLocaleTimeString('fr-FR')}`
+                      : ''}
+                  </p>
+                  <button
+                    disabled={busy}
+                    onClick={() =>
+                      act(async () => {
+                        await API.put(`/matches/rounds/${competitionId}/${encodeURIComponent(round)}/unlock`);
+                        setMessage(`${roundLabel(round)} rouvert pendant 10 minutes. La fermeture sera automatique.`);
+                      })
+                    }
+                  >
+                    Rouvrir {roundLabel(round)} pour 10 minutes
                   </button>
-                </p>
+                </div>
+              );
+            })}
+          </details>
+          <details className="feature-panel">
+            <summary>Valider un retrait médical officiel</summary>
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                act(async () => {
+                  await API.put(`/matches/${medicalMatch}/medical-withdrawal`, { winner: Number(winner) });
+                  setMessage('Retrait médical validé, vainqueur enregistré et points recalculés.');
+                });
+              }}
+            >
+              <p>
+                Vérifiez la qualification dans le tableau officiel. Cette action clôture le match, efface les scores et
+                attribue seulement le point du bon vainqueur.
+              </p>
+              <label>
+                Match
+                <select
+                  value={medicalMatch}
+                  required
+                  onChange={(e) => {
+                    setMedicalMatch(e.target.value);
+                    setWinner('');
+                  }}
+                >
+                  <option value="">Choisir</option>
+                  {matches.map((m) => (
+                    <option value={m.id} key={m.id}>
+                      #{m.id} · {m.player1} / {m.player2}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label>
+                Personne ou équipe qualifiée
+                <select value={winner} required onChange={(e) => setWinner(e.target.value)}>
+                  <option value="">Choisir le vainqueur officiel</option>
+                  {[1, 2].map((n) => (
+                    <option value={n} key={n}>
+                      {matches.find((m) => m.id === Number(medicalMatch))?.[`player${n}`] || '—'}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label>
+                <input type="checkbox" required /> Qualification et retrait médical vérifiés sur la source officielle
+              </label>
+              <button disabled={busy || !medicalMatch || !winner}>Valider et recalculer</button>
+            </form>
+          </details>
+          <details className="feature-panel">
+            <summary>Corriger un score officiel</summary>
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                act(async () => {
+                  const m = matches.find((m) => m.id === Number(correction.matchId));
+                  await API.put(`/matches/${m.id}/result`, {
+                    score1: Number(correction.score1),
+                    score2: Number(correction.score2),
+                    reason: correction.reason,
+                    sourceUrl: m.sourceUrl,
+                  });
+                  setMessage(
+                    'Résultat corrigé et points recalculés. Les adversaires des tours suivants restent à vérifier lors du prochain import officiel.',
+                  );
+                });
+              }}
+            >
+              <div role="status">
+                {matches
+                  .filter((m) => m.pointsPending)
+                  .map((m) => (
+                    <p key={m.id}>
+                      <strong>
+                        {roundLabel(m.round)} · {m.player1} / {m.player2}
+                      </strong>{' '}
+                      : {m.syncIssue || 'Points à valider'}{' '}
+                      <button type="button" onClick={() => setCorrection({ ...correction, matchId: String(m.id) })}>
+                        Examiner ce match
+                      </button>
+                    </p>
+                  ))}
+              </div>
+              <p>
+                À utiliser uniquement après vérification du score et du vainqueur officiels. Les points sont recalculés
+                sans cumul.
+              </p>
+              <label>
+                Match
+                <select
+                  required
+                  value={correction.matchId}
+                  onChange={(e) => setCorrection({ ...correction, matchId: e.target.value })}
+                >
+                  <option value="">Choisir</option>
+                  {matches
+                    .filter((m) => m.sourceUrl)
+                    .map((m) => (
+                      <option key={m.id} value={m.id}>
+                        {m.pointsPending ? 'À vérifier · ' : ''}#{m.id} · {m.player1} / {m.player2}
+                      </option>
+                    ))}
+                </select>
+              </label>
+              {matches.find((m) => m.id === Number(correction.matchId))?.sourceUrl && (
+                <a
+                  href={matches.find((m) => m.id === Number(correction.matchId)).sourceUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  Ouvrir la source officielle
+                </a>
+              )}
+              {['score1', 'score2'].map((k, i) => (
+                <label key={k}>
+                  Score de{' '}
+                  {matches.find((m) => m.id === Number(correction.matchId))?.[`player${i + 1}`] ||
+                    `l’adversaire ${i + 1}`}
+                  <input
+                    required
+                    type="number"
+                    min="0"
+                    max={matches.find((m) => m.id === Number(correction.matchId))?.maxScore || 15}
+                    value={correction[k]}
+                    onChange={(e) => setCorrection({ ...correction, [k]: e.target.value })}
+                  />
+                </label>
               ))}
-          </div>
-          <p>
-            À utiliser uniquement après vérification du score et du vainqueur officiels. Les points sont recalculés sans
-            cumul.
-          </p>
-          <label>
-            Match
-            <select
-              required
-              value={correction.matchId}
-              onChange={(e) => setCorrection({ ...correction, matchId: e.target.value })}
-            >
-              <option value="">Choisir</option>
-              {matches
-                .filter((m) => m.sourceUrl)
-                .map((m) => (
-                  <option key={m.id} value={m.id}>
-                    {m.pointsPending ? 'À vérifier · ' : ''}#{m.id} · {m.player1} / {m.player2}
-                  </option>
-                ))}
-            </select>
-          </label>
-          {matches.find((m) => m.id === Number(correction.matchId))?.sourceUrl && (
-            <a
-              href={matches.find((m) => m.id === Number(correction.matchId)).sourceUrl}
-              target="_blank"
-              rel="noreferrer"
-            >
-              Ouvrir la source officielle
-            </a>
-          )}
-          {['score1', 'score2'].map((k, i) => (
-            <label key={k}>
-              Score de{' '}
-              {matches.find((m) => m.id === Number(correction.matchId))?.[`player${i + 1}`] || `l’adversaire ${i + 1}`}
+              <label>
+                Motif
+                <input
+                  required
+                  minLength={3}
+                  maxLength={250}
+                  value={correction.reason}
+                  onChange={(e) => setCorrection({ ...correction, reason: e.target.value })}
+                />
+              </label>
+              <label>
+                <input type="checkbox" required /> Résultat final et vainqueur vérifiés sur la source officielle
+              </label>
+              <button disabled={busy}>Corriger et recalculer</button>
+            </form>
+          </details>
+        </>
+      )}
+      {tab === 'pools' && (
+        <>
+          <section className="feature-panel">
+            <h3>Administration des poules</h3>
+            <PoolPredictions selectedCompetitionId={competitionId} user={user} />
+          </section>
+          <PodiumPrediction
+            key={`podium:${competitionId}`}
+            tournamentId={tournamentId}
+            selectedCompetitionId={competitionId}
+            user={user}
+            adminOnly
+          />
+        </>
+      )}
+      {tab === 'review' && (
+        <>
+          <IdentityReview
+            key={`identity-review:${competitionId}`}
+            competitionId={competitionId}
+            onRefresh={onRefresh}
+          />
+          <AdminReviews key={`admin-reviews:${competitionId}`} competitionId={competitionId} onRefresh={onRefresh} />
+        </>
+      )}
+      {tab === 'points' && (
+        <>
+          <form className="feature-panel" onSubmit={adjust}>
+            <h3>Ajustement manuel des points</h3>
+            <div className="form-grid">
+              <label>
+                Rechercher par ID ou nom
+                <input
+                  value={query}
+                  onChange={(e) => {
+                    setQuery(e.target.value);
+                    setTarget('');
+                  }}
+                />
+              </label>
+              <label>
+                Joueur
+                <select required value={target} onChange={(e) => setTarget(e.target.value)}>
+                  <option value="">Choisir le joueur</option>
+                  {users.map((u) => (
+                    <option value={u.id} key={u.id}>
+                      {u.name} · ID {u.id}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label>
+                Portée
+                <select value={scope} onChange={(e) => setScope(e.target.value)}>
+                  <option value="event">Cette épreuve (et ses classements cumulés)</option>
+                  <option value="tournament">Ce tournoi uniquement et saison</option>
+                  <option value="global">Classement de saison uniquement</option>
+                </select>
+              </label>
+              <label>
+                Points (+ ou −)
+                <input
+                  type="number"
+                  min="-10000"
+                  max="10000"
+                  step="1"
+                  required
+                  value={points}
+                  onChange={(e) => setPoints(e.target.value)}
+                />
+              </label>
+              <label>
+                Motif obligatoire
+                <input
+                  minLength={3}
+                  maxLength={250}
+                  required
+                  value={reason}
+                  onChange={(e) => setReason(e.target.value)}
+                />
+              </label>
+            </div>
+            <button disabled={busy || !target}>Enregistrer l’ajustement</button>
+          </form>
+          <form
+            className="feature-panel"
+            onSubmit={(e) => {
+              e.preventDefault();
+              act(async () => {
+                await API.post('/community/challenges', { name: challengeName, matchId: Number(challengeMatch) });
+                setChallengeName('');
+                setChallengeMatch('');
+                setMessage('Défi créé : bon vainqueur +3 points, règles figées.');
+              });
+            }}
+          >
+            <h3>Créer un défi ponctuel</h3>
+            <p>
+              Bon vainqueur : 3 points bonus ; sinon zéro. Clôture au début prévu. Un seul défi par match, sans
+              modification ultérieure du barème.
+            </p>
+            <label>
+              Titre
               <input
                 required
-                type="number"
-                min="0"
-                max={matches.find((m) => m.id === Number(correction.matchId))?.maxScore || 15}
-                value={correction[k]}
-                onChange={(e) => setCorrection({ ...correction, [k]: e.target.value })}
+                minLength={3}
+                maxLength={80}
+                value={challengeName}
+                onChange={(e) => setChallengeName(e.target.value)}
               />
             </label>
-          ))}
-          <label>
-            Motif
-            <input
-              required
-              minLength={3}
-              maxLength={250}
-              value={correction.reason}
-              onChange={(e) => setCorrection({ ...correction, reason: e.target.value })}
-            />
-          </label>
-          <label>
-            <input type="checkbox" required /> Résultat final et vainqueur vérifiés sur la source officielle
-          </label>
-          <button disabled={busy}>Corriger et recalculer</button>
-        </form>
-      </details>
-      <details className="feature-panel">
-        <summary>Administration des poules</summary>
-        <PoolPredictions selectedCompetitionId={competitionId} user={user} />
-      </details>
-      <PodiumPrediction
-        key={`podium:${competitionId}`}
-        tournamentId={tournamentId}
-        selectedCompetitionId={competitionId}
-        user={user}
-        adminOnly
-      />
-      <form
-        className="feature-panel"
-        onSubmit={(e) => {
-          e.preventDefault();
-          act(async () => {
-            await API.post('/community/challenges', { name: challengeName, matchId: Number(challengeMatch) });
-            setChallengeName('');
-            setChallengeMatch('');
-            setMessage('Défi créé : bon vainqueur +3 points, règles figées.');
-          });
-        }}
-      >
-        <h3>Créer un défi ponctuel</h3>
-        <p>
-          Bon vainqueur : 3 points bonus ; sinon zéro. Clôture au début prévu. Un seul défi par match, sans modification
-          ultérieure du barème.
-        </p>
-        <label>
-          Titre
-          <input
-            required
-            minLength={3}
-            maxLength={80}
-            value={challengeName}
-            onChange={(e) => setChallengeName(e.target.value)}
-          />
-        </label>
-        <label>
-          Match à venir
-          <select required value={challengeMatch} onChange={(e) => setChallengeMatch(e.target.value)}>
-            <option value="">Choisir</option>
-            {matches
-              .filter((m) => !m.isFinished && m.startsAt && Date.parse(m.startsAt) > now)
-              .map((m) => (
-                <option key={m.id} value={m.id}>
-                  {m.player1} / {m.player2} · {new Date(m.startsAt).toLocaleString('fr-FR')}
-                </option>
-              ))}
-          </select>
-        </label>
-        <button disabled={busy}>Publier le défi</button>
-      </form>
-      <details className="feature-panel">
-        <summary>Journal des 100 dernières actions (hors contrôles automatiques)</summary>
-        <button onClick={() => act(loadAudit)} disabled={busy}>
-          Actualiser le journal
-        </button>
-        {audit.map((a) => (
-          <article className="prediction-summary" key={a.id}>
-            <strong>{a.action}</strong> · {a.targetType} #{a.targetId}
-            <p>
-              {new Date(a.createdAt).toLocaleString('fr-FR')} · Administrateur #{a.actorId}
-            </p>
-            {a.after && (
-              <dl>
-                {Object.entries(a.after).map(([k, v]) => (
-                  <div key={k}>
-                    <dt>
-                      {{
-                        userId: 'Joueur',
-                        points: 'Points',
-                        reason: 'Motif',
-                        competitionId: 'Épreuve',
-                        tournamentId: 'Tournoi',
-                        winner: 'Vainqueur',
-                        isLocked: 'Verrouillé',
-                        manualUnlock: 'Réouverture manuelle',
-                        bonus: 'Bonus',
-                        name: 'Nom',
-                        matchId: 'Match',
-                        closesAt: 'Clôture',
-                      }[k] || k}
-                    </dt>
-                    <dd>{String(v ?? '—')}</dd>
-                  </div>
-                ))}
-              </dl>
-            )}
-          </article>
-        ))}
-      </details>
+            <label>
+              Match à venir
+              <select required value={challengeMatch} onChange={(e) => setChallengeMatch(e.target.value)}>
+                <option value="">Choisir</option>
+                {matches
+                  .filter((m) => !m.isFinished && m.startsAt && Date.parse(m.startsAt) > now)
+                  .map((m) => (
+                    <option key={m.id} value={m.id}>
+                      {m.player1} / {m.player2} · {new Date(m.startsAt).toLocaleString('fr-FR')}
+                    </option>
+                  ))}
+              </select>
+            </label>
+            <button disabled={busy}>Publier le défi</button>
+          </form>
+        </>
+      )}
+      {tab === 'archive' && <ArchiveTournament tournamentId={tournamentId} />}
     </section>
   );
 }
