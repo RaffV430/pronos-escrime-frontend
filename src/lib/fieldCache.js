@@ -67,7 +67,25 @@ export function createFieldCache(storage, now = Date.now) {
       /* Full or disabled storage must never break the application. */
     }
   }
-  return { read, write, clear };
+  function invalidateCompetition(scope, id) {
+    try {
+      for (const k of keys()) {
+        if (!k.startsWith(PREFIX + scope + ':')) continue;
+        const path = k.slice((PREFIX + scope + ':').length);
+        const url = new URL(path, 'https://cache.invalid');
+        if (
+          (['/matches', '/pools'].includes(url.pathname) && url.searchParams.get('competitionId') === String(id)) ||
+          /^\/podium\/competitions\/\d+$/.test(url.pathname)
+        ) {
+          const row = JSON.parse(storage.getItem(k));
+          storage.setItem(k, JSON.stringify({ ...row, invalidated: true }));
+        }
+      }
+    } catch {
+      /* Keep the last readable copy when storage is unavailable. */
+    }
+  }
+  return { read, write, clear, invalidateCompetition };
 }
 export function reducedData() {
   let manual = false;

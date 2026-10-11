@@ -22,7 +22,14 @@ export function pollWhileVisible(fn, ms, { network = true } = {}) {
   };
   window.addEventListener('online', onVisibility);
   const changed = (event) => {
-    if (network && event.detail?.path && !event.detail.offline && !event.detail.error && !hidden()) fn();
+    if (
+      network &&
+      (event.detail?.path || event.detail?.resultsChanged) &&
+      !event.detail.offline &&
+      !event.detail.error &&
+      !hidden()
+    )
+      fn();
   };
   window.addEventListener(CACHE_EVENT, changed);
   const mode = () => {

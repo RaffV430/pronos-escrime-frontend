@@ -1,3 +1,4 @@
+import { useResultSync } from '../lib/useResultSync';
 import { fencerProgress, sortFencerCards } from '../lib/fencerProgress';
 import FencerHistory from './FencerHistory';
 import { pollWhileVisible } from '../lib/polling';
@@ -20,6 +21,7 @@ export default function SavedFencerCards({ tournaments, userId, onOpen }) {
   const follows = useFencerFollows();
   const [historyFavorite, setHistoryFavorite] = useState(null);
   const [appearances, setAppearances] = useState([]);
+  useResultSync(appearances.map(a => a.event.id));
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [revision, setRevision] = useState(0);
