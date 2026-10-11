@@ -171,10 +171,23 @@ export default function MatchBoard({
   }, [dirty]);
   // winner : vainqueur désigné sans score (pronostic simplifié) ; un score complet l'emporte sur lui.
   // d : saisies du rendu (affichage) ou draftsRef.current (gestionnaires d'événements, dernière frappe).
+  // Vainqueurs choisis pendant la session : l'affichage ne dépend pas de la forme de la réponse
+  // (simulation locale, ancienne version du serveur…).
+  const [picks, setPicks] = useState({});
   const values = (m, d = drafts) => {
     const p = mine(m);
-    const base = p?.winnerOnly
-      ? { score1: '', score2: '', winner: p.predictedScore1 > p.predictedScore2 ? 1 : 2 }
+    const scoreless = p && !Number.isInteger(p.predictedScore1) && !Number.isInteger(p.predictedScore2);
+    const side = p?.winnerOnly
+      ? p.predictedScore1 > p.predictedScore2
+        ? 1
+        : 2
+      : scoreless
+        ? [1, 2].includes(p.winner)
+          ? p.winner
+          : picks[m.id] || null
+        : null;
+    const base = side
+      ? { score1: '', score2: '', winner: side }
       : { score1: p?.predictedScore1 ?? '', score2: p?.predictedScore2 ?? '', winner: null };
     return { ...base, ...d[m.id] };
   };
@@ -209,6 +222,7 @@ export default function MatchBoard({
           );
           continue;
         }
+        if (winnerOnly) setPicks((old) => ({ ...old, [m.id]: v.winner }));
         ready_.push([
           id,
           winnerOnly ? { winner: v.winner } : { predictedScore1: Number(v.score1), predictedScore2: Number(v.score2) },
@@ -442,7 +456,7 @@ export default function MatchBoard({
             : drafts[m.id]
               ? 'Non enregistré'
               : p
-                ? p.winnerOnly
+                ? p.winnerOnly || (pickedSide(m, v) && v.score1 === '' && v.score2 === '')
                   ? 'Vainqueur choisi'
                   : 'Enregistré'
                 : 'À compléter';
