@@ -57,8 +57,9 @@
   font-variant-numeric: tabular-nums;
   vertical-align: middle;
 }
-/* « Face-à-face et forme » et « Réactions et commentaires » gardent le bleu de l'application. */
-.club-arena .match-board :is(.h2h, .match-social) {
+/* Filtres, choix d'affichage (Cartes, Liste, Tableau complet), « Face-à-face et forme » et
+   « Réactions et commentaires » gardent le bleu de l'application. */
+.club-arena .match-board :is(.h2h, .match-social, .filter-row) {
   --accent: #225da8;
   --accent-link: #225da8;
   --on-accent: #fff;
@@ -69,7 +70,7 @@
   --info: #3da5ff;
 }
 @media (prefers-color-scheme: dark) {
-  .club-arena .match-board :is(.h2h, .match-social) {
+  .club-arena .match-board :is(.h2h, .match-social, .filter-row) {
     --accent-link: #3da5ff;
     --primary: var(--accent-link);
     --primary-hover: var(--accent-link);
