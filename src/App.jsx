@@ -590,6 +590,7 @@ export default function App() {
                     {[
                       ['live', 'Suivi des pistes'],
                       ['mine', 'Mes pronostics'],
+                      ['community', 'Délégations'],
                       ['season', 'Ma saison'],
                       ['account', 'Mes réglages'],
                       ...(user.isAdmin ? [['admin', 'Administration']] : []),
@@ -703,7 +704,6 @@ export default function App() {
                 </svg>,
                 'Classements',
               ],
-              ['community', '⚑', 'Délégations'],
               [
                 'me',
                 <svg
@@ -750,6 +750,7 @@ export default function App() {
           {arenaMore && (
             <nav className="arena-mobile-menu" aria-label="Autres sections">
               {[
+                ['community', 'Délégations'],
                 ['season', 'Ma saison'],
                 ['results', 'Résultats'],
                 ['account', 'Mon compte'],
