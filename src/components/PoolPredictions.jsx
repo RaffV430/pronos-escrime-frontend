@@ -1,3 +1,4 @@
+import { RESULT_REFRESH_MS } from '../lib/resultSync';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import IndicatorInput from './IndicatorInput';
 import { parseIndicator } from '../lib/indicator.js';
@@ -598,7 +599,7 @@ function PoolList({ competitionId, user, onDirtyChange, refreshVersion }) {
     manualRefresh.current = false;
     return () => controller.abort();
   }, [competitionId, refresh, refreshVersion]);
-  useEffect(() => pollWhileVisible(reload, 30000), [reload]);
+  useEffect(() => pollWhileVisible(reload, RESULT_REFRESH_MS), [reload]);
   return (
     <>
       <div className="pool-toolbar">

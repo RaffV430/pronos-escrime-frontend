@@ -1,3 +1,4 @@
+import { resultRefreshInterval } from './resultSync.js';
 // Only consultation data, scoped to the signed-in account. Never queue writes.
 export const CACHE_EVENT = 'pronos:consultation-updated';
 const PREFIX = 'pronos:consultation:v1:';
@@ -22,7 +23,7 @@ export function cachePath(config) {
 export function cacheLifetime(path, reduced = false) {
   if (/^\/auth\/me$/.test(path)) return 0;
   if (/^\/(matches|pools)(\?|$)/.test(path) || /^\/podium\/competitions\/\d+(\?|$)/.test(path))
-    return reduced ? 60000 : 15000;
+    return resultRefreshInterval(reduced);
   if (/^\/me\/fencers(\?|$)/.test(path)) return 60000;
   if (/^\/(tournaments|public\/tournaments|clubs)(\?|$)/.test(path)) return 300000;
   return null;

@@ -1,3 +1,4 @@
+import { RESULT_REFRESH_MS } from './lib/resultSync';
 import { useResultSync } from './lib/useResultSync';
 import ConnectionStatus from './components/ConnectionStatus';
 import { reducedData } from './lib/fieldCache';
@@ -326,7 +327,7 @@ export default function App() {
           else setMatchesError('Impossible de charger les matchs. Vérifiez votre connexion.');
         });
     refreshMatches();
-    const stopPolling = pollWhileVisible(refreshMatches, 30000);
+    const stopPolling = pollWhileVisible(refreshMatches, RESULT_REFRESH_MS);
     return () => {
       controller.abort();
       stopPolling();

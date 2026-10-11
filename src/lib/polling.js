@@ -1,3 +1,4 @@
+import { REDUCED_RESULT_REFRESH_MS } from './resultSync.js';
 import { reducedData, CACHE_EVENT } from './fieldCache';
 import { useEffect, useState } from 'react';
 
@@ -7,7 +8,7 @@ export function pollWhileVisible(fn, ms, { network = true } = {}) {
   let timer = null;
   const hidden = () => typeof document !== 'undefined' && document.hidden;
   const start = () => {
-    if (!timer && !hidden()) timer = setInterval(fn, network && reducedData() ? Math.max(ms, 60000) : ms);
+    if (!timer && !hidden()) timer = setInterval(fn, network && reducedData() ? Math.max(ms, REDUCED_RESULT_REFRESH_MS) : ms);
   };
   const stop = () => {
     clearInterval(timer);

@@ -1,3 +1,4 @@
+import { RESULT_REFRESH_MS } from '../lib/resultSync';
 import { useResultSync } from '../lib/useResultSync';
 import { fencerProgress, sortFencerCards } from '../lib/fencerProgress';
 import FencerHistory from './FencerHistory';
@@ -103,7 +104,7 @@ export default function SavedFencerCards({ tournaments, userId, onOpen }) {
     const refresh = () => {
       if (!document.hidden) setRevision((n) => n + 1);
     };
-    const stop = pollWhileVisible(refresh, 30000);
+    const stop = pollWhileVisible(refresh, RESULT_REFRESH_MS);
     window.addEventListener('focus', refresh);
     document.addEventListener('visibilitychange', refresh);
     return () => {

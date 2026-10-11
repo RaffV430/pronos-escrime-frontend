@@ -1,3 +1,4 @@
+import { RESULT_REFRESH_MS } from '../lib/resultSync';
 import { pollWhileVisible } from '../lib/polling';
 import { useFencerFollows, isFollowedFencer } from '../lib/fencerFollows';
 import { useEffect, useRef, useState } from 'react';
@@ -155,7 +156,7 @@ export default function ResultsPools({ competitionId, poolsOverride }) {
       .then(({ data }) => setPools(data))
       .catch(() => !c.signal.aborted && setError('Poules indisponibles.'));
     refresh();
-    const stop = pollWhileVisible(refresh, 30000);
+    const stop = pollWhileVisible(refresh, RESULT_REFRESH_MS);
     return () => { c.abort(); stop(); };
   }, [competitionId, publicMode, poolsOverride]);
   if (error) return <p className="muted">{error}</p>;

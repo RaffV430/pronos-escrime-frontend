@@ -41,9 +41,11 @@ function watch(id) {
     clearTimeout(row.timer);
     document.removeEventListener('visibilitychange', read);
     window.removeEventListener('online', read);
+    window.removeEventListener('pronos:data-mode', read);
   };
   document.addEventListener('visibilitychange', read);
   window.addEventListener('online', read);
+  window.addEventListener('pronos:data-mode', read);
   read();
   return () => release(id);
 }

@@ -1,3 +1,4 @@
+import { RESULT_REFRESH_MS } from '../lib/resultSync';
 import { useEffect, useState } from 'react';
 import API from '../api';
 import { pollWhileVisible } from '../lib/polling';
@@ -20,7 +21,7 @@ export default function ResultFreshness({ competitionId, children }) {
         });
     };
     read();
-    const stopPolling = pollWhileVisible(read, 30000);
+    const stopPolling = pollWhileVisible(read, RESULT_REFRESH_MS);
     return () => {
       c.abort();
       stopPolling();

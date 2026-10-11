@@ -1,3 +1,4 @@
+import { RESULT_REFRESH_MS } from '../lib/resultSync';
 import { useState, useEffect, useRef } from 'react';
 import API from '../api';
 import useLocalDraft, { draftKey } from './useLocalDraft';
@@ -98,7 +99,7 @@ export default function PodiumPrediction({ selectedCompetitionId, user, adminOnl
       } catch {
         /* Do not replace a valid status with an invented one. */
       }
-    }, 30000);
+    }, RESULT_REFRESH_MS);
     return () => {
       controller.abort();
       stopPolling();
