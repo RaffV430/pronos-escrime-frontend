@@ -1,3 +1,5 @@
+import { RESULT_REFRESH_MS } from './lib/resultSync';
+import { useResultSync } from './lib/useResultSync';
 import ConnectionStatus from './components/ConnectionStatus';
 import { reducedData } from './lib/fieldCache';
 import AdminAlerts from './components/AdminAlerts';
@@ -142,6 +144,7 @@ export default function App() {
   const [tournamentId, setTournamentId] = useState(null);
   const [eventListVersion, setEventListVersion] = useState(0);
   const [selectedCompetitionId, setSelectedCompetitionId] = useState(null);
+  useResultSync([selectedCompetitionId]);
   const [tournamentInfo, setTournamentInfo] = useState(null);
   const selectedRef = useRef(null);
   useEffect(() => {
@@ -324,7 +327,7 @@ export default function App() {
           else setMatchesError('Impossible de charger les matchs. Vérifiez votre connexion.');
         });
     refreshMatches();
-    const stopPolling = pollWhileVisible(refreshMatches, 30000);
+    const stopPolling = pollWhileVisible(refreshMatches, RESULT_REFRESH_MS);
     return () => {
       controller.abort();
       stopPolling();

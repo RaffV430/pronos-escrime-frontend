@@ -55,7 +55,7 @@ export function fieldAdapter(
                 : response.data;
             cache.write(scope, path, data, path === '/auth/me' ? undefined : response.headers?.etag || row?.etag);
             notify({
-              path: row && cache.read(scope, path) ? path : undefined,
+              path: row && JSON.stringify(row.data) !== JSON.stringify(data) ? path : undefined,
               checkedAt: Date.now(),
               user: path === '/auth/me' ? response.data : undefined,
             });
@@ -67,7 +67,7 @@ export function fieldAdapter(
       return request;
     };
     if (row && !config.forceRefresh) {
-      if (Date.now() - row.at >= ttl)
+      if (row.invalidated || Date.now() - row.at >= ttl)
         fetchLatest().catch((error) => {
           if (requestToken !== token()) return;
           if ([401, 403, 404].includes(error.response?.status)) {

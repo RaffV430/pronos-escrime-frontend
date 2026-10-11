@@ -2886,3 +2886,9 @@
 
 .reduced-data { font-family: system-ui, sans-serif; }
 .reduced-data body, .reduced-data h1, .reduced-data h2, .reduced-data h3, .reduced-data button, .reduced-data input { font-family: system-ui, sans-serif !important; }
+.fencer-card-actions{display:flex;flex-wrap:wrap;gap:.4rem;align-items:center}
+.fencer-finished{opacity:.78}
+.fencer-history{padding:1rem;border:1px solid var(--border,#34465b);border-radius:12px;margin:1rem 0;min-width:0}
+.fencer-history header{display:flex;align-items:center;justify-content:space-between;gap:.75rem}
+.fencer-history li{padding:.5rem 0;overflow-wrap:anywhere}
+.fencer-history{scroll-margin-top:100px}

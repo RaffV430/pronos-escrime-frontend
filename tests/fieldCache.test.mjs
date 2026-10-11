@@ -180,3 +180,28 @@ test('explicit refresh bypasses a fresh copy; failed writes keep the saved copy'
   await assert.rejects(adapter({ ...config, method: 'put' }));
   assert.equal(cache.read('1', cachePath(config)).data[0].id, 2);
 });
+
+test('a server revision revalidates cached results immediately without discarding the readable copy', async () => {
+  const cache = createFieldCache(storage());
+  cache.write('1', cachePath(config), [{id:3, score1:5}], 'v1');
+  cache.write('6', cachePath(config), [{id:99}]);
+  cache.invalidateCompetition('1', 14);
+  assert.equal(cache.read('1',cachePath(config)).data[0].score1,5);
+  assert.equal(cache.read('6',cachePath(config)).invalidated,undefined);
+  let calls=0;
+  const notifications=[];
+  const adapter=fieldAdapter(async () => {calls++;return {status:200,data:[{id:3,score1:9}],headers:{etag:'v2'}};},cache,{token:()=>token(1),reduced:()=>true,notify:n=>notifications.push(n)});
+  assert.equal((await adapter(config)).data[0].score1,5);
+  await tick();
+  assert.equal(calls,1);
+  assert.equal(cache.read('1',cachePath(config)).data[0].score1,9);
+  assert.equal(notifications[0].path,cachePath(config));
+});
+test('unchanged results do not trigger another screen refresh', async () => {
+  const cache=createFieldCache(storage());
+  cache.write('1',cachePath(config),[{id:3}],'v1');
+  const notifications=[];
+  const adapter=fieldAdapter(async()=>({status:304,headers:{etag:'v1'}}),cache,{token:()=>token(1),notify:n=>notifications.push(n)});
+  await adapter({...config,forceRefresh:true});
+  assert.equal(notifications[0].path,undefined);
+});
