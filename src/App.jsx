@@ -1,5 +1,7 @@
 import { RESULT_REFRESH_MS } from './lib/resultSync';
 import { useResultSync } from './lib/useResultSync';
+import { BoostBanner } from './components/BoostBadge';
+import { boostedTab } from './lib/pointsBoost';
 import ConnectionStatus from './components/ConnectionStatus';
 import { reducedData } from './lib/fieldCache';
 import AdminAlerts from './components/AdminAlerts';
@@ -668,6 +670,23 @@ export default function App() {
               ['home', '⌂', 'Accueil'],
               ['play', '◎', 'Pronostiquer'],
               [
+                'mine',
+                <svg
+                  key="mine"
+                  viewBox="0 0 24 24"
+                  width="24"
+                  height="24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.6"
+                  aria-hidden="true"
+                >
+                  <rect x="4" y="3" width="16" height="18" rx="2.5" />
+                  <path d="m8 9 1.8 1.8L13 7.5M8 15.5h8M15 10h1" />
+                </svg>,
+                'Mes pronos',
+              ],
+              [
                 'leaderboard',
                 <svg
                   key="podium"
@@ -731,7 +750,6 @@ export default function App() {
           {arenaMore && (
             <nav className="arena-mobile-menu" aria-label="Autres sections">
               {[
-                ['mine', 'Mes pronostics'],
                 ['season', 'Ma saison'],
                 ['results', 'Résultats'],
                 ['account', 'Mon compte'],
@@ -1018,11 +1036,17 @@ export default function App() {
                                 }
                               >
                                 {label}
+                                {boostedTab(competition?.pointsBoosts, id) && (
+                                  <span className="boost-tab-dot" aria-label=" (points ×2)">
+                                    🔥
+                                  </span>
+                                )}
                               </button>
                             ),
                           )}
                         </nav>
                       )}
+                      {eventMode === 'predictions' && <BoostBanner boosts={competition?.pointsBoosts} />}
                       {eventMode === 'follow' && (
                         <>
                           <nav className="secondary-nav" aria-label="Suivi officiel">

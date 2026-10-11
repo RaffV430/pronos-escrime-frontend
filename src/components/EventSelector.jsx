@@ -4,6 +4,7 @@ import API from '../api';
 import { withCount } from '../lib/plural';
 import { pollWhileVisible } from '../lib/polling';
 import { parseLocation } from '../lib/routes';
+import BoostBadge from './BoostBadge';
 
 const readSelection = (key) => {
   try {
@@ -170,20 +171,23 @@ export default function EventSelector({
   if (confirmed)
     return (
       <>
-        {!hideCompact && <section className="compact-event">
-          <div>
-            <p className="eyebrow">{tournaments.find((t) => String(t.id) === tournamentId)?.name}</p>
-            <strong>{eventNameFr(events.find((e) => String(e.id) === eventId)?.name)}</strong>
-            <p>
-              {events.find((e) => String(e.id) === eventId)?.podiumFormat === 'TEAM'
-                ? 'Par équipes · trois médailles'
-                : 'Individuel · deux médailles de bronze'}
-            </p>
-          </div>
-          <button className="button-secondary" onClick={() => setChooserOpen(true)}>
-            Changer ⌄
-          </button>
-        </section>}
+        {!hideCompact && (
+          <section className="compact-event">
+            <div>
+              <p className="eyebrow">{tournaments.find((t) => String(t.id) === tournamentId)?.name}</p>
+              <strong>{eventNameFr(events.find((e) => String(e.id) === eventId)?.name)}</strong>{' '}
+              {events.find((e) => String(e.id) === eventId)?.pointsBoosts?.length > 0 && <BoostBadge compact />}
+              <p>
+                {events.find((e) => String(e.id) === eventId)?.podiumFormat === 'TEAM'
+                  ? 'Par équipes · trois médailles'
+                  : 'Individuel · deux médailles de bronze'}
+              </p>
+            </div>
+            <button className="button-secondary" onClick={() => setChooserOpen(true)}>
+              Changer ⌄
+            </button>
+          </section>
+        )}
         {chooserOpen && (
           <EventChooser
             userId={userId}
@@ -369,7 +373,12 @@ function EventChooser({ userId, tournaments, currentTournamentId, currentEventId
       </header>
       {view === 'events' ? (
         <>
-          <p className="event-chooser-context">{tournaments.find((t) => String(t.id) === chosenTournamentId)?.name}</p>
+          <p className="event-chooser-context">
+            {tournaments.find((t) => String(t.id) === chosenTournamentId)?.name}{' '}
+            {entries.length > 0 && entries.every((e) => e.pointsBoosts?.some((b) => b.tournament)) && (
+              <BoostBadge label="Points ×2 sur tout le tournoi" />
+            )}
+          </p>
           <button className="button-link event-chooser-back" onClick={() => setView('tournaments')}>
             ← Changer de tournoi
           </button>
@@ -395,6 +404,11 @@ function EventChooser({ userId, tournaments, currentTournamentId, currentEventId
                   onClick={() => onChoose(chosenTournamentId, event, entries)}
                 >
                   <strong>{eventNameFr(event.name)}</strong>
+                  {event.pointsBoosts?.length > 0 && (
+                    <BoostBadge
+                      label={event.pointsBoosts.some((b) => b.scope === 'EVENT') ? 'Points ×2' : 'Points ×2 en partie'}
+                    />
+                  )}
                   {newCount(event, userId) > 0 && (
                     <span className="status-pill saved">
                       {withCount(newCount(event, userId), 'nouvelle rencontre', 'nouvelles rencontres')}

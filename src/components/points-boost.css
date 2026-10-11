@@ -1,0 +1,203 @@
+/* Points ×2 : badge et bandeau, et mise en avant de « Mes pronostics ». */
+.boost-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #ff7a18, #e0263b);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  vertical-align: middle;
+}
+.boost-badge.is-compact {
+  padding: 1px 6px;
+  font-size: 10px;
+}
+.boost-banner {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  margin: 10px 0;
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: linear-gradient(90deg, rgba(255, 122, 24, 0.14), rgba(224, 38, 59, 0.12));
+  border: 1px solid rgba(224, 38, 59, 0.35);
+}
+.boost-banner > span:first-child {
+  font-size: 22px;
+}
+.boost-banner > span:last-child {
+  display: grid;
+  gap: 2px;
+}
+.boost-banner small {
+  color: var(--muted);
+}
+
+.mine-hero {
+  display: grid;
+  gap: 12px;
+  padding: 18px;
+  margin: 4px 0 14px;
+  border-radius: 16px;
+  background: linear-gradient(135deg, var(--primary), #0d3d2c);
+  color: #fff;
+}
+.mine-hero h1 {
+  margin: 0;
+  color: #fff;
+}
+.mine-hero p {
+  margin: 0;
+  color: rgba(255, 255, 255, 0.85);
+}
+.mine-hero-stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+.mine-hero-stats > div {
+  display: grid;
+  gap: 2px;
+  padding: 10px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.12);
+  text-align: center;
+}
+.mine-hero-stats strong {
+  font-size: 22px;
+  line-height: 1.1;
+}
+.mine-hero-stats small {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.8);
+}
+.mine-hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.mine-hero-actions button {
+  background: #fff;
+  color: #0d3d2c;
+  border: 0;
+  font-weight: 700;
+}
+.mine-hero-actions button.is-ghost {
+  background: transparent;
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.5);
+}
+
+.fun-filters {
+  margin: 12px 0;
+}
+.fun-filters > small {
+  display: block;
+  margin-bottom: 6px;
+  color: var(--muted);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-size: 11px;
+}
+.fun-filter-row {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+  scrollbar-width: thin;
+}
+.fun-filter-row button {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text, inherit);
+  font-weight: 600;
+  font-size: 13px;
+}
+.fun-filter-row button[aria-pressed='true'] {
+  border-color: #e0263b;
+  background: rgba(224, 38, 59, 0.1);
+}
+.fun-filter-row button:disabled {
+  opacity: 0.45;
+}
+.fun-filter-row b {
+  min-width: 18px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: var(--soft, rgba(0, 0, 0, 0.06));
+  font-size: 11px;
+}
+.fun-filter-hint {
+  margin: 4px 0 0;
+  color: var(--muted);
+  font-size: 13px;
+}
+.fun-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.fun-tags span {
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: var(--soft, rgba(0, 0, 0, 0.06));
+  font-size: 11px;
+  font-weight: 600;
+}
+.fun-event-label {
+  display: block;
+  margin: 12px 0 4px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+.admin-boosts .boost-list {
+  list-style: none;
+  padding: 0;
+  margin: 8px 0;
+  display: grid;
+  gap: 8px;
+}
+.admin-boosts .boost-list li {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
+.admin-boosts form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: end;
+}
+.admin-boosts label {
+  display: grid;
+  gap: 4px;
+}
+.admin-boosts .inline-confirm {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  margin-top: 8px;
+}
+.boost-tab-dot {
+  margin-left: 4px;
+  font-size: 12px;
+}

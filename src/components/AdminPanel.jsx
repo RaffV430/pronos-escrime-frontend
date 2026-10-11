@@ -10,12 +10,13 @@ import EngagementPanel from './EngagementPanel';
 import ScheduleSettings from './ScheduleSettings';
 import IdentityReview from './IdentityReview';
 import AdminReviews from './AdminReviews';
+import PointsBoostAdmin from './PointsBoostAdmin';
 const EVENT_TABS = [
   ['setup', 'Suivi et horaires', 'Source officielle, horaires et lieu de l’épreuve, engagement des joueurs.'],
   ['results', 'Matchs et résultats', 'Réouverture d’un tour, retrait médical, correction d’un score officiel.'],
   ['pools', 'Poules et podium', 'Administration des poules (statut des tireurs, résultats) et du podium.'],
   ['review', 'À vérifier', 'Écarts mis de côté pendant l’épreuve : identités, matchs, inscriptions en double.'],
-  ['points', 'Points et défis', 'Ajustement manuel des points et défis ponctuels.'],
+  ['points', 'Points et défis', 'Points ×2, ajustement manuel des points et défis ponctuels.'],
   ['archive', 'Archivage', 'Archivage du tournoi une fois terminé.'],
 ];
 const TAB_KEY = 'pronos:admin-event-tab';
@@ -335,6 +336,12 @@ export default function AdminPanel({ competitionId, tournamentId, user, matches,
       )}
       {tab === 'points' && (
         <>
+          <PointsBoostAdmin
+            key={`boost:${competitionId}`}
+            competitionId={competitionId}
+            tournamentId={tournamentId}
+            onRefresh={onRefresh}
+          />
           <form className="feature-panel" onSubmit={adjust}>
             <h3>Ajustement manuel des points</h3>
             <div className="form-grid">

@@ -1637,8 +1637,9 @@
   .club-arena .primary-nav button[data-tab='home'] {
     display: flex;
   }
+  /* « Mes pronos » reste dans la barre du bas : section mise en avant (6 onglets). */
   .club-arena .primary-nav button[data-tab='mine'] {
-    display: none;
+    display: flex;
   }
 }
 /* Variante sportive locale : orange, bleu et surfaces neutres. */

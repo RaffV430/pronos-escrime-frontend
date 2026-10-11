@@ -1,3 +1,4 @@
+import BoostBadge from './BoostBadge';
 import { RESULT_REFRESH_MS } from '../lib/resultSync';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import IndicatorInput from './IndicatorInput';
@@ -716,7 +717,7 @@ function PoolList({ competitionId, user, onDirtyChange, refreshVersion }) {
                   <article className="pool-card" key={pool.id}>
                     <header>
                       <h3>
-                        {pool.name}{' '}
+                        {pool.name} <BoostBadge multiplier={pool.pointsMultiplier} compact />{' '}
                         <span className="pool-card-meta">
                           {pool.fencers.length} tireurs · {pool.fencers.length - 1} matchs
                           {pool.strip && ` · ${stripLabel(pool.strip).toLowerCase()}`}

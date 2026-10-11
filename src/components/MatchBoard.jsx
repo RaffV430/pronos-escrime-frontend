@@ -1,3 +1,4 @@
+import BoostBadge from './BoostBadge';
 import { useFencerFollows, isFollowedFencer } from '../lib/fencerFollows';
 import CrowdTrend from './CrowdTrend';
 import { matchTotal } from './resultPresentation';
@@ -333,7 +334,8 @@ export default function MatchBoard({
         <div className="match-meta">
           <span>
             {m.sourceKey ? `Match ${m.sourceKey.split(':').pop()}` : `#${m.id}`} · {roundLabel(m.round)}
-            {m.strip && <span className="match-strip"> · {stripLabel(m.strip)}</span>}
+            {m.strip && <span className="match-strip"> · {stripLabel(m.strip)}</span>}{' '}
+            <BoostBadge multiplier={m.pointsMultiplier} compact />
           </span>
           <span className={`status-pill ${p && !drafts[m.id] ? 'saved' : ''}`}>{status}</span>
         </div>
@@ -649,7 +651,7 @@ export default function MatchBoard({
                 .map(({ round, items }) => (
                   <section className="round-column" key={round}>
                     <h2>
-                      {roundLabel(round)}{' '}
+                      {roundLabel(round)} {items.some((m) => m.pointsMultiplier > 1) && <BoostBadge compact />}{' '}
                       <span className="round-count">
                         {items.filter((m) => mine(m)).length}/{items.length}
                       </span>

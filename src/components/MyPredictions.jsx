@@ -4,6 +4,8 @@ import { useState, useEffect } from 'react';
 import API from '../api';
 import TournamentShare from './TournamentShare';
 import EventRecap from './EventRecap';
+import BoostBadge, { BoostBanner } from './BoostBadge';
+import { FUN_FILTERS, funRows, funCounts } from '../lib/funFilters';
 
 const STATUSES = ['Tous', 'À compléter', 'Enregistré', 'Clos', 'Terminé', 'Annulé'];
 const errorText = (e) => e.response?.data?.error || 'Chargement impossible. Réessayez.';
@@ -13,7 +15,9 @@ function PredictionRow({ r, onOpen }) {
   return (
     <article className="prediction-summary">
       <div className="feature-heading">
-        <strong>{r.name}</strong>
+        <strong>
+          {r.name} <BoostBadge multiplier={r.multiplier} compact />
+        </strong>
         <span className="status-pill">{r.status === 'Terminé' ? 'Résultat publié' : r.status}</span>
       </div>
       <small>
@@ -35,6 +39,15 @@ function PredictionRow({ r, onOpen }) {
           {r.points !== null && r.points !== undefined && <span>{(r.details || []).join(' · ')}</span>}
         </div>
       </div>
+      {r.tags?.length > 0 && (
+        <div className="fun-tags" aria-label="Distinctions">
+          {FUN_FILTERS.filter((f) => r.tags.includes(f.id)).map((f) => (
+            <span key={f.id}>
+              {f.emoji} {f.label}
+            </span>
+          ))}
+        </div>
+      )}
       {r.sourceCheckedAt && (
         <small>Vérification officielle : {new Date(r.sourceCheckedAt).toLocaleString('fr-FR')}</small>
       )}
@@ -53,6 +66,32 @@ function PredictionRow({ r, onOpen }) {
         </div>
       )}
     </article>
+  );
+}
+
+// Filtres « pour rire » : un clic les active, un second clic revient à la liste complète.
+function FunFilterBar({ rows, value, onChange }) {
+  const counts = funCounts(rows);
+  const active = FUN_FILTERS.find((f) => f.id === value);
+  return (
+    <div className="fun-filters">
+      <small>Pour rire</small>
+      <div className="fun-filter-row">
+        {FUN_FILTERS.map((f) => (
+          <button
+            key={f.id}
+            aria-pressed={value === f.id}
+            disabled={!counts[f.id] && value !== f.id}
+            title={f.hint}
+            onClick={() => onChange(value === f.id ? null : f.id)}
+          >
+            <span aria-hidden="true">{f.emoji}</span>
+            {f.label} <b>{counts[f.id]}</b>
+          </button>
+        ))}
+      </div>
+      {active && <p className="fun-filter-hint">{active.hint}.</p>}
+    </div>
   );
 }
 
@@ -105,6 +144,7 @@ function EventDetail({ competitionId, revision, onOpen, playerName }) {
   const [data, setData] = useState(null),
     [filter, setFilter] = useState('Tous'),
     [selectedRound, setSelectedRound] = useState(null),
+    [fun, setFun] = useState(null),
     [error, setError] = useState('');
   useEffect(() => {
     const controller = new AbortController();
@@ -127,10 +167,13 @@ function EventDetail({ competitionId, revision, onOpen, playerName }) {
   const rows = data.rows || [],
     activeRows = rows.filter((r) => r.status !== 'Annulé'),
     saved = activeRows.filter((r) => r.prediction).length,
-    shown = filterPredictionRows(rows, filter, selectedRound);
+    shown = fun
+      ? funRows(filterPredictionRows(rows, 'Tous', selectedRound), fun)
+      : filterPredictionRows(rows, filter, selectedRound);
   return (
     <div className="mine-detail">
       <h3>{data.competition.name}</h3>
+      <BoostBanner boosts={data.competition.pointsBoosts} />
       <EventRecap competitionId={competitionId} playerName={playerName} revision={revision} />
       <p>
         <strong>
@@ -141,11 +184,19 @@ function EventDetail({ competitionId, revision, onOpen, playerName }) {
       <progress value={saved} max={activeRows.length || 1} aria-label="Pronostics enregistrés" />
       <div className="filter-row">
         {STATUSES.map((s) => (
-          <button key={s} aria-pressed={filter === s} onClick={() => setFilter(s)}>
+          <button
+            key={s}
+            aria-pressed={!fun && filter === s}
+            onClick={() => {
+              setFun(null);
+              setFilter(s);
+            }}
+          >
             {s}
           </button>
         ))}
       </div>
+      <FunFilterBar rows={rows} value={fun} onChange={setFun} />
       <details className="round-recap">
         <summary>Mon bilan par tour</summary>
         <div className="round-recap-grid">
@@ -195,6 +246,8 @@ function EventDetail({ competitionId, revision, onOpen, playerName }) {
 // Vue d'ensemble : pronostics de plusieurs épreuves, regroupés par tournoi puis par épreuve.
 function Overview({ events, onPick, onOpen }) {
   const [filter, setFilter] = useState('Tous');
+  const [fun, setFun] = useState(null);
+  const allRows = events.flatMap((e) => e.rows.map((r) => ({ ...r, event: e })));
   const statuses = STATUSES.filter((s) => s !== 'À compléter');
   const count = events.reduce((n, e) => n + e.rows.filter((r) => r.status !== 'Annulé').length, 0);
   const points = events.reduce((n, e) => n + (e.points || 0), 0);
@@ -214,52 +267,76 @@ function Overview({ events, onPick, onOpen }) {
       </p>
       <div className="filter-row">
         {statuses.map((s) => (
-          <button key={s} aria-pressed={filter === s} onClick={() => setFilter(s)}>
+          <button
+            key={s}
+            aria-pressed={!fun && filter === s}
+            onClick={() => {
+              setFun(null);
+              setFilter(s);
+            }}
+          >
             {s}
           </button>
         ))}
       </div>
-      {groups.map((g) => (
-        <section key={g.tournament.id} className="mine-tournament">
-          {groups.length > 1 && (
-            <h3>
-              {g.tournament.name}
-              {g.tournament.archived && <small className="muted"> · archivé</small>}
-            </h3>
-          )}
-          {g.events.map((e) => {
-            const rows = filterPredictionRows(e.rows, filter);
-            return (
-              <details key={e.competition.id} className="mine-event" open={events.length <= 3}>
-                <summary>
-                  <strong>{e.competition.name}</strong>
-                  <span className="muted">
-                    {' '}
-                    · {e.saved} {plural(e.saved, 'pronostic')} · {e.points} {plural(e.points, 'point')}
-                    {e.toComplete > 0 && ` · ${e.toComplete} à compléter`}
-                  </span>
-                </summary>
-                <p>
-                  <button className="button-link" onClick={() => onPick(e)}>
-                    Détail de l’épreuve (bilan par tour)
-                  </button>
-                </p>
-                {rows.length ? (
-                  rows.map((r) => (
-                    <PredictionRow
-                      key={r.key}
-                      r={r}
-                      onOpen={e.tournament.archived ? null : (tab, key) => onOpen(tab, key, e)}
-                    />
-                  ))
-                ) : (
-                  <p className="muted">Aucun pronostic ne correspond à ce filtre.</p>
-                )}
-              </details>
-            );
-          })}
-        </section>
-      ))}
+      <FunFilterBar rows={allRows} value={fun} onChange={setFun} />
+      {fun &&
+        funRows(allRows, fun).map((r, i, list) => (
+          <div key={`${r.event.competition.id}-${r.key}`}>
+            {list[i - 1]?.event !== r.event && (
+              <span className="fun-event-label">
+                {r.event.tournament.name} · {r.event.competition.name}
+              </span>
+            )}
+            <PredictionRow
+              r={r}
+              onOpen={r.event.tournament.archived ? null : (tab, key) => onOpen(tab, key, r.event)}
+            />
+          </div>
+        ))}
+      {!fun &&
+        groups.map((g) => (
+          <section key={g.tournament.id} className="mine-tournament">
+            {groups.length > 1 && (
+              <h3>
+                {g.tournament.name}
+                {g.tournament.archived && <small className="muted"> · archivé</small>}
+              </h3>
+            )}
+            {g.events.map((e) => {
+              const rows = filterPredictionRows(e.rows, filter);
+              return (
+                <details key={e.competition.id} className="mine-event" open={events.length <= 3}>
+                  <summary>
+                    <strong>{e.competition.name}</strong>{' '}
+                    {e.competition.pointsBoosts?.length > 0 && <BoostBadge compact />}
+                    <span className="muted">
+                      {' '}
+                      · {e.saved} {plural(e.saved, 'pronostic')} · {e.points} {plural(e.points, 'point')}
+                      {e.toComplete > 0 && ` · ${e.toComplete} à compléter`}
+                    </span>
+                  </summary>
+                  <p>
+                    <button className="button-link" onClick={() => onPick(e)}>
+                      Détail de l’épreuve (bilan par tour)
+                    </button>
+                  </p>
+                  {rows.length ? (
+                    rows.map((r) => (
+                      <PredictionRow
+                        key={r.key}
+                        r={r}
+                        onOpen={e.tournament.archived ? null : (tab, key) => onOpen(tab, key, e)}
+                      />
+                    ))
+                  ) : (
+                    <p className="muted">Aucun pronostic ne correspond à ce filtre.</p>
+                  )}
+                </details>
+              );
+            })}
+          </section>
+        ))}
     </div>
   );
 }
@@ -296,6 +373,15 @@ export default function MyPredictions({ userId, playerName = '', initialCompetit
   }, [all, initial]);
 
   const events = all?.events || [];
+  const totals = events.reduce(
+    (t, e) => ({
+      saved: t.saved + (e.saved || 0),
+      points: t.points + (e.points || 0),
+      toComplete: t.toComplete + (e.tournament.archived ? 0 : e.toComplete || 0),
+      exact: t.exact + e.rows.filter((r) => r.tags?.includes('exact')).length,
+    }),
+    { saved: 0, points: 0, toComplete: 0, exact: 0 },
+  );
   const tournaments = [];
   for (const e of events) if (!tournaments.some((t) => t.id === e.tournament.id)) tournaments.push(e.tournament);
   const tournamentEvents = events.filter((e) => String(e.tournament.id) === tournamentId);
@@ -310,13 +396,39 @@ export default function MyPredictions({ userId, playerName = '', initialCompetit
 
   return (
     <section className="feature-panel">
-      <div className="feature-heading">
+      <header className="mine-hero">
         <h1 className="section-title">Mes pronostics</h1>
-        <button onClick={() => setRevision((n) => n + 1)}>Actualiser l’affichage</button>
-      </div>
+        <p>Vos scores, vos coups de génie… et vos plus beaux ratés.</p>
+        {all && events.length > 0 && (
+          <div className="mine-hero-stats">
+            <div>
+              <strong>{totals.saved}</strong>
+              <small>{plural(totals.saved, 'pronostic')}</small>
+            </div>
+            <div>
+              <strong>{totals.points}</strong>
+              <small>{plural(totals.points, 'point')}</small>
+            </div>
+            <div>
+              <strong>{totals.exact}</strong>
+              <small>🎯 {plural(totals.exact, 'score exact', 'scores exacts')}</small>
+            </div>
+          </div>
+        )}
+        <div className="mine-hero-actions">
+          {totals.toComplete > 0 && (
+            <button onClick={() => onNavigate('play')}>
+              Compléter {totals.toComplete} {plural(totals.toComplete, 'pronostic')}
+            </button>
+          )}
+          <button className="is-ghost" onClick={() => setRevision((n) => n + 1)}>
+            Actualiser l’affichage
+          </button>
+        </div>
+      </header>
       <p className="muted">
-        Les données affichées sont celles du dernier import officiel. Ce bouton ne lance pas de collecte sur le site
-        officiel.
+        Les données affichées sont celles du dernier import officiel. « Actualiser » ne lance pas de collecte sur le
+        site officiel.
       </p>
       {error && <p role="alert">{error}</p>}
       {!all && !error && <p>Chargement…</p>}
