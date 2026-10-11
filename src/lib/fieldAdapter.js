@@ -9,6 +9,15 @@ export function fieldAdapter(
   } = {},
 ) {
   const pending = new Map();
+  // L'adaptateur réseau d'axios rend le corps brut (texte JSON) : le lire avant de l'utiliser ou de le garder.
+  const parsed = (data) => {
+    if (typeof data !== 'string') return data;
+    try {
+      return JSON.parse(data);
+    } catch {
+      return data;
+    }
+  };
   let generation = 0;
   return async (config) => {
     const requestToken = token();
@@ -24,12 +33,15 @@ export function fieldAdapter(
         pending.clear();
         const profile = !path.startsWith('/auth/') ? cache.read(scope, '/auth/me') : null;
         cache.clear(scope);
-        if (profile) cache.write(scope, '/auth/me', profile.data);
+        if (parsed(profile?.data)?.id) cache.write(scope, '/auth/me', parsed(profile.data));
         notify({ invalidated: true });
       }
       return response;
     }
-    const row = cache.read(scope, path);
+    let row = cache.read(scope, path);
+    if (row) row = { ...row, data: parsed(row.data) };
+    // Profil illisible (ancienne copie mal enregistrée) : ne jamais s'en servir, le relire au serveur.
+    if (row && path === '/auth/me' && !row.data?.id) row = null;
     const key = scope + path;
     const fetchLatest = () => {
       const version = generation;
@@ -45,6 +57,7 @@ export function fieldAdapter(
       })
         .then((response) => {
           if (response.status === 304 && row) response = { ...response, status: 200, data: row.data };
+          else response = { ...response, data: parsed(response.data) };
           if (requestToken === token() && version === generation) {
             const data =
               path === '/auth/me'

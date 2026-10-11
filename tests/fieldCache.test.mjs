@@ -183,27 +183,37 @@ test('explicit refresh bypasses a fresh copy; failed writes keep the saved copy'
 
 test('a server revision revalidates cached results immediately without discarding the readable copy', async () => {
   const cache = createFieldCache(storage());
-  cache.write('1', cachePath(config), [{id:3, score1:5}], 'v1');
-  cache.write('6', cachePath(config), [{id:99}]);
+  cache.write('1', cachePath(config), [{ id: 3, score1: 5 }], 'v1');
+  cache.write('6', cachePath(config), [{ id: 99 }]);
   cache.invalidateCompetition('1', 14);
-  assert.equal(cache.read('1',cachePath(config)).data[0].score1,5);
-  assert.equal(cache.read('6',cachePath(config)).invalidated,undefined);
-  let calls=0;
-  const notifications=[];
-  const adapter=fieldAdapter(async () => {calls++;return {status:200,data:[{id:3,score1:9}],headers:{etag:'v2'}};},cache,{token:()=>token(1),reduced:()=>true,notify:n=>notifications.push(n)});
-  assert.equal((await adapter(config)).data[0].score1,5);
+  assert.equal(cache.read('1', cachePath(config)).data[0].score1, 5);
+  assert.equal(cache.read('6', cachePath(config)).invalidated, undefined);
+  let calls = 0;
+  const notifications = [];
+  const adapter = fieldAdapter(
+    async () => {
+      calls++;
+      return { status: 200, data: [{ id: 3, score1: 9 }], headers: { etag: 'v2' } };
+    },
+    cache,
+    { token: () => token(1), reduced: () => true, notify: (n) => notifications.push(n) },
+  );
+  assert.equal((await adapter(config)).data[0].score1, 5);
   await tick();
-  assert.equal(calls,1);
-  assert.equal(cache.read('1',cachePath(config)).data[0].score1,9);
-  assert.equal(notifications[0].path,cachePath(config));
+  assert.equal(calls, 1);
+  assert.equal(cache.read('1', cachePath(config)).data[0].score1, 9);
+  assert.equal(notifications[0].path, cachePath(config));
 });
 test('unchanged results do not trigger another screen refresh', async () => {
-  const cache=createFieldCache(storage());
-  cache.write('1',cachePath(config),[{id:3}],'v1');
-  const notifications=[];
-  const adapter=fieldAdapter(async()=>({status:304,headers:{etag:'v1'}}),cache,{token:()=>token(1),notify:n=>notifications.push(n)});
-  await adapter({...config,forceRefresh:true});
-  assert.equal(notifications[0].path,undefined);
+  const cache = createFieldCache(storage());
+  cache.write('1', cachePath(config), [{ id: 3 }], 'v1');
+  const notifications = [];
+  const adapter = fieldAdapter(async () => ({ status: 304, headers: { etag: 'v1' } }), cache, {
+    token: () => token(1),
+    notify: (n) => notifications.push(n),
+  });
+  await adapter({ ...config, forceRefresh: true });
+  assert.equal(notifications[0].path, undefined);
 });
 
 test('a read started before a save is never reused for the refresh after it', async () => {
@@ -228,4 +238,32 @@ test('a read started before a save is never reused for the refresh after it', as
   releaseOld();
   assert.equal((await before).data.saved, false);
   assert.equal(cache.read('1', cachePath(config)).data.saved, true);
+});
+
+test('raw JSON bodies from the network are parsed before building the cached profile', async () => {
+  const s = storage();
+  const cache = createFieldCache(s);
+  const network = async (c) => ({
+    status: 200,
+    headers: { etag: 'W/"1"' },
+    config: c,
+    data:
+      c.url === '/auth/me' ? JSON.stringify({ id: 1, name: 'Raff', username: 'Raff', isAdmin: true }) : '[{"id":3}]',
+  });
+  const adapter = fieldAdapter(network, cache, { token: () => token(1), reduced: () => false, notify: () => {} });
+  const first = await adapter({ url: '/auth/me', method: 'get', headers: {} });
+  assert.equal(first.data.id, 1);
+  const reload = await adapter({ url: '/auth/me', method: 'get', headers: {} });
+  assert.equal(reload.fromCache, true);
+  assert.equal(reload.data.id, 1);
+  await adapter({ ...config });
+  assert.equal((await adapter({ ...config })).data[0].id, 3);
+  // An old unreadable profile copy is ignored and fetched again.
+  s.setItem(
+    [...Array(s.length).keys()].map((i) => s.key(i)).find((k) => k.endsWith('/auth/me')),
+    JSON.stringify({ at: Date.now(), data: {} }),
+  );
+  const repaired = await adapter({ url: '/auth/me', method: 'get', headers: {} });
+  assert.equal(repaired.fromCache, undefined);
+  assert.equal(repaired.data.id, 1);
 });
