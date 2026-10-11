@@ -13,7 +13,7 @@ import { useFencerFollows, isFollowedFencer } from '../lib/fencerFollows';
 import { stripLabel } from './matchPresentation';
 
 const message = (error) => error.response?.data?.error || 'Connexion impossible. Réessayez.';
-const signed = (value) => (value > 0 ? `+${value}` : String(value));
+const signed = (value) => (value == null ? '—' : value > 0 ? `+${value}` : String(value));
 
 // Nation (code olympique) et classement, affichés discrètement après le nom : « FRA · 3 ».
 // Classement saisi pour la poule s'il existe, sinon rang d'entrée dans l'épreuve.
@@ -91,7 +91,8 @@ function PredictionRow({ userId, pool, fencer, closed, onRefresh, reportDirty, l
       await API.put(`/pools/${pool.id}/fencers/${fencer.id}/prediction`, {
         wins: Number(wins),
         losses,
-        indicator: parseIndicator(indicator),
+        // Indice facultatif : victoires seules si le champ reste vide.
+        indicator: String(indicator).trim() === '' ? null : parseIndicator(indicator),
       });
       localDraft.discard();
       setDirty(false);
@@ -200,7 +201,8 @@ function PredictionRow({ userId, pool, fencer, closed, onRefresh, reportDirty, l
             label={fencer.name}
             minimum={minimum}
             maximum={maximum}
-            placeholder={closed ? '' : '+8'}
+            placeholder={closed ? '' : '–'}
+            optional
             value={indicator}
             onChange={(next) => {
               setDirty(true);
@@ -263,7 +265,7 @@ function PredictionRow({ userId, pool, fencer, closed, onRefresh, reportDirty, l
               {fencer.prediction && !dirty ? (
                 <span
                   className="pool-saved"
-                  title={`Enregistré : ${fencer.prediction.wins} V · ${fencer.prediction.losses} D · ${signed(fencer.prediction.indicator)}`}
+                  title={`Enregistré : ${fencer.prediction.wins} V · ${fencer.prediction.losses} D${fencer.prediction.indicator == null ? '' : ` · ${signed(fencer.prediction.indicator)}`}`}
                 >
                   ✓<span className="pool-long-label"> Enregistré</span>
                 </span>
@@ -302,7 +304,8 @@ function PredictionRow({ userId, pool, fencer, closed, onRefresh, reportDirty, l
           )}
           {!closed && fencer.prediction && dirty && (
             <small className="pool-saved-previous">
-              Enregistré : {fencer.prediction.wins} V · {signed(fencer.prediction.indicator)}
+              Enregistré : {fencer.prediction.wins} V
+              {fencer.prediction.indicator != null && ` · ${signed(fencer.prediction.indicator)}`}
             </small>
           )}
           {!closed && (
@@ -869,7 +872,10 @@ export default function PoolPredictions({ selectedCompetitionId, user, onDirtyCh
   return (
     <section className="pool-section" aria-labelledby="pool-title">
       <h2 id="pool-title">Pronostics de poules</h2>
-      <p>Pour chaque tireur, prévoyez son bilan et son indice : touches données − touches reçues.</p>
+      <p>
+        Pour chaque tireur, prévoyez son nombre de victoires. L’indice (touches données − touches reçues) est facultatif
+        : il rapporte des points en plus.
+      </p>
       {selectedCompetitionId ? (
         <PoolList
           refreshVersion={refreshVersion}

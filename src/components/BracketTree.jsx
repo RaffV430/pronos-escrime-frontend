@@ -7,6 +7,8 @@ import { roundLabel, stripLabel } from './matchPresentation';
 
 const time = (iso) =>
   iso ? new Date(iso).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }) : null;
+// Valeur affichée en face d'un tireur : son score pronostiqué, ou ✓ s'il a été désigné vainqueur sans score.
+const shownValue = (p, i) => (p?.winnerOnly ? (p[`predictedScore${i}`] > 0 ? '✓' : '') : p?.[`predictedScore${i}`]);
 const Box = ({ value }) => (
   <span className={`tree-box${value === '' || value == null ? ' is-empty' : ''}`}>
     {value === '' || value == null ? '–' : value}
@@ -42,7 +44,6 @@ function Row({ name, country, seed, win, extra = '', isFollowed, children }) {
 export default function BracketTree({
   tree,
   ready,
-  busy,
   drafts,
   values,
   mine,
@@ -62,13 +63,18 @@ export default function BracketTree({
   const detailRef = useRef(null);
   useEffect(() => {
     if (!openId) return;
-    const close = e => {
+    const close = (e) => {
       if (!detailRef.current?.contains(e.target) && !e.target.closest('.tree-card')) onCloseDetail?.();
     };
-    const escape = e => { if (e.key === 'Escape') onCloseDetail?.(); };
+    const escape = (e) => {
+      if (e.key === 'Escape') onCloseDetail?.();
+    };
     document.addEventListener('pointerdown', close);
     document.addEventListener('keydown', escape);
-    return () => { document.removeEventListener('pointerdown', close); document.removeEventListener('keydown', escape); };
+    return () => {
+      document.removeEventListener('pointerdown', close);
+      document.removeEventListener('keydown', escape);
+    };
   }, [openId, onCloseDetail]);
   const valueOf = (m) => values(m);
   const perView = usePerView();
@@ -115,7 +121,7 @@ export default function BracketTree({
             seed={seedOf(m, i)}
             win={w === m[`player${i}`]}
           >
-            <Box value={p?.[`predictedScore${i}`]} />
+            <Box value={shownValue(p, i)} />
           </Row>
         ))}
         <div className="tree-meta">
@@ -161,9 +167,15 @@ export default function BracketTree({
         }}
       >
         {[1, 2].map((i) => (
-          <Row isFollowed={isFollowed} key={i} name={m[`player${i}`]} country={m[`player${i}Country`]} seed={seedOf(m, i)}>
+          <Row
+            isFollowed={isFollowed}
+            key={i}
+            name={m[`player${i}`]}
+            country={m[`player${i}Country`]}
+            seed={seedOf(m, i)}
+          >
             {closed ? (
-              <Box value={p?.[`predictedScore${i}`]} />
+              <Box value={shownValue(p, i)} />
             ) : (
               <input
                 id={`input-${m.id}-${i}`}
@@ -174,11 +186,11 @@ export default function BracketTree({
                 pattern="[0-9]*"
                 maxLength={2}
                 autoComplete="off"
-                placeholder="–"
+                placeholder={v.winner === i && v.score1 === '' && v.score2 === '' ? '✓' : '–'}
                 enterKeyHint="next"
                 value={v[`score${i}`]}
-                disabled={busy || !ready}
-                onChange={(e) => onType(m, i, e.target.value)}
+                disabled={!ready}
+                onChange={(e) => onType(m, i, e.target.value, e.target)}
                 onKeyDown={(e) => onKey(m, i, e)}
                 onKeyUp={(e) => onKeyUp(m, e)}
               />
@@ -322,12 +334,18 @@ export default function BracketTree({
                         id={slot.match ? `match-${slot.match.id}` : undefined}
                       >
                         {slotCard(index, slot)}
-                        {slot.match?.id === openId && renderDetail && <section ref={detailRef}
-                          className={`tree-inline-detail tree-detail${j === shown.length - 1 ? ' align-right' : ''}`}
-                          aria-label="Détail du match">
-                          <button className="button-secondary" onClick={onCloseDetail}>Fermer le détail</button>
-                          {renderDetail(slot.match)}
-                        </section>}
+                        {slot.match?.id === openId && renderDetail && (
+                          <section
+                            ref={detailRef}
+                            className={`tree-inline-detail tree-detail${j === shown.length - 1 ? ' align-right' : ''}`}
+                            aria-label="Détail du match"
+                          >
+                            <button className="button-secondary" onClick={onCloseDetail}>
+                              Fermer le détail
+                            </button>
+                            {renderDetail(slot.match)}
+                          </section>
+                        )}
                       </div>
                     ))}
                   </div>
