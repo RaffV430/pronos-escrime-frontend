@@ -3,6 +3,8 @@ import { useResultSync } from './lib/useResultSync';
 import ConnectionStatus from './components/ConnectionStatus';
 import { reducedData } from './lib/fieldCache';
 import AdminAlerts from './components/AdminAlerts';
+import AdminNav from './components/AdminNav';
+import { sectionForDestination, storedSection, storeSection } from './lib/adminSections';
 import SupportContact from './components/SupportContact';
 import { adminDestination, adminLoginPath, loginReturn, updateBadge } from './lib/adminDestination';
 import ClubModeration from './components/ClubModeration';
@@ -47,6 +49,7 @@ const CircuitSettings = lazy(() => import('./components/CircuitSettings'));
 const SyncHealth = lazy(() => import('./components/SyncHealth'));
 const CalendarWatch = lazy(() => import('./components/CalendarWatch'));
 const FtlTournamentSetup = lazy(() => import('./components/FtlTournamentSetup'));
+const AdminJournal = lazy(() => import('./components/AdminJournal'));
 const adminFallback = <p className="muted">Chargement des outils d’administration…</p>;
 // Onglets secondaires chargés à la première ouverture : l'écran des matchs s'affiche plus vite.
 const PodiumPrediction = lazy(() => import('./components/PodiumPrediction'));
@@ -68,7 +71,9 @@ export default function App() {
   // Arrivée par un lien précis (notification, partage, tableau) : ne pas lancer le tutoriel
   // automatiquement, il ramènerait sur l'accueil ; il reste disponible depuis le menu.
   const [landedOnLink] = useState(
-    () => !/^\/(accueil|connexion|inscription)?\/?$/.test(window.location.pathname) || /[?&](tournament|event)=/.test(window.location.search),
+    () =>
+      !/^\/(accueil|connexion|inscription)?\/?$/.test(window.location.pathname) ||
+      /[?&](tournament|event)=/.test(window.location.search),
   );
   const [accountOpen, setAccountOpen] = useState(false);
   const [supportOpen, setSupportOpen] = useState(false);
@@ -123,6 +128,18 @@ export default function App() {
       loginReturn(location.search) ? new URL(loginReturn(location.search), location.origin).search : location.search,
     ),
   );
+  // Rubrique de l'administration : celle d'une alerte ouverte, sinon la dernière consultée.
+  const [adminSection, setAdminSection] = useState(
+    () => sectionForDestination(adminTarget) || storedSection() || 'event',
+  );
+  useEffect(() => {
+    const section = sectionForDestination(adminTarget);
+    if (section) setAdminSection(section);
+  }, [adminTarget]);
+  const chooseAdminSection = (section) => {
+    setAdminSection(section);
+    storeSection(section);
+  };
   const [mainTab, setMainTab] = useState(
     () =>
       (loginReturn(location.search)
@@ -377,7 +394,14 @@ export default function App() {
   }, [sessionRetry]);
 
   useEffect(() => {
-    const checked = event => { if (event.detail?.user) { verifiedUser.current = event.detail.user; setUser(event.detail.user); } if (event.detail?.path === '/auth/me' && [401, 403, 404].includes(event.detail?.error?.response?.status)) expired(); };
+    const checked = (event) => {
+      if (event.detail?.user) {
+        verifiedUser.current = event.detail.user;
+        setUser(event.detail.user);
+      }
+      if (event.detail?.path === '/auth/me' && [401, 403, 404].includes(event.detail?.error?.response?.status))
+        expired();
+    };
     window.addEventListener('pronos:consultation-updated', checked);
     const expired = () => {
       consultationCache.clear();
@@ -388,7 +412,10 @@ export default function App() {
       setError('Votre session a expiré. Reconnectez-vous pour continuer.');
     };
     window.addEventListener(SESSION_EXPIRED_EVENT, expired);
-    return () => { window.removeEventListener(SESSION_EXPIRED_EVENT, expired); window.removeEventListener('pronos:consultation-updated', checked); };
+    return () => {
+      window.removeEventListener(SESSION_EXPIRED_EVENT, expired);
+      window.removeEventListener('pronos:consultation-updated', checked);
+    };
   }, []);
 
   const handleSubmit = async (e) => {
@@ -727,15 +754,27 @@ export default function App() {
           <ErrorBoundary zone="contenu" resetKey={`${mainTab}:${playTab}:${selectedCompetitionId}`}>
             <Suspense fallback={tabFallback}>
               {mainTab === 'admin' && user.isAdmin && (
-                <Suspense fallback={adminFallback}>
-                  <SyncHealth destination={adminTarget} />
-                  <CalendarWatch />
-                  <ClubModeration destination={adminTarget} onSecurity={() => navigate('account')} />
-                  <ClubAdministration />
-                  <FencerAffiliationAdministration />
-                  <CircuitSettings />
-                  <FtlTournamentSetup onConfigured={() => setEventListVersion((v) => v + 1)} />
-                </Suspense>
+                <>
+                  <AdminNav section={adminSection} onChange={chooseAdminSection} />
+                  <Suspense fallback={adminFallback}>
+                    {adminSection === 'tournaments' && (
+                      <>
+                        <FtlTournamentSetup onConfigured={() => setEventListVersion((v) => v + 1)} />
+                        <CalendarWatch />
+                        <CircuitSettings />
+                      </>
+                    )}
+                    {adminSection === 'clubs' && (
+                      <>
+                        <ClubModeration destination={adminTarget} onSecurity={() => navigate('account')} />
+                        <ClubAdministration />
+                        <FencerAffiliationAdministration />
+                      </>
+                    )}
+                    {adminSection === 'sync' && <SyncHealth destination={adminTarget} />}
+                    {adminSection === 'journal' && <AdminJournal />}
+                  </Suspense>
+                </>
               )}
               {mainTab === 'me' && (
                 <section className="piste-me feature-panel">
@@ -775,8 +814,19 @@ export default function App() {
                   ready={matchesReady}
                   error={matchesError}
                   stale={matchesStale}
-                  onPlay={(match) => match ? openFollowedFencer({ event: competition, match, mode: 'predictions', tournament: tournamentInfo }) : navigate('play')}
-                  onFollow={(match) => openFollowedFencer({ event: competition, match, mode: 'follow', tournament: tournamentInfo })}
+                  onPlay={(match) =>
+                    match
+                      ? openFollowedFencer({
+                          event: competition,
+                          match,
+                          mode: 'predictions',
+                          tournament: tournamentInfo,
+                        })
+                      : navigate('play')
+                  }
+                  onFollow={(match) =>
+                    openFollowedFencer({ event: competition, match, mode: 'follow', tournament: tournamentInfo })
+                  }
                 />
               )}
               {mainTab === 'season' && <MySeason userId={user.id} playerName={user.name || user.username} />}
@@ -809,48 +859,49 @@ export default function App() {
                   </button>
                 </p>
               )}
-              {!['me', 'season', 'account', 'mine', 'results', 'leaderboard', 'community'].includes(mainTab) && (
-                <EventSelector
-                  hideCompact={mainTab === 'home'}
-                  key={`${user.id}:${eventListVersion}:${['play', 'home', 'live'].includes(mainTab) ? 'active' : 'history'}`}
-                  includeArchived={!['play', 'home', 'live'].includes(mainTab)}
-                  {...(mainTab === 'admin'
-                    ? {
-                        title: 'Épreuve à administrer',
-                        intro: 'Choisissez l’épreuve dont vous voulez gérer les matchs, les poules et les résultats.',
-                        submitLabel: 'Ouvrir',
+              {!['me', 'season', 'account', 'mine', 'results', 'leaderboard', 'community'].includes(mainTab) &&
+                !(mainTab === 'admin' && adminSection !== 'event') && (
+                  <EventSelector
+                    hideCompact={mainTab === 'home'}
+                    key={`${user.id}:${eventListVersion}:${['play', 'home', 'live'].includes(mainTab) ? 'active' : 'history'}`}
+                    includeArchived={!['play', 'home', 'live'].includes(mainTab)}
+                    {...(mainTab === 'admin'
+                      ? {
+                          title: 'Épreuve à administrer',
+                          intro: 'Choisissez l’épreuve dont vous voulez gérer les matchs, les poules et les résultats.',
+                          submitLabel: 'Ouvrir',
+                        }
+                      : {})}
+                    userId={user.id}
+                    beforeChange={runNavigation}
+                    onReset={() => {
+                      setTournamentId(null);
+                      setTournamentInfo(null);
+                      selectCompetition(null);
+                      setCompetition(null);
+                    }}
+                    onSelect={(tId, cId, entry, tournament) => {
+                      setTournamentId(tId);
+                      setTournamentInfo(tournament ? { id: tId, name: tournament.name } : { id: tId, name: '' });
+                      if (cId !== selectedCompetitionId) {
+                        const loc = parseLocation(location.pathname, location.search);
+                        const view = loc.eventId === cId ? loc.view : null;
+                        selectCompetition(cId);
+                        setPlayTab(view || 'tableau');
+                        // Vue demandée par l'adresse : elle prime sur l'ouverture automatique.
+                        if (view) setLandingPending(false);
                       }
-                    : {})}
-                  userId={user.id}
-                  beforeChange={runNavigation}
-                  onReset={() => {
-                    setTournamentId(null);
-                    setTournamentInfo(null);
-                    selectCompetition(null);
-                    setCompetition(null);
-                  }}
-                  onSelect={(tId, cId, entry, tournament) => {
-                    setTournamentId(tId);
-                    setTournamentInfo(tournament ? { id: tId, name: tournament.name } : { id: tId, name: '' });
-                    if (cId !== selectedCompetitionId) {
-                      const loc = parseLocation(location.pathname, location.search);
-                      const view = loc.eventId === cId ? loc.view : null;
-                      selectCompetition(cId);
-                      setPlayTab(view || 'tableau');
-                      // Vue demandée par l'adresse : elle prime sur l'ouverture automatique.
-                      if (view) setLandingPending(false);
-                    }
-                    setCompetition(entry);
-                    setMainTab((current) =>
-                      current !== 'play'
-                        ? current
-                        : new URLSearchParams(location.search).get('view') === 'mine'
-                          ? 'mine'
-                          : 'play',
-                    );
-                  }}
-                />
-              )}
+                      setCompetition(entry);
+                      setMainTab((current) =>
+                        current !== 'play'
+                          ? current
+                          : new URLSearchParams(location.search).get('view') === 'mine'
+                            ? 'mine'
+                            : 'play',
+                      );
+                    }}
+                  />
+                )}
               {mainTab === 'play' && (
                 <details className="calendar-fold">
                   <summary>Calendrier des prochaines épreuves</summary>
@@ -1084,7 +1135,7 @@ export default function App() {
                       )}
                     </>
                   )}
-                  {mainTab === 'admin' && user.isAdmin && (
+                  {mainTab === 'admin' && user.isAdmin && adminSection === 'event' && (
                     <Suspense fallback={adminFallback}>
                       <AdminPanel
                         key={selectedCompetitionId}

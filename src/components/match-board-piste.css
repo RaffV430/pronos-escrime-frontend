@@ -57,3 +57,21 @@
   font-variant-numeric: tabular-nums;
   vertical-align: middle;
 }
+/* « Face-à-face et forme » et « Réactions et commentaires » gardent le bleu de l'application. */
+.club-arena .match-board :is(.h2h, .match-social) {
+  --accent: #225da8;
+  --accent-link: #225da8;
+  --on-accent: #fff;
+  --primary: var(--accent-link);
+  --primary-hover: var(--accent-link);
+  --arena-accent: var(--accent);
+  --arena-blue: #3da5ff;
+  --info: #3da5ff;
+}
+@media (prefers-color-scheme: dark) {
+  .club-arena .match-board :is(.h2h, .match-social) {
+    --accent-link: #3da5ff;
+    --primary: var(--accent-link);
+    --primary-hover: var(--accent-link);
+  }
+}

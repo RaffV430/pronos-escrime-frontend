@@ -1,0 +1,29 @@
+/* Administration en rubriques */
+.club-arena .admin-hub { margin-bottom: 16px; }
+.club-arena .admin-hub h1 { margin: 0 0 12px; }
+.club-arena .admin-hub-nav,
+.club-arena .admin-event-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.club-arena .admin-hub-nav button,
+.club-arena .admin-event-tabs button {
+  min-height: 44px;
+  padding: 0 16px;
+  border-radius: var(--r-pill, 999px);
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text-2);
+  font-weight: 600;
+}
+.club-arena .admin-hub-nav button.is-active,
+.club-arena .admin-event-tabs button.is-active {
+  background: var(--text);
+  border-color: var(--text);
+  color: var(--bg);
+}
+.club-arena .admin-hub-intro { margin: 10px 0 0; color: var(--text-muted); }
+.club-arena .admin-event-tabs { padding-bottom: 12px; margin-bottom: 4px; border-bottom: 1px solid var(--divider, var(--border)); }
+.club-arena .admin-event > .feature-panel,
+.club-arena .admin-event > details.feature-panel { margin-top: 12px; }
