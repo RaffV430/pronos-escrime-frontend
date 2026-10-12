@@ -25,6 +25,88 @@ const weaponOf = (name = '') =>
         ? 'Épée'
         : null;
 
+const ORDER = ['Fleuret', 'Épée', 'Sabre'];
+const byWeapon = (a, b) => ORDER.indexOf(a.weapon) - ORDER.indexOf(b.weapon);
+
+// Démonstration (/maquette?demo=armes) : épreuves d'épée et de sabre fictives ajoutées au calendrier réel,
+// plusieurs le même jour, pour voir comment l'affichage tient la charge.
+const DEMO = [
+  [
+    ['Épée', 'Épreuve nationale 1', 'Saint-Maur', 'F', ['SENIOR']],
+    ['Sabre', 'Épreuve nationale 2', 'Orléans', 'H', ['M20']],
+    ['Épée', 'Circuit national', 'Bordeaux', 'H', ['M17']],
+    ['Sabre', 'Épreuve nationale 1', 'Dourdan', 'F', ['SENIOR']],
+  ],
+  [
+    ['Sabre', 'Coupe du monde', 'Tunis', 'F', ['SENIOR']],
+    ['Épée', 'Épreuve internationale 2', 'Heidenheim', 'H', ['M20']],
+  ],
+  [
+    ['Épée', 'Épreuve nationale 2', 'Paris', 'H', ['SENIOR']],
+    ['Sabre', 'Circuit national', 'Lyon', 'F', ['M17']],
+    ['Épée', 'Épreuve internationale 3', 'Tauberbischofsheim', 'F', ['M20']],
+  ],
+];
+function withDemo(events) {
+  const dates = [...new Set(events.map((e) => e.start))];
+  const extra = DEMO.flatMap((day, i) =>
+    dates[i]
+      ? day.map(([weapon, label, city, gender, cats], j) => ({
+          id: `demo-${i}-${j}`,
+          start: dates[i],
+          end: dates[i],
+          weapon,
+          label,
+          city,
+          gender,
+          categories: cats,
+          demo: true,
+        }))
+      : [],
+  );
+  return [...events, ...extra].sort((a, b) => a.start.localeCompare(b.start) || byWeapon(a, b));
+}
+const others = (n) => (n > 1 ? `${n} autres épreuves` : '1 autre épreuve');
+const readWeapon = () => {
+  try {
+    return localStorage.getItem('rd-weapon') || 'ALL';
+  } catch {
+    return 'ALL';
+  }
+};
+
+function WeaponSummary({ list }) {
+  // Pastilles par arme avec leur nombre d'épreuves : « F 1 · E 2 · S 1 ».
+  return (
+    <span className="rd-summary" aria-label="Épreuves par arme">
+      {ORDER.map((w) => {
+        const n = list.filter((e) => e.weapon === w).length;
+        return n ? (
+          <span key={w} className={`rd-summary-item rd-weapon-${WEAPONS[w].key}`} title={`${n} × ${w}`}>
+            <span aria-hidden="true">{WEAPONS[w].short}</span>
+            {n}
+          </span>
+        ) : null;
+      })}
+    </span>
+  );
+}
+
+function EventRow({ e }) {
+  return (
+    <li className="rd-row">
+      <WeaponChip weapon={e.weapon} />
+      <span className="rd-row-main">
+        <strong>{e.city}</strong>
+        <span>
+          {e.label} · {categories(e.categories)} · {GENDERS[e.gender] || ''}
+        </span>
+      </span>
+      {e.demo && <em className="rd-demo-tag">fictif</em>}
+    </li>
+  );
+}
+
 // Compte à rebours jusqu'au premier jour de l'épreuve (8 h, heure locale).
 function useCountdown(iso) {
   const [now, setNow] = useState(() => Date.now());
@@ -85,17 +167,37 @@ export default function RedesignHome() {
       .catch(() => setResults([]));
     return () => c.abort();
   }, []);
+  const demo = new URLSearchParams(location.search).get('demo') === 'armes';
+  const [weapon, setWeaponState] = useState(readWeapon);
+  const setWeapon = (value) => {
+    setWeaponState(value);
+    try {
+      localStorage.setItem('rd-weapon', value);
+    } catch {
+      /* préférence non gardée */
+    }
+  };
   const today = new Date().toISOString().slice(0, 10);
-  const upcoming = useMemo(() => (events || []).filter((e) => (e.end || e.start) >= today), [events, today]);
-  const next = upcoming[0];
+  const all = useMemo(() => {
+    const list = (events || []).filter((e) => (e.end || e.start) >= today);
+    return demo ? withDemo(list) : list;
+  }, [events, today, demo]);
+  // Les armes réellement présentes : le filtre n'apparaît que s'il y a un choix à faire.
+  const weaponsPresent = ORDER.filter((w) => all.some((e) => e.weapon === w));
+  const activeWeapon = weaponsPresent.includes(weapon) ? weapon : 'ALL';
+  const upcoming = activeWeapon === 'ALL' ? all : all.filter((e) => e.weapon === activeWeapon);
+  // Prochaine journée : toutes les épreuves de cette date, pas seulement la première.
+  const nextDate = upcoming[0]?.start;
+  const nextDay = upcoming.filter((e) => e.start === nextDate).sort(byWeapon);
+  const next = nextDay[0];
   // Les prochains week-ends : une colonne par date, plusieurs épreuves possibles.
   const weekends = useMemo(() => {
     const byDate = new Map();
-    for (const e of upcoming.slice(0, 18)) {
+    for (const e of upcoming) {
       if (!byDate.has(e.start)) byDate.set(e.start, []);
       byDate.get(e.start).push(e);
     }
-    return [...byDate.entries()].slice(0, 6);
+    return [...byDate.entries()].slice(0, 6).map(([date, list]) => [date, [...list].sort(byWeapon)]);
   }, [upcoming]);
   const latest = results?.[0];
   // Saison d'escrime : de septembre à août.
@@ -125,6 +227,11 @@ export default function RedesignHome() {
         </nav>
       </header>
 
+      {demo && (
+        <p className="rd-demo-banner" role="note">
+          Démonstration : des épreuves d’épée et de sabre <strong>fictives</strong> sont ajoutées au calendrier réel.
+        </p>
+      )}
       <section className="rd-hero" aria-labelledby="rd-hero-title">
         <p className="rd-eyebrow">
           Fleuret · Épée · Sabre — saison {season}–{season + 1}
@@ -140,19 +247,39 @@ export default function RedesignHome() {
         </p>
         <Piste />
         {next ? (
-          <article className="rd-next" aria-label="Prochaine épreuve">
+          <article className="rd-next" aria-label={nextDay.length > 1 ? 'Prochaine journée' : 'Prochaine épreuve'}>
             <div className="rd-next-head">
-              <span className="rd-next-tag">Prochaine épreuve</span>
-              <WeaponChip weapon={next.weapon} />
+              <span className="rd-next-tag">
+                {nextDay.length > 1 ? `Prochaine journée · ${nextDay.length} épreuves` : 'Prochaine épreuve'}
+              </span>
+              {nextDay.length > 1 ? <WeaponSummary list={nextDay} /> : <WeaponChip weapon={next.weapon} />}
             </div>
-            <h2>{next.label}</h2>
-            <p className="rd-next-meta">
-              {next.city} · {dateLabel(next.start, { weekday: 'long', day: 'numeric', month: 'long' })}
-              <br />
-              {GENDERS[next.gender] || ''} · {categories(next.categories)}
-            </p>
+            {nextDay.length > 1 ? (
+              <>
+                <h2>{dateLabel(next.start, { weekday: 'long', day: 'numeric', month: 'long' })}</h2>
+                <ul className="rd-next-list">
+                  {nextDay.slice(0, 4).map((e) => (
+                    <EventRow key={e.id} e={e} />
+                  ))}
+                  {nextDay.length > 4 && (
+                    <li className="rd-more">
+                      <a href="/calendrier">+ {others(nextDay.length - 4)} ce jour-là →</a>
+                    </li>
+                  )}
+                </ul>
+              </>
+            ) : (
+              <>
+                <h2>{next.label}</h2>
+                <p className="rd-next-meta">
+                  {next.city} · {dateLabel(next.start, { weekday: 'long', day: 'numeric', month: 'long' })}
+                  <br />
+                  {GENDERS[next.gender] || ''} · {categories(next.categories)}
+                </p>
+              </>
+            )}
             {countdown && !countdown.live && (
-              <div className="rd-countdown" role="timer" aria-label="Temps avant l’épreuve">
+              <div className="rd-countdown" role="timer" aria-label="Temps avant le début">
                 {[
                   [countdown.days, 'jours'],
                   [countdown.hours, 'heures'],
@@ -185,24 +312,42 @@ export default function RedesignHome() {
           <h2 id="rd-agenda">À l’affiche</h2>
           <a href="/calendrier">Tout le calendrier →</a>
         </div>
+        {weaponsPresent.length > 1 && (
+          <div className="rd-filter" role="group" aria-label="Filtrer par arme">
+            {['ALL', ...weaponsPresent].map((w) => (
+              <button
+                key={w}
+                type="button"
+                aria-pressed={activeWeapon === w}
+                className={w === 'ALL' ? '' : `rd-weapon-${WEAPONS[w].key}`}
+                onClick={() => setWeapon(w)}
+              >
+                {w !== 'ALL' && <span aria-hidden="true">{WEAPONS[w].short}</span>}
+                {w === 'ALL' ? 'Toutes' : w}
+                <small>{w === 'ALL' ? all.length : all.filter((e) => e.weapon === w).length}</small>
+              </button>
+            ))}
+          </div>
+        )}
         <div className="rd-agenda" role="list">
           {weekends.map(([date, list]) => (
             <article className="rd-day" role="listitem" key={date}>
-              <div className="rd-day-date">
-                <b>{dateLabel(date, { day: 'numeric' })}</b>
-                <span>{dateLabel(date, { month: 'short' }).replace('.', '')}</span>
-              </div>
+              <header className="rd-day-head">
+                <div className="rd-day-date">
+                  <b>{dateLabel(date, { day: 'numeric' })}</b>
+                  <span>{dateLabel(date, { month: 'short' }).replace('.', '')}</span>
+                </div>
+                <div>
+                  <strong>{dateLabel(date, { weekday: 'long' })}</strong>
+                  <span>{list.length > 1 ? `${list.length} épreuves` : '1 épreuve'}</span>
+                </div>
+                {list.length > 1 && <WeaponSummary list={list} />}
+              </header>
               <ul>
-                {list.slice(0, 3).map((e) => (
-                  <li key={e.id}>
-                    <WeaponChip weapon={e.weapon} />
-                    <strong>{e.city}</strong>
-                    <span>
-                      {categories(e.categories)} · {GENDERS[e.gender] || ''}
-                    </span>
-                  </li>
+                {list.slice(0, 4).map((e) => (
+                  <EventRow key={e.id} e={e} />
                 ))}
-                {list.length > 3 && <li className="rd-more">+ {list.length - 3} autres épreuves</li>}
+                {list.length > 4 && <li className="rd-more">+ {others(list.length - 4)}</li>}
               </ul>
             </article>
           ))}

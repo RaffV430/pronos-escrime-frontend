@@ -333,6 +333,7 @@
 .rd-day {
   scroll-snap-align: start;
   display: flex;
+  flex-direction: column;
   gap: 12px;
   background: var(--rd-surface);
   border: 1px solid var(--rd-border);
@@ -636,4 +637,175 @@
   .rd-skeleton {
     animation: none;
   }
+}
+
+/* Plusieurs armes, plusieurs épreuves le même jour */
+.rd-demo-banner {
+  margin: 0;
+  padding: 10px 16px;
+  background: #e2b33c;
+  color: #241a02;
+  font-size: 14px;
+  text-align: center;
+}
+.rd-summary {
+  display: inline-flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.rd-summary-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  font-weight: 700;
+}
+.rd-summary-item span {
+  display: grid;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 5px;
+  color: #fff;
+  font:
+    800 11px 'Barlow Condensed',
+    sans-serif;
+}
+.rd-summary-item.rd-weapon-foil span {
+  background: var(--rd-foil);
+}
+.rd-summary-item.rd-weapon-epee span {
+  background: var(--rd-epee);
+}
+.rd-summary-item.rd-weapon-sabre span {
+  background: var(--rd-sabre);
+}
+.rd-next-list {
+  list-style: none;
+  margin: 10px 0 14px;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+.rd-next-list .rd-row {
+  background: #ffffff0a;
+  border-radius: 12px;
+  padding: 10px;
+}
+.rd-next-list .rd-row-main span,
+.rd-next-list .rd-more a {
+  color: var(--rd-hero-muted);
+}
+.rd-next-list .rd-more a {
+  font-size: 13px;
+  font-weight: 600;
+}
+.rd .rd-row {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 4px 10px;
+}
+.rd-row .rd-weapon {
+  font-size: 0;
+  gap: 0;
+}
+.rd-row-main {
+  display: grid;
+  min-width: 0;
+}
+.rd-row-main strong {
+  font-size: 15px;
+  overflow-wrap: break-word;
+  hyphens: auto;
+}
+.rd-row-main span {
+  font-size: 12px;
+  color: var(--rd-muted);
+}
+.rd-demo-tag {
+  font-style: normal;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #b0820f;
+  border: 1px solid currentColor;
+  border-radius: 6px;
+  padding: 1px 5px;
+}
+.rd-day-head {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: 4px 10px;
+}
+.rd-day-head > div:nth-child(2) {
+  display: grid;
+}
+.rd-day-head strong {
+  text-transform: capitalize;
+}
+.rd-day-head > div:nth-child(2) span {
+  font-size: 12px;
+  color: var(--rd-muted);
+}
+.rd-day-head .rd-summary {
+  grid-column: 1 / -1;
+}
+.rd-filter {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  margin: 0 -16px 12px;
+  padding: 0 16px 4px;
+}
+.rd-filter button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 38px;
+  padding: 0 14px;
+  border-radius: 999px;
+  border: 1px solid var(--rd-border);
+  background: var(--rd-surface);
+  color: var(--rd-text);
+  font:
+    600 14px 'Barlow',
+    sans-serif;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.rd-filter button span {
+  display: grid;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 5px;
+  color: #fff;
+  font:
+    800 11px 'Barlow Condensed',
+    sans-serif;
+}
+.rd-filter .rd-weapon-foil span {
+  background: var(--rd-foil);
+}
+.rd-filter .rd-weapon-epee span {
+  background: var(--rd-epee);
+}
+.rd-filter .rd-weapon-sabre span {
+  background: var(--rd-sabre);
+}
+.rd-filter small {
+  font-size: 12px;
+  color: var(--rd-muted);
+}
+.rd-filter button[aria-pressed='true'] {
+  background: var(--rd-text);
+  color: var(--rd-bg);
+  border-color: var(--rd-text);
+}
+.rd-filter button[aria-pressed='true'] small {
+  color: inherit;
+  opacity: 0.7;
 }
