@@ -87,6 +87,19 @@ const LIVE_ICON = (
     <path d="M6.3 6.3a8 8 0 0 0 0 11.4M17.7 6.3a8 8 0 0 1 0 11.4" />
   </svg>
 );
+const HOME_ICON = (
+  <svg
+    viewBox="0 0 24 24"
+    width="24"
+    height="24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="1.8"
+    aria-hidden="true"
+  >
+    <path d="M4 10.5 12 4l8 6.5V20h-5.5v-5.5h-5V20H4Z" strokeLinejoin="round" />
+  </svg>
+);
 const COMMUNITY_ICON = (
   <svg
     viewBox="0 0 24 24"
@@ -105,6 +118,8 @@ const COMMUNITY_ICON = (
 // Refonte : la barre suit le choix du joueur (3 à 5 onglets, dans son ordre).
 const customNav = (items, ids) => {
   const byId = Object.fromEntries(items.map((item) => [item[0], item]));
+  // Maison dessinée (et non le caractère « ⌂ », que la police place trop bas dans le cercle).
+  if (byId.home) byId.home = ['home', HOME_ICON, byId.home[2]];
   byId.live = ['live', LIVE_ICON, 'Direct'];
   byId.community = ['community', COMMUNITY_ICON, 'Délégations'];
   return ids.map((id) => byId[id]).filter(Boolean);

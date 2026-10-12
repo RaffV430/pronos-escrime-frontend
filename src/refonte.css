@@ -459,3 +459,9 @@ html.club-arena.refonte .primary-nav .nav-more {
   font-weight: 500;
   color: var(--text-muted);
 }
+html.club-arena.refonte .app-shell.redesigned .primary-nav button.nav-home > span:first-child {
+  line-height: 0;
+}
+html.club-arena.refonte .app-shell.redesigned .primary-nav button.nav-home > span:first-child svg {
+  display: block;
+}
