@@ -50,7 +50,7 @@ export function fieldAdapter(
       const request = network({
         ...config,
         signal: undefined,
-        timeout: reduced() ? 8000 : config.timeout,
+        timeout: reduced() ? 15000 : config.timeout,
         headers: { ...config.headers, ...(row?.etag && path !== '/auth/me' ? { 'If-None-Match': row.etag } : {}) },
         validateStatus: (status) =>
           status === 304 || (config.validateStatus ? config.validateStatus(status) : status >= 200 && status < 300),

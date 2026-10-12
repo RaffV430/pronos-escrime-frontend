@@ -22,3 +22,9 @@ export function nextResultCheck(data, now, reduced) {
 export function resultRevision(data) {
   return data?.checkedAt || null;
 }
+
+// Connexion faible : les résultats (30 s) passent à 1 min ; le reste (listes, alertes, mises à jour : 1 min
+// et plus) est relu trois fois moins souvent, pour laisser la place aux pronostics et aux résultats.
+export function reducedInterval(ms) {
+  return ms >= REDUCED_RESULT_REFRESH_MS ? ms * 3 : Math.max(ms, REDUCED_RESULT_REFRESH_MS);
+}

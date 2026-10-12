@@ -11,6 +11,8 @@ import { withCount } from '../lib/plural';
 import MatchTiming from './MatchTiming';
 import { groupMatches, isMatchClosed, isUpcoming, validateScores, nextMatchId } from './matchPresentation';
 import { useNow } from '../lib/polling';
+import { reducedData } from '../lib/fieldCache';
+import { OUTBOX_EVENT, dropWrite, isNetworkError, queueWrite } from '../lib/outbox';
 import HeadToHead from './HeadToHead';
 import MatchSocial from './MatchSocial';
 import BracketTree from './BracketTree.jsx';
@@ -114,6 +116,8 @@ export default function MatchBoard({
     [view, setView] = useState(() => {
       try {
         const savedView = localStorage.getItem('pronos:match-view');
+        // Connexion faible : la liste, l'affichage le plus léger, sauf choix de la liste déjà fait.
+        if (reducedData()) return 'Liste';
         return ['Arena', 'Arbre', 'Liste'].includes(savedView) ? savedView : 'Arena';
       } catch {
         return 'Arena';
@@ -123,6 +127,17 @@ export default function MatchBoard({
     setKept(new Set());
     setFilterState(value);
   };
+  // Pronostic envoyé plus tard (retour du réseau) : brouillon effacé et tableau relu, ou refus affiché.
+  const outboxRef = useRef(null);
+  useEffect(() => {
+    const done = (event) => {
+      const id = Number(/^match:(\d+)$/.exec(event.detail?.key || '')?.[1]);
+      if (!id || !('ok' in (event.detail || {}))) return;
+      outboxRef.current?.(id, event.detail);
+    };
+    window.addEventListener(OUTBOX_EVENT, done);
+    return () => window.removeEventListener(OUTBOX_EVENT, done);
+  }, []);
   const localDraft = useLocalDraft(draftKey(userId, competitionId, 'matches'));
   // Copie synchrone des saisies : l'enregistrement en arrière-plan et le passage au match suivant
   // lisent toujours la dernière frappe, même avant le prochain rendu.
@@ -187,7 +202,9 @@ export default function MatchBoard({
     (m) => m.player1?.trim() && m.player2?.trim() && m.player1 !== 'En attente...' && m.player2 !== 'En attente...',
   );
   const mine = (m) => m.predictions?.find((p) => p.userId === userId);
-  const dirty = Object.keys(drafts).length > 0;
+  // Saisies en attente d'envoi (sans réseau) : déjà prises en charge, elles ne bloquent pas la navigation.
+  const [queuedIds, setQueuedIds] = useState(() => new Set());
+  const dirty = Object.keys(drafts).some((id) => !queuedIds.has(Number(id)));
   useEffect(() => {
     onDirtyChange(dirty);
     return () => onDirtyChange(false);
@@ -227,6 +244,25 @@ export default function MatchBoard({
   const pickedSide = (m, v = values(m)) =>
     !validateScores(v, m.maxScore || 15) ? (Number(v.score1) > Number(v.score2) ? 1 : 2) : v.winner || null;
   const message = (id, text, failed = false) => setMessages((old) => ({ ...old, [id]: { text, failed } }));
+  useEffect(() => {
+    outboxRef.current = (id, detail) => {
+      setQueuedIds((old) => {
+        const next = new Set(old);
+        next.delete(id);
+        return next;
+      });
+      if (detail.ok) {
+        saveDrafts((old) => {
+          const next = { ...old };
+          delete next[id];
+          return next;
+        });
+        message(id, 'Pronostic envoyé.');
+        setKept((old) => new Set([...old, id]));
+        onRefresh?.();
+      } else message(id, `${detail.error} Votre saisie est conservée.`, true);
+    };
+  });
   const save = async (ids) => {
     if (saving.current) {
       for (const id of ids) queued.current.add(Number(id));
@@ -268,9 +304,16 @@ export default function MatchBoard({
         ),
       );
       results.forEach((r, i) => {
-        const id = ready_[i][0];
-        if (r.status === 'fulfilled') saved.push(Number(id));
-        else
+        const [id, body] = ready_[i];
+        if (r.status === 'fulfilled') {
+          saved.push(Number(id));
+          dropWrite(`match:${id}`);
+        } else if (!onPreviewSave && isNetworkError(r.reason)) {
+          // Pas de réseau : gardé sur l'appareil et envoyé tout seul dès que la connexion revient.
+          queueWrite({ key: `match:${id}`, method: 'post', url: `/matches/${id}/predict`, data: body });
+          setQueuedIds((old) => new Set([...old, Number(id)]));
+          message(id, 'Pas de réseau : pronostic gardé et envoyé automatiquement dès que la connexion revient.');
+        } else
           message(
             id,
             r.reason?.response?.data?.error || 'Enregistrement impossible. Votre saisie est conservée.',
