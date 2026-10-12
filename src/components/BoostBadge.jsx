@@ -11,9 +11,17 @@ export default function BoostBadge({ multiplier = 2, label = null, compact = fal
 }
 
 // Bandeau d'épreuve : à partir de l'activation, les pronostics encore ouverts comptent double.
-export function BoostBanner({ boosts }) {
+export function BoostBanner({ boosts, compact = false }) {
   const text = boostSummary(boosts);
   if (!text) return null;
+  if (compact)
+    return (
+      <p className="boost-banner is-compact" role="note">
+        <span aria-hidden="true">🔥</span>
+        <strong>{text}</strong>
+        <small>pour les pronostics encore ouverts</small>
+      </p>
+    );
   return (
     <p className="boost-banner" role="note">
       <span aria-hidden="true">🔥</span>

@@ -11,6 +11,7 @@ import './components/match-board-piste.css';
 import './components/admin-layout.css';
 import './components/points-boost.css';
 import './components/quick-predictions.css';
+import './components/compact-layout.css';
 import ErrorBoundary from './components/ErrorBoundary.jsx';
 import { startMonitoring, reportError } from './lib/monitoring.js';
 import { initTheme } from './lib/theme.js';

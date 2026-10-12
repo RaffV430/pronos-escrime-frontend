@@ -56,12 +56,16 @@ export default function NotificationBanner({ userId }) {
       const subscription =
         (await reg.pushManager.getSubscription()) ||
         (await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: applicationKey(publicKey) }));
+      // Nouvel appareil : il reprend les réglages déjà enregistrés sur le compte.
+      const account = await API.get('/notifications/settings')
+        .then((r) => r.data)
+        .catch(() => null);
       await API.post('/notifications/subscribe', {
         subscription: subscription.toJSON(),
-        tournamentIds: [],
-        competitionIds: [],
+        tournamentIds: account?.tournamentIds || [],
+        competitionIds: account?.competitionIds || [],
         preferences: {
-          followAll: true,
+          ...(account?.preferences || { followAll: true }),
           timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || 'Europe/Paris',
         },
       });

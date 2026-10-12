@@ -23,6 +23,8 @@ const readSelection = (key) => {
 export default function EventSelector({
   userId,
   hideCompact = false,
+  status = null,
+  actions = null,
   onSelect,
   onReset,
   beforeChange = (action) => action(),
@@ -173,19 +175,18 @@ export default function EventSelector({
       <>
         {!hideCompact && (
           <section className="compact-event">
-            <div>
+            <div className="compact-event-text">
               <p className="eyebrow">{tournaments.find((t) => String(t.id) === tournamentId)?.name}</p>
               <strong>{eventNameFr(events.find((e) => String(e.id) === eventId)?.name)}</strong>{' '}
               {events.find((e) => String(e.id) === eventId)?.pointsBoosts?.length > 0 && <BoostBadge compact />}
-              <p>
-                {events.find((e) => String(e.id) === eventId)?.podiumFormat === 'TEAM'
-                  ? 'Par équipes · trois médailles'
-                  : 'Individuel · deux médailles de bronze'}
-              </p>
             </div>
-            <button className="button-secondary" onClick={() => setChooserOpen(true)}>
-              Changer ⌄
-            </button>
+            <div className="compact-event-actions">
+              {actions}
+              <button className="button-secondary" onClick={() => setChooserOpen(true)}>
+                Changer ⌄
+              </button>
+            </div>
+            {status && <div className="compact-event-status">{status}</div>}
           </section>
         )}
         {chooserOpen && (

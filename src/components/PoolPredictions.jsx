@@ -6,6 +6,7 @@ import { parseIndicator } from '../lib/indicator.js';
 import API from '../api';
 import useLocalDraft, { draftKey } from './useLocalDraft';
 import DraftNotice from './DraftNotice';
+import { useInlineConfirm } from './InlineConfirm';
 import './PoolPredictions.css';
 import { withCount } from '../lib/plural';
 import { pollWhileVisible, useNow } from '../lib/polling';
@@ -338,9 +339,12 @@ function PoolAdmin({ pool, closed, onRefresh }) {
   // Tireurs absents, retirés ou exclus : hors bilan officiel.
   const kept = pool.fencers.filter((f) => !f.status);
   const bouts = kept.length - 1;
-  async function setStatus(fencer, status) {
+  const confirm = useInlineConfirm();
+  function setStatus(fencer, status) {
     const label = status ? FENCER_STATUS[status] : 'sans statut particulier';
-    if (!window.confirm(`${fencer.name} : ${label} ? Ses pronostics vaudront 0 point.`)) return;
+    confirm.ask(`${fencer.name} : ${label} ? Ses pronostics vaudront 0 point.`, () => saveStatus(fencer, status));
+  }
+  async function saveStatus(fencer, status) {
     setBusy(true);
     setFeedback('');
     try {
@@ -395,6 +399,7 @@ function PoolAdmin({ pool, closed, onRefresh }) {
           Absent, retrait médical ou exclu : plus de pronostic sur ce tireur, ses pronostics valent 0 point et la poule
           se termine avec les autres.
         </p>
+        {confirm.node}
         {pool.fencers.map((f) => (
           <label key={f.id}>
             {f.name}
@@ -598,6 +603,10 @@ function CreatePool({ competitionId, onRefresh }) {
 
 function PoolList({ competitionId, user, onDirtyChange, refreshVersion }) {
   const [dirtyRows, setDirtyRows] = useState({});
+  // Filtre « Mes tireurs » : seulement les poules où figure un tireur suivi.
+  const poolFollows = useFencerFollows();
+  const [onlyMine, setOnlyMine] = useState(false);
+  const hasMine = (pool) => pool.fencers.some((f) => isFollowedFencer(poolFollows, f.name));
   const reportDirty = useCallback(
     (id, value) =>
       setDirtyRows((old) => {
@@ -659,6 +668,16 @@ function PoolList({ competitionId, user, onDirtyChange, refreshVersion }) {
           Actualiser
         </button>
         <span role="status">{loading ? 'Chargement des poules…' : withCount(pools.length, 'poule')}</span>
+        {pools.some(hasMine) && (
+          <div className="filter-row" role="group" aria-label="Filtrer les poules">
+            <button aria-pressed={!onlyMine} onClick={() => setOnlyMine(false)}>
+              Toutes
+            </button>
+            <button aria-pressed={onlyMine} onClick={() => setOnlyMine(true)}>
+              Mes tireurs
+            </button>
+          </div>
+        )}
       </div>
       {error && (
         <p role="alert" className="pool-error">
@@ -678,7 +697,7 @@ function PoolList({ competitionId, user, onDirtyChange, refreshVersion }) {
             key: 'pending',
             title: 'Poules à compléter',
             items: pools
-              .filter((pool) => !pool.isFinal)
+              .filter((pool) => !pool.isFinal && (!onlyMine || hasMine(pool)))
               .sort((a, b) => a.name.localeCompare(b.name, 'fr', { numeric: true })),
             empty: 'Toutes les poules disponibles ont un résultat publié.',
           },
@@ -686,7 +705,7 @@ function PoolList({ competitionId, user, onDirtyChange, refreshVersion }) {
             key: 'published',
             title: 'Résultats publiés',
             items: pools
-              .filter((pool) => pool.isFinal)
+              .filter((pool) => pool.isFinal && (!onlyMine || hasMine(pool)))
               .sort((a, b) => a.name.localeCompare(b.name, 'fr', { numeric: true })),
             empty: 'Aucun résultat de poule publié pour le moment.',
           },

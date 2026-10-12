@@ -13,7 +13,7 @@ export const TAB_PATHS = {
   admin: '/admin',
 };
 export const TAB_TITLES = {
-  live: 'Suivi des pistes',
+  live: 'Direct & résultats',
   me: 'Moi',
   home: 'Accueil',
   play: 'Pronostiquer',
