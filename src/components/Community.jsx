@@ -6,6 +6,19 @@ import API from '../api';
 import DuelView from './DuelView';
 import { withCount } from '../lib/plural';
 import { invitationFromPath, invitationUrl } from '../lib/invitation';
+function ParticipationChoices({ legend, value, disabled, onChange }) {
+  return (
+    <fieldset className="delegation-participation">
+      <legend>{legend}</legend>
+      {Object.entries(scopeLabels).map(([scope, label]) => (
+        <label key={scope} className="delegation-participation-choice">
+          <input type="checkbox" checked={value === scope} disabled={disabled} onChange={() => onChange(scope)} />
+          <span>{label}</span>
+        </label>
+      ))}
+    </fieldset>
+  );
+}
 function Ranking({ rows, onDuel, userId }) {
   const me = rows.find((r) => r.id === userId);
   const ahead = me && rows.findLast((r) => r.totalPoints > me.totalPoints);
@@ -250,27 +263,19 @@ export default function Community({ tournamentId: preferred = null, userId, onPr
             {l.kind === 'PRIVATE' && (
               <details className="delegation-preferences">
                 <summary>Mes réglages de pronostics</summary>
-                <label>
-                  Ma participation dans cette délégation
-                  <select
-                    disabled={busy}
-                    value={l.members?.[0]?.predictionScope || 'ALL'}
-                    onChange={(e) => {
-                      const predictionScope = e.target.value;
-                      action(async () => {
-                        await API.put(`/community/leagues/${l.id}/preferences`, { predictionScope });
-                        setDetail(null);
-                        setMessage('Votre choix est enregistré. Votre classement dans cette délégation est recalculé.');
-                      });
-                    }}
-                  >
-                    {Object.entries(scopeLabels).map(([value, label]) => (
-                      <option key={value} value={value}>
-                        {label}
-                      </option>
-                    ))}
-                  </select>
-                </label>
+                <ParticipationChoices
+                  legend="Ma participation dans cette délégation"
+                  value={l.members?.[0]?.predictionScope || 'ALL'}
+                  disabled={busy}
+                  onChange={(predictionScope) => {
+                    if (predictionScope === (l.members?.[0]?.predictionScope || 'ALL')) return;
+                    action(async () => {
+                      await API.put(`/community/leagues/${l.id}/preferences`, { predictionScope });
+                      setDetail(null);
+                      setMessage('Votre choix est enregistré. Votre classement dans cette délégation est recalculé.');
+                    });
+                  }}
+                />
                 <p className="muted">
                   Ce choix vous concerne uniquement. Les points des sections choisies comptent dans cette délégation, y
                   compris ceux déjà obtenus. Votre classement général est conservé.
@@ -403,16 +408,12 @@ export default function Community({ tournamentId: preferred = null, userId, onPr
               Délégation privée : chacun est classé avec ses points ; duels entre membres. Votre club se choisit dans
               Mon compte.
             </p>
-            <label>
-              Ma participation
-              <select value={predictionScope} onChange={(e) => setPredictionScope(e.target.value)}>
-                {Object.entries(scopeLabels).map(([value, label]) => (
-                  <option key={value} value={value}>
-                    {label}
-                  </option>
-                ))}
-              </select>
-            </label>
+            <ParticipationChoices
+              legend="Ma participation"
+              value={predictionScope}
+              disabled={busy}
+              onChange={setPredictionScope}
+            />
             <p className="muted">
               Chaque membre fait son propre choix. Seuls les points de ses sections choisies comptent ici.
             </p>
