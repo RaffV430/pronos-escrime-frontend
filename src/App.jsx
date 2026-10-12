@@ -34,6 +34,7 @@ import NotificationBanner from './components/NotificationBanner';
 import { ForgotPassword, ResetPassword } from './components/AccountRecovery';
 import { LegalPage, LegalLinks } from './components/LegalPages';
 import { legalPageFor } from './lib/legal.js';
+import { refonteOn, setRefonte } from './lib/refonte';
 import { TAB_TITLES, idOf, parseLocation, pathFor, pathForTab, tabFromPath } from './lib/routes.js';
 import { captureInvitation, clearInvitation } from './lib/invitation.js';
 import ResultFreshness from './components/ResultFreshness';
@@ -69,6 +70,33 @@ const PublicTournament = lazy(() => import('./components/PublicTournament'));
 const PublicResults = lazy(() => import('./components/PublicResults'));
 const PublicCalendar = lazy(() => import('./components/PublicCalendar'));
 const RedesignHome = lazy(() => import('./components/RedesignHome'));
+const REFONTE = refonteOn();
+const LIVE_ICON = (
+  <svg
+    viewBox="0 0 24 24"
+    width="24"
+    height="24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="1.6"
+    aria-hidden="true"
+  >
+    <circle cx="12" cy="12" r="3" />
+    <path d="M6.3 6.3a8 8 0 0 0 0 11.4M17.7 6.3a8 8 0 0 1 0 11.4" />
+  </svg>
+);
+// Refonte : « Direct » rejoint la barre principale (2e place) ; « Mes tireurs » passe dans le menu du compte.
+const refonteNav = (item) =>
+  item[0] === 'me' ? [] : item[0] === 'home' ? [item, ['live', LIVE_ICON, 'Direct']] : [item];
+// Bascule entre l'ancien et le nouveau design, visible uniquement en local.
+function RefonteToggle() {
+  if (!import.meta.env.DEV) return null;
+  return (
+    <button type="button" className="refonte-toggle" onClick={() => setRefonte(!REFONTE)}>
+      {REFONTE ? 'Nouveau design · revenir à l’ancien' : 'Voir le nouveau design'}
+    </button>
+  );
+}
 const AccountSettings = lazy(() => import('./components/AccountSettings'));
 const Community = lazy(() => import('./components/Community'));
 const tabFallback = <p className="muted load-state">Chargement…</p>;
@@ -595,6 +623,7 @@ export default function App() {
     return (
       <FencerFollowsProvider key={user.id} userId={user.id} competitionId={selectedCompetitionId}>
         <div className="app-shell redesigned">
+          <RefonteToggle />
           <header className="app-header">
             <div className="brand">
               <BrandMark />
@@ -630,7 +659,7 @@ export default function App() {
                   <nav id="user-options" className="user-menu-panel" aria-label="Mon espace">
                     {/* Sections hors barre principale : chacune n'apparaît qu'ici (aucun doublon). */}
                     {[
-                      ['live', 'Direct & résultats'],
+                      REFONTE ? ['me', 'Mes tireurs'] : ['live', 'Direct & résultats'],
                       ['community', 'Délégations'],
                       ['account', 'Mon compte et notifications'],
                       ...(user.isAdmin ? [['admin', 'Administration']] : []),
@@ -767,17 +796,23 @@ export default function App() {
                 </svg>,
                 'Mes tireurs',
               ],
-            ].map(([id, icon, label]) => (
-              <button
-                key={id}
-                data-tab={id}
-                aria-pressed={mainTab === id || (id === 'mine' && mainTab === 'season')}
-                onClick={() => navigate(id)}
-              >
-                <span aria-hidden="true">{icon}</span>
-                {label}
-              </button>
-            ))}
+            ]
+              .flatMap((item) => (REFONTE ? refonteNav(item) : [item]))
+              .map(([id, icon, label]) => (
+                <button
+                  key={id}
+                  data-tab={id}
+                  aria-pressed={
+                    mainTab === id ||
+                    (id === 'mine' && mainTab === 'season') ||
+                    (id === 'live' && mainTab === 'results')
+                  }
+                  onClick={() => navigate(id)}
+                >
+                  <span aria-hidden="true">{icon}</span>
+                  {label}
+                </button>
+              ))}
             {accountClub?.name && (
               <div className="arena-club">
                 <span>VOTRE CLUB</span>
@@ -828,17 +863,21 @@ export default function App() {
               {mainTab === 'home' && (
                 <>
                   <ClubProfile key={user.id} prompt />
-                  <ArenaHome
-                    onFollowedFencer={openFollowedFencer}
-                    user={user}
-                    matches={matches}
-                    competition={competition}
-                    tournament={tournamentInfo}
-                    onPlay={() => navigate('play')}
-                    onMine={() => navigate('season')}
-                    onCommunity={() => navigate('community')}
-                    onLive={() => navigate('live')}
-                  />
+                  {REFONTE ? (
+                    <RedesignHome user={user} onNavigate={navigate} />
+                  ) : (
+                    <ArenaHome
+                      onFollowedFencer={openFollowedFencer}
+                      user={user}
+                      matches={matches}
+                      competition={competition}
+                      tournament={tournamentInfo}
+                      onPlay={() => navigate('play')}
+                      onMine={() => navigate('season')}
+                      onCommunity={() => navigate('community')}
+                      onLive={() => navigate('live')}
+                    />
+                  )}
                 </>
               )}
               {['live', 'results'].includes(mainTab) && (
@@ -897,6 +936,7 @@ export default function App() {
                 </p>
               )}
               {!['me', 'season', 'account', 'mine', 'results', 'leaderboard', 'community'].includes(mainTab) &&
+                !(REFONTE && mainTab === 'home') &&
                 !(mainTab === 'admin' && adminSection !== 'event') && (
                   <EventSelector
                     hideCompact={mainTab === 'home'}
@@ -1246,6 +1286,14 @@ export default function App() {
     );
   }
 
+  // Refonte : la nouvelle page d'entrée accueille les visiteurs (connexion et inscription inchangées).
+  if (REFONTE && !isAuthPath(location.pathname) && !invitation)
+    return (
+      <Suspense fallback={<p style={{ textAlign: 'center', marginTop: '100px' }}>Chargement…</p>}>
+        <RedesignHome />
+        <RefonteToggle />
+      </Suspense>
+    );
   return (
     <Landing invitation={invitation} onInvitationInvalid={() => setInvitation(null)}>
       <div className="auth-card">

@@ -13,6 +13,9 @@ import './components/admin-layout.css';
 import './components/points-boost.css';
 import './components/quick-predictions.css';
 import './components/compact-layout.css';
+// Aperçu de la refonte (chargé en dernier : ne s'applique que sous html.refonte).
+import './refonte.css';
+import { refonteOn } from './lib/refonte';
 import ErrorBoundary from './components/ErrorBoundary.jsx';
 import { startMonitoring, reportError } from './lib/monitoring.js';
 import { initTheme } from './lib/theme.js';
@@ -27,6 +30,7 @@ navigator.connection?.addEventListener?.('change', applyMode);
 if (!reducedData()) import('./brandFonts');
 
 document.documentElement.classList.add('club-arena');
+if (refonteOn()) document.documentElement.classList.add('refonte');
 if (!reducedData()) startMonitoring();
 
 // Adresse de référence de la page (sans paramètres) : une seule URL par contenu pour les moteurs de recherche.

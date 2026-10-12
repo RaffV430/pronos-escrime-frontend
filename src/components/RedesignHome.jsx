@@ -147,7 +147,44 @@ function Piste() {
   );
 }
 
-export default function RedesignHome() {
+// Tableau de bord du joueur (refonte) : sa place, ses points, son meilleur coup et ses délégations.
+function usePlayer(user) {
+  const [me, setMe] = useState(null);
+  useEffect(() => {
+    if (!user) return;
+    const c = new AbortController();
+    Promise.allSettled([
+      API.get('/matches/leaderboard', { signal: c.signal }),
+      API.get('/me/season', { signal: c.signal }),
+      API.get('/community/leagues', { signal: c.signal }),
+    ]).then(([board, season, leagues]) => {
+      if (c.signal.aborted) return;
+      const rows = board.status === 'fulfilled' && Array.isArray(board.value.data) ? board.value.data : [];
+      const index = rows.findIndex((r) => r.id === user.id);
+      const row = rows[index];
+      const ahead = index > 0 ? rows[index - 1] : null;
+      setMe({
+        rank: row?.rank ?? null,
+        players: rows.length,
+        points: row?.totalPoints ?? 0,
+        gap: ahead && row ? Math.max(0, ahead.totalPoints - row.totalPoints) : null,
+        best: season.status === 'fulfilled' ? season.value.data?.analysis?.bestCall || null : null,
+        leagues: leagues.status === 'fulfilled' && Array.isArray(leagues.value.data) ? leagues.value.data : [],
+      });
+    });
+    return () => c.abort();
+  }, [user]);
+  return me;
+}
+
+export default function RedesignHome({ user = null, onNavigate = null }) {
+  const me = usePlayer(user);
+  // Dans l'application, les liens internes changent d'onglet sans recharger la page.
+  const go = (tab) => (event) => {
+    if (!onNavigate) return;
+    event.preventDefault();
+    onNavigate(tab);
+  };
   const [events, setEvents] = useState(null);
   const [results, setResults] = useState(null);
   const signedIn = (() => {
@@ -204,28 +241,30 @@ export default function RedesignHome() {
   const season = new Date().getFullYear() - (new Date().getMonth() < 8 ? 1 : 0);
   const countdown = useCountdown(next?.start);
   const primary = signedIn
-    ? { href: '/pronostiquer', label: 'Faire mes pronostics' }
+    ? { href: '/pronostiquer', label: 'Faire mes pronostics', tab: 'play' }
     : { href: '/inscription', label: 'Créer mon compte gratuit' };
 
   return (
-    <div className="rd">
-      <header className="rd-top">
-        <a className="rd-brand" href="/maquette">
-          <span className="rd-logo" aria-hidden="true">
-            P
-          </span>
-          <span>
-            <strong>pronos</strong> escrime
-          </span>
-        </a>
-        <nav className="rd-top-links" aria-label="Navigation">
-          <a href="/calendrier">Calendrier</a>
-          <a href="/resultats">Résultats</a>
-          <a className="rd-top-cta" href={signedIn ? '/accueil' : '/connexion'}>
-            {signedIn ? 'Mon espace' : 'Se connecter'}
+    <div className={user ? 'rd rd-dashboard' : 'rd'}>
+      {!user && (
+        <header className="rd-top">
+          <a className="rd-brand" href="/maquette">
+            <span className="rd-logo" aria-hidden="true">
+              P
+            </span>
+            <span>
+              <strong>pronos</strong> escrime
+            </span>
           </a>
-        </nav>
-      </header>
+          <nav className="rd-top-links" aria-label="Navigation">
+            <a href="/calendrier">Calendrier</a>
+            <a href="/resultats">Résultats</a>
+            <a className="rd-top-cta" href={signedIn ? '/accueil' : '/connexion'}>
+              {signedIn ? 'Mon espace' : 'Se connecter'}
+            </a>
+          </nav>
+        </header>
+      )}
 
       {demo && (
         <p className="rd-demo-banner" role="note">
@@ -236,15 +275,41 @@ export default function RedesignHome() {
         <p className="rd-eyebrow">
           Fleuret · Épée · Sabre — saison {season}–{season + 1}
         </p>
-        <h1 id="rd-hero-title">
-          Chaque touche compte.
-          <br />
-          <span>Pronostiquez-la.</span>
-        </h1>
-        <p className="rd-lead">
-          Le rendez-vous des passionnés d’escrime : pronostics, résultats en direct et classements entre amis, club et
-          délégations.
-        </p>
+        {user ? (
+          <>
+            <h1 id="rd-hero-title">
+              Salut {user.name || user.username},
+              <br />
+              <span>en garde !</span>
+            </h1>
+            <div className="rd-stats" aria-label="Ma saison">
+              <a href="/classements" onClick={go('leaderboard')}>
+                <b>{me?.rank ? `${me.rank}e` : '–'}</b>
+                <span>{me?.players ? `sur ${me.players} joueurs` : 'au classement'}</span>
+              </a>
+              <a href="/mes-pronostics" onClick={go('mine')}>
+                <b>{me ? me.points : '–'}</b>
+                <span>points cette saison</span>
+              </a>
+              <a href="/classements" onClick={go('leaderboard')}>
+                <b>{me?.gap != null ? `+${me.gap}` : '–'}</b>
+                <span>{me?.gap != null ? 'pts pour gagner une place' : 'vous menez !'}</span>
+              </a>
+            </div>
+          </>
+        ) : (
+          <>
+            <h1 id="rd-hero-title">
+              Chaque touche compte.
+              <br />
+              <span>Pronostiquez-la.</span>
+            </h1>
+            <p className="rd-lead">
+              Le rendez-vous des passionnés d’escrime : pronostics, résultats en direct et classements entre amis, club
+              et délégations.
+            </p>
+          </>
+        )}
         <Piste />
         {next ? (
           <article className="rd-next" aria-label={nextDay.length > 1 ? 'Prochaine journée' : 'Prochaine épreuve'}>
@@ -298,12 +363,18 @@ export default function RedesignHome() {
           <div className="rd-next rd-skeleton" aria-hidden="true" />
         )}
         <div className="rd-hero-actions">
-          <a className="rd-button" href={primary.href}>
+          <a className="rd-button" href={primary.href} onClick={primary.tab ? go(primary.tab) : undefined}>
             {primary.label} →
           </a>
-          <a className="rd-button rd-button-ghost" href="/calendrier">
-            Voir le calendrier
-          </a>
+          {user ? (
+            <a className="rd-button rd-button-ghost" href="/direct" onClick={go('live')}>
+              Suivre le direct
+            </a>
+          ) : (
+            <a className="rd-button rd-button-ghost" href="/calendrier">
+              Voir le calendrier
+            </a>
+          )}
         </div>
       </section>
 
@@ -393,59 +464,119 @@ export default function RedesignHome() {
         </section>
       )}
 
-      <section className="rd-section" aria-labelledby="rd-how">
-        <h2 id="rd-how">Comment ça marche</h2>
-        <ol className="rd-steps">
-          <li>
-            <span className="rd-step-num">1</span>
-            <h3>Choisissez une épreuve</h3>
-            <p>Les compétitions nationales et internationales, au fleuret, à l’épée et au sabre.</p>
-          </li>
-          <li>
-            <span className="rd-step-num">2</span>
-            <h3>Pronostiquez avant l’assaut</h3>
-            <p>Poules, tableau et podium. Le bon vainqueur rapporte, le score exact rapporte plus.</p>
-          </li>
-          <li>
-            <span className="rd-step-num">3</span>
-            <h3>Suivez en direct, grimpez au classement</h3>
-            <p>Résultats officiels mis à jour pendant la compétition, points et classements aussitôt.</p>
-          </li>
-        </ol>
-      </section>
+      {user && (
+        <section className="rd-section rd-mine" aria-labelledby="rd-mine">
+          <h2 id="rd-mine">Ma saison</h2>
+          <div className="rd-mine-grid">
+            <article className="rd-card">
+              <p className="rd-card-tag">Mon meilleur coup</p>
+              {me?.best ? (
+                <>
+                  <h3>{me.best.name}</h3>
+                  <p className="rd-best">
+                    <span>
+                      Pronostic <b>{me.best.prediction}</b>
+                    </span>
+                    <span>
+                      Résultat <b>{me.best.result}</b>
+                    </span>
+                    <em>
+                      +{me.best.points} pt{me.best.points > 1 ? 's' : ''}
+                    </em>
+                  </p>
+                </>
+              ) : (
+                <p className="rd-muted">Votre premier pronostic réussi apparaîtra ici.</p>
+              )}
+              <a href="/ma-saison" onClick={go('season')}>
+                Voir ma saison →
+              </a>
+            </article>
+            <article className="rd-card">
+              <p className="rd-card-tag">Mes délégations</p>
+              {me?.leagues?.length ? (
+                <ul className="rd-leagues">
+                  {me.leagues.slice(0, 3).map((l) => (
+                    <li key={l.id}>
+                      <span className="rd-league-avatar" aria-hidden="true">
+                        {l.name.slice(0, 2).toUpperCase()}
+                      </span>
+                      <strong>{l.name}</strong>
+                      <span>{l._count?.members ?? ''} membres</span>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="rd-muted">
+                  Défiez votre salle d’armes ou vos proches : créez une délégation et invitez-les par leur nom
+                  d’utilisateur.
+                </p>
+              )}
+              <a href="/communaute" onClick={go('community')}>
+                {me?.leagues?.length ? 'Voir les classements →' : 'Créer ma délégation →'}
+              </a>
+            </article>
+          </div>
+        </section>
+      )}
 
-      <section className="rd-section rd-friends" aria-labelledby="rd-friends">
-        <div>
-          <h2 id="rd-friends">Plus fun à plusieurs</h2>
-          <p>
-            Créez une délégation avec votre salle d’armes, votre famille ou vos partenaires d’entraînement. Invitez-les
-            par leur nom d’utilisateur, et que le meilleur pronostiqueur gagne.
-          </p>
-        </div>
-        <div className="rd-friends-board" aria-hidden="true">
-          <small>Exemple de classement</small>
-          {[
-            ['1', 'Vous', '128'],
-            ['2', 'Le maître d’armes', '121'],
-            ['3', 'La salle', '97'],
-          ].map(([rank, who, pts]) => (
-            <div key={rank} className={rank === '1' ? 'is-me' : ''}>
-              <b>{rank}</b>
-              <span>{who}</span>
-              <em>{pts} pts</em>
+      {!user && (
+        <>
+          <section className="rd-section" aria-labelledby="rd-how">
+            <h2 id="rd-how">Comment ça marche</h2>
+            <ol className="rd-steps">
+              <li>
+                <span className="rd-step-num">1</span>
+                <h3>Choisissez une épreuve</h3>
+                <p>Les compétitions nationales et internationales, au fleuret, à l’épée et au sabre.</p>
+              </li>
+              <li>
+                <span className="rd-step-num">2</span>
+                <h3>Pronostiquez avant l’assaut</h3>
+                <p>Poules, tableau et podium. Le bon vainqueur rapporte, le score exact rapporte plus.</p>
+              </li>
+              <li>
+                <span className="rd-step-num">3</span>
+                <h3>Suivez en direct, grimpez au classement</h3>
+                <p>Résultats officiels mis à jour pendant la compétition, points et classements aussitôt.</p>
+              </li>
+            </ol>
+          </section>
+
+          <section className="rd-section rd-friends" aria-labelledby="rd-friends">
+            <div>
+              <h2 id="rd-friends">Plus fun à plusieurs</h2>
+              <p>
+                Créez une délégation avec votre salle d’armes, votre famille ou vos partenaires d’entraînement.
+                Invitez-les par leur nom d’utilisateur, et que le meilleur pronostiqueur gagne.
+              </p>
             </div>
-          ))}
-        </div>
-      </section>
+            <div className="rd-friends-board" aria-hidden="true">
+              <small>Exemple de classement</small>
+              {[
+                ['1', 'Vous', '128'],
+                ['2', 'Le maître d’armes', '121'],
+                ['3', 'La salle', '97'],
+              ].map(([rank, who, pts]) => (
+                <div key={rank} className={rank === '1' ? 'is-me' : ''}>
+                  <b>{rank}</b>
+                  <span>{who}</span>
+                  <em>{pts} pts</em>
+                </div>
+              ))}
+            </div>
+          </section>
 
-      <section className="rd-final" aria-label="Commencer">
-        <h2>Prêt à croiser le fer ?</h2>
-        <a className="rd-button" href={primary.href}>
-          {primary.label} →
-        </a>
-      </section>
+          <section className="rd-final" aria-label="Commencer">
+            <h2>Prêt à croiser le fer ?</h2>
+            <a className="rd-button" href={primary.href}>
+              {primary.label} →
+            </a>
+          </section>
+        </>
+      )}
 
-      {!signedIn && (
+      {!signedIn && !user && (
         <div className="rd-sticky" role="region" aria-label="Inscription">
           <span>C’est gratuit</span>
           <a className="rd-button" href="/inscription">
