@@ -112,6 +112,9 @@ export default function Community({ tournamentId: preferred = null, userId, onPr
     [name, setName] = useState(''),
     [predictionScope, setPredictionScope] = useState('ALL'),
     [code, setCode] = useState(''),
+    [invitations, setInvitations] = useState([]),
+    [invitees, setInvitees] = useState({}),
+    [inviteNotes, setInviteNotes] = useState({}),
     [message, setMessage] = useState(''),
     [busy, setBusy] = useState(false),
     [revision, setRevision] = useState(0);
@@ -155,6 +158,10 @@ export default function Community({ tournamentId: preferred = null, userId, onPr
       .catch((e) => {
         if (!c.signal.aborted) setMessage(e.response?.data?.error || 'Chargement impossible.');
       });
+    // Invitations reçues par nom d'utilisateur (facultatif : une erreur ne bloque pas la page).
+    API.get('/community/invitations', { signal: c.signal })
+      .then(({ data }) => !c.signal.aborted && setInvitations(Array.isArray(data) ? data : []))
+      .catch(() => {});
     return () => c.abort();
   }, [revision]);
   useEffect(() => {
@@ -181,6 +188,23 @@ export default function Community({ tournamentId: preferred = null, userId, onPr
       setRevision((n) => n + 1);
     } catch (e) {
       setMessage(e.response?.data?.error || 'Opération impossible. Réessayez.');
+    } finally {
+      setBusy(false);
+    }
+  };
+  // Invitation par nom d'utilisateur : réponse affichée sous le champ, là où le membre regarde.
+  const invite = async (leagueId) => {
+    if (busy) return;
+    setBusy(true);
+    try {
+      const { data } = await API.post(`/community/leagues/${leagueId}/invitations`, {
+        username: invitees[leagueId] || '',
+      });
+      setInvitees((old) => ({ ...old, [leagueId]: '' }));
+      setInviteNotes((old) => ({ ...old, [leagueId]: { text: data.message } }));
+    } catch (e) {
+      const text = e.response?.data?.error || 'Invitation impossible. Réessayez.';
+      setInviteNotes((old) => ({ ...old, [leagueId]: { text, failed: true } }));
     } finally {
       setBusy(false);
     }
@@ -217,6 +241,44 @@ export default function Community({ tournamentId: preferred = null, userId, onPr
       <p className="muted delegation-help">
         Ouvrez un classement ou choisissez votre favorite : elle apparaît en premier sur l’accueil.
       </p>
+      {invitations.length > 0 && (
+        <section className="delegation-invitations" aria-label="Invitations reçues">
+          <h2>Invitations reçues</h2>
+          {invitations.map((i) => (
+            <article className="delegation-invitation" key={i.id}>
+              <p>
+                {i.invitedBy ? <strong>{i.invitedBy}</strong> : 'Un membre'} vous invite à rejoindre{' '}
+                <strong>« {i.league.name} »</strong> · {withCount(i.league.members, 'membre')}
+              </p>
+              <div className="delegation-invitation-actions">
+                <button
+                  disabled={busy}
+                  onClick={() =>
+                    action(async () => {
+                      const { data } = await API.post(`/community/invitations/${i.id}/accept`);
+                      setMessage(data.message);
+                    })
+                  }
+                >
+                  Accepter
+                </button>
+                <button
+                  className="button-secondary"
+                  disabled={busy}
+                  onClick={() =>
+                    action(async () => {
+                      await API.post(`/community/invitations/${i.id}/decline`);
+                      setMessage('Invitation refusée.');
+                    })
+                  }
+                >
+                  Refuser
+                </button>
+              </div>
+            </article>
+          ))}
+        </section>
+      )}
       {!leagues && <p className="muted">Chargement…</p>}
       {leagues?.length === 0 && (
         <p className="muted">
@@ -296,6 +358,39 @@ export default function Community({ tournamentId: preferred = null, userId, onPr
 
             <details className="delegation-share">
               <summary>Inviter des membres</summary>
+              {l.kind === 'PRIVATE' && (
+                <form
+                  className="delegation-invite-form"
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    invite(l.id);
+                  }}
+                >
+                  <label>
+                    Nom d’utilisateur
+                    <input
+                      value={invitees[l.id] || ''}
+                      required
+                      maxLength={80}
+                      autoCapitalize="none"
+                      autoComplete="off"
+                      spellCheck={false}
+                      onChange={(e) => setInvitees((old) => ({ ...old, [l.id]: e.target.value }))}
+                    />
+                  </label>
+                  <button disabled={busy}>Inviter</button>
+                  {inviteNotes[l.id] ? (
+                    <p
+                      role="status"
+                      className={inviteNotes[l.id].failed ? 'delegation-invite-error' : 'delegation-invite-ok'}
+                    >
+                      {inviteNotes[l.id].text}
+                    </p>
+                  ) : (
+                    <p className="muted">La personne reçoit une invitation à accepter dans ses délégations.</p>
+                  )}
+                </form>
+              )}
               <p>
                 Code : <code>{l.code}</code>
               </p>
