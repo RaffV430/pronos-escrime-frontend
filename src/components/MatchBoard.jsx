@@ -187,7 +187,7 @@ export default function MatchBoard({
           : picks[m.id] || null
         : null;
     const base = side
-      ? { score1: '', score2: '', winner: side }
+      ? { score1: side === 1 ? m.maxScore || 15 : '', score2: side === 2 ? m.maxScore || 15 : '', winner: side }
       : { score1: p?.predictedScore1 ?? '', score2: p?.predictedScore2 ?? '', winner: null };
     return { ...base, ...d[m.id] };
   };
@@ -208,7 +208,7 @@ export default function MatchBoard({
         const m = valid.find((m) => m.id === Number(id));
         if (!m) continue;
         const v = values(m, draftsRef.current),
-          winnerOnly = v.score1 === '' && v.score2 === '' && [1, 2].includes(v.winner),
+          winnerOnly = [1, 2].includes(v.winner) && v[`score${v.winner === 1 ? 2 : 1}`] === '',
           invalid = winnerOnly ? null : validateScores(v, m.maxScore || 15);
         if (invalid) {
           message(id, `${invalid} Ou touchez simplement le nom du vainqueur.`, true);
@@ -320,13 +320,16 @@ export default function MatchBoard({
   const pick = (m, side) => {
     if (!ready || isMatchClosed(m, now)) return;
     if (pickedSide(m, values(m, draftsRef.current)) === side && !draftsRef.current[m.id]) return;
-    saveDrafts((old) => ({ ...old, [m.id]: { score1: '', score2: '', winner: side } }));
+    saveDrafts((old) => ({
+      ...old,
+      [m.id]: { score1: side === 1 ? m.maxScore || 15 : '', score2: side === 2 ? m.maxScore || 15 : '', winner: side },
+    }));
     save([m.id]);
     // Le joueur reste sur ce match : il peut ajouter le score (clavier ouvert), puis choisir
     // « Match suivant » dans la barre au-dessus du clavier.
     setReveal({ id: m.id });
     const prefix = view === 'Arbre' ? 'detail-' : '';
-    document.getElementById(`${prefix}input-${m.id}-1`)?.focus({ preventScroll: true });
+    document.getElementById(`${prefix}input-${m.id}-${side === 1 ? 2 : 1}`)?.focus({ preventScroll: true });
   };
   // Barre au-dessus du clavier (mobile) : match en cours de saisie.
   const [typingId, setTypingId] = useState(null);
