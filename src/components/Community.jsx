@@ -1,4 +1,5 @@
 import ClubProfile from './ClubProfile';
+import { scopeLabels } from '../lib/delegationScope';
 import { useState, useEffect, useRef } from 'react';
 import { PistePodium } from './PisteExperience';
 import API from '../api';
@@ -48,6 +49,7 @@ function Ranking({ rows, onDuel, userId }) {
                     ? 'En tête'
                     : `${points(rows[0].totalPoints - r.totalPoints)} pts de la tête`}
               </small>
+              {r.predictionScope && <small>{scopeLabels[r.predictionScope]}</small>}
               <span className="delegation-score-track">
                 <span
                   style={{
@@ -76,7 +78,7 @@ function Ranking({ rows, onDuel, userId }) {
 }
 // Communauté : mes groupes d'amis et clubs (permanents) avec leur lien d'invitation et leur classement
 // par tournoi ou sur la saison, création et adhésion, puis le classement des clubs et les défis d'un tournoi.
-export default function Community({ tournamentId: preferred = null, userId }) {
+export default function Community({ tournamentId: preferred = null, userId, onPronosticate }) {
   const rankingSection = useRef(null);
   const [favoriteId, setFavoriteId] = useState(null);
   const [favoriteBusy, setFavoriteBusy] = useState(false);
@@ -89,6 +91,7 @@ export default function Community({ tournamentId: preferred = null, userId }) {
     [detailScope, setDetailScope] = useState(''),
     [duel, setDuel] = useState(null),
     [name, setName] = useState(''),
+    [predictionScope, setPredictionScope] = useState('ALL'),
     [code, setCode] = useState(''),
     [message, setMessage] = useState(''),
     [busy, setBusy] = useState(false),
@@ -244,6 +247,42 @@ export default function Community({ tournamentId: preferred = null, userId }) {
               Voir le classement →
             </button>
             {l.registeredClub?.description && <p>{l.registeredClub.description}</p>}
+            {l.kind === 'PRIVATE' && (
+              <details className="delegation-preferences">
+                <summary>Mes réglages de pronostics</summary>
+                <label>
+                  Ma participation dans cette délégation
+                  <select
+                    disabled={busy}
+                    value={l.members?.[0]?.predictionScope || 'ALL'}
+                    onChange={(e) => {
+                      const predictionScope = e.target.value;
+                      action(async () => {
+                        await API.put(`/community/leagues/${l.id}/preferences`, { predictionScope });
+                        setDetail(null);
+                        setMessage('Votre choix est enregistré. Votre classement dans cette délégation est recalculé.');
+                      });
+                    }}
+                  >
+                    {Object.entries(scopeLabels).map(([value, label]) => (
+                      <option key={value} value={value}>
+                        {label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <p className="muted">
+                  Ce choix vous concerne uniquement. Les points des sections choisies comptent dans cette délégation, y
+                  compris ceux déjà obtenus. Votre classement général est conservé.
+                </p>
+              </details>
+            )}
+            {l.kind === 'PRIVATE' && onPronosticate && (
+              <button className="button-secondary" onClick={() => onPronosticate(l)}>
+                Pronostiquer avec mon choix →
+              </button>
+            )}
+
             <details className="delegation-share">
               <summary>Inviter des membres</summary>
               <p>
@@ -349,7 +388,7 @@ export default function Community({ tournamentId: preferred = null, userId }) {
             onSubmit={(e) => {
               e.preventDefault();
               action(async () => {
-                await API.post('/community/leagues', { name, kind: 'PRIVATE' });
+                await API.post('/community/leagues', { name, kind: 'PRIVATE', predictionScope });
                 setName('');
                 setMessage('Délégation créée. Partagez son lien d’invitation avec vos proches.');
               });
@@ -363,6 +402,19 @@ export default function Community({ tournamentId: preferred = null, userId }) {
             <p className="muted">
               Délégation privée : chacun est classé avec ses points ; duels entre membres. Votre club se choisit dans
               Mon compte.
+            </p>
+            <label>
+              Ma participation
+              <select value={predictionScope} onChange={(e) => setPredictionScope(e.target.value)}>
+                {Object.entries(scopeLabels).map(([value, label]) => (
+                  <option key={value} value={value}>
+                    {label}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <p className="muted">
+              Chaque membre fait son propre choix. Seuls les points de ses sections choisies comptent ici.
             </p>
             <button disabled={busy}>Créer</button>
           </form>

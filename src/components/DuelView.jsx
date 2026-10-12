@@ -1,3 +1,4 @@
+import { scopeLabels } from '../lib/delegationScope';
 import { roundLabel } from './matchPresentation';
 import { plural } from './resultPresentation';
 
@@ -12,6 +13,11 @@ export default function DuelView({ duel, onClose }) {
           Fermer
         </button>
       </div>
+      {duel.predictionScopes && (
+        <p className="muted">
+          Vous : {scopeLabels[duel.predictionScopes[0]]} · {opponent?.name} : {scopeLabels[duel.predictionScopes[1]]}
+        </p>
+      )}
       <div className="duel-score" aria-label="Score du duel">
         <div>
           <strong>{totals.me}</strong>

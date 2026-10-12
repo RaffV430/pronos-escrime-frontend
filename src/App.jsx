@@ -1,3 +1,4 @@
+import { scopeLabels, predictionTabs } from './lib/delegationScope';
 import { RESULT_REFRESH_MS } from './lib/resultSync';
 import { useResultSync } from './lib/useResultSync';
 import { BoostBanner } from './components/BoostBadge';
@@ -180,6 +181,31 @@ export default function App() {
   const [resultsVersion, setResultsVersion] = useState(0);
   const [competition, setCompetition] = useState(null);
   const [playTab, setPlayTab] = useState('tableau');
+  const [delegationContext, setDelegationContext] = useState(null);
+  useEffect(() => {
+    setDelegationContext(null);
+  }, [user?.id]);
+  useEffect(() => {
+    if (!delegationContext || mainTab !== 'play') return;
+    const c = new AbortController();
+    API.get(`/community/leagues/${delegationContext.id}`, { signal: c.signal })
+      .then(({ data }) => {
+        if (!c.signal.aborted)
+          setDelegationContext({
+            id: data.league.id,
+            name: data.league.name,
+            scope: data.league.predictionScope || 'ALL',
+          });
+      })
+      .catch(() => {
+        if (!c.signal.aborted) setDelegationContext(null);
+      });
+    return () => c.abort();
+  }, [delegationContext?.id, mainTab]);
+  useEffect(() => {
+    const tabs = predictionTabs(delegationContext?.scope);
+    if (!tabs.some(([id]) => id === playTab)) setPlayTab(tabs[0][0]);
+  }, [delegationContext?.scope, playTab]);
   // Retour arrière vers une autre épreuve : le sélecteur relit l'adresse.
   useEffect(() => {
     const back = () => {
@@ -941,7 +967,21 @@ export default function App() {
               )}
               {/* Classement général consultable sans choisir d'épreuve. */}
               {/* Communauté : tous les groupes, sans choisir d'épreuve au préalable. */}
-              {mainTab === 'community' && <Community tournamentId={tournamentId} userId={user.id} />}
+              {mainTab === 'community' && (
+                <Community
+                  tournamentId={tournamentId}
+                  userId={user.id}
+                  onPronosticate={(league) =>
+                    runNavigation(() => {
+                      const scope = league.members?.[0]?.predictionScope || 'ALL';
+                      setDelegationContext({ id: league.id, name: league.name, scope });
+                      setPlayTab(scope === 'PODIUM' ? 'podium' : 'tableau');
+                      setEventMode('predictions');
+                      setMainTab('play');
+                    })
+                  }
+                />
+              )}
               {mainTab === 'leaderboard' && (
                 <GlobalLeaderboard userId={user.id} tournamentId={tournamentId} competitionId={selectedCompetitionId} />
               )}
@@ -1025,29 +1065,38 @@ export default function App() {
                           </button>
                         ))}
                       </nav>
+                      {eventMode === 'predictions' && delegationContext && (
+                        <p className="delegation-context">
+                          {delegationContext.name} · {scopeLabels[delegationContext.scope]}{' '}
+                          <button
+                            className="button-link"
+                            onClick={() => runNavigation(() => setDelegationContext(null))}
+                          >
+                            Afficher tous mes pronostics
+                          </button>
+                        </p>
+                      )}
                       {eventMode === 'predictions' && (
                         <nav className="secondary-nav" aria-label="Type de pronostic">
-                          {[...(!team ? [['pools', 'Poules']] : []), ['tableau', 'Tableau'], ['podium', 'Podium']].map(
-                            ([id, label]) => (
-                              <button
-                                key={id}
-                                aria-pressed={playTab === id}
-                                onClick={() =>
-                                  runNavigation(() => {
-                                    setDirty(false);
-                                    setPlayTab(id);
-                                  })
-                                }
-                              >
-                                {label}
-                                {boostedTab(competition?.pointsBoosts, id) && (
-                                  <span className="boost-tab-dot" aria-label=" (points ×2)">
-                                    🔥
-                                  </span>
-                                )}
-                              </button>
-                            ),
-                          )}
+                          {predictionTabs(delegationContext?.scope, team).map(([id, label]) => (
+                            <button
+                              key={id}
+                              aria-pressed={playTab === id}
+                              onClick={() =>
+                                runNavigation(() => {
+                                  setDirty(false);
+                                  setPlayTab(id);
+                                })
+                              }
+                            >
+                              {label}
+                              {boostedTab(competition?.pointsBoosts, id) && (
+                                <span className="boost-tab-dot" aria-label=" (points ×2)">
+                                  🔥
+                                </span>
+                              )}
+                            </button>
+                          ))}
                         </nav>
                       )}
                       {eventMode === 'predictions' && <BoostBanner boosts={competition?.pointsBoosts} />}
