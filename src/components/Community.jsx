@@ -89,7 +89,6 @@ export default function Community({ tournamentId: preferred = null, userId }) {
     [detailScope, setDetailScope] = useState(''),
     [duel, setDuel] = useState(null),
     [name, setName] = useState(''),
-    [kind, setKind] = useState('PRIVATE'),
     [code, setCode] = useState(''),
     [message, setMessage] = useState(''),
     [busy, setBusy] = useState(false),
@@ -343,36 +342,27 @@ export default function Community({ tournamentId: preferred = null, userId }) {
       )}
       <ClubProfile />
       <details className="delegation-manage">
-        <summary>Créer ou rejoindre une délégation ou un club</summary>
+        <summary>Créer ou rejoindre une délégation</summary>
         <div className="feature-grid">
           <form
             className="feature-panel"
             onSubmit={(e) => {
               e.preventDefault();
               action(async () => {
-                await API.post('/community/leagues', { name, kind });
+                await API.post('/community/leagues', { name, kind: 'PRIVATE' });
                 setName('');
-                setMessage(
-                  `${kind === 'CLUB' ? 'Club créé' : 'Délégation créée'}. Partagez son lien d’invitation avec vos proches.`,
-                );
+                setMessage('Délégation créée. Partagez son lien d’invitation avec vos proches.');
               });
             }}
           >
-            <h3>Créer une délégation d’amis ou un club</h3>
+            <h3>Créer une délégation d’amis</h3>
             <label>
               Nom
               <input value={name} minLength={3} maxLength={80} required onChange={(e) => setName(e.target.value)} />
             </label>
-            <label>
-              Type
-              <select value={kind} onChange={(e) => setKind(e.target.value)}>
-                <option value="PRIVATE">Délégation d’amis</option>
-              </select>
-            </label>
             <p className="muted">
-              {kind === 'CLUB'
-                ? 'Club : une note par club (moyenne de ses membres), comparée aux autres clubs. Un seul club à la fois.'
-                : 'Délégation privée : chacun est classé avec ses points ; duels entre membres.'}
+              Délégation privée : chacun est classé avec ses points ; duels entre membres. Votre club se choisit dans
+              Mon compte.
             </p>
             <button disabled={busy}>Créer</button>
           </form>

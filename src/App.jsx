@@ -650,6 +650,7 @@ export default function App() {
           <AppTutorial
             key={user.id}
             userId={user.id}
+            seenInAccount={Boolean(user.tutorialSeenAt)}
             skipAutomatic={Boolean(adminTarget) || landedOnLink}
             request={tutorialRequest}
             onNavigate={(step) =>
