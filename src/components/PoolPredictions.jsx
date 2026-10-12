@@ -7,7 +7,14 @@ import API from '../api';
 import useLocalDraft, { draftKey } from './useLocalDraft';
 import DraftNotice from './DraftNotice';
 import { useInlineConfirm } from './InlineConfirm';
-import { OUTBOX_EVENT, dropWrite, isNetworkError, queueWrite } from '../lib/outbox';
+import {
+  CLOSED_REFUSAL_MESSAGE,
+  OUTBOX_EVENT,
+  dropWrite,
+  isClosedRefusal,
+  isNetworkError,
+  queueWrite,
+} from '../lib/outbox';
 import './PoolPredictions.css';
 import { withCount } from '../lib/plural';
 import { pollWhileVisible, useNow } from '../lib/polling';
@@ -86,12 +93,23 @@ function PredictionRow({ userId, pool, fencer, closed, onRefresh, reportDirty, l
         localDraft.discard();
         setFeedback('Pronostic envoyé.');
         onRefresh();
-      } else {
+      } else if (isClosedRefusal(detail.status)) refusedClosed();
+      else {
         setDirty(true);
         setFeedback(`${detail.error} Votre saisie est conservée.`);
       }
     };
   });
+  // Clôture passée : la saisie ne passera plus, on revient au pronostic enregistré et on relit la poule au serveur.
+  function refusedClosed() {
+    dropWrite(outboxKey);
+    localDraft.discard();
+    setDirty(false);
+    setWins(fencer.prediction?.wins ?? '');
+    setIndicator(fencer.prediction?.indicator ?? '');
+    setFeedback(CLOSED_REFUSAL_MESSAGE);
+    onRefresh({ force: true });
+  }
   useEffect(() => {
     const done = (event) => {
       if (event.detail?.key === outboxKey && 'ok' in event.detail) deliveredRef.current?.(event.detail);
@@ -135,7 +153,8 @@ function PredictionRow({ userId, pool, fencer, closed, onRefresh, reportDirty, l
         });
         setDirty(false);
         setFeedback('Pas de réseau : pronostic gardé et envoyé automatiquement dès que la connexion revient.');
-      } else setFeedback(message(error));
+      } else if (isClosedRefusal(error.response?.status)) refusedClosed();
+      else setFeedback(message(error));
     } finally {
       setBusy(false);
     }
@@ -676,7 +695,7 @@ function PoolList({ competitionId, user, onDirtyChange, refreshVersion }) {
   const now = useNow(5000);
   const manualRefresh = useRef(false);
   const reload = useCallback((event) => {
-    if (event?.type === 'click') manualRefresh.current = true;
+    if (event?.type === 'click' || event?.force) manualRefresh.current = true;
     setRefresh((n) => n + 1);
   }, []);
   useEffect(() => {

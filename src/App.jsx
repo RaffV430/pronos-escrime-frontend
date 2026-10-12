@@ -348,10 +348,11 @@ export default function App() {
     });
 
   // 2. Charger les matchs en fonction de la compétition
-  const fetchMatches = async (compId) => {
+  // force : relire au serveur, sans la copie gardée sur l'appareil (après un refus pour clôture).
+  const fetchMatches = async (compId, { force = false } = {}) => {
     if (!compId) return;
     try {
-      const res = await API.get(`/matches?competitionId=${compId}`);
+      const res = await API.get(`/matches?competitionId=${compId}`, force ? { forceRefresh: true } : undefined);
       setMatches(res.data);
       setMatchesReady(true);
       setMatchesError('');
@@ -1169,7 +1170,7 @@ export default function App() {
                             isAdmin={!!user.isAdmin}
                             ready={matchesReady}
                             stale={matchesStale}
-                            onRefresh={() => fetchMatches(selectedCompetitionId)}
+                            onRefresh={(options) => fetchMatches(selectedCompetitionId, options)}
                             onDirtyChange={setDirty}
                           />
                         </>

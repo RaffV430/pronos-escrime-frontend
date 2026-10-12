@@ -12,7 +12,14 @@ import MatchTiming from './MatchTiming';
 import { groupMatches, isMatchClosed, isUpcoming, validateScores, nextMatchId } from './matchPresentation';
 import { useNow } from '../lib/polling';
 import { reducedData } from '../lib/fieldCache';
-import { OUTBOX_EVENT, dropWrite, isNetworkError, queueWrite } from '../lib/outbox';
+import {
+  CLOSED_REFUSAL_MESSAGE,
+  OUTBOX_EVENT,
+  dropWrite,
+  isClosedRefusal,
+  isNetworkError,
+  queueWrite,
+} from '../lib/outbox';
 import HeadToHead from './HeadToHead';
 import MatchSocial from './MatchSocial';
 import BracketTree from './BracketTree.jsx';
@@ -244,6 +251,21 @@ export default function MatchBoard({
   const pickedSide = (m, v = values(m)) =>
     !validateScores(v, m.maxScore || 15) ? (Number(v.score1) > Number(v.score2) ? 1 : 2) : v.winner || null;
   const message = (id, text, failed = false) => setMessages((old) => ({ ...old, [id]: { text, failed } }));
+  // Clôture passée : la saisie ne passera plus, on l'efface et on relit le tableau au serveur
+  // (pas la copie de l'appareil) pour que la carte s'affiche close.
+  const refusedClosed = (ids) => {
+    for (const id of ids) {
+      dropWrite(`match:${id}`);
+      message(id, CLOSED_REFUSAL_MESSAGE, true);
+    }
+    saveDrafts((old) => {
+      const next = { ...old };
+      for (const id of ids) delete next[id];
+      return next;
+    });
+    setKept((old) => new Set([...old, ...ids.map(Number)]));
+    onRefresh?.({ force: true });
+  };
   useEffect(() => {
     outboxRef.current = (id, detail) => {
       setQueuedIds((old) => {
@@ -260,7 +282,8 @@ export default function MatchBoard({
         message(id, 'Pronostic envoyé.');
         setKept((old) => new Set([...old, id]));
         onRefresh?.();
-      } else message(id, `${detail.error} Votre saisie est conservée.`, true);
+      } else if (isClosedRefusal(detail.status)) refusedClosed([id]);
+      else message(id, `${detail.error} Votre saisie est conservée.`, true);
     };
   });
   const save = async (ids) => {
@@ -270,7 +293,8 @@ export default function MatchBoard({
     }
     saving.current = true;
     setBusy(true);
-    const saved = [];
+    const saved = [],
+      refused = [];
     try {
       const ready_ = [];
       for (const id of ids) {
@@ -313,13 +337,15 @@ export default function MatchBoard({
           queueWrite({ key: `match:${id}`, method: 'post', url: `/matches/${id}/predict`, data: body });
           setQueuedIds((old) => new Set([...old, Number(id)]));
           message(id, 'Pas de réseau : pronostic gardé et envoyé automatiquement dès que la connexion revient.');
-        } else
+        } else if (!onPreviewSave && isClosedRefusal(r.reason?.response?.status)) refused.push(Number(id));
+        else
           message(
             id,
             r.reason?.response?.data?.error || 'Enregistrement impossible. Votre saisie est conservée.',
             true,
           );
       });
+      if (refused.length) refusedClosed(refused);
       if (saved.length) {
         await onRefresh();
         saveDrafts((old) => {

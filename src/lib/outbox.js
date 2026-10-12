@@ -39,6 +39,9 @@ const emit = (detail) => window.dispatchEvent(new CustomEvent(OUTBOX_EVENT, { de
 
 // Coupure réseau (pas de réponse du serveur) : à garder pour un nouvel essai.
 export const isNetworkError = (error) => Boolean(error) && !error.response && error.code !== 'ERR_CANCELED';
+// Refus définitif (409) : la clôture est passée, la saisie ne sera jamais acceptée et n'est pas conservée.
+export const isClosedRefusal = (status) => status === 409;
+export const CLOSED_REFUSAL_MESSAGE = 'Trop tard : les pronostics sont clos. Ce pronostic n’a pas été pris en compte.';
 
 export function pending() {
   return load();
@@ -90,6 +93,7 @@ export async function flush() {
         emit({
           key: item.key,
           ok: false,
+          status: error.response?.status,
           error: error.response?.data?.error || 'Pronostic refusé par le serveur.',
           count: load(s).length,
         });
