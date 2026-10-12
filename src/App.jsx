@@ -68,6 +68,7 @@ const Results = lazy(() => import('./components/Results'));
 const PublicTournament = lazy(() => import('./components/PublicTournament'));
 const PublicResults = lazy(() => import('./components/PublicResults'));
 const PublicCalendar = lazy(() => import('./components/PublicCalendar'));
+const RedesignHome = lazy(() => import('./components/RedesignHome'));
 const AccountSettings = lazy(() => import('./components/AccountSettings'));
 const Community = lazy(() => import('./components/Community'));
 const tabFallback = <p className="muted load-state">Chargement…</p>;
@@ -550,6 +551,13 @@ export default function App() {
       </Suspense>
     );
   if (legalPage) return <LegalPage page={legalPage} />;
+  // Maquette de refonte, consultable à côté du site actuel (/maquette).
+  if (/^\/maquette\/?$/.test(location.pathname))
+    return (
+      <Suspense fallback={<p style={{ textAlign: 'center', marginTop: '100px' }}>Chargement…</p>}>
+        <RedesignHome />
+      </Suspense>
+    );
   // Calendrier des épreuves (/calendrier), lisible avec ou sans compte.
   if (/^\/calendrier\/?$/.test(location.pathname))
     return (
