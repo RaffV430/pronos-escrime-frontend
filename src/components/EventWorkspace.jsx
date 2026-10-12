@@ -152,7 +152,7 @@ export function CompetitionFollow({ view, competition, matches, userId, ready, e
           competition={competition} userId={userId} ready={ready} error={error} stale={stale}
           onPlay={() => setMatchId(null)} />
       </section>}
-      <ResultsBracket matches={matches} selectedId={initialMatch ? null : matchId} onCloseDetail={() => setMatchId(null)}
+      <ResultsBracket matches={matches} byes={competition.tableauByes} selectedId={initialMatch ? null : matchId} onCloseDetail={() => setMatchId(null)}
         onOpen={(m) => setMatchId((old) => old === m.id ? null : m.id)}
         renderDetail={(match) => (
           <section aria-label="Détail du match sélectionné">

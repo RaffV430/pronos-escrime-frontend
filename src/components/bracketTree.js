@@ -42,7 +42,8 @@ export function predictedWinner(m, value) {
 }
 
 // Tours du tableau (T64, T32… T2) ; null si les positions officielles ne permettent pas un arbre fiable.
-export function buildTree(matches) {
+// byes : exempts publiés par le site officiel ([{ round, pos, name }]), affichés avant leur match suivant.
+export function buildTree(matches, byes = []) {
   const active = matches.filter((m) => m.resultType !== 'CANCELLED');
   const tableau = active.filter((m) => roundSize(m.round));
   if (!tableau.length) return null;
@@ -69,11 +70,21 @@ export function buildTree(matches) {
       slots: Array.from({ length: r.size / 2 }, (_, i) => {
         const pos = i + 1,
           match = r.byPosition.get(pos) || null;
-        return { pos, match, advance: match ? null : advanceFor(rounds, index, pos) };
+        return {
+          pos,
+          match,
+          advance: match ? null : advanceFor(rounds, index, pos) || exemptAt(byes, r.round, pos),
+        };
       }),
     })),
     bronze: bronze.length === 1 ? bronze[0] : null,
   };
+}
+
+// Exempt publié par le site officiel pour cette case, avant que son match du tour suivant n'existe.
+function exemptAt(byes, round, pos) {
+  const bye = (Array.isArray(byes) ? byes : []).find((b) => b?.round === round && b?.pos === pos && b?.name);
+  return bye ? { name: bye.name } : null;
 }
 
 // Case vide dont le tireur est déjà connu au tour suivant (exempt au premier tour, qualifié ensuite).

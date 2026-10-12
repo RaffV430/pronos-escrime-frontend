@@ -15,6 +15,7 @@ export default function PisteLive({
   onPlay,
   onFollow,
   initialMatchId = null,
+  embedded = false,
 }) {
   const [round, setRound] = useState('');
   const [strip, setStrip] = useState('');
@@ -36,17 +37,19 @@ export default function PisteLive({
     .slice(-6)
     .reverse();
   return (
-    <section className="piste-live" aria-label="Suivi des pistes">
-      <header className="piste-live-heading">
-        <div>
-          <p className="arena-eyebrow">AU BORD DES PISTES</p>
-          <h1>Suivi des rencontres</h1>
-          <p>{eventNameFr(competition?.name) || 'Choisissez une épreuve'}</p>
-        </div>
-        <button className="button-secondary" onClick={() => onPlay(match)}>
-          Pronostiquer →
-        </button>
-      </header>
+    <section className="piste-live" aria-label="Rencontres en direct">
+      {!embedded && (
+        <header className="piste-live-heading">
+          <div>
+            <p className="arena-eyebrow">AU BORD DES PISTES</p>
+            <h1>Suivi des rencontres</h1>
+            <p>{eventNameFr(competition?.name) || 'Choisissez une épreuve'}</p>
+          </div>
+          <button className="button-secondary" onClick={() => onPlay(match)}>
+            Pronostiquer →
+          </button>
+        </header>
+      )}
       <p className="piste-live-notice">
         Résultats actualisés automatiquement depuis le dernier import officiel. Le chrono et le fil des touches ne sont
         pas encore transmis à l’application.
@@ -135,10 +138,16 @@ export default function PisteLive({
                 )}
               </section>
             </div>
-            {onFollow && <div className="filter-row">
-              <button className="button-secondary" onClick={() => onFollow?.(match)}>Suivi compétition →</button>
-              <button className="button-secondary" onClick={() => onPlay(match)}>Pronostic de ce match →</button>
-            </div>}
+            {onFollow && (
+              <div className="filter-row">
+                <button className="button-secondary" onClick={() => onFollow?.(match)}>
+                  Voir dans le tableau →
+                </button>
+                <button className="button-secondary" onClick={() => onPlay(match)}>
+                  Pronostic de ce match →
+                </button>
+              </div>
+            )}
             {source && (
               <a href={source} target="_blank" rel="noreferrer">
                 Voir le suivi officiel ↗

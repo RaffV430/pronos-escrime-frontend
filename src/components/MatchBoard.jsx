@@ -43,9 +43,42 @@ function KeyboardBar({ children }) {
   );
 }
 
+const VIEW_LABELS = { Arena: 'Cartes', Liste: 'Liste', Arbre: 'Tableau complet' };
+// Pictogrammes des trois affichages (le libellé reste lisible sur grand écran et pour les lecteurs d'écran).
+function ViewIcon({ view }) {
+  const common = {
+    viewBox: '0 0 20 20',
+    width: 18,
+    height: 18,
+    fill: 'none',
+    stroke: 'currentColor',
+    strokeWidth: 1.6,
+    'aria-hidden': true,
+  };
+  if (view === 'Arena')
+    return (
+      <svg {...common}>
+        <rect x="3" y="3" width="14" height="14" rx="2.5" />
+        <path d="M3 10h14" />
+      </svg>
+    );
+  if (view === 'Liste')
+    return (
+      <svg {...common}>
+        <path d="M4 5h12M4 10h12M4 15h12" />
+      </svg>
+    );
+  return (
+    <svg {...common}>
+      <path d="M3 4h4v4H3zM3 12h4v4H3zM7 6h3v8H7M10 10h3M13 8h4v4h-4z" />
+    </svg>
+  );
+}
+
 export default function MatchBoard({
   initialFilter = 'Tous',
   matches,
+  byes = null,
   userId,
   isAdmin = false,
   competitionId,
@@ -270,7 +303,7 @@ export default function MatchBoard({
   // Prochain match ouvert sans pronostic, dans l'ordre affiché.
   const nextOpen = (current) => {
     // Arbre paginé : l'ordre suit le tableau entier, même les tours qui ne sont pas affichés.
-    const paged = view === 'Arbre' && buildTree(valid);
+    const paged = view === 'Arbre' && buildTree(valid, byes);
     const ordered = paged
       ? paged.rounds.flatMap((r) => r.slots.filter((s) => s.match).map((s) => s.match.id))
       : view === 'Arena'
@@ -445,7 +478,7 @@ export default function MatchBoard({
       if (target) setTimeout(() => document.getElementById(`input-${target.id}-1`)?.focus(), 50);
     };
   const checked = [...new Set(valid.map((m) => m.sourceCheckedAt).filter(Boolean))];
-  const tree = buildTree(valid);
+  const tree = buildTree(valid, byes);
   const card = (m) => {
     const p = mine(m),
       v = values(m),
@@ -686,12 +719,36 @@ export default function MatchBoard({
       )}
       {ready && (
         <>
-          <p className="board-summary">
-            <strong>
-              {valid.filter((m) => mine(m)).length}/{valid.length}
-            </strong>{' '}
-            enregistrés · <strong>{valid.filter((m) => !mine(m) && !isMatchClosed(m, now)).length}</strong> à compléter
-          </p>
+          <div className="board-head">
+            <p className="board-summary">
+              <strong>
+                {valid.filter((m) => mine(m)).length}/{valid.length}
+              </strong>{' '}
+              enregistrés · <strong>{valid.filter((m) => !mine(m) && !isMatchClosed(m, now)).length}</strong> à
+              compléter
+            </p>
+            <div className="filter-row view-toggle" role="group" aria-label="Affichage">
+              {['Arena', 'Liste', 'Arbre'].map((x) => (
+                <button
+                  key={x}
+                  aria-pressed={view === x}
+                  aria-label={VIEW_LABELS[x]}
+                  title={VIEW_LABELS[x]}
+                  onClick={() => {
+                    setView(x);
+                    try {
+                      localStorage.setItem('pronos:match-view', x);
+                    } catch {
+                      /* Optional preference. */
+                    }
+                  }}
+                >
+                  <ViewIcon view={x} />
+                  <span className="view-toggle-label">{VIEW_LABELS[x]}</span>
+                </button>
+              ))}
+            </div>
+          </div>
           <div className="board-toolbar">
             <div className="filter-row filter-scroll" role="group" aria-label="Filtrer les matchs">
               {[
@@ -703,24 +760,6 @@ export default function MatchBoard({
                 'Résultats publiés',
               ].map((x) => (
                 <button key={x} aria-pressed={filter === x} onClick={() => setFilter(x)}>
-                  {x === 'Arena' ? 'Cartes' : x === 'Arbre' ? 'Tableau complet' : x}
-                </button>
-              ))}
-            </div>
-            <div className="filter-row view-toggle" role="group" aria-label="Affichage">
-              {['Arena', 'Liste', 'Arbre'].map((x) => (
-                <button
-                  key={x}
-                  aria-pressed={view === x}
-                  onClick={() => {
-                    setView(x);
-                    try {
-                      localStorage.setItem('pronos:match-view', x);
-                    } catch {
-                      /* Optional preference. */
-                    }
-                  }}
-                >
                   {x === 'Arena' ? 'Cartes' : x === 'Arbre' ? 'Tableau complet' : x}
                 </button>
               ))}

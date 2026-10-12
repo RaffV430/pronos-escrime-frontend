@@ -12,7 +12,11 @@ function Side({ m, n, won }) {
     <span className={`rb-side${won ? ' is-win' : ''}`}>
       <span className="rb-seed">{seed ? seed : ''}</span>
       <span className="rb-name">
-        {isFollowedFencer(follows, m[`player${n}`]) && <span className="favorite-star" aria-label="Tireur favori">★ </span>}
+        {isFollowedFencer(follows, m[`player${n}`]) && (
+          <span className="favorite-star" aria-label="Tireur favori">
+            ★{' '}
+          </span>
+        )}
         <span className="rb-full">{m[`player${n}`]}</span>
         <span className="rb-short">{shortName(m[`player${n}`])}</span>
       </span>
@@ -54,8 +58,8 @@ function Card({ slot, onOpen }) {
 
 // Tableau en arbre : un tour et les suivants côte à côte, chaque match centré entre les deux matchs
 // d'où viennent ses tireurs. Onglets ou glissement du doigt pour changer de tour.
-export default function ResultsBracket({ matches, onOpen, selectedId, renderDetail, onCloseDetail }) {
-  const tree = useMemo(() => buildTree(matches), [matches]);
+export default function ResultsBracket({ matches, byes = null, onOpen, selectedId, renderDetail, onCloseDetail }) {
+  const tree = useMemo(() => buildTree(matches, byes || []), [matches, byes]);
   const perView = usePerView();
   const [focus, setFocus] = useState(0);
   const touch = useRef(null);
@@ -64,7 +68,9 @@ export default function ResultsBracket({ matches, onOpen, selectedId, renderDeta
     const closeOutside = (event) => {
       if (!event.target.closest('.rb-inline-detail, .rb-card')) onCloseDetail();
     };
-    const closeEscape = (event) => { if (event.key === 'Escape') onCloseDetail(); };
+    const closeEscape = (event) => {
+      if (event.key === 'Escape') onCloseDetail();
+    };
     document.addEventListener('pointerdown', closeOutside);
     document.addEventListener('keydown', closeEscape);
     return () => {
@@ -97,7 +103,7 @@ export default function ResultsBracket({ matches, onOpen, selectedId, renderDeta
             type="button"
             role="tab"
             aria-selected={i >= start && i < start + shown.length}
-            className={`rb-tab${i === start ? " is-focus" : ""}`}
+            className={`rb-tab${i === start ? ' is-focus' : ''}`}
             onClick={() => go(i)}
           >
             {shortRoundName(r.round)}

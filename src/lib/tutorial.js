@@ -4,7 +4,7 @@ export const TUTORIAL_STEPS = [
     tab: 'home',
     target: '.primary-nav',
     title: 'Les sections de l’application',
-    text: 'Cette barre donne accès à l’accueil, Pronostiquer, Mes pronos, Classements et Mes tireurs. Délégations et Ma saison sont dans le menu de votre compte.',
+    text: 'Cette barre donne accès à l’accueil, Pronostiquer, Mes pronos (avec Ma saison), Classements et Mes tireurs. Direct & résultats, Délégations et Mon compte sont dans le menu à votre nom.',
   },
   {
     tab: 'play',
@@ -61,7 +61,7 @@ export const TUTORIAL_STEPS = [
     tab: 'account',
     target: '.user-menu-trigger',
     title: 'Mon compte et mon bilan',
-    text: 'Mon compte rassemble vos réglages et informations personnelles. Le menu utilisateur donne aussi accès à Mes pronostics, Ma saison et au tutoriel pour le revoir.',
+    text: 'Mon compte rassemble vos réglages, vos notifications et vos informations personnelles. Le menu à votre nom donne aussi accès à Direct & résultats, aux Délégations et, dans Aide, au tutoriel et au signalement d’un problème.',
   },
   {
     tab: 'account',

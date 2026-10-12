@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import API from '../api';
+import { useInlineConfirm } from './InlineConfirm';
 import { roundLabel } from './matchPresentation';
 import './AdminReviews.css';
 
@@ -32,8 +33,11 @@ export default function AdminReviews({ competitionId, onRefresh }) {
     load(c.signal);
     return () => c.abort();
   }, [load]);
-  const act = async (confirmText, fn, done) => {
-    if (busy || !window.confirm(confirmText)) return;
+  const confirm = useInlineConfirm();
+  const act = (confirmText, fn, done) => {
+    if (!busy) confirm.ask(confirmText, () => run(fn, done));
+  };
+  const run = async (fn, done) => {
     setBusy(true);
     setFeedback('');
     try {
@@ -51,6 +55,7 @@ export default function AdminReviews({ competitionId, onRefresh }) {
   return (
     <details className="feature-panel admin-reviews" open={count > 0}>
       <summary>À vérifier après l’épreuve {matches && duplicates ? `· ${count}` : ''}</summary>
+      {confirm.node}
       {feedback && <p role="status">{feedback}</p>}
 
       <h3>Matchs de tableau à vérifier</h3>

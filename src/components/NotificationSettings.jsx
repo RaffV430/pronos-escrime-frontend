@@ -1,6 +1,15 @@
 import { useEffect, useState } from 'react';
 import API from '../api';
 import { pushSupport, applicationKey, disableThisDevice } from '../lib/notifications';
+// Fuseau horaire de l'appareil (heures silencieuses), détecté automatiquement.
+const deviceTimezone = () => {
+  try {
+    return Intl.DateTimeFormat().resolvedOptions().timeZone || 'Europe/Paris';
+  } catch {
+    return 'Europe/Paris';
+  }
+};
+const withDeviceTime = (preferences) => ({ ...preferences, timezone: deviceTimezone() });
 export default function NotificationSettings({ userId }) {
   const [open, setOpen] = useState(false),
     [choices, setChoices] = useState([]),
@@ -22,6 +31,7 @@ export default function NotificationSettings({ userId }) {
       roundResults: false,
       poolResults: false,
       recap: true,
+      fencerResults: false,
       quietEnabled: false,
       quietStart: '22:00',
       quietEnd: '08:00',
@@ -37,10 +47,11 @@ export default function NotificationSettings({ userId }) {
     setMessage('');
     (async () => {
       try {
-        const [settings, items, ownDevices] = await Promise.all([
+        const [settings, items, ownDevices, account] = await Promise.all([
           API.get('/notifications/config'),
           API.get('/notifications/choices'),
           API.get('/notifications/devices'),
+          API.get('/notifications/settings'),
         ]);
         const reg = unsupported ? null : await navigator.serviceWorker.register('/sw.js');
         const current = reg && (await reg.pushManager.getSubscription());
@@ -52,9 +63,10 @@ export default function NotificationSettings({ userId }) {
         setRegistration(reg);
         setSub(current);
         setEnabled(Boolean(status?.enabled));
-        setTournaments(status?.tournamentIds || []);
-        setEvents(status?.competitionIds || []);
-        if (status?.preferences) setPreferences((p) => ({ ...p, ...status.preferences }));
+        // Réglages du compte : les mêmes sur tous les appareils.
+        setTournaments(account.data?.tournamentIds || []);
+        setEvents(account.data?.competitionIds || []);
+        if (account.data?.preferences) setPreferences((p) => ({ ...p, ...account.data.preferences }));
         setDiagnostic(status?.diagnostic || null);
         setReady(true);
       } catch {
@@ -91,16 +103,38 @@ export default function NotificationSettings({ userId }) {
         subscription: current.toJSON(),
         tournamentIds: tournaments,
         competitionIds: events,
-        preferences,
+        preferences: withDeviceTime(preferences),
         replaceLegacy: legacy,
       });
       setEnabled(true);
       setMessage(
-        'Préférences enregistrées sur cet appareil. Vos catégories d’alertes et horaires silencieux sont appliqués.' +
+        'Notifications activées sur cet appareil. Vos choix sont enregistrés sur votre compte et appliqués à tous vos appareils.' +
           (data?.replaced ? ' L’ancienne inscription de ce navigateur (ancienne adresse) a été remplacée.' : ''),
       );
     } catch (e) {
       setMessage(e.response?.data?.error || e.message || 'Activation impossible. Réessayez.');
+    } finally {
+      setBusy(false);
+    }
+  };
+  // Enregistre les choix sur le compte (et tous les appareils activés), même sans activer cet appareil.
+  const save = async () => {
+    if (enabled && sub) return activate();
+    setBusy(true);
+    setMessage('');
+    try {
+      const { data } = await API.put('/notifications/settings', {
+        tournamentIds: tournaments,
+        competitionIds: events,
+        preferences: withDeviceTime(preferences),
+      });
+      setMessage(
+        data?.devices
+          ? `Choix enregistrés sur votre compte et appliqués à vos appareils activés (${data.devices}).`
+          : 'Choix enregistrés sur votre compte. Ils s’appliqueront à chaque appareil où vous activerez les notifications.',
+      );
+    } catch (e) {
+      setMessage(e.response?.data?.error || 'Enregistrement impossible. Réessayez.');
     } finally {
       setBusy(false);
     }
@@ -134,71 +168,156 @@ export default function NotificationSettings({ userId }) {
       setBusy(false);
     }
   };
+  const set = (key) => (e) => setPreferences((p) => ({ ...p, [key]: e.target.checked }));
+  const check = (key, label, hint = null) => (
+    <label className="check-row" key={key}>
+      <input type="checkbox" checked={Boolean(preferences[key])} disabled={busy} onChange={set(key)} />
+      <span>
+        {label}
+        {hint && <small className="muted"> {hint}</small>}
+      </span>
+    </label>
+  );
+  const permission = typeof Notification === 'undefined' ? null : Notification.permission;
   return (
     <details className="feature-panel notification-settings" onToggle={(e) => setOpen(e.currentTarget.open)}>
-      <summary>Notifications et diagnostic de cet appareil</summary>
+      <summary>Notifications</summary>
       {open && (
         <>
-          <p>
-            Choisissez les tournois ou les épreuves à suivre sur cet appareil. Une seule alerte par tour lorsque la
-            moitié des rencontres est disponible. Le rappel de clôture reste réservé aux pronostics manquants.
-          </p>
           {unsupported && <p className="notice">{unsupported}</p>}
           {!ready && !message && <p role="status">Chargement des préférences…</p>}
           {ready && (
             <>
               {!config?.available && <p>Les notifications sont en cours de configuration.</p>}
-              <p className="status-pill">
-                {enabled && Notification.permission === 'granted'
-                  ? 'Activées sur cet appareil'
-                  : 'Désactivées ou autorisation à vérifier'}
-              </p>
-              <p>
-                Autorisation du téléphone :{' '}
-                {typeof Notification === 'undefined'
-                  ? 'non disponible'
-                  : Notification.permission === 'granted'
-                    ? 'accordée'
-                    : Notification.permission === 'denied'
-                      ? 'refusée'
-                      : 'pas encore demandée'}{' '}
-                · abonnement : {sub ? 'présent' : 'absent'}.
-              </p>
-              {diagnostic && (
-                <p>
-                  Dernier envoi : {diagnostic.sentAt ? new Date(diagnostic.sentAt).toLocaleString('fr-FR') : 'aucun'}
-                  {diagnostic.failed ? ' · Un envoi récent a échoué. Essayez le bouton de test.' : ''}
+              <div className="notification-device">
+                <p className="status-pill">
+                  {enabled && permission === 'granted'
+                    ? 'Activées sur cet appareil'
+                    : 'Pas encore activées sur cet appareil'}
                 </p>
-              )}
+                <div className="notification-actions">
+                  {!enabled && (
+                    <button
+                      disabled={
+                        busy ||
+                        !!unsupported ||
+                        !config?.available ||
+                        (!preferences.followAll && !tournaments.length && !events.length)
+                      }
+                      onClick={activate}
+                    >
+                      Activer sur cet appareil
+                    </button>
+                  )}
+                  {enabled && (
+                    <>
+                      <button className="button-secondary" disabled={busy} onClick={() => test()}>
+                        Tester une notification
+                      </button>
+                      <button className="button-link" disabled={busy} onClick={disable}>
+                        Désactiver sur cet appareil
+                      </button>
+                    </>
+                  )}
+                </div>
+                <p className="muted">
+                  Vos choix ci-dessous sont enregistrés sur votre compte : les mêmes sur tous vos appareils.
+                </p>
+              </div>
+
               <fieldset>
-                <legend>Mes alertes</legend>
-                {[
-                  ['fencersOnly', 'Uniquement les matchs et poules de Mes tireurs'],
-                  ['fencerEntries', 'Me prévenir lorsqu’un de Mes tireurs est engagé dans une prochaine épreuve'],
-                  ['newMatches', 'Une alerte lorsque la moitié du tour est pronosticable'],
-                  ['reminders', 'Rappel à 10 minutes de la clôture, si un pronostic manque'],
-                  ['roundResults', 'Mon bilan après chaque tour'],
-                  ['poolResults', 'Mon bilan des poules (une fois toutes les poules terminées)'],
-                  ['recap', 'Mon récap à la fin de chaque épreuve (points et classement)'],
-                ].map(([k, label]) => (
-                  <label className="check-row" key={k}>
-                    <input
-                      type="checkbox"
-                      checked={preferences[k]}
-                      disabled={busy}
-                      onChange={(e) => setPreferences((p) => ({ ...p, [k]: e.target.checked }))}
-                    />
-                    {label}
-                  </label>
-                ))}
+                <legend>Pour quelles épreuves ?</legend>
                 <label className="check-row">
                   <input
-                    type="checkbox"
-                    checked={preferences.quietEnabled}
-                    onChange={(e) => setPreferences((p) => ({ ...p, quietEnabled: e.target.checked }))}
-                  />{' '}
-                  Heures silencieuses
+                    type="radio"
+                    name="notification-scope"
+                    checked={preferences.followAll}
+                    disabled={busy}
+                    onChange={() => setPreferences((p) => ({ ...p, followAll: true }))}
+                  />
+                  Tous les tournois, y compris les prochains (recommandé)
                 </label>
+                <label className="check-row">
+                  <input
+                    type="radio"
+                    name="notification-scope"
+                    checked={!preferences.followAll}
+                    disabled={busy}
+                    onChange={() => setPreferences((p) => ({ ...p, followAll: false }))}
+                  />
+                  Seulement les tournois ou épreuves que je choisis
+                </label>
+                <div className="notification-choices" hidden={preferences.followAll}>
+                  {choices.map((t) => (
+                    <fieldset key={t.id}>
+                      <legend>{t.name}</legend>
+                      <label className="check-row">
+                        <input
+                          type="checkbox"
+                          disabled={busy}
+                          checked={tournaments.includes(t.id)}
+                          onChange={(e) => toggle(setTournaments, t.id, e.target.checked)}
+                        />{' '}
+                        Tout le tournoi, y compris ses futures épreuves
+                      </label>
+                      {t.competitions.map((c) => (
+                        <label className="check-row" key={c.id}>
+                          <input
+                            type="checkbox"
+                            disabled={busy || tournaments.includes(t.id)}
+                            checked={tournaments.includes(t.id) || events.includes(c.id)}
+                            onChange={(e) => toggle(setEvents, c.id, e.target.checked)}
+                          />
+                          {c.name}
+                        </label>
+                      ))}
+                    </fieldset>
+                  ))}
+                </div>
+              </fieldset>
+
+              <fieldset>
+                <legend>Pronostics à faire</legend>
+                <label className="check-row">
+                  <input
+                    type="radio"
+                    name="notification-fencers"
+                    checked={!preferences.fencersOnly}
+                    disabled={busy}
+                    onChange={() => setPreferences((p) => ({ ...p, fencersOnly: false }))}
+                  />
+                  Tous les matchs et toutes les poules
+                </label>
+                <label className="check-row">
+                  <input
+                    type="radio"
+                    name="notification-fencers"
+                    checked={preferences.fencersOnly}
+                    disabled={busy}
+                    onChange={() => setPreferences((p) => ({ ...p, fencersOnly: true }))}
+                  />
+                  Seulement les matchs et poules de Mes tireurs
+                </label>
+                {check('newMatches', 'Quand la moitié d’un tour est ouverte aux pronostics')}
+                {check('reminders', 'Rappel 10 minutes avant la clôture, si un pronostic manque')}
+              </fieldset>
+
+              <fieldset>
+                <legend>Mes tireurs</legend>
+                {check('fencerResults', 'Leurs résultats', '(chaque match terminé, bilan de poule)')}
+                {check('fencerEntries', 'Quand l’un d’eux est engagé dans une prochaine épreuve')}
+              </fieldset>
+
+              <fieldset>
+                <legend>Mes bilans</legend>
+                {check('roundResults', 'Après chaque tour du tableau')}
+                {check('poolResults', 'Après les poules', '(une fois toutes les poules terminées)')}
+                {check('recap', 'À la fin de chaque épreuve', '(points et classement)')}
+              </fieldset>
+
+              <fieldset>
+                <legend>Heures silencieuses</legend>
+                {check('quietEnabled', 'Ne rien recevoir pendant une plage horaire')}
                 {preferences.quietEnabled && (
                   <div className="quiet-hours">
                     <label>
@@ -217,108 +336,69 @@ export default function NotificationSettings({ userId }) {
                         onChange={(e) => setPreferences((p) => ({ ...p, quietEnd: e.target.value }))}
                       />
                     </label>
-                    <label>
-                      Fuseau horaire{' '}
-                      <input
-                        value={preferences.timezone}
-                        onChange={(e) => setPreferences((p) => ({ ...p, timezone: e.target.value }))}
-                      />
-                    </label>
-                    <small>
-                      Les alertes devenues inutiles pendant cette plage ne seront pas envoyées au réveil. Le test manuel
-                      reste disponible.
+                    <small className="muted">
+                      À l’heure de votre appareil ({deviceTimezone()}). Les alertes devenues inutiles pendant cette
+                      plage ne sont pas envoyées au réveil.
                     </small>
                   </div>
                 )}
               </fieldset>
-              <label className="check-row">
-                <input
-                  type="checkbox"
-                  checked={preferences.followAll}
-                  disabled={busy}
-                  onChange={(e) => setPreferences((p) => ({ ...p, followAll: e.target.checked }))}
-                />
-                Suivre tous les tournois, y compris les prochains (recommandé)
-              </label>
-              {!sub && devices.some((d) => d.legacy) && (
-                <p className="notice">
-                  Ce navigateur reçoit peut-être déjà vos alertes via l’ancienne adresse (pronos-escrime.vercel.app).
-                  Inutile de les réactiver si vous les recevez. Si vous enregistrez ici, l’ancienne inscription de ce
-                  navigateur est remplacée, sans doublon.
-                </p>
-              )}
-              <div className="notification-choices" hidden={preferences.followAll}>
-                {choices.map((t) => (
-                  <fieldset key={t.id}>
-                    <legend>{t.name}</legend>
-                    <label className="check-row">
-                      <input
-                        type="checkbox"
-                        disabled={busy}
-                        checked={tournaments.includes(t.id)}
-                        onChange={(e) => toggle(setTournaments, t.id, e.target.checked)}
-                      />{' '}
-                      Tout le tournoi, y compris ses futures épreuves
-                    </label>
-                    {t.competitions.map((c) => (
-                      <label className="check-row" key={c.id}>
-                        <input
-                          type="checkbox"
-                          disabled={busy || tournaments.includes(t.id)}
-                          checked={tournaments.includes(t.id) || events.includes(c.id)}
-                          onChange={(e) => toggle(setEvents, c.id, e.target.checked)}
-                        />
-                        {c.name}
-                      </label>
-                    ))}
-                  </fieldset>
-                ))}
-              </div>
-              {devices.length > 0 && (
-                <details>
-                  <summary>Tester sur un de mes appareils abonnés</summary>
-                  <p>Un seul envoi vers l’appareil choisi. Le test utilise une clôture fictive dans 10 minutes.</p>
-                  {devices.map((device, i) => (
-                    <button
-                      className="button-secondary"
-                      key={device.id}
-                      disabled={busy}
-                      onClick={() => test(device.id)}
-                    >
-                      Tester sur {device.label}
-                      {devices.length > 1 ? ` ${i + 1}` : ''}
-                    </button>
-                  ))}
-                </details>
-              )}
+
               <div className="notification-actions">
                 <button
-                  disabled={
-                    busy ||
-                    !!unsupported ||
-                    !config?.available ||
-                    (!preferences.followAll && !tournaments.length && !events.length)
-                  }
-                  onClick={activate}
+                  disabled={busy || (!preferences.followAll && !tournaments.length && !events.length)}
+                  onClick={save}
                 >
-                  {enabled ? 'Enregistrer mes choix' : 'Activer sur cet appareil'}
+                  Enregistrer mes choix
                 </button>
-                {enabled && (
-                  <>
-                    <button className="button-secondary" disabled={busy} onClick={() => test()}>
-                      Tester une notification
-                    </button>
-                    <button className="button-link" disabled={busy} onClick={disable}>
-                      Désactiver sur cet appareil
-                    </button>
-                  </>
+              </div>
+
+              <details className="notification-diagnostic">
+                <summary>Diagnostic</summary>
+                <p>
+                  Autorisation du navigateur :{' '}
+                  {permission === null
+                    ? 'non disponible'
+                    : permission === 'granted'
+                      ? 'accordée'
+                      : permission === 'denied'
+                        ? 'refusée'
+                        : 'pas encore demandée'}{' '}
+                  · abonnement de cet appareil : {sub ? 'présent' : 'absent'}.
+                </p>
+                {diagnostic && (
+                  <p>
+                    Dernier envoi : {diagnostic.sentAt ? new Date(diagnostic.sentAt).toLocaleString('fr-FR') : 'aucun'}
+                    {diagnostic.failed ? ' · Un envoi récent a échoué. Essayez le bouton de test.' : ''}
+                  </p>
+                )}
+                {devices.length > 0 && (
+                  <div className="notification-actions">
+                    {devices.map((device, i) => (
+                      <button
+                        className="button-secondary"
+                        key={device.id}
+                        disabled={busy}
+                        onClick={() => test(device.id)}
+                      >
+                        Tester sur {device.label}
+                        {devices.length > 1 ? ` ${i + 1}` : ''}
+                      </button>
+                    ))}
+                  </div>
+                )}
+                {!sub && devices.some((d) => d.legacy) && (
+                  <p className="notice">
+                    Ce navigateur reçoit peut-être déjà vos alertes via l’ancienne adresse (pronos-escrime.vercel.app).
+                    Si vous activez ici, l’ancienne inscription de ce navigateur est remplacée, sans doublon.
+                  </p>
                 )}
                 {sub && !enabled && (
                   <button className="button-link" disabled={busy} onClick={disable}>
                     Réinitialiser l’abonnement de cet appareil
                   </button>
                 )}
-              </div>
+              </details>
             </>
           )}
           {message && <p role="status">{message}</p>}

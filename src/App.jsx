@@ -17,7 +17,7 @@ import ClubProfile from './components/ClubProfile';
 import ClubAdministration from './components/ClubAdministration';
 import FencerAffiliationAdministration from './components/FencerAffiliationAdministration';
 import AdminFencerAliases from './components/AdminFencerAliases';
-import { FollowedEventFencers, CompetitionFollow } from './components/EventWorkspace';
+import { CompetitionFollow } from './components/EventWorkspace';
 import { FencerFollowsProvider } from './components/FencerFollowsProvider';
 import { isAuthPath, authPath } from './lib/authNavigation';
 import { ArenaHome, PisteFencers } from './components/PisteExperience';
@@ -97,7 +97,6 @@ export default function App() {
       document.removeEventListener('keydown', escape);
     };
   }, [accountOpen]);
-  const [arenaMore, setArenaMore] = useState(false);
   const [invitation, setInvitation] = useState(() => captureInvitation());
   const [inviteNotice, setInviteNotice] = useState('');
   const joining = useRef(false);
@@ -150,7 +149,10 @@ export default function App() {
         ? 'admin'
         : (location.pathname === '/' || isAuthPath(location.pathname)) &&
             /[?&](event|tournament|match|matches|view)=/.test(location.search)
-          ? 'play'
+          ? // Ancien lien de notification « suivi » : ouvre Direct & résultats.
+            new URLSearchParams(location.search).get('view') === 'follow'
+            ? 'live'
+            : 'play'
           : tabFromPath(location.pathname)) || 'home',
   );
   useEffect(() => {
@@ -220,9 +222,8 @@ export default function App() {
     window.addEventListener('popstate', back);
     return () => window.removeEventListener('popstate', back);
   }, []);
-  const [eventMode, setEventMode] = useState('predictions');
-  const [followView, setFollowView] = useState('tableau');
-  const [followMatchId, setFollowMatchId] = useState(null);
+  // Direct & résultats : rencontres, poules, tableau ou classement de l'épreuve choisie.
+  const [liveView, setLiveView] = useState('matches');
   const [liveMatchId, setLiveMatchId] = useState(null);
   const [landingPending, setLandingPending] = useState(false);
   const [landingFilter, setLandingFilter] = useState('Tous');
@@ -508,24 +509,30 @@ export default function App() {
     setSelectedCompetitionId(competitionId);
   };
 
+  // Ouvre l'épreuve d'un tireur suivi : pour pronostiquer (Pronostiquer) ou pour suivre (Direct & résultats).
   const openFollowedFencer = ({ event, match, mode, tournament }) =>
     runNavigation(() => {
+      const follow = mode === 'follow';
       setDirty(false);
       selectCompetition(event.id);
       setCompetition(event);
       setLandingPending(false);
       setEventListVersion((v) => v + 1);
-      setEventMode(mode);
       setPlayTab('tableau');
-      setFollowView(match ? 'tableau' : 'pools');
-      setFollowMatchId(match?.id || null);
-      if (mode === 'predictions') setMatchTarget({ id: match.id, at: Date.now() });
+      if (follow) {
+        setLiveView(match ? 'tableau' : 'pools');
+        setLiveMatchId(match?.id || null);
+      } else setMatchTarget({ id: match.id, at: Date.now() });
       history.replaceState(
         null,
         '',
-        pathFor('play', { tournament: tournament || tournamentInfo, event, view: 'tableau' }),
+        pathFor(follow ? 'live' : 'play', {
+          tournament: tournament || tournamentInfo,
+          event,
+          view: follow ? null : 'tableau',
+        }),
       );
-      setMainTab('play');
+      setMainTab(follow ? 'live' : 'play');
     });
 
   // Page publique d'un tournoi ou d'une épreuve (/tournoi/etampes-4, /tournoi/etampes-4/fleuret-dames-13).
@@ -582,12 +589,6 @@ export default function App() {
             </div>
             <div className="account-actions">
               <AdminAlerts user={user} onOpen={openAdminAlert} />
-              <button className="button-secondary" onClick={() => navigate('results')}>
-                Résultats
-              </button>
-              <button className="button-link" onClick={() => navigate('account')}>
-                Mon compte
-              </button>
               <div
                 className="user-menu"
                 ref={accountMenu}
@@ -614,16 +615,16 @@ export default function App() {
                 </button>
                 {accountOpen && (
                   <nav id="user-options" className="user-menu-panel" aria-label="Mon espace">
+                    {/* Sections hors barre principale : chacune n'apparaît qu'ici (aucun doublon). */}
                     {[
-                      ['live', 'Suivi des pistes'],
-                      ['mine', 'Mes pronostics'],
+                      ['live', 'Direct & résultats'],
                       ['community', 'Délégations'],
-                      ['season', 'Ma saison'],
-                      ['account', 'Mes réglages'],
+                      ['account', 'Mon compte et notifications'],
                       ...(user.isAdmin ? [['admin', 'Administration']] : []),
                     ].map(([id, label]) => (
                       <button
                         key={id}
+                        aria-current={mainTab === id || (id === 'live' && mainTab === 'results') ? 'page' : undefined}
                         onClick={() => {
                           setAccountOpen(false);
                           navigate(id);
@@ -632,6 +633,7 @@ export default function App() {
                         {label}
                       </button>
                     ))}
+                    <p className="user-menu-group">Aide</p>
                     <button
                       onClick={() => {
                         setAccountOpen(false);
@@ -641,6 +643,15 @@ export default function App() {
                       Tutoriel d’utilisation
                     </button>
                     <button
+                      onClick={() => {
+                        setAccountOpen(false);
+                        setSupportOpen(true);
+                      }}
+                    >
+                      Signaler un problème
+                    </button>
+                    <button
+                      className="user-menu-separated"
                       onClick={() => {
                         const enabled = !reducedData();
                         localStorage.setItem('pronos:reduced-data', String(enabled));
@@ -660,14 +671,6 @@ export default function App() {
                     >
                       Déconnexion
                     </button>
-                    <button
-                      onClick={() => {
-                        setAccountOpen(false);
-                        setSupportOpen(true);
-                      }}
-                    >
-                      Signaler un problème
-                    </button>
                   </nav>
                 )}
               </div>
@@ -684,7 +687,6 @@ export default function App() {
               runNavigation(() => {
                 setMainTab(step.tab);
                 if (step.view) {
-                  setEventMode('predictions');
                   setPlayTab(step.view);
                   setLandingPending(false);
                 }
@@ -752,21 +754,13 @@ export default function App() {
               <button
                 key={id}
                 data-tab={id}
-                aria-pressed={mainTab === id || (id === 'home' && mainTab === 'live')}
-                onClick={() => {
-                  setArenaMore(false);
-                  navigate(id);
-                }}
+                aria-pressed={mainTab === id || (id === 'mine' && mainTab === 'season')}
+                onClick={() => navigate(id)}
               >
                 <span aria-hidden="true">{icon}</span>
                 {label}
               </button>
             ))}
-            {
-              <button className="arena-more" aria-expanded={arenaMore} onClick={() => setArenaMore(!arenaMore)}>
-                <span aria-hidden="true">⋯</span>Plus
-              </button>
-            }
             {accountClub?.name && (
               <div className="arena-club">
                 <span>VOTRE CLUB</span>
@@ -775,28 +769,6 @@ export default function App() {
               </div>
             )}
           </nav>
-          {arenaMore && (
-            <nav className="arena-mobile-menu" aria-label="Autres sections">
-              {[
-                ['community', 'Délégations'],
-                ['season', 'Ma saison'],
-                ['results', 'Résultats'],
-                ['account', 'Mon compte'],
-                ...(user.isAdmin ? [['admin', 'Administration']] : []),
-              ].map(([id, label]) => (
-                <button
-                  key={id}
-                  onClick={() => {
-                    setArenaMore(false);
-                    navigate(id);
-                  }}
-                >
-                  {label} →
-                </button>
-              ))}
-              <button onClick={() => setArenaMore(false)}>Fermer</button>
-            </nav>
-          )}
           {error && <p role="alert">{error}</p>}
           <ErrorBoundary zone="contenu" resetKey={`${mainTab}:${playTab}:${selectedCompetitionId}`}>
             <Suspense fallback={tabFallback}>
@@ -852,30 +824,29 @@ export default function App() {
                   />
                 </>
               )}
-              {mainTab === 'live' && (
-                <PisteLive
-                  key={`${selectedCompetitionId}:${liveMatchId}`}
-                  initialMatchId={liveMatchId}
-                  matches={matches}
-                  competition={competition}
-                  userId={user.id}
-                  ready={matchesReady}
-                  error={matchesError}
-                  stale={matchesStale}
-                  onPlay={(match) =>
-                    match
-                      ? openFollowedFencer({
-                          event: competition,
-                          match,
-                          mode: 'predictions',
-                          tournament: tournamentInfo,
-                        })
-                      : navigate('play')
-                  }
-                  onFollow={(match) =>
-                    openFollowedFencer({ event: competition, match, mode: 'follow', tournament: tournamentInfo })
-                  }
-                />
+              {['live', 'results'].includes(mainTab) && (
+                <nav className="secondary-nav hub-nav" aria-label="Direct et résultats">
+                  {[
+                    ['live', 'En direct'],
+                    ['results', 'Toutes les épreuves'],
+                  ].map(([id, label]) => (
+                    <button key={id} aria-pressed={mainTab === id} onClick={() => navigate(id)}>
+                      {label}
+                    </button>
+                  ))}
+                </nav>
+              )}
+              {['mine', 'season'].includes(mainTab) && (
+                <nav className="secondary-nav hub-nav" aria-label="Mes pronos">
+                  {[
+                    ['mine', 'Mes pronostics'],
+                    ['season', 'Ma saison'],
+                  ].map(([id, label]) => (
+                    <button key={id} aria-pressed={mainTab === id} onClick={() => navigate(id)}>
+                      {label}
+                    </button>
+                  ))}
+                </nav>
               )}
               {mainTab === 'season' && <MySeason userId={user.id} playerName={user.name || user.username} />}
               {mainTab === 'results' && <Results />}
@@ -911,6 +882,35 @@ export default function App() {
                 !(mainTab === 'admin' && adminSection !== 'event') && (
                   <EventSelector
                     hideCompact={mainTab === 'home'}
+                    status={
+                      ['play', 'live'].includes(mainTab) && selectedCompetitionId ? (
+                        <ResultFreshness competitionId={selectedCompetitionId}>
+                          {user.isAdmin && mainTab === 'play' && (
+                            <Suspense fallback={adminFallback}>
+                              <FtlControl
+                                key={`ftl-${selectedCompetitionId}`}
+                                competitionId={selectedCompetitionId}
+                                onRefresh={() => {
+                                  setResultsVersion((v) => v + 1);
+                                  return fetchMatches(selectedCompetitionId);
+                                }}
+                              />
+                            </Suspense>
+                          )}
+                        </ResultFreshness>
+                      ) : null
+                    }
+                    actions={
+                      mainTab === 'play' ? (
+                        <button className="button-link" onClick={() => navigate('live')}>
+                          Direct
+                        </button>
+                      ) : mainTab === 'live' ? (
+                        <button className="button-link" onClick={() => navigate('play')}>
+                          Pronostiquer
+                        </button>
+                      ) : null
+                    }
                     key={`${user.id}:${eventListVersion}:${['play', 'home', 'live'].includes(mainTab) ? 'active' : 'history'}`}
                     includeArchived={!['play', 'home', 'live'].includes(mainTab)}
                     {...(mainTab === 'admin'
@@ -950,20 +950,61 @@ export default function App() {
                     }}
                   />
                 )}
-              {mainTab === 'play' && (
-                <details className="calendar-fold">
-                  <summary>Calendrier des prochaines épreuves</summary>
-                  <UpcomingCalendar
-                    limit={8}
-                    title="Prochaines épreuves"
-                    headingLevel={3}
-                    footer={
-                      <p className="calendar-all">
-                        <a href="/calendrier">Tout le calendrier →</a>
-                      </p>
-                    }
-                  />
-                </details>
+              {mainTab === 'live' && (
+                <>
+                  <nav className="secondary-nav play-tabs" aria-label="Suivi de l’épreuve">
+                    {[
+                      ['matches', 'Rencontres'],
+                      ...(!team ? [['pools', 'Poules']] : []),
+                      ['tableau', 'Tableau'],
+                      ['ranking', 'Classement'],
+                    ].map(([id, label]) => (
+                      <button key={id} aria-pressed={liveView === id} onClick={() => setLiveView(id)}>
+                        {label}
+                      </button>
+                    ))}
+                  </nav>
+                  {liveView === 'matches' ? (
+                    <PisteLive
+                      key={`${selectedCompetitionId}:${liveMatchId}`}
+                      initialMatchId={liveMatchId}
+                      embedded
+                      matches={matches}
+                      competition={competition}
+                      userId={user.id}
+                      ready={matchesReady}
+                      error={matchesError}
+                      stale={matchesStale}
+                      onPlay={(match) =>
+                        match
+                          ? openFollowedFencer({
+                              event: competition,
+                              match,
+                              mode: 'predictions',
+                              tournament: tournamentInfo,
+                            })
+                          : navigate('play')
+                      }
+                      onFollow={(match) =>
+                        openFollowedFencer({ event: competition, match, mode: 'follow', tournament: tournamentInfo })
+                      }
+                    />
+                  ) : (
+                    competition && (
+                      <CompetitionFollow
+                        key={`${selectedCompetitionId}:${liveMatchId}`}
+                        initialMatchId={liveMatchId}
+                        view={liveView}
+                        competition={competition}
+                        matches={matches}
+                        userId={user.id}
+                        ready={matchesReady}
+                        error={matchesError}
+                        stale={matchesStale}
+                      />
+                    )
+                  )}
+                </>
               )}
               {/* Classement général consultable sans choisir d'épreuve. */}
               {/* Communauté : tous les groupes, sans choisir d'épreuve au préalable. */}
@@ -976,7 +1017,6 @@ export default function App() {
                       const scope = league.members?.[0]?.predictionScope || 'ALL';
                       setDelegationContext({ id: league.id, name: league.name, scope });
                       setPlayTab(predictionTabs(scope)[0][0]);
-                      setEventMode('predictions');
                       setMainTab('play');
                     })
                   }
@@ -1026,20 +1066,6 @@ export default function App() {
                   {mainTab === 'play' && (
                     <>
                       <h1 className="visually-hidden">Pronostiquer</h1>
-                      <ResultFreshness competitionId={selectedCompetitionId}>
-                        {user.isAdmin && (
-                          <Suspense fallback={adminFallback}>
-                            <FtlControl
-                              key={`ftl-${selectedCompetitionId}`}
-                              competitionId={selectedCompetitionId}
-                              onRefresh={() => {
-                                setResultsVersion((v) => v + 1);
-                                return fetchMatches(selectedCompetitionId);
-                              }}
-                            />
-                          </Suspense>
-                        )}
-                      </ResultFreshness>
                       <ClosingCountdown
                         matches={matches}
                         userId={user.id}
@@ -1050,22 +1076,7 @@ export default function App() {
                           })
                         }
                       />
-                      <nav className="secondary-nav" aria-label="Espace de l’épreuve">
-                        {[
-                          ['predictions', 'Pronostics'],
-                          ['follow', 'Suivi compétition'],
-                          ['fencers', 'Mes tireurs'],
-                        ].map(([id, label]) => (
-                          <button
-                            key={id}
-                            aria-pressed={eventMode === id}
-                            onClick={() => runNavigation(() => setEventMode(id))}
-                          >
-                            {label}
-                          </button>
-                        ))}
-                      </nav>
-                      {eventMode === 'predictions' && delegationContext && (
+                      {delegationContext && (
                         <p className="delegation-context">
                           {delegationContext.name} · {scopeLabels[delegationContext.scope]}{' '}
                           <button
@@ -1076,86 +1087,29 @@ export default function App() {
                           </button>
                         </p>
                       )}
-                      {eventMode === 'predictions' && (
-                        <nav className="secondary-nav" aria-label="Type de pronostic">
-                          {predictionTabs(delegationContext?.scope, team).map(([id, label]) => (
-                            <button
-                              key={id}
-                              aria-pressed={playTab === id}
-                              onClick={() =>
-                                runNavigation(() => {
-                                  setDirty(false);
-                                  setPlayTab(id);
-                                })
-                              }
-                            >
-                              {label}
-                              {boostedTab(competition?.pointsBoosts, id) && (
-                                <span className="boost-tab-dot" aria-label=" (points ×2)">
-                                  🔥
-                                </span>
-                              )}
-                            </button>
-                          ))}
-                        </nav>
-                      )}
-                      {eventMode === 'predictions' && <BoostBanner boosts={competition?.pointsBoosts} />}
-                      {eventMode === 'follow' && (
-                        <>
-                          <nav className="secondary-nav" aria-label="Suivi officiel">
-                            {[
-                              ...(!team ? [['pools', 'Poules']] : []),
-                              ['tableau', 'Tableau'],
-                              ['ranking', 'Classement'],
-                            ].map(([id, label]) => (
-                              <button key={id} aria-pressed={followView === id} onClick={() => setFollowView(id)}>
-                                {label}
-                              </button>
-                            ))}
-                          </nav>
-                          <CompetitionFollow
-                            key={`${selectedCompetitionId}:${followMatchId}`}
-                            initialMatchId={followMatchId}
-                            view={followView}
-                            competition={competition}
-                            matches={matches}
-                            userId={user.id}
-                            ready={matchesReady}
-                            error={matchesError}
-                            stale={matchesStale}
-                          />
-                        </>
-                      )}
-                      {eventMode === 'fencers' && (
-                        <FollowedEventFencers
-                          userId={user.id}
-                          competition={competition}
-                          matches={matches}
-                          onEventChange={(entry) =>
-                            runNavigation(() => {
-                              history.replaceState(
-                                null,
-                                '',
-                                pathFor('play', { tournament: tournamentInfo, event: entry, view: playTab }),
-                              );
-                              selectCompetition(entry.id);
-                              setCompetition(entry);
-                              setLandingPending(false);
-                              setEventListVersion((v) => v + 1);
-                            })
-                          }
-                          onMatch={(id) => {
-                            setEventMode('predictions');
-                            setPlayTab('tableau');
-                            setMatchTarget({ id, at: Date.now() });
-                          }}
-                          onLive={(id) => {
-                            setLiveMatchId(id);
-                            navigate('live');
-                          }}
-                        />
-                      )}
-                      {eventMode === 'predictions' && playTab === 'podium' && (
+                      <nav className="secondary-nav play-tabs" aria-label="Type de pronostic">
+                        {predictionTabs(delegationContext?.scope, team).map(([id, label]) => (
+                          <button
+                            key={id}
+                            aria-pressed={playTab === id}
+                            onClick={() =>
+                              runNavigation(() => {
+                                setDirty(false);
+                                setPlayTab(id);
+                              })
+                            }
+                          >
+                            {label}
+                            {boostedTab(competition?.pointsBoosts, id) && (
+                              <span className="boost-tab-dot" aria-label=" (points ×2)">
+                                🔥
+                              </span>
+                            )}
+                          </button>
+                        ))}
+                      </nav>
+                      <BoostBanner compact boosts={competition?.pointsBoosts} />
+                      {playTab === 'podium' && (
                         <PodiumPrediction
                           key={selectedCompetitionId}
                           tournamentId={tournamentId}
@@ -1164,7 +1118,7 @@ export default function App() {
                           onDirtyChange={setDirty}
                         />
                       )}
-                      {eventMode === 'predictions' && playTab === 'pools' && (
+                      {playTab === 'pools' && (
                         <PoolPredictions
                           refreshVersion={resultsVersion}
                           key={selectedCompetitionId}
@@ -1174,7 +1128,7 @@ export default function App() {
                           onDirtyChange={setDirty}
                         />
                       )}
-                      {eventMode === 'predictions' && playTab === 'tableau' && !matchesReady && (
+                      {playTab === 'tableau' && !matchesReady && (
                         <div className="load-state" role={matchesError ? 'alert' : 'status'}>
                           {matchesError ? (
                             <>
@@ -1193,7 +1147,7 @@ export default function App() {
                           )}
                         </div>
                       )}
-                      {eventMode === 'predictions' && playTab === 'tableau' && matchesReady && !landingPending && (
+                      {playTab === 'tableau' && matchesReady && !landingPending && (
                         <>
                           <MatchBoard
                             initialFilter={landingFilter}
@@ -1201,6 +1155,7 @@ export default function App() {
                             competitionId={selectedCompetitionId}
                             key={selectedCompetitionId}
                             matches={matches}
+                            byes={competition?.tableauByes}
                             userId={user.id}
                             isAdmin={!!user.isAdmin}
                             ready={matchesReady}
@@ -1225,6 +1180,21 @@ export default function App() {
                     </Suspense>
                   )}
                 </>
+              )}
+              {mainTab === 'play' && (
+                <details className="calendar-fold">
+                  <summary>Calendrier des prochaines épreuves</summary>
+                  <UpcomingCalendar
+                    limit={8}
+                    title="Prochaines épreuves"
+                    headingLevel={3}
+                    footer={
+                      <p className="calendar-all">
+                        <a href="/calendrier">Tout le calendrier →</a>
+                      </p>
+                    }
+                  />
+                </details>
               )}
             </Suspense>
           </ErrorBoundary>

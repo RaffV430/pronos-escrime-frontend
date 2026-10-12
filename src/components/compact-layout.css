@@ -1,0 +1,268 @@
+/* Navigation sans doublon et écran « Pronostiquer » compact (octobre 2026).
+   Chargé en dernier : prend le pas sur les anciennes règles en attendant la feuille unique Piste. */
+
+/* Menu à votre nom : groupe « Aide », séparateurs. */
+.club-arena .user-menu-panel .user-menu-group {
+  margin: 8px 12px 2px;
+  padding-top: 8px;
+  border-top: 1px solid var(--border);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted, var(--muted));
+}
+.club-arena .user-menu-panel .user-menu-separated {
+  border-top: 1px solid var(--border);
+  border-radius: 0;
+  margin-top: 4px;
+}
+.club-arena .user-menu-panel button[aria-current='page'] {
+  color: var(--accent, #225da8);
+  font-weight: 700;
+}
+
+/* Barre d'épreuve : une ligne (nom + Changer), fraîcheur en dessous, sans encadré séparé. */
+.club-arena .compact-event {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas: 'text actions' 'status status';
+  align-items: center;
+  gap: 2px 10px;
+  padding: 10px 14px;
+  margin-bottom: 10px;
+}
+.club-arena .compact-event-text {
+  grid-area: text;
+  min-width: 0;
+}
+.club-arena .compact-event-text .eyebrow {
+  margin: 0;
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.club-arena .compact-event-text strong {
+  font-size: 16px;
+  line-height: 1.3;
+}
+.club-arena .compact-event-actions {
+  grid-area: actions;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.club-arena .compact-event-actions button {
+  min-height: 40px;
+  padding: 6px 12px;
+  font-size: 14px;
+  white-space: nowrap;
+}
+.club-arena .compact-event-status {
+  grid-area: status;
+  min-width: 0;
+}
+.club-arena .compact-event-status .freshness-compact {
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  margin: 0;
+}
+.club-arena .compact-event-status .freshness-compact summary {
+  padding: 2px 0 0;
+  font-size: 12px;
+  color: var(--text-muted, var(--muted));
+}
+.club-arena .compact-event-status .freshness-compact[open] .freshness-content {
+  padding: 8px 0 4px;
+}
+.club-arena .compact-event-status .freshness-details {
+  font-size: 12px;
+}
+
+/* Onglets de section : contrôle segmenté, une seule ligne. */
+.club-arena .secondary-nav.play-tabs,
+.club-arena .secondary-nav.hub-nav {
+  display: flex;
+  gap: 4px;
+  margin: 0 0 10px;
+  padding: 4px;
+  background: var(--surface-2, #eef1f5);
+  border: 0;
+  border-radius: 12px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.club-arena .secondary-nav.play-tabs button,
+.club-arena .secondary-nav.hub-nav button {
+  flex: 1 0 auto;
+  min-height: 40px;
+  padding: 6px 12px;
+  border: 0;
+  border-radius: 9px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-2, var(--muted));
+  background: transparent;
+  box-shadow: none;
+}
+.club-arena .secondary-nav.play-tabs button[aria-pressed='true'],
+.club-arena .secondary-nav.hub-nav button[aria-pressed='true'] {
+  background: var(--surface, #fff);
+  color: var(--accent, #225da8);
+  box-shadow: 0 1px 3px rgba(14, 19, 27, 0.12);
+}
+.club-arena .secondary-nav.hub-nav {
+  margin-bottom: 12px;
+}
+
+/* Points ×2 : une ligne au lieu d'un encadré. */
+.club-arena .boost-banner.is-compact {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 2px 8px;
+  margin: 0 0 10px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  font-size: 14px;
+}
+.club-arena .boost-banner.is-compact small {
+  font-size: 12px;
+  opacity: 0.8;
+}
+
+/* Calendrier des prochaines épreuves : en bas de page, après les pronostics. */
+.club-arena .calendar-fold {
+  margin-top: 24px;
+}
+
+@media (max-width: 700px) {
+  .club-arena .compact-event {
+    margin-top: 0;
+  }
+  .club-arena .compact-event-text strong {
+    font-size: 15px;
+  }
+}
+
+/* En-tête mobile : logo et menu sur une seule ligne. */
+@media (max-width: 760px) {
+  .club-arena .app-header {
+    flex-direction: row;
+    flex-wrap: nowrap;
+    justify-content: space-between;
+    align-items: center;
+    height: 56px;
+    padding: 0 16px;
+  }
+  .club-arena .app-header .brand {
+    position: static;
+    align-self: center;
+  }
+  .club-arena .app-header .account-actions {
+    align-self: center;
+  }
+  .club-arena .app-shell.redesigned {
+    padding-top: 68px;
+  }
+}
+
+/* Tableau : bilan et choix de l'affichage sur une ligne, filtres défilants sur la suivante. */
+.club-arena .board-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin: 0 0 8px;
+}
+.club-arena .board-head .board-summary {
+  margin: 0;
+  padding: 0;
+  background: none;
+  border: 0;
+  font-size: 13px;
+}
+.club-arena .board-head .view-toggle {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 2px;
+  padding: 3px;
+  margin: 0;
+  background: var(--surface-2, #eef1f5);
+  border-radius: 10px;
+}
+.club-arena .board-head .view-toggle button {
+  min-height: 34px;
+  padding: 4px 10px;
+  border: 0;
+  border-radius: 8px;
+  font-size: 12px;
+  background: transparent;
+  color: var(--text-2, var(--muted));
+}
+.club-arena .board-head .view-toggle button[aria-pressed='true'] {
+  background: var(--surface, #fff);
+  color: var(--accent, #225da8);
+  box-shadow: 0 1px 3px rgba(14, 19, 27, 0.12);
+}
+.club-arena .board-toolbar {
+  margin: 0 0 8px;
+}
+.club-arena .board-toolbar .filter-scroll button {
+  min-height: 36px;
+  padding: 4px 12px;
+  font-size: 13px;
+}
+.club-arena .boost-banner.is-compact small {
+  display: none;
+}
+.club-arena .board-head .view-toggle button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.club-arena .board-next {
+  margin: 0 0 6px;
+  padding: 0;
+  min-height: 0;
+  justify-content: flex-end;
+}
+.club-arena .board-next .button-link {
+  font-size: 13px;
+  min-height: 32px;
+}
+.club-arena .boost-banner.is-compact {
+  padding: 6px 12px;
+  font-size: 13px;
+}
+.club-arena .compact-event .boost-badge {
+  display: none;
+}
+.club-arena .compact-event-status .freshness-compact summary {
+  min-height: 0;
+}
+@media (max-width: 760px) {
+  .club-arena .board-head .view-toggle-label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+  .club-arena .board-head .view-toggle button {
+    min-width: 40px;
+    justify-content: center;
+  }
+  .club-arena .compact-event-actions button {
+    min-height: 36px;
+    padding: 4px 10px;
+    font-size: 13px;
+  }
+  .club-arena .compact-event-text .eyebrow {
+    font-size: 10px;
+  }
+}
