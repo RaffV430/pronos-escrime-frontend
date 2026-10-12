@@ -18,6 +18,8 @@
   --gold: #e2b33c;
   --silver: #a9b4c4;
   --bronze: #c27a45;
+  --primary: #1d5fd0;
+  --primary-hover: #174fb0;
   --frame: #0b1424;
   --frame-2: #14213a;
   --frame-text: #f3f6fb;
@@ -42,6 +44,8 @@
     --accent: #5b9bff;
     --accent-link: #7fb2ff;
     --on-accent: #06101f;
+    --primary: #2f6fe0;
+    --primary-hover: #3d7fe8;
     --frame: #050a14;
     --frame-2: #0f1a2e;
     --eyebrow: #e2b33c;
@@ -164,18 +168,6 @@
 .club-arena.refonte .redesigned .button-link {
   border-radius: 12px;
 }
-.club-arena.refonte
-  .redesigned
-  button:not(.button-secondary):not(.button-link):not([aria-pressed]):not(.refonte-toggle) {
-  background: var(--accent);
-  border-color: var(--accent);
-  color: var(--on-accent);
-}
-.club-arena.refonte
-  .redesigned
-  button:not(.button-secondary):not(.button-link):not([aria-pressed]):hover:not(:disabled) {
-  filter: brightness(1.08);
-}
 .club-arena.refonte .redesigned .button-secondary {
   background: var(--surface);
   color: var(--accent-link);
@@ -263,4 +255,152 @@ html.club-arena.refonte .app-shell.redesigned .app-header .user-menu-trigger.but
   color: var(--frame-text);
   border: 1px solid #ffffff38;
   border-radius: 999px;
+}
+
+/* Bouton « Direct » dans l'en-tête, à côté du compte */
+html.club-arena.refonte .app-header .account-actions > .header-live {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 36px;
+  padding: 0 14px;
+  border-radius: 999px;
+  border: 1px solid #e5484d80;
+  background: #e5484d1f;
+  color: var(--frame-text);
+  font-size: 13px;
+  font-weight: 700;
+}
+html.club-arena.refonte .app-header .account-actions > .header-live:hover:not(:disabled),
+html.club-arena.refonte .app-header .account-actions > .header-live[aria-current='page'] {
+  background: var(--sabre);
+  border-color: var(--sabre);
+  color: #fff;
+}
+.header-live-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--sabre);
+  box-shadow: 0 0 0 0 #e5484d99;
+  animation: header-live-pulse 1.8s ease-out infinite;
+}
+.header-live[aria-current='page'] .header-live-dot,
+.header-live:hover .header-live-dot {
+  background: #fff;
+}
+@keyframes header-live-pulse {
+  70% {
+    box-shadow: 0 0 0 7px #e5484d00;
+  }
+  100% {
+    box-shadow: 0 0 0 0 #e5484d00;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .header-live-dot {
+    animation: none;
+  }
+}
+
+/* Personnaliser la barre */
+.nav-editor {
+  width: min(440px, calc(100vw - 32px));
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 20px;
+  background: var(--surface);
+  color: var(--text);
+}
+.nav-editor::backdrop {
+  background: #050a14b3;
+}
+.nav-editor h2 {
+  font-family: 'Barlow Condensed', sans-serif;
+  text-transform: uppercase;
+  font-size: 26px;
+  margin: 0 0 6px;
+}
+.nav-editor-list,
+.nav-editor-hidden {
+  list-style: none;
+  margin: 12px 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+.nav-editor-list li {
+  display: grid;
+  grid-template-columns: 28px 1fr auto auto auto;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 10px;
+  border-radius: 12px;
+  background: var(--surface-2);
+}
+.nav-editor-rank {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 8px;
+  background: var(--frame);
+  color: var(--frame-text);
+  font:
+    800 14px 'Barlow Condensed',
+    sans-serif;
+}
+.club-arena .nav-editor-list button {
+  min-width: 36px;
+  min-height: 36px;
+  padding: 0 8px;
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--border);
+}
+.club-arena .nav-editor-list .nav-editor-remove {
+  color: var(--danger);
+  font-size: 12px;
+}
+.nav-editor-subtitle {
+  margin: 14px 0 0;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+.nav-editor-hidden {
+  display: flex;
+  flex-wrap: wrap;
+}
+.club-arena .nav-editor-hidden button {
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--accent-link);
+  border: 1px dashed var(--border);
+  padding: 6px 14px;
+}
+.nav-editor-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+/* Menu du compte : liste simple, pas de gros boutons */
+html.club-arena.refonte .app-shell.redesigned .user-menu-panel button {
+  background: transparent;
+  border: 0;
+  color: var(--text);
+  border-radius: 10px;
+  text-align: left;
+}
+html.club-arena.refonte .app-shell.redesigned .user-menu-panel button:hover:not(:disabled),
+html.club-arena.refonte .app-shell.redesigned .user-menu-panel button[aria-current='page'] {
+  background: var(--surface-2);
+  color: var(--accent-link);
+  filter: none;
 }

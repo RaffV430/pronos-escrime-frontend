@@ -35,6 +35,8 @@ import { ForgotPassword, ResetPassword } from './components/AccountRecovery';
 import { LegalPage, LegalLinks } from './components/LegalPages';
 import { legalPageFor } from './lib/legal.js';
 import { refonteOn, setRefonte } from './lib/refonte';
+import { NAV_CATALOG, readNav, saveNav } from './lib/navPrefs';
+import NavEditor from './components/NavEditor';
 import { TAB_TITLES, idOf, parseLocation, pathFor, pathForTab, tabFromPath } from './lib/routes.js';
 import { captureInvitation, clearInvitation } from './lib/invitation.js';
 import ResultFreshness from './components/ResultFreshness';
@@ -85,9 +87,28 @@ const LIVE_ICON = (
     <path d="M6.3 6.3a8 8 0 0 0 0 11.4M17.7 6.3a8 8 0 0 1 0 11.4" />
   </svg>
 );
-// Refonte : « Direct » rejoint la barre principale (2e place) ; « Mes tireurs » passe dans le menu du compte.
-const refonteNav = (item) =>
-  item[0] === 'me' ? [] : item[0] === 'home' ? [item, ['live', LIVE_ICON, 'Direct']] : [item];
+const COMMUNITY_ICON = (
+  <svg
+    viewBox="0 0 24 24"
+    width="24"
+    height="24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="1.6"
+    aria-hidden="true"
+  >
+    <circle cx="9" cy="8" r="3" />
+    <circle cx="17" cy="9.5" r="2.4" />
+    <path d="M3.5 19c.6-3.2 2.8-5 5.5-5s4.9 1.8 5.5 5M15 14.2c2.6-.3 4.6 1.3 5.3 4.3" />
+  </svg>
+);
+// Refonte : la barre suit le choix du joueur (3 à 5 onglets, dans son ordre).
+const customNav = (items, ids) => {
+  const byId = Object.fromEntries(items.map((item) => [item[0], item]));
+  byId.live = ['live', LIVE_ICON, 'Direct'];
+  byId.community = ['community', COMMUNITY_ICON, 'Délégations'];
+  return ids.map((id) => byId[id]).filter(Boolean);
+};
 // Bascule entre l'ancien et le nouveau design, visible uniquement en local.
 function RefonteToggle() {
   if (!import.meta.env.DEV) return null;
@@ -111,6 +132,8 @@ export default function App() {
       !/^\/(accueil|connexion|inscription)?\/?$/.test(window.location.pathname) ||
       /[?&](tournament|event)=/.test(window.location.search),
   );
+  const [navTabs, setNavTabs] = useState(readNav);
+  const [navEditor, setNavEditor] = useState(false);
   const [accountOpen, setAccountOpen] = useState(false);
   const [supportOpen, setSupportOpen] = useState(false);
   const accountMenu = useRef(null);
@@ -624,12 +647,34 @@ export default function App() {
       <FencerFollowsProvider key={user.id} userId={user.id} competitionId={selectedCompetitionId}>
         <div className="app-shell redesigned">
           <RefonteToggle />
+          {navEditor && (
+            <NavEditor
+              value={navTabs}
+              onClose={() => setNavEditor(false)}
+              onSave={(list) => {
+                saveNav(list);
+                setNavTabs(list);
+                setNavEditor(false);
+              }}
+            />
+          )}
           <header className="app-header">
             <div className="brand">
               <BrandMark />
               pronos<span>escrime</span>
             </div>
             <div className="account-actions">
+              {REFONTE && (
+                <button
+                  type="button"
+                  className="header-live"
+                  aria-current={['live', 'results'].includes(mainTab) ? 'page' : undefined}
+                  onClick={() => navigate('live')}
+                >
+                  <span className="header-live-dot" aria-hidden="true" />
+                  Direct
+                </button>
+              )}
               <AdminAlerts user={user} onOpen={openAdminAlert} />
               <div
                 className="user-menu"
@@ -659,8 +704,12 @@ export default function App() {
                   <nav id="user-options" className="user-menu-panel" aria-label="Mon espace">
                     {/* Sections hors barre principale : chacune n'apparaît qu'ici (aucun doublon). */}
                     {[
-                      REFONTE ? ['me', 'Mes tireurs'] : ['live', 'Direct & résultats'],
-                      ['community', 'Délégations'],
+                      ...(REFONTE
+                        ? NAV_CATALOG.filter(([id]) => id !== 'live' && !navTabs.includes(id))
+                        : [
+                            ['live', 'Direct & résultats'],
+                            ['community', 'Délégations'],
+                          ]),
                       ['account', 'Mon compte et notifications'],
                       ...(user.isAdmin ? [['admin', 'Administration']] : []),
                     ].map(([id, label]) => (
@@ -675,6 +724,16 @@ export default function App() {
                         {label}
                       </button>
                     ))}
+                    {REFONTE && (
+                      <button
+                        onClick={() => {
+                          setAccountOpen(false);
+                          setNavEditor(true);
+                        }}
+                      >
+                        Personnaliser la barre…
+                      </button>
+                    )}
                     <p className="user-menu-group">Aide</p>
                     <button
                       onClick={() => {
@@ -797,7 +856,7 @@ export default function App() {
                 'Mes tireurs',
               ],
             ]
-              .flatMap((item) => (REFONTE ? refonteNav(item) : [item]))
+              .flatMap((item, i, items) => (REFONTE ? (i ? [] : customNav(items, navTabs)) : [item]))
               .map(([id, icon, label]) => (
                 <button
                   key={id}
