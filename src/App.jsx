@@ -15,6 +15,7 @@ import ClubChoice from './components/ClubChoice';
 import ClubProfile from './components/ClubProfile';
 import ClubAdministration from './components/ClubAdministration';
 import FencerAffiliationAdministration from './components/FencerAffiliationAdministration';
+import AdminFencerAliases from './components/AdminFencerAliases';
 import { FollowedEventFencers, CompetitionFollow } from './components/EventWorkspace';
 import { FencerFollowsProvider } from './components/FencerFollowsProvider';
 import { isAuthPath, authPath } from './lib/authNavigation';
@@ -789,6 +790,7 @@ export default function App() {
                         <ClubModeration destination={adminTarget} onSecurity={() => navigate('account')} />
                         <ClubAdministration />
                         <FencerAffiliationAdministration />
+                        <AdminFencerAliases />
                       </>
                     )}
                     {adminSection === 'sync' && <SyncHealth destination={adminTarget} />}
