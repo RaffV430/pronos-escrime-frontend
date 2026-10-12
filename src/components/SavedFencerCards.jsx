@@ -2,6 +2,7 @@ import { RESULT_REFRESH_MS } from '../lib/resultSync';
 import { useResultSync } from '../lib/useResultSync';
 import { fencerProgress, sortFencerCards } from '../lib/fencerProgress';
 import FencerHistory from './FencerHistory';
+import FencerSeason from './FencerSeason';
 import { pollWhileVisible } from '../lib/polling';
 import { useEffect, useState } from 'react';
 import API from '../api';
@@ -21,6 +22,7 @@ const normal = (name) =>
 export default function SavedFencerCards({ tournaments, userId, onOpen }) {
   const follows = useFencerFollows();
   const [historyFavorite, setHistoryFavorite] = useState(null);
+  const [seasonFavorite, setSeasonFavorite] = useState(null);
   const [appearances, setAppearances] = useState([]);
   useResultSync(appearances.map((a) => a.event.id));
   const [loading, setLoading] = useState(false);
@@ -216,6 +218,13 @@ export default function SavedFencerCards({ tournaments, userId, onOpen }) {
           >
             Parcours →
           </button>
+          <button
+            className="button-secondary"
+            onClick={() => setSeasonFavorite(favorite)}
+            aria-label={`Voir toutes les épreuves de ${favorite.name}`}
+          >
+            Toutes ses épreuves
+          </button>
         </div>
       </article>
     );
@@ -224,6 +233,7 @@ export default function SavedFencerCards({ tournaments, userId, onOpen }) {
     <section className="saved-fencer-cards followed-event-fencers" aria-label="Mes tireurs enregistrés">
       <h2>Mes tireurs · {follows.favorites.length}</h2>
       {historyFavorite && <FencerHistory favorite={historyFavorite} onClose={() => setHistoryFavorite(null)} />}
+      {seasonFavorite && <FencerSeason favorite={seasonFavorite} onClose={() => setSeasonFavorite(null)} />}
       <p className="saved-fencer-refresh">Mise à jour automatique</p>
       {!follows.ready && <p role="status">Chargement de vos favoris…</p>}
       {follows.error && (
