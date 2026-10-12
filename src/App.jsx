@@ -35,7 +35,7 @@ import { ForgotPassword, ResetPassword } from './components/AccountRecovery';
 import { LegalPage, LegalLinks } from './components/LegalPages';
 import { legalPageFor } from './lib/legal.js';
 import { refonteOn, setRefonte } from './lib/refonte';
-import { NAV_CATALOG, readNav, saveNav } from './lib/navPrefs';
+import { NAV_CATALOG, mobileSlots, readNav, saveNav } from './lib/navPrefs';
 import NavEditor from './components/NavEditor';
 import { TAB_TITLES, idOf, parseLocation, pathFor, pathForTab, tabFromPath } from './lib/routes.js';
 import { captureInvitation, clearInvitation } from './lib/invitation.js';
@@ -109,6 +109,13 @@ const customNav = (items, ids) => {
   byId.community = ['community', COMMUNITY_ICON, 'Délégations'];
   return ids.map((id) => byId[id]).filter(Boolean);
 };
+const MORE_ICON = (
+  <svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor" aria-hidden="true">
+    <circle cx="6" cy="12" r="1.8" />
+    <circle cx="12" cy="12" r="1.8" />
+    <circle cx="18" cy="12" r="1.8" />
+  </svg>
+);
 // Bascule entre l'ancien et le nouveau design, visible uniquement en local.
 function RefonteToggle() {
   if (!import.meta.env.DEV) return null;
@@ -856,17 +863,28 @@ export default function App() {
                 'Mes tireurs',
               ],
             ]
-              .flatMap((item, i, items) => (REFONTE ? (i ? [] : customNav(items, navTabs)) : [item]))
+              .flatMap((item, i, items) =>
+                REFONTE
+                  ? i
+                    ? []
+                    : [
+                        ...customNav(items, navTabs),
+                        ...('more' in mobileSlots(navTabs) ? [['more', MORE_ICON, 'Plus']] : []),
+                      ]
+                  : [item],
+              )
               .map(([id, icon, label]) => (
                 <button
                   key={id}
                   data-tab={id}
+                  className={REFONTE && id === 'home' ? 'nav-home' : id === 'more' ? 'nav-more' : undefined}
+                  style={REFONTE ? { '--mobile-order': mobileSlots(navTabs)[id] } : undefined}
                   aria-pressed={
                     mainTab === id ||
                     (id === 'mine' && mainTab === 'season') ||
                     (id === 'live' && mainTab === 'results')
                   }
-                  onClick={() => navigate(id)}
+                  onClick={() => (id === 'more' ? setAccountOpen(true) : navigate(id))}
                 >
                   <span aria-hidden="true">{icon}</span>
                   {label}

@@ -404,3 +404,58 @@ html.club-arena.refonte .app-shell.redesigned .user-menu-panel button[aria-curre
   color: var(--accent-link);
   filter: none;
 }
+
+/* Barre : Accueil en haut sur ordinateur ; au centre, rond et surélevé, sur mobile */
+html.club-arena.refonte .primary-nav .nav-more {
+  display: none;
+}
+@media (max-width: 760px) {
+  html.club-arena.refonte .app-shell.redesigned .primary-nav {
+    align-items: flex-end;
+    overflow: visible;
+  }
+  html.club-arena.refonte .app-shell.redesigned .primary-nav button[data-tab] {
+    order: var(--mobile-order, 0);
+    flex: 1 1 0;
+  }
+  html.club-arena.refonte .app-shell.redesigned .primary-nav .nav-more {
+    display: flex;
+  }
+  html.club-arena.refonte .app-shell.redesigned .primary-nav button.nav-home,
+  html.club-arena.refonte .app-shell.redesigned .primary-nav button.nav-home[aria-pressed='true'],
+  html.club-arena.refonte .app-shell.redesigned .primary-nav button.nav-home:hover:not(:disabled) {
+    background: transparent;
+    box-shadow: none;
+    color: var(--frame-text);
+  }
+  html.club-arena.refonte .app-shell.redesigned .primary-nav button.nav-home > span:first-child {
+    display: grid;
+    place-items: center;
+    width: 56px;
+    height: 56px;
+    margin-top: -26px;
+    border-radius: 50%;
+    background: var(--primary);
+    color: #fff;
+    font-size: 24px;
+    border: 4px solid var(--frame);
+    box-shadow: 0 6px 18px #0007;
+    transition: transform var(--dur-2, 200ms) var(--ease-out, ease);
+  }
+  html.club-arena.refonte .app-shell.redesigned .primary-nav button.nav-home[aria-pressed='true'] > span:first-child {
+    background: #fff;
+    color: var(--frame);
+    transform: translateY(-2px);
+  }
+}
+
+/* Personnaliser : Accueil verrouillé */
+.nav-editor-list li.is-locked {
+  outline: 1px dashed var(--border);
+}
+.nav-editor-list strong small {
+  display: block;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text-muted);
+}

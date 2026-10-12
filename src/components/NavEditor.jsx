@@ -26,18 +26,22 @@ export default function NavEditor({ value, onSave, onClose }) {
     <dialog ref={dialog} className="nav-editor" aria-labelledby="nav-editor-title" onClose={onClose}>
       <h2 id="nav-editor-title">Personnaliser la barre</h2>
       <p className="muted">
-        Choisissez de {NAV_MIN} à {NAV_MAX} onglets et leur ordre. Les autres restent dans le menu de votre compte.
+        Choisissez de {NAV_MIN} à {NAV_MAX} onglets et leur ordre. Les autres restent dans le menu de votre compte. Sur
+        mobile, Accueil est au centre ; avec 4 onglets, un bouton « Plus » complète la barre.
       </p>
       <ol className="nav-editor-list" aria-label="Onglets affichés">
         {list.map((id, i) => (
-          <li key={id}>
+          <li key={id} className={id === 'home' ? 'is-locked' : undefined}>
             <span className="nav-editor-rank">{i + 1}</span>
-            <strong>{LABEL[id]}</strong>
+            <strong>
+              {LABEL[id]}
+              {id === 'home' && <small>Toujours là · au centre sur mobile</small>}
+            </strong>
             <button
               type="button"
               className="button-secondary"
               aria-label={`Monter ${LABEL[id]}`}
-              disabled={i === 0}
+              disabled={i <= 1}
               onClick={() => move(id, -1)}
             >
               ↑
@@ -46,7 +50,7 @@ export default function NavEditor({ value, onSave, onClose }) {
               type="button"
               className="button-secondary"
               aria-label={`Descendre ${LABEL[id]}`}
-              disabled={i === list.length - 1}
+              disabled={id === 'home' || i === list.length - 1}
               onClick={() => move(id, 1)}
             >
               ↓
@@ -55,7 +59,7 @@ export default function NavEditor({ value, onSave, onClose }) {
               type="button"
               className="button-secondary nav-editor-remove"
               aria-label={`Retirer ${LABEL[id]}`}
-              disabled={list.length <= NAV_MIN}
+              disabled={id === 'home' || list.length <= NAV_MIN}
               onClick={() => toggle(id)}
             >
               Retirer

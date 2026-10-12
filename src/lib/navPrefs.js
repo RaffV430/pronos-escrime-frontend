@@ -19,7 +19,8 @@ export function readNav() {
   try {
     const list = JSON.parse(localStorage.getItem(KEY) || 'null');
     if (Array.isArray(list)) {
-      const clean = [...new Set(list.filter((id) => known.has(id)))].slice(0, NAV_MAX);
+      // Accueil est obligatoire et toujours en tête (en haut sur ordinateur, au centre sur mobile).
+      const clean = ['home', ...new Set(list.filter((id) => known.has(id) && id !== 'home'))].slice(0, NAV_MAX);
       if (clean.length >= NAV_MIN) return clean;
     }
   } catch {
@@ -35,4 +36,14 @@ export function saveNav(list) {
   } catch {
     /* préférence non gardée */
   }
+}
+
+// Mobile : Accueil au centre de la barre. Avec un nombre impair d'autres onglets, un bouton « Plus »
+// (menu du compte) équilibre les deux côtés. Renvoie l'ordre d'affichage mobile de chaque onglet.
+export function mobileSlots(ids) {
+  const others = ids.filter((id) => id !== 'home');
+  if (others.length % 2) others.push('more');
+  const half = others.length / 2;
+  const order = [...others.slice(0, half), 'home', ...others.slice(half)];
+  return Object.fromEntries(order.map((id, i) => [id, i]));
 }
