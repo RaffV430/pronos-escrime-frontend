@@ -454,12 +454,13 @@ export function PisteFencers({ userId, onOpen }) {
   async function toggle(athlete) {
     const id = favoriteOf(athlete);
     if (id) await follows.remove(id);
+    else if (athlete.affiliationId) await follows.followProfile(athlete.affiliationId);
     else await follows.follow(athlete.id, athlete.competitionId);
   }
   async function followVisibleClub() {
     setBulkBusy(true);
     for (const athlete of directory.results.filter((a) => !a.favoriteId)) {
-      if (!(await follows.follow(athlete.id, athlete.competitionId))) break;
+      if (!(await (athlete.affiliationId ? follows.followProfile(athlete.affiliationId) : follows.follow(athlete.id, athlete.competitionId)))) break;
     }
     setBulkBusy(false);
   }
@@ -587,7 +588,7 @@ export function PisteFencers({ userId, onOpen }) {
             <button className="button-link" onClick={() => setSelected(a)}>
               {a.name} · {[a.country, a.club].filter(Boolean).join(' · ') || 'Nation et club non renseignés'}
               <small className="piste-fencer-events">
-                {a.events.map((event) => eventNameFr(event.name)).join(' · ')}
+                {[a.ageCategory, a.events.length ? a.events.map((event) => eventNameFr(event.name)).join(' · ') : 'Aucune compétition enregistrée'].filter(Boolean).join(' · ')}
               </small>
             </button>
             <button disabled={busy || !follows.ready} onClick={() => toggle(a)}>
@@ -595,7 +596,7 @@ export function PisteFencers({ userId, onOpen }) {
             </button>
           </div>
         ))}
-        {loading && <p role="status">Recherche des engagés…</p>}
+        {loading && <p role="status">Recherche des tireurs…</p>}
         {searchError && (
           <p role="alert">
             {searchError} <button onClick={() => setRevision((n) => n + 1)}>Réessayer</button>
@@ -603,11 +604,9 @@ export function PisteFencers({ userId, onOpen }) {
         )}
         {!loading && !searchError && !results.length && (
           <p>
-            {!tournamentId
-              ? 'Choisissez un tournoi pour rechercher ses engagés.'
-              : query.trim().length < 2 && !clubOnly && !clubFilter
-                ? 'Saisissez au moins deux lettres pour rechercher dans les listes sélectionnées.'
-                : 'Aucun engagé correspondant.'}
+            {query.trim().length < 2 && !clubOnly && !clubFilter && !categoryFilter
+              ? 'Saisissez un nom ou choisissez un club ou une catégorie.'
+              : 'Aucun tireur correspondant.'}
           </p>
         )}
         {clubOnly && results.some((a) => !a.favoriteId) && (
@@ -757,7 +756,9 @@ function AthleteDialog({ athlete, followed, busy, onToggle, onClose }) {
           <dd>{athlete.entryRanking || 'Non renseigné'}</dd>
         </div>
       </dl>
-      <p className="muted">Club et autres informations non renseignés dans la liste importée.</p>
+      <p>Club : {athlete.club || 'Non renseigné'}</p>
+      {athlete.ageCategory && <p>Catégorie d’âge : {athlete.ageCategory}</p>}
+      {!athlete.events?.length && <p className="muted">Aucune compétition enregistrée. Vous pouvez déjà suivre ce tireur.</p>}
       <button disabled={busy} aria-pressed={followed} onClick={onToggle}>
         {followed ? '★ Tireur suivi' : '☆ Suivre ce tireur'}
       </button>

@@ -66,6 +66,7 @@ export function FencerFollowsProvider({ userId, competitionId, children }) {
     refresh,
     follow: (entryId, eventId = competitionId) =>
       mutation(() => API.post('/me/fencers', { competitionId: eventId, entryId: String(entryId) })),
+    followProfile: (affiliationId) => mutation(() => API.post('/me/fencers', { affiliationId })),
     remove: (id) => mutation(() => API.delete(`/me/fencers/${id}`)),
     importLocal: (items) => mutation(async () => (await API.post('/me/fencers/import', { items })).data),
   };
