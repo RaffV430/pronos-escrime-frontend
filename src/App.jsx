@@ -204,7 +204,7 @@ export default function App() {
   }, [delegationContext?.id, mainTab]);
   useEffect(() => {
     const tabs = predictionTabs(delegationContext?.scope);
-    if (!tabs.some(([id]) => id === playTab)) setPlayTab(tabs[0][0]);
+    if (tabs.length && !tabs.some(([id]) => id === playTab)) setPlayTab(tabs[0][0]);
   }, [delegationContext?.scope, playTab]);
   // Retour arrière vers une autre épreuve : le sélecteur relit l'adresse.
   useEffect(() => {
@@ -975,7 +975,7 @@ export default function App() {
                     runNavigation(() => {
                       const scope = league.members?.[0]?.predictionScope || 'ALL';
                       setDelegationContext({ id: league.id, name: league.name, scope });
-                      setPlayTab(scope === 'PODIUM' ? 'podium' : 'tableau');
+                      setPlayTab(predictionTabs(scope)[0][0]);
                       setEventMode('predictions');
                       setMainTab('play');
                     })

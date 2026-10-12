@@ -1,5 +1,5 @@
 import ClubProfile from './ClubProfile';
-import { scopeLabels } from '../lib/delegationScope';
+import { scopeLabels, sectionChoices, selectedSections, toggleSection } from '../lib/delegationScope';
 import { useState, useEffect, useRef } from 'react';
 import { PistePodium } from './PisteExperience';
 import API from '../api';
@@ -10,9 +10,15 @@ function ParticipationChoices({ legend, value, disabled, onChange }) {
   return (
     <fieldset className="delegation-participation">
       <legend>{legend}</legend>
-      {Object.entries(scopeLabels).map(([scope, label]) => (
+      <small>Cochez les sections souhaitées (au moins une).</small>
+      {Object.entries(sectionChoices).map(([scope, label]) => (
         <label key={scope} className="delegation-participation-choice">
-          <input type="checkbox" checked={value === scope} disabled={disabled} onChange={() => onChange(scope)} />
+          <input
+            type="checkbox"
+            checked={selectedSections(value).includes(scope)}
+            disabled={disabled}
+            onChange={() => onChange(toggleSection(value, scope))}
+          />
           <span>{label}</span>
         </label>
       ))}
