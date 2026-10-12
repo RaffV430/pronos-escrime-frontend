@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import API from '../api';
 import { eventNameFr } from '../lib/eventName';
+import { segment } from '../lib/routes';
 import './redesign.css';
 
 const WEAPONS = {
@@ -115,7 +116,7 @@ function useCountdown(iso) {
     return () => clearInterval(t);
   }, []);
   if (!iso) return null;
-  const ms = new Date(`${iso}T08:00:00`).getTime() - now;
+  const ms = new Date(iso.length > 10 ? iso : `${iso}T08:00:00`).getTime() - now;
   if (ms <= 0) return { live: true };
   const days = Math.floor(ms / 86400000);
   const hours = Math.floor((ms % 86400000) / 3600000);
@@ -187,6 +188,8 @@ export default function RedesignHome({ user = null, onNavigate = null }) {
   };
   const [events, setEvents] = useState(null);
   const [results, setResults] = useState(null);
+  const [tournaments, setTournaments] = useState([]);
+  const [loadedAt] = useState(() => Date.now());
   const signedIn = (() => {
     try {
       return Boolean(localStorage.getItem('token'));
@@ -199,6 +202,9 @@ export default function RedesignHome({ user = null, onNavigate = null }) {
     API.get('/public/calendar', { signal: c.signal })
       .then(({ data }) => setEvents(data?.events || []))
       .catch(() => setEvents([]));
+    API.get('/public/tournaments', { signal: c.signal })
+      .then(({ data }) => setTournaments(Array.isArray(data) ? data : []))
+      .catch(() => setTournaments([]));
     API.get('/public/results', { signal: c.signal })
       .then(({ data }) => setResults(Array.isArray(data) ? data : []))
       .catch(() => setResults([]));
@@ -239,7 +245,17 @@ export default function RedesignHome({ user = null, onNavigate = null }) {
   const latest = results?.[0];
   // Saison d'escrime : de septembre à août.
   const season = new Date().getFullYear() - (new Date().getMonth() < 8 ? 1 : 0);
-  const countdown = useCountdown(next?.start);
+  // Épreuve déjà importée et ouverte aux pronostics : elle passe avant le calendrier général.
+  const open = useMemo(() => {
+    const soon = loadedAt - 10 * 3600000;
+    return tournaments
+      .filter((t) => !t.finished)
+      .flatMap((t) => (t.competitions || []).map((c) => ({ ...c, tournament: t })))
+      .filter((c) => c.startsAt && Date.parse(c.startsAt) >= soon)
+      .sort((a, b) => Date.parse(a.startsAt) - Date.parse(b.startsAt))[0];
+  }, [tournaments, loadedAt]);
+  const openFirst = open && (!next || open.startsAt.slice(0, 10) <= next.start);
+  const countdown = useCountdown(openFirst ? open.startsAt : next?.start);
   const primary = signedIn
     ? { href: '/pronostiquer', label: 'Faire mes pronostics', tab: 'play' }
     : { href: '/inscription', label: 'Créer mon compte gratuit' };
@@ -311,7 +327,48 @@ export default function RedesignHome({ user = null, onNavigate = null }) {
           </>
         )}
         <Piste />
-        {next ? (
+        {openFirst ? (
+          <article className="rd-next rd-next-open" aria-label="Prochaine épreuve, pronostics ouverts">
+            <div className="rd-next-head">
+              <span className="rd-next-tag">{countdown?.live ? '● En cours' : 'Pronostics ouverts'}</span>
+              <WeaponChip weapon={weaponOf(open.name)} />
+            </div>
+            <h2>{eventNameFr(open.name).replace(/^(Fleuret|Épée|Sabre) · /, '')}</h2>
+            <p className="rd-next-meta">
+              {open.tournament.name}
+              <br />
+              {open.tournament.city ? `${open.tournament.city} · ` : ''}
+              {new Date(open.startsAt).toLocaleString('fr-FR', {
+                weekday: 'long',
+                day: 'numeric',
+                month: 'long',
+                hour: '2-digit',
+                minute: '2-digit',
+              })}{' '}
+              (heure de Paris)
+            </p>
+            {countdown && !countdown.live && (
+              <div className="rd-countdown" role="timer" aria-label="Temps avant le début">
+                {[
+                  [countdown.days, 'jours'],
+                  [countdown.hours, 'heures'],
+                  [countdown.minutes, 'min'],
+                ].map(([value, unit]) => (
+                  <span key={unit}>
+                    <b>{String(value).padStart(2, '0')}</b>
+                    {unit}
+                  </span>
+                ))}
+              </div>
+            )}
+            <a
+              className="rd-button rd-next-cta"
+              href={`/pronostiquer/${segment(open.tournament.name, open.tournament.id)}/${segment(open.name, open.id)}/poules`}
+            >
+              {countdown?.live ? 'Suivre et pronostiquer →' : 'Pronostiquer cette épreuve →'}
+            </a>
+          </article>
+        ) : next ? (
           <article className="rd-next" aria-label={nextDay.length > 1 ? 'Prochaine journée' : 'Prochaine épreuve'}>
             <div className="rd-next-head">
               <span className="rd-next-tag">
