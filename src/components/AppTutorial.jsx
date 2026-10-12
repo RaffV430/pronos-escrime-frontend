@@ -1,7 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
 import TutorialPractice from './TutorialPractice';
 import { TUTORIAL_STEPS, tutorialKey } from '../lib/tutorial';
-export default function AppTutorial({ userId, request, onNavigate, skipAutomatic = false }) {
+import API from '../api';
+// Tutoriel vu ou passé : retenu dans le compte (tous les appareils) et sur cet appareil.
+const remember = () => API.put('/auth/me/tutorial').catch(() => {});
+export default function AppTutorial({ userId, request, onNavigate, skipAutomatic = false, seenInAccount = false }) {
   const [step, setStep] = useState(0);
   const [open, setOpen] = useState(false);
   const [box, setBox] = useState(null);
@@ -11,17 +14,19 @@ export default function AppTutorial({ userId, request, onNavigate, skipAutomatic
     navigate.current = onNavigate;
   }, [onNavigate]);
   useEffect(() => {
-    let seen;
+    let seenHere;
     try {
-      seen = localStorage.getItem(tutorialKey(userId)) === 'done';
+      seenHere = localStorage.getItem(tutorialKey(userId)) === 'done';
     } catch {
-      seen = true;
+      seenHere = true;
     }
-    if (request || (!seen && !skipAutomatic)) {
+    // Déjà vu sur cet appareil avant l'enregistrement dans le compte : on le reporte une fois au compte.
+    if (seenHere && !seenInAccount) remember();
+    if (request || (!seenHere && !seenInAccount && !skipAutomatic)) {
       setStep(0);
       setOpen(true);
     }
-  }, [userId, request, skipAutomatic]);
+  }, [userId, request, skipAutomatic, seenInAccount]);
   useEffect(() => {
     if (!open) return;
     const current = TUTORIAL_STEPS[step];
@@ -95,6 +100,7 @@ export default function AppTutorial({ userId, request, onNavigate, skipAutomatic
     } catch {
       /* Optional storage. */
     }
+    if (!seenInAccount) remember();
     setOpen(false);
   };
   if (!open) return null;

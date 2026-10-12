@@ -2871,3 +2871,31 @@
   min-width: 0;
 }
 .club-arena .home-next-event-name { font-size: 14px; color: var(--muted); margin: 10px 0 0; }
+
+/* Mode sombre : survol du menu du compte et onglet actif de la barre sans tuile claire. */
+.club-arena .user-menu-panel button:hover,
+.club-arena .user-menu-panel button:focus-visible,
+.club-arena .primary-nav button[aria-pressed='true'],
+.club-arena .primary-nav button[aria-pressed='true']:hover:not(:disabled) {
+  background: var(--nav-selected-bg, #eaf1fa);
+  color: var(--nav-selected-text, #225da8);
+}
+/* Mobile : boutons de l'en-tête (Résultats, Mon compte, menu) à 40 px au moins pour le doigt,
+   onglets des tableaux de résultats également. */
+@media (max-width: 700px) {
+  .club-arena .app-header .account-actions > button,
+  .club-arena .app-header .account-actions .user-menu-trigger {
+    height: 40px;
+    min-height: 40px;
+  }
+  .club-arena .app-header {
+    height: 108px;
+  }
+  .club-arena .app-shell.redesigned {
+    padding-top: 124px;
+  }
+  .match-board .tree-tabs button,
+  .feature-panel .rb-tabs button {
+    min-height: 40px;
+  }
+}

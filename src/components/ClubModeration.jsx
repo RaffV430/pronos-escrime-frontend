@@ -17,6 +17,7 @@ export default function ClubModeration({ destination, onSecurity }) {
     [terms, setTerms] = useState(''),
     [rules, setRules] = useState(''),
     [reasons, setReasons] = useState({}),
+    [severe, setSevere] = useState({}),
     [error, setError] = useState(''),
     [message, setMessage] = useState(''),
     [busy, setBusy] = useState(false),
@@ -165,12 +166,28 @@ export default function ClubModeration({ destination, onSecurity }) {
           >
             Accepter et rattacher
           </button>
+          <label className="checkbox-row">
+            <input
+              type="checkbox"
+              checked={Boolean(severe[r.id])}
+              onChange={(e) => setSevere({ ...severe, [r.id]: e.target.checked })}
+            />
+            Nom injurieux, violent ou inapproprié (au 3e refus de ce type, l’utilisateur ne peut plus proposer de club ;
+            le nom n’est pas repris dans l’e-mail)
+          </label>
           <button
             disabled={busy || (reasons[r.id] || '').trim().length < 5}
             onClick={() =>
               run(
-                () => API.put(`/clubs/admin/requests/${r.id}`, { status: 'REJECTED', reason: reasons[r.id] }),
-                'Demande refusée. E-mail mis en attente d’envoi.',
+                () =>
+                  API.put(`/clubs/admin/requests/${r.id}`, {
+                    status: 'REJECTED',
+                    reason: reasons[r.id],
+                    severe: Boolean(severe[r.id]),
+                  }),
+                severe[r.id]
+                  ? 'Demande refusée pour nom inapproprié. E-mail mis en attente d’envoi.'
+                  : 'Demande refusée. E-mail mis en attente d’envoi.',
               )
             }
           >

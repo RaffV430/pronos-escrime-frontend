@@ -4,7 +4,7 @@ export const TUTORIAL_STEPS = [
     tab: 'home',
     target: '.primary-nav',
     title: 'Les sections de l’application',
-    text: 'Cette barre donne accès à l’accueil, Pronostiquer, Classements, Délégations et Mes tireurs.',
+    text: 'Cette barre donne accès à l’accueil, Pronostiquer, Mes pronos, Classements et Mes tireurs. Délégations et Ma saison sont dans le menu de votre compte.',
   },
   {
     tab: 'play',
