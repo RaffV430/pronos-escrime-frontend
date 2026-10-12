@@ -1,4 +1,5 @@
 import { reducedData } from './lib/fieldCache';
+import { applyMode } from './lib/connectionQuality';
 import { restoreReadingPosition } from './lib/readingPosition';
 import { legacyLoginPath } from './lib/authNavigation';
 import { StrictMode } from 'react';
@@ -20,11 +21,13 @@ const loginDestination = legacyLoginPath(location.pathname, location.search, loc
 if (loginDestination) history.replaceState(null, '', loginDestination);
 
 initTheme();
+// Connexion faible : pas de polices de la charte ni de suivi d'erreurs à télécharger.
+applyMode();
+navigator.connection?.addEventListener?.('change', applyMode);
 if (!reducedData()) import('./brandFonts');
-document.documentElement.classList.toggle('reduced-data', reducedData());
 
 document.documentElement.classList.add('club-arena');
-startMonitoring();
+if (!reducedData()) startMonitoring();
 
 // Adresse de référence de la page (sans paramètres) : une seule URL par contenu pour les moteurs de recherche.
 const canonical = document.querySelector('link[rel="canonical"]');

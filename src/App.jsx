@@ -5,6 +5,8 @@ import { BoostBanner } from './components/BoostBadge';
 import { boostedTab } from './lib/pointsBoost';
 import ConnectionStatus from './components/ConnectionStatus';
 import { reducedData } from './lib/fieldCache';
+import { applyMode, dataMode, detector, setDataMode } from './lib/connectionQuality';
+import { clearOutbox } from './lib/outbox';
 import AdminAlerts from './components/AdminAlerts';
 import AdminNav from './components/AdminNav';
 import { sectionForDestination, storedSection, storeSection } from './lib/adminSections';
@@ -37,6 +39,7 @@ import { captureInvitation, clearInvitation } from './lib/invitation.js';
 import ResultFreshness from './components/ResultFreshness';
 import ClosingCountdown from './components/ClosingCountdown';
 import InstallApp from './components/InstallApp';
+import DataModeSettings from './components/DataModeSettings';
 import NotificationSettings from './components/NotificationSettings';
 import { disableThisDevice } from './lib/notifications';
 import MatchBoard from './components/MatchBoard';
@@ -345,10 +348,11 @@ export default function App() {
     });
 
   // 2. Charger les matchs en fonction de la compétition
-  const fetchMatches = async (compId) => {
+  // force : relire au serveur, sans la copie gardée sur l'appareil (après un refus pour clôture).
+  const fetchMatches = async (compId, { force = false } = {}) => {
     if (!compId) return;
     try {
-      const res = await API.get(`/matches?competitionId=${compId}`);
+      const res = await API.get(`/matches?competitionId=${compId}`, force ? { forceRefresh: true } : undefined);
       setMatches(res.data);
       setMatchesReady(true);
       setMatchesError('');
@@ -487,6 +491,7 @@ export default function App() {
       return;
     }
     consultationCache.clear();
+    clearOutbox();
     verifiedUser.current = null;
     localStorage.removeItem('token');
     await updateBadge(0);
@@ -653,10 +658,14 @@ export default function App() {
                     <button
                       className="user-menu-separated"
                       onClick={() => {
-                        const enabled = !reducedData();
-                        localStorage.setItem('pronos:reduced-data', String(enabled));
-                        document.documentElement.classList.toggle('reduced-data', enabled);
-                        window.dispatchEvent(new Event('pronos:data-mode'));
+                        // Activé (par vous ou automatiquement) : on revient au mode normal ; sinon on l'active.
+                        if (reducedData()) {
+                          if (dataMode() === 'on') setDataMode('auto');
+                          else {
+                            detector?.reset();
+                            applyMode();
+                          }
+                        } else setDataMode('on');
                         setAccountOpen(false);
                       }}
                     >
@@ -854,6 +863,7 @@ export default function App() {
                 <>
                   <InstallApp />
                   <NotificationSettings key={user.id} userId={user.id} />
+                  <DataModeSettings />
                 </>
               )}
               {mainTab === 'account' && (
@@ -1160,7 +1170,7 @@ export default function App() {
                             isAdmin={!!user.isAdmin}
                             ready={matchesReady}
                             stale={matchesStale}
-                            onRefresh={() => fetchMatches(selectedCompetitionId)}
+                            onRefresh={(options) => fetchMatches(selectedCompetitionId, options)}
                             onDirtyChange={setDirty}
                           />
                         </>

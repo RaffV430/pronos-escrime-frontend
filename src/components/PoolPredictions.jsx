@@ -7,6 +7,14 @@ import API from '../api';
 import useLocalDraft, { draftKey } from './useLocalDraft';
 import DraftNotice from './DraftNotice';
 import { useInlineConfirm } from './InlineConfirm';
+import {
+  CLOSED_REFUSAL_MESSAGE,
+  OUTBOX_EVENT,
+  dropWrite,
+  isClosedRefusal,
+  isNetworkError,
+  queueWrite,
+} from '../lib/outbox';
 import './PoolPredictions.css';
 import { withCount } from '../lib/plural';
 import { pollWhileVisible, useNow } from '../lib/polling';
@@ -76,6 +84,39 @@ function PredictionRow({ userId, pool, fencer, closed, onRefresh, reportDirty, l
   const [busy, setBusy] = useState(false);
   const [feedback, setFeedback] = useState('');
   const [dirty, setDirty] = useState(false);
+  // Envoi différé (retour du réseau) : brouillon effacé et poule relue, ou refus affiché.
+  const outboxKey = `pool:${fencer.id}`;
+  const deliveredRef = useRef(null);
+  useEffect(() => {
+    deliveredRef.current = (detail) => {
+      if (detail.ok) {
+        localDraft.discard();
+        setFeedback('Pronostic envoyé.');
+        onRefresh();
+      } else if (isClosedRefusal(detail.status)) refusedClosed();
+      else {
+        setDirty(true);
+        setFeedback(`${detail.error} Votre saisie est conservée.`);
+      }
+    };
+  });
+  // Clôture passée : la saisie ne passera plus, on revient au pronostic enregistré et on relit la poule au serveur.
+  function refusedClosed() {
+    dropWrite(outboxKey);
+    localDraft.discard();
+    setDirty(false);
+    setWins(fencer.prediction?.wins ?? '');
+    setIndicator(fencer.prediction?.indicator ?? '');
+    setFeedback(CLOSED_REFUSAL_MESSAGE);
+    onRefresh({ force: true });
+  }
+  useEffect(() => {
+    const done = (event) => {
+      if (event.detail?.key === outboxKey && 'ok' in event.detail) deliveredRef.current?.(event.detail);
+    };
+    window.addEventListener(OUTBOX_EVENT, done);
+    return () => window.removeEventListener(OUTBOX_EVENT, done);
+  }, [outboxKey]);
   useEffect(() => {
     reportDirty(fencer.id, dirty);
     return () => reportDirty(fencer.id, false);
@@ -88,19 +129,32 @@ function PredictionRow({ userId, pool, fencer, closed, onRefresh, reportDirty, l
     event.preventDefault();
     setBusy(true);
     setFeedback('');
+    const body = {
+      wins: Number(wins),
+      losses,
+      // Indice facultatif : victoires seules si le champ reste vide.
+      indicator: String(indicator).trim() === '' ? null : parseIndicator(indicator),
+    };
     try {
-      await API.put(`/pools/${pool.id}/fencers/${fencer.id}/prediction`, {
-        wins: Number(wins),
-        losses,
-        // Indice facultatif : victoires seules si le champ reste vide.
-        indicator: String(indicator).trim() === '' ? null : parseIndicator(indicator),
-      });
+      await API.put(`/pools/${pool.id}/fencers/${fencer.id}/prediction`, body);
+      dropWrite(outboxKey);
       localDraft.discard();
       setDirty(false);
       setFeedback('');
       onRefresh();
     } catch (error) {
-      setFeedback(message(error));
+      if (isNetworkError(error)) {
+        // Pas de réseau : gardé sur l'appareil et envoyé tout seul dès que la connexion revient.
+        queueWrite({
+          key: outboxKey,
+          method: 'put',
+          url: `/pools/${pool.id}/fencers/${fencer.id}/prediction`,
+          data: body,
+        });
+        setDirty(false);
+        setFeedback('Pas de réseau : pronostic gardé et envoyé automatiquement dès que la connexion revient.');
+      } else if (isClosedRefusal(error.response?.status)) refusedClosed();
+      else setFeedback(message(error));
     } finally {
       setBusy(false);
     }
@@ -641,7 +695,7 @@ function PoolList({ competitionId, user, onDirtyChange, refreshVersion }) {
   const now = useNow(5000);
   const manualRefresh = useRef(false);
   const reload = useCallback((event) => {
-    if (event?.type === 'click') manualRefresh.current = true;
+    if (event?.type === 'click' || event?.force) manualRefresh.current = true;
     setRefresh((n) => n + 1);
   }, []);
   useEffect(() => {

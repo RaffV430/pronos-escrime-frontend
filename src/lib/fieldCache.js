@@ -1,3 +1,4 @@
+import { lowConnection } from './connectionQuality.js';
 import { resultRefreshInterval } from './resultSync.js';
 // Only consultation data, scoped to the signed-in account. Never queue writes.
 export const CACHE_EVENT = 'pronos:consultation-updated';
@@ -88,14 +89,7 @@ export function createFieldCache(storage, now = Date.now) {
   }
   return { read, write, clear, invalidateCompetition };
 }
+// Mode connexion faible : choix du joueur, ou détection automatique (voir connectionQuality.js).
 export function reducedData() {
-  let manual = false;
-  try {
-    manual = localStorage.getItem('pronos:reduced-data') === 'true';
-  } catch {
-    /* Disabled storage. */
-  }
-  return (
-    manual || Boolean(navigator.connection?.saveData) || ['slow-2g', '2g'].includes(navigator.connection?.effectiveType)
-  );
+  return lowConnection();
 }

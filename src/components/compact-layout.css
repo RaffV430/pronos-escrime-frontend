@@ -266,3 +266,28 @@
     font-size: 10px;
   }
 }
+
+/* Mode connexion faible : on sacrifie l'habillage pour garder la saisie rapide et lisible. */
+.reduced-data .h2h,
+.reduced-data .match-social,
+.reduced-data .crowd-trend,
+.reduced-data .piste-card-guide,
+.reduced-data .arena-intro,
+.reduced-data .calendar-fold,
+.reduced-data .delegation-carousel {
+  display: none !important;
+}
+.reduced-data * {
+  backdrop-filter: none !important;
+  text-shadow: none !important;
+}
+.club-arena .connection-status {
+  display: grid;
+  gap: 4px;
+}
+.club-arena .connection-status p {
+  margin: 0;
+}
+.club-arena .connection-outbox {
+  font-weight: 600;
+}

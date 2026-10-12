@@ -2,6 +2,8 @@ import { createFieldCache } from './lib/fieldCache';
 import { fieldAdapter } from './lib/fieldAdapter';
 import axios from 'axios';
 import { handleAuthError } from './lib/session.js';
+import { observe } from './lib/connectionQuality.js';
+import { startOutbox } from './lib/outbox.js';
 export { SESSION_EXPIRED_EVENT } from './lib/session.js';
 
 const isLocal = ['localhost', '127.0.0.1'].includes(window.location.hostname);
@@ -19,7 +21,23 @@ const API = axios.create({
 });
 
 export const consultationCache = createFieldCache(localStorage);
-API.defaults.adapter = fieldAdapter(axios.getAdapter(API.defaults.adapter), consultationCache);
+// Chaque échange réel avec le serveur est mesuré : le mode connexion faible s'active tout seul si le réseau
+// devient lent ou coupe (et se désactive quand il redevient correct).
+const network = axios.getAdapter(API.defaults.adapter);
+const timedNetwork = (config) => {
+  const start = Date.now();
+  return network(config).then(
+    (response) => {
+      observe(start);
+      return response;
+    },
+    (error) => {
+      if (!error.response && error.code !== 'ERR_CANCELED') observe(start, { failed: true });
+      throw error;
+    },
+  );
+};
+API.defaults.adapter = fieldAdapter(timedNetwork, consultationCache);
 
 API.interceptors.request.use((config) => {
   const token = localStorage.getItem('token');
@@ -28,5 +46,7 @@ API.interceptors.request.use((config) => {
 });
 
 API.interceptors.response.use(undefined, (error) => handleAuthError(error));
+
+startOutbox(API);
 
 export default API;
