@@ -593,3 +593,56 @@
   margin: 8px 0 0;
   font-size: 0.9rem;
 }
+
+/* Toutes les épreuves d'un tireur suivi : saison, bilan, export et impression. */
+.fencer-season-picker {
+  display: grid;
+  gap: 4px;
+  margin: 4px 0 12px;
+  max-width: 260px;
+}
+.fencer-season-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 8px;
+  margin: 8px 0 14px;
+}
+.fencer-season-stats > div {
+  display: grid;
+  gap: 2px;
+  padding: 10px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--soft);
+}
+.fencer-season-stats strong {
+  font-size: 18px;
+}
+.fencer-season-stats small,
+.fencer-season-note {
+  font-size: 12px;
+}
+.fencer-season-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+@media print {
+  body.printing-season > *:not(dialog.fencer-season) {
+    display: none !important;
+  }
+  body.printing-season dialog.fencer-season {
+    position: static;
+    max-height: none;
+    width: auto;
+    border: 0;
+    box-shadow: none;
+    color: #000;
+    background: #fff;
+  }
+  body.printing-season .fencer-season-actions,
+  body.printing-season .fencer-season-picker select {
+    display: none;
+  }
+}

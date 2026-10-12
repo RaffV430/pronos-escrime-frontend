@@ -11,7 +11,7 @@ const day = (d) =>
 const touches = (b) => (b.given !== null && b.received !== null ? `${b.given}–${b.received}` : '');
 const bilan = (w, l) => `${w} V – ${l} D`;
 
-function Competition({ c, open, matchId }) {
+export function Competition({ c, open, matchId }) {
   return (
     <details className="fp-competition" open={open}>
       <summary>
