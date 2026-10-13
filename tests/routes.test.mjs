@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { tabFromPath, pathForTab } from '../src/lib/routes.js';
+import { tabFromPath, pathForTab, currentPathFor } from '../src/lib/routes.js';
 
 test('une adresse par section, et retour', () => {
   assert.equal(tabFromPath('/'), 'home');
@@ -12,6 +12,12 @@ test('une adresse par section, et retour', () => {
   assert.equal(pathForTab('play'), '/pronostiquer');
   assert.equal(tabFromPath('/pronostiquer'), 'play');
   assert.equal(pathForTab('inconnu'), '/');
+  // « Mes tireurs » a sa propre adresse ; l'ancienne « /moi » y mène toujours.
+  assert.equal(pathForTab('me'), '/mes-tireurs');
+  assert.equal(tabFromPath('/mes-tireurs'), 'me');
+  assert.equal(tabFromPath('/moi'), 'me');
+  assert.equal(currentPathFor('/moi'), '/mes-tireurs');
+  assert.equal(currentPathFor('/mes-tireurs'), null);
   for (const tab of [
     'home',
     'me',
@@ -64,8 +70,13 @@ test('adresses par tournoi et par épreuve, lisibles, anciens liens compris', ()
 
 test('ancien suivi commun : conserver l’épreuve et revenir au tableau actif', () => {
   assert.deepEqual(parseLocation('/pronostiquer/etampes-4/juniors-15/nos-tireurs'), {
-    tab: 'play', tournamentId: 4, eventId: 15, view: 'tableau',
+    tab: 'play',
+    tournamentId: 4,
+    eventId: 15,
+    view: 'tableau',
   });
-  assert.equal(pathFor('play', { tournament: { id: 4, name: 'Etampes' }, event: { id: 15, name: 'Juniors' }, view: 'tableau' }),
-    '/pronostiquer/etampes-4/juniors-15/tableau');
+  assert.equal(
+    pathFor('play', { tournament: { id: 4, name: 'Etampes' }, event: { id: 15, name: 'Juniors' }, view: 'tableau' }),
+    '/pronostiquer/etampes-4/juniors-15/tableau',
+  );
 });

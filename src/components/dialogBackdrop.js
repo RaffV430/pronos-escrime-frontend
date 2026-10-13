@@ -7,3 +7,8 @@ export function closeOnBackdrop(e) {
   const inside = e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom;
   if (!inside) dialog.close();
 }
+// Détermine la fenêtre visée sans laisser le clic traverser les fenêtres modales.
+export function nestedDialogLayer(point, child, parent) {
+  const inside = (r) => point.x >= r.left && point.x <= r.right && point.y >= r.top && point.y <= r.bottom;
+  return inside(child) ? 'child' : parent && inside(parent) ? 'parent' : 'page';
+}

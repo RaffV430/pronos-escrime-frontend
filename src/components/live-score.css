@@ -1,0 +1,370 @@
+.live-score {
+  --touch-red: #e11d2e;
+  --touch-green: #0f9d58;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 10px;
+  margin: 6px 0;
+  padding: 8px 12px;
+  border-radius: 12px;
+  border: 1px solid #e5484d66;
+  background: #e5484d14;
+  font-size: 13px;
+}
+.live-score-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: 11px;
+  color: #e5484d;
+}
+.live-score-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #e5484d;
+  animation: live-score-pulse 1.6s ease-out infinite;
+}
+@keyframes live-score-pulse {
+  0% {
+    box-shadow: 0 0 0 0 #e5484d99;
+  }
+  70% {
+    box-shadow: 0 0 0 7px #e5484d00;
+  }
+  100% {
+    box-shadow: 0 0 0 0 #e5484d00;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .live-score-dot {
+    animation: none;
+  }
+}
+.live-score-meta {
+  color: var(--muted, #5b6b80);
+  font-variant-numeric: tabular-nums;
+}
+.live-score-value {
+  margin-left: auto;
+  font-size: 20px;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em;
+}
+.live-score-value span {
+  display: inline-block;
+  min-width: 1.2em;
+  text-align: center;
+  border-radius: 6px;
+}
+.live-score-value .is-lit-1 {
+  background: var(--touch-red, #e11d2e);
+  color: #fff;
+}
+.live-score-value .is-lit-2 {
+  background: var(--touch-green, #0f9d58);
+  color: #fff;
+}
+.live-score-value .is-white {
+  box-shadow: inset 0 0 0 2px #c9d2de;
+}
+.live-score.is-compact {
+  margin: 4px 0 0;
+  padding: 4px 8px;
+}
+.live-score.is-compact .live-score-value {
+  font-size: 16px;
+}
+
+/* Fil des touches */
+.touch-strip {
+  margin: 6px 0;
+}
+.touch-strip-title {
+  margin: 0 0 6px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #a3adbd;
+}
+.touch-strip-title small {
+  letter-spacing: 0;
+  text-transform: none;
+  font-weight: 500;
+}
+.touch-strip-cells {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.club-arena .touch-strip .touch-cell {
+  width: 22px;
+  height: 22px;
+  min-height: 0;
+  padding: 0;
+  border-radius: 5px;
+  border: 0;
+  cursor: pointer;
+  opacity: var(--strength, 1);
+}
+.club-arena .touch-strip .touch-cell.by-1,
+.club-arena .touch-strip .touch-cell.by-1:hover:not(:disabled) {
+  background: #ef5a62;
+}
+.club-arena .touch-strip .touch-cell.by-2,
+.club-arena .touch-strip .touch-cell.by-2:hover:not(:disabled) {
+  background: #4cc38a;
+}
+.club-arena .touch-strip .touch-cell.by-double,
+.club-arena .touch-strip .touch-cell.by-double:hover:not(:disabled) {
+  background: linear-gradient(135deg, #ef5a62 50%, #4cc38a 50%);
+}
+.club-arena .touch-strip .touch-cell.is-picked {
+  opacity: 1;
+  outline: 2px solid #ffc531;
+  outline-offset: 1px;
+}
+.touch-strip-caption {
+  margin: 8px 0 0;
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+.touch-strip-caption small {
+  color: #a3adbd;
+}
+.touch-strip.is-compact .touch-strip-title {
+  color: var(--muted, #5b6b80);
+}
+.club-arena .touch-strip.is-compact .touch-cell {
+  width: 14px;
+  height: 14px;
+  border-radius: 3px;
+}
+.touch-strip.is-compact .touch-strip-caption {
+  margin-top: 4px;
+  font-size: 12px;
+}
+
+/* Bandeau « En direct » cliquable */
+.club-arena button.live-score {
+  width: 100%;
+  font: inherit;
+  text-align: left;
+  color: inherit;
+  cursor: pointer;
+}
+.club-arena button.live-score,
+.club-arena button.live-score:hover:not(:disabled) {
+  background: #e5484d14;
+  border: 1px solid #e5484d66;
+}
+.club-arena button.live-score:hover:not(:disabled) {
+  background: #e5484d24;
+}
+.live-score-open {
+  font-size: 12px;
+  font-weight: 700;
+  color: #e5484d;
+}
+
+/* Alerte « votre tireur monte en piste » */
+.live-follow-alerts {
+  position: fixed;
+  left: 12px;
+  right: 12px;
+  top: 72px;
+  z-index: 70;
+  display: grid;
+  gap: 8px;
+  max-width: 460px;
+  margin: 0 auto;
+}
+.live-follow-alert {
+  display: grid;
+  grid-template-columns: auto 1fr auto auto;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  background: #0b1424;
+  color: #f3f6fb;
+  border: 1px solid #e5484d80;
+  box-shadow: 0 10px 30px #0006;
+  font-size: 14px;
+}
+.live-follow-alert p {
+  margin: 0;
+}
+.club-arena .live-follow-alert button {
+  min-height: 34px;
+  padding: 0 12px;
+  border-radius: 999px;
+  background: #e5484d;
+  border-color: #e5484d;
+  color: #fff;
+}
+.club-arena .live-follow-alert .button-link {
+  background: transparent;
+  border: 0;
+  color: #a9b6cc;
+  padding: 0 6px;
+}
+
+/* Cases carrées quel que soit le thème */
+html.club-arena .app-shell .touch-strip button.touch-cell {
+  border-radius: 5px;
+}
+html.club-arena .app-shell .touch-strip.is-compact button.touch-cell {
+  border-radius: 3px;
+}
+
+/* Couleurs franches et sens de lecture (gauche = première touche, droite = dernière) */
+.touch-strip {
+  --touch-red: #e11d2e;
+  --touch-green: #0f9d58;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: var(--surface-2, #eef2f8);
+}
+.club-arena .touch-strip .touch-cell {
+  opacity: 1;
+}
+.club-arena .touch-strip .touch-cell.by-1,
+.club-arena .touch-strip .touch-cell.by-1:hover:not(:disabled) {
+  background: var(--touch-red);
+}
+.club-arena .touch-strip .touch-cell.by-2,
+.club-arena .touch-strip .touch-cell.by-2:hover:not(:disabled) {
+  background: var(--touch-green);
+}
+.club-arena .touch-strip .touch-cell.by-double,
+.club-arena .touch-strip .touch-cell.by-double:hover:not(:disabled) {
+  background: linear-gradient(135deg, var(--touch-red) 50%, var(--touch-green) 50%);
+}
+/* Dernière touche : un peu plus grande pendant l'assaut, puis retour à la normale ~4 s après la fin */
+.club-arena .touch-strip .touch-cell {
+  transform-origin: center;
+}
+.club-arena .touch-strip.is-live .touch-cell[data-last] {
+  transform: scale(1.3);
+  margin: 0 3px;
+}
+.club-arena .touch-strip.is-ending .touch-cell[data-last] {
+  animation: touch-last-settle 0.5s ease 4s both;
+}
+@keyframes touch-last-settle {
+  from {
+    transform: scale(1.3);
+    margin: 0 3px;
+  }
+  to {
+    transform: scale(1);
+    margin: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .club-arena .touch-strip.is-ending .touch-cell[data-last] {
+    animation-duration: 0.01s;
+  }
+}
+.touch-strip-title {
+  color: var(--muted, #5b6b80);
+}
+.touch-strip-axis {
+  display: flex;
+  opacity: 0.6;
+  justify-content: space-between;
+  margin: 4px 0 0;
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted, #5b6b80);
+}
+.touch-strip-caption small {
+  color: var(--muted, #5b6b80);
+}
+.touch-strip.is-compact {
+  padding: 6px 8px;
+}
+.touch-strip-track {
+  display: inline-flex;
+  flex-direction: column;
+  max-width: 100%;
+}
+.touch-strip-axis {
+  gap: 16px;
+}
+
+/* Grand affichage : la moitié du tireur qui touche s'allume (rouge / vert), blanche si touche non valable */
+.club-arena .piste-live-athlete {
+  transition:
+    background 0.15s ease,
+    box-shadow 0.15s ease;
+}
+.club-arena .piste-live-athlete.lamp-1.is-lit {
+  background: linear-gradient(180deg, #e11d2e, #e11d2ecc);
+  box-shadow:
+    inset 0 0 40px #ff6b7a,
+    0 0 28px #e11d2e88;
+  color: #fff;
+}
+.club-arena .piste-live-athlete.lamp-2.is-lit {
+  background: linear-gradient(180deg, #0f9d58, #0f9d58cc);
+  box-shadow:
+    inset 0 0 40px #5ee69c,
+    0 0 28px #0f9d5888;
+  color: #fff;
+}
+.club-arena .piste-live-athlete.is-lit :is(h2, small, .piste-live-score-number) {
+  color: #fff;
+}
+.club-arena .piste-live-athlete:is(.lamp-1, .lamp-2).is-white {
+  background: #ffffff;
+  box-shadow:
+    inset 0 0 0 4px #9aa6b8,
+    0 0 24px #9aa6b866;
+}
+.white-lamp-badge {
+  grid-column: 1 / -1;
+  justify-self: start;
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: #13213a;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+.white-lamp-badge::before {
+  content: '';
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 0 8px #fff;
+}
+@media (prefers-reduced-motion: reduce) {
+  .club-arena .piste-live-athlete {
+    transition: none;
+  }
+}
+
+/* Cases alignées : aucune marge héritée des boutons du site, centrage vertical (même la case agrandie) */
+html.club-arena .touch-strip .touch-strip-cells {
+  align-items: center;
+}
+html.club-arena .touch-strip button.touch-cell {
+  margin: 0;
+}
+html.club-arena .touch-strip.is-live button.touch-cell[data-last] {
+  margin: 0 3px;
+}

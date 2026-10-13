@@ -1,7 +1,7 @@
 // Une adresse par section de l'application (retour arrière, rechargement, liens partagés ou en favori).
 export const TAB_PATHS = {
   live: '/direct',
-  me: '/moi',
+  me: '/mes-tireurs',
   home: '/accueil',
   play: '/pronostiquer',
   mine: '/mes-pronostics',
@@ -14,7 +14,7 @@ export const TAB_PATHS = {
 };
 export const TAB_TITLES = {
   live: 'Direct & résultats',
-  me: 'Moi',
+  me: 'Mes tireurs',
   home: 'Accueil',
   play: 'Pronostiquer',
   mine: 'Mes pronostics',
@@ -26,7 +26,13 @@ export const TAB_TITLES = {
   admin: 'Administration',
 };
 // « / » ouvre l’accueil personnel ; les anciens liens de notification gardent leur destination.
-const BY_PATH = { '/': 'home', ...Object.fromEntries(Object.entries(TAB_PATHS).map(([tab, path]) => [path, tab])) };
+// Anciennes adresses encore acceptées (favoris, liens partagés) : « /moi » est devenue « /mes-tireurs ».
+const LEGACY_PATHS = { '/moi': 'me' };
+const BY_PATH = {
+  '/': 'home',
+  ...LEGACY_PATHS,
+  ...Object.fromEntries(Object.entries(TAB_PATHS).map(([tab, path]) => [path, tab])),
+};
 // Section correspondant à une adresse (y compris ses sous-adresses : /pronostiquer/<tournoi>/<épreuve>) ;
 // null pour les autres pages (tournoi public, pages légales…).
 export function tabFromPath(pathname) {
@@ -34,6 +40,11 @@ export function tabFromPath(pathname) {
   return BY_PATH[path] || BY_PATH[`/${path.split('/')[1]}`] || null;
 }
 export const pathForTab = (tab) => TAB_PATHS[tab] || '/';
+// Ancienne adresse → adresse actuelle de la même section (null si l'adresse est déjà à jour).
+export function currentPathFor(pathname) {
+  const path = String(pathname || '').replace(/\/+$/, '');
+  return LEGACY_PATHS[path] ? TAB_PATHS[LEGACY_PATHS[path]] : null;
+}
 
 // « Étampes CN M17/M20 » → « etampes-cn-m17-m20 » (lisible ; le numéro reste la référence).
 export function slug(name) {

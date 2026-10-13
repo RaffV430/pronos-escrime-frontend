@@ -1,0 +1,117 @@
+/* Mode express : tout un tour en quelques touchers */
+.express-intro {
+  margin: 0 0 12px;
+  color: var(--muted, #5b6b80);
+  font-size: 14px;
+}
+.express-round {
+  margin: 0 0 18px;
+}
+.express-round h2 {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin: 0 0 8px;
+}
+.express-round h2 small {
+  font-size: 13px;
+  color: var(--muted, #5b6b80);
+  font-weight: 600;
+}
+.express-round ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 6px;
+}
+.express-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr 44px;
+  grid-template-areas: 'one two state' 'score score score';
+  align-items: stretch;
+  gap: 6px;
+}
+.express-row .side-1 {
+  grid-area: one;
+}
+.express-row .side-2 {
+  grid-area: two;
+}
+.express-state {
+  grid-area: state;
+  display: grid;
+  place-items: center;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--success, #0fa35a);
+  font-variant-numeric: tabular-nums;
+}
+.express-row.is-closed .express-state {
+  color: var(--muted, #5b6b80);
+}
+.express-score {
+  grid-area: score;
+  justify-self: start;
+  font-size: 12px;
+}
+html.club-arena .app-shell .express-board button.express-pick {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 48px;
+  margin: 0;
+  padding: 8px 10px;
+  border-radius: 12px;
+  border: 1px solid var(--border, #d8e1ed);
+  background: var(--surface, #fff);
+  color: var(--text, #13213a);
+  font-weight: 600;
+  font-size: 14px;
+  text-align: left;
+  line-height: 1.2;
+  cursor: pointer;
+}
+html.club-arena .app-shell .express-board button.express-pick small {
+  flex: 0 0 auto;
+  min-width: 22px;
+  padding: 1px 5px;
+  border-radius: 6px;
+  background: var(--surface-2, #eef2f8);
+  color: var(--muted, #5b6b80);
+  font-size: 11px;
+  text-align: center;
+}
+html.club-arena .app-shell .express-board button.express-pick span {
+  overflow-wrap: anywhere;
+}
+html.club-arena .app-shell .express-board button.express-pick.is-picked {
+  border-color: var(--primary, #225da8);
+  background: var(--primary, #225da8);
+  color: #fff;
+}
+html.club-arena .app-shell .express-board button.express-pick.is-picked small {
+  background: #ffffff33;
+  color: #fff;
+}
+html.club-arena .app-shell .express-board button.express-pick:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+html.club-arena .app-shell .express-board button.express-score {
+  min-height: 0;
+  margin: -2px 0 2px;
+  padding: 0 2px;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  color: var(--accent-link, var(--primary, #225da8));
+  font-size: 12px;
+  font-weight: 600;
+  text-decoration: underline;
+}
+
+/* Le choix d'affichage reste à la même place, que le compteur soit affiché ou non (vue Cartes). */
+html.club-arena .match-board .board-head .view-toggle.filter-row {
+  margin-left: auto;
+}

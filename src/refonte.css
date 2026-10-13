@@ -1,0 +1,510 @@
+/* Refonte (aperçu local, html.refonte) : même site, mêmes fonctionnalités, nouvelle charte.
+   Cadre sombre « piste » (en-tête et navigation), titres condensés, cartes et boutons arrondis,
+   couleur par arme. Ne s'applique pas sans la classe refonte. */
+.club-arena.refonte {
+  --bg: #f4f6fa;
+  --bg-raised: #ffffff;
+  --surface: #ffffff;
+  --surface-2: #eef2f8;
+  --border: #dbe2ee;
+  --divider: #e6ebf3;
+  --text: #13213a;
+  --text-2: #34425a;
+  --text-muted: #5a6880;
+  --text-faint: #a3afc2;
+  --accent: #1d5fd0;
+  --accent-link: #1d5fd0;
+  --on-accent: #ffffff;
+  --gold: #e2b33c;
+  --silver: #a9b4c4;
+  --bronze: #c27a45;
+  --primary: #1d5fd0;
+  --primary-hover: #174fb0;
+  --frame: #0b1424;
+  --frame-2: #14213a;
+  --frame-text: #f3f6fb;
+  --frame-muted: #a9b6cc;
+  --eyebrow: #a87a0c;
+  --foil: #2f7bf6;
+  --epee: #12a374;
+  --sabre: #e5484d;
+}
+@media (prefers-color-scheme: dark) {
+  .club-arena.refonte {
+    --bg: #070d18;
+    --bg-raised: #0b1424;
+    --surface: #0f1829;
+    --surface-2: #16223a;
+    --border: #22304a;
+    --divider: #1a2740;
+    --text: #e9eef7;
+    --text-2: #c0cbdc;
+    --text-muted: #98a6be;
+    --text-faint: #4f5d76;
+    --accent: #5b9bff;
+    --accent-link: #7fb2ff;
+    --on-accent: #06101f;
+    --primary: #2f6fe0;
+    --primary-hover: #3d7fe8;
+    --frame: #050a14;
+    --frame-2: #0f1a2e;
+    --eyebrow: #e2b33c;
+  }
+}
+.club-arena.refonte body {
+  background: var(--bg);
+}
+
+/* Cadre sombre : en-tête, marque et navigation */
+.club-arena.refonte .app-header {
+  background: color-mix(in srgb, var(--frame) 94%, transparent);
+  backdrop-filter: blur(8px);
+  border-bottom: 1px solid #ffffff14;
+  color: var(--frame-text);
+}
+.club-arena.refonte .brand {
+  color: var(--frame-text);
+}
+.club-arena.refonte .brand span {
+  color: #7fb2ff;
+}
+.club-arena.refonte .user-menu-trigger {
+  background: transparent;
+  color: var(--frame-text);
+  border: 1px solid #ffffff38;
+  border-radius: 999px;
+}
+.club-arena.refonte .primary-nav {
+  background: var(--frame);
+  border-color: #ffffff14;
+}
+.club-arena.refonte .primary-nav button {
+  color: var(--frame-muted);
+  border-radius: 12px;
+}
+.club-arena.refonte .primary-nav button:hover:not(:disabled) {
+  background: #ffffff0f;
+  color: var(--frame-text);
+}
+.club-arena.refonte .primary-nav button[aria-pressed='true'],
+.club-arena.refonte .primary-nav button[aria-pressed='true']:hover:not(:disabled) {
+  background: #ffffff14;
+  color: var(--frame-text);
+  box-shadow: inset 3px 0 var(--foil);
+}
+.club-arena.refonte .primary-nav button[aria-pressed='true'] > span:first-child {
+  color: #7fb2ff;
+}
+.club-arena.refonte .primary-nav .arena-club {
+  color: var(--frame-muted);
+  border-color: #ffffff1f;
+  background: var(--frame-2);
+}
+.club-arena.refonte .primary-nav .arena-club strong {
+  color: var(--frame-text);
+}
+@media (max-width: 760px) {
+  .club-arena.refonte .primary-nav {
+    border-top: 1px solid #ffffff14;
+  }
+  .club-arena.refonte .primary-nav button[aria-pressed='true'],
+  .club-arena.refonte .primary-nav button[aria-pressed='true']:hover:not(:disabled) {
+    box-shadow: inset 0 3px var(--foil);
+    background: transparent;
+  }
+}
+
+/* Titres : condensés, en capitales, plus affirmés */
+.club-arena.refonte .redesigned h1,
+.club-arena.refonte .redesigned h2,
+.club-arena.refonte .redesigned h3 {
+  font-family: 'Barlow Condensed', var(--font-body), sans-serif;
+  letter-spacing: 0.005em;
+}
+.club-arena.refonte .redesigned h1 {
+  text-transform: uppercase;
+  font-weight: 800;
+  line-height: 0.95;
+  font-size: clamp(32px, 7vw, 52px);
+}
+.club-arena.refonte .redesigned h2 {
+  font-weight: 700;
+}
+.club-arena.refonte .arena-eyebrow {
+  color: var(--eyebrow);
+  letter-spacing: 0.14em;
+  font-weight: 700;
+}
+
+/* Cartes : arrondies, bordure fine, sans ombre lourde */
+.club-arena.refonte
+  :is(
+    .feature-panel:not(.community-panel):not(.piste-me),
+    .arena-featured,
+    .arena-home-event,
+    .arena-league-card,
+    .arena-home-result,
+    .arena-progress,
+    .pool-card,
+    .tree-card,
+    .piste-live-tile,
+    .season-tournament,
+    .compact-event,
+    .match-card,
+    .leaderboard-card,
+    .community-card,
+    .personal-round,
+    .prediction-card,
+    .delegation-card
+  ) {
+  border-radius: 18px;
+  border: 1px solid var(--border);
+  box-shadow: none;
+}
+
+/* Boutons : plus hauts, plus arrondis ; le principal suit l'accent de la charte */
+.club-arena.refonte .redesigned button,
+.club-arena.refonte .redesigned .button-secondary,
+.club-arena.refonte .redesigned .button-link {
+  border-radius: 12px;
+}
+.club-arena.refonte .redesigned .button-secondary {
+  background: var(--surface);
+  color: var(--accent-link);
+  border: 1px solid var(--border);
+}
+
+/* Onglets secondaires en pilules */
+.club-arena.refonte .secondary-nav {
+  background: var(--surface-2);
+  border-radius: 999px;
+  padding: 4px;
+  border: 0;
+}
+.club-arena.refonte .secondary-nav button {
+  border-radius: 999px;
+}
+.club-arena.refonte .secondary-nav button[aria-pressed='true'],
+.club-arena.refonte .secondary-nav button[aria-current='page'] {
+  background: var(--frame);
+  color: var(--frame-text);
+}
+
+/* Champs */
+.club-arena.refonte :is(input, select, textarea) {
+  border-radius: 12px;
+}
+
+/* Podiums et médailles */
+.club-arena.refonte .medal-1,
+.club-arena.refonte .place-1 .piste-medal {
+  color: var(--gold);
+}
+
+/* Bascule ancien / nouveau design (local uniquement) */
+.refonte-toggle {
+  position: fixed;
+  right: 12px;
+  bottom: 84px;
+  z-index: 60;
+  padding: 8px 14px;
+  border-radius: 999px;
+  border: 1px solid #ffffff40;
+  background: #e2b33c;
+  color: #241a02;
+  font:
+    700 12px/1.2 'Barlow',
+    system-ui,
+    sans-serif;
+  box-shadow: 0 6px 20px #0005;
+  cursor: pointer;
+}
+.club-arena .refonte-toggle,
+.club-arena.refonte .redesigned .refonte-toggle,
+.club-arena.refonte .redesigned .refonte-toggle:hover:not(:disabled),
+.club-arena .refonte-toggle:hover:not(:disabled) {
+  background: #e2b33c;
+  border-color: #e2b33c;
+  color: #241a02;
+}
+@media (min-width: 761px) {
+  .refonte-toggle {
+    bottom: 16px;
+  }
+}
+
+/* Priorité sur les états actifs de l'ancienne charte (sélecteurs plus précis). */
+html.club-arena.refonte .app-shell.redesigned .primary-nav button[data-tab][aria-pressed='true'],
+html.club-arena.refonte .app-shell.redesigned .primary-nav button[data-tab][aria-pressed='true']:hover:not(:disabled) {
+  background: #ffffff14;
+  color: var(--frame-text);
+  box-shadow: inset 3px 0 var(--foil);
+}
+@media (max-width: 760px) {
+  html.club-arena.refonte .app-shell.redesigned .primary-nav button[data-tab][aria-pressed='true'],
+  html.club-arena.refonte
+    .app-shell.redesigned
+    .primary-nav
+    button[data-tab][aria-pressed='true']:hover:not(:disabled) {
+    background: transparent;
+    box-shadow: inset 0 3px var(--foil);
+  }
+}
+html.club-arena.refonte .app-shell.redesigned .app-header .user-menu-trigger.button-secondary {
+  background: transparent;
+  color: var(--frame-text);
+  border: 1px solid #ffffff38;
+  border-radius: 999px;
+}
+
+/* Bouton « Direct » dans l'en-tête, à côté du compte */
+html.club-arena.refonte .app-header .account-actions > .header-live {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 36px;
+  padding: 0 14px;
+  border-radius: 999px;
+  border: 1px solid #e5484d80;
+  background: #e5484d1f;
+  color: var(--frame-text);
+  font-size: 13px;
+  font-weight: 700;
+}
+html.club-arena.refonte .app-header .account-actions > .header-live:hover:not(:disabled),
+html.club-arena.refonte .app-header .account-actions > .header-live[aria-current='page'] {
+  background: var(--sabre);
+  border-color: var(--sabre);
+  color: #fff;
+}
+.header-live-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--sabre);
+  box-shadow: 0 0 0 0 #e5484d99;
+  animation: header-live-pulse 1.8s ease-out infinite;
+}
+.header-live[aria-current='page'] .header-live-dot,
+.header-live:hover .header-live-dot {
+  background: #fff;
+}
+@keyframes header-live-pulse {
+  70% {
+    box-shadow: 0 0 0 7px #e5484d00;
+  }
+  100% {
+    box-shadow: 0 0 0 0 #e5484d00;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .header-live-dot {
+    animation: none;
+  }
+}
+
+/* Personnaliser la barre */
+.nav-editor {
+  width: min(440px, calc(100vw - 32px));
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 20px;
+  background: var(--surface);
+  color: var(--text);
+}
+.nav-editor::backdrop {
+  background: #050a14b3;
+}
+.nav-editor h2 {
+  font-family: 'Barlow Condensed', sans-serif;
+  text-transform: uppercase;
+  font-size: 26px;
+  margin: 0 0 6px;
+}
+.nav-editor-list,
+.nav-editor-hidden {
+  list-style: none;
+  margin: 12px 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+.nav-editor-list li {
+  display: grid;
+  grid-template-columns: 28px 1fr auto auto auto;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 10px;
+  border-radius: 12px;
+  background: var(--surface-2);
+}
+.nav-editor-rank {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 8px;
+  background: var(--frame);
+  color: var(--frame-text);
+  font:
+    800 14px 'Barlow Condensed',
+    sans-serif;
+}
+.club-arena .nav-editor-list button {
+  min-width: 36px;
+  min-height: 36px;
+  padding: 0 8px;
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--border);
+}
+.club-arena .nav-editor-list .nav-editor-remove {
+  color: var(--danger);
+  font-size: 12px;
+}
+.nav-editor-subtitle {
+  margin: 14px 0 0;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+.nav-editor-hidden {
+  display: flex;
+  flex-wrap: wrap;
+}
+.club-arena .nav-editor-hidden button {
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--accent-link);
+  border: 1px dashed var(--border);
+  padding: 6px 14px;
+}
+.nav-editor-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+/* Menu du compte : liste simple, pas de gros boutons */
+html.club-arena.refonte .app-shell.redesigned .user-menu-panel button {
+  background: transparent;
+  border: 0;
+  color: var(--text);
+  border-radius: 10px;
+  text-align: left;
+}
+html.club-arena.refonte .app-shell.redesigned .user-menu-panel button:hover:not(:disabled),
+html.club-arena.refonte .app-shell.redesigned .user-menu-panel button[aria-current='page'] {
+  background: var(--surface-2);
+  color: var(--accent-link);
+  filter: none;
+}
+
+/* Barre : Accueil en haut sur ordinateur ; au centre, rond et surélevé, sur mobile */
+html.club-arena.refonte .primary-nav .nav-more {
+  display: none;
+}
+@media (max-width: 760px) {
+  html.club-arena.refonte .app-shell.redesigned .primary-nav {
+    align-items: flex-end;
+    overflow: visible;
+  }
+  html.club-arena.refonte .app-shell.redesigned .primary-nav button[data-tab] {
+    order: var(--mobile-order, 0);
+    flex: 1 1 0;
+  }
+  html.club-arena.refonte .app-shell.redesigned .primary-nav .nav-more {
+    display: flex;
+  }
+  html.club-arena.refonte .app-shell.redesigned .primary-nav button.nav-home,
+  html.club-arena.refonte .app-shell.redesigned .primary-nav button.nav-home[aria-pressed='true'],
+  html.club-arena.refonte .app-shell.redesigned .primary-nav button.nav-home:hover:not(:disabled) {
+    background: transparent;
+    box-shadow: none;
+    color: var(--frame-text);
+  }
+  html.club-arena.refonte .app-shell.redesigned .primary-nav button.nav-home > span:first-child {
+    display: grid;
+    place-items: center;
+    width: 56px;
+    height: 56px;
+    margin-top: -26px;
+    border-radius: 50%;
+    background: var(--primary);
+    color: #fff;
+    font-size: 24px;
+    border: 4px solid var(--frame);
+    box-shadow: 0 6px 18px #0007;
+    transition: transform var(--dur-2, 200ms) var(--ease-out, ease);
+  }
+  html.club-arena.refonte .app-shell.redesigned .primary-nav button.nav-home[aria-pressed='true'] > span:first-child {
+    background: #fff;
+    color: var(--frame);
+    transform: translateY(-2px);
+  }
+}
+
+/* Personnaliser : Accueil verrouillé */
+.nav-editor-list li.is-locked {
+  outline: 1px dashed var(--border);
+}
+.nav-editor-list strong small {
+  display: block;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text-muted);
+}
+html.club-arena.refonte .app-shell.redesigned .primary-nav button.nav-home > span:first-child {
+  line-height: 0;
+}
+html.club-arena.refonte .app-shell.redesigned .primary-nav button.nav-home > span:first-child svg {
+  display: block;
+}
+
+/* Variante alignée : le cercle entoure l'icône sans la surélever (même hauteur que les autres onglets). */
+@media (max-width: 760px) {
+  html.club-arena.refonte .app-shell.redesigned .primary-nav button.nav-home > span:first-child {
+    width: 24px;
+    height: 24px;
+    margin: 0;
+    border: 0;
+    box-shadow: 0 0 0 9px var(--primary);
+    background: var(--primary);
+  }
+  html.club-arena.refonte .app-shell.redesigned .primary-nav button.nav-home[aria-pressed='true'] > span:first-child {
+    background: #fff;
+    box-shadow: 0 0 0 9px #fff;
+    transform: none;
+  }
+  html.club-arena.refonte .app-shell.redesigned .primary-nav button.nav-home > span:first-child svg {
+    width: 22px;
+    height: 22px;
+  }
+}
+@media (max-width: 760px) {
+  html.club-arena.refonte .app-shell.redesigned .primary-nav button[data-tab] {
+    gap: 9px;
+    justify-content: flex-end;
+    padding-bottom: 6px;
+  }
+  html.club-arena.refonte .app-shell.redesigned .primary-nav button.nav-home > span:first-child {
+    box-shadow: 0 0 0 7px var(--primary);
+  }
+  html.club-arena.refonte .app-shell.redesigned .primary-nav button.nav-home[aria-pressed='true'] > span:first-child {
+    box-shadow: 0 0 0 7px #fff;
+  }
+}
+
+/* En-tête : « Direct » et le compte restent sur une ligne */
+html.club-arena.refonte .app-shell.redesigned .app-header .account-actions {
+  flex-wrap: nowrap;
+  align-items: center;
+}
+html.club-arena.refonte .app-shell.redesigned .app-header :is(.user-menu-trigger, .header-live) {
+  white-space: nowrap;
+}

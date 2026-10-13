@@ -8,7 +8,10 @@ test('slow answers or repeated cuts turn the low connection mode on, then off on
   const d = createDetector(() => t);
   for (const ms of [400, 3500, 4200]) d.record(ms);
   assert.equal(d.active(), false);
-  d.record(5000); // 4 dernières : médiane ≥ 3 s
+  d.record(5000);
+  assert.equal(d.active(), false); // Quelques réponses lentes ne suffisent pas.
+  d.record(4100);
+  d.record(4000); // Six mesures, lenteur persistante.
   assert.equal(d.active(), true);
   // Réponses rapides mais trop tôt : on garde le mode au moins 5 minutes (pas de clignotement).
   for (let i = 0; i < 6; i++) d.record(300);
@@ -16,10 +19,12 @@ test('slow answers or repeated cuts turn the low connection mode on, then off on
   t += 6 * 60000;
   d.record(300);
   assert.equal(d.active(), false);
-  // Deux coupures rapprochées suffisent.
+  // Trois coupures rapprochées sont nécessaires.
   d.fail();
   assert.equal(d.active(), false);
   t += 30000;
+  d.fail();
+  assert.equal(d.active(), false);
   d.fail();
   assert.equal(d.active(), true);
 });

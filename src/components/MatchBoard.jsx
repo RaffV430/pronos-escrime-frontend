@@ -1,3 +1,5 @@
+import MatchExtras from './MatchExtras';
+import { restoreBody, canUndoPrediction, UX_SAVE } from '../lib/uxFeatures';
 import BoostBadge from './BoostBadge';
 import { useFencerFollows, isFollowedFencer } from '../lib/fencerFollows';
 import CrowdTrend from './CrowdTrend';
@@ -9,7 +11,7 @@ import useLocalDraft, { draftKey } from './useLocalDraft';
 import DraftNotice from './DraftNotice';
 import { withCount } from '../lib/plural';
 import MatchTiming from './MatchTiming';
-import { groupMatches, isMatchClosed, isUpcoming, validateScores, nextMatchId } from './matchPresentation';
+import { groupMatches, isMatchClosed, validateScores, nextMatchId } from './matchPresentation';
 import { useNow } from '../lib/polling';
 import { reducedData } from '../lib/fieldCache';
 import {
@@ -21,6 +23,10 @@ import {
   queueWrite,
 } from '../lib/outbox';
 import HeadToHead from './HeadToHead';
+import LiveScore from './LiveScore';
+import TouchStrip from './TouchStrip';
+import './express.css';
+import { useLiveScores } from '../lib/useLiveScores';
 import MatchSocial from './MatchSocial';
 import BracketTree from './BracketTree.jsx';
 import { buildTree } from './bracketTree';
@@ -52,7 +58,7 @@ function KeyboardBar({ children }) {
   );
 }
 
-const VIEW_LABELS = { Arena: 'Cartes', Liste: 'Liste', Arbre: 'Tableau complet' };
+const VIEW_LABELS = { Express: 'Express', Arena: 'Cartes', Liste: 'Liste', Arbre: 'Tableau complet' };
 // Pictogrammes des trois affichages (le libellé reste lisible sur grand écran et pour les lecteurs d'écran).
 function ViewIcon({ view }) {
   const common = {
@@ -69,6 +75,12 @@ function ViewIcon({ view }) {
       <svg {...common}>
         <rect x="3" y="3" width="14" height="14" rx="2.5" />
         <path d="M3 10h14" />
+      </svg>
+    );
+  if (view === 'Express')
+    return (
+      <svg {...common}>
+        <path d="M11 2 4 11h5l-1 7 7-9h-5l1-7Z" strokeLinejoin="round" />
       </svg>
     );
   if (view === 'Liste')
@@ -98,8 +110,13 @@ export default function MatchBoard({
   onDirtyChange,
   focusTarget,
   onPreviewSave,
+  onOpenLive = null,
   onPreviewRemove,
 }) {
+  const [undoSave, setUndoSave] = useState(null),
+    [undoMessage, setUndoMessage] = useState('');
+  const undoTimer = useRef(null);
+  useEffect(() => () => clearTimeout(undoTimer.current), []);
   const clock = useNow(5000);
   const follows = useFencerFollows();
   const now = fixedNow ?? clock;
@@ -115,7 +132,13 @@ export default function MatchBoard({
   const [drafts, setDrafts] = useState({}),
     [messages, setMessages] = useState({}),
     [busy, setBusy] = useState(false),
-    [filter, setFilterState] = useState(linkedIds.length ? 'Nouveaux' : initialFilter),
+    [filter, setFilterState] = useState(
+      linkedIds.length || initialFilter === 'Nouveaux'
+        ? 'À compléter'
+        : initialFilter === 'À venir'
+          ? 'En cours'
+          : initialFilter,
+    ),
     // Matchs enregistrés depuis le choix du filtre : restent affichés (pas de saut d'écran avec « À compléter »).
     [kept, setKept] = useState(() => new Set()),
     [openId, setOpenId] = useState(null),
@@ -125,7 +148,7 @@ export default function MatchBoard({
         const savedView = localStorage.getItem('pronos:match-view');
         // Connexion faible : la liste, l'affichage le plus léger, sauf choix de la liste déjà fait.
         if (reducedData()) return 'Liste';
-        return ['Arena', 'Arbre', 'Liste'].includes(savedView) ? savedView : 'Arena';
+        return ['Arena', 'Arbre', 'Liste', 'Express'].includes(savedView) ? savedView : 'Arena';
       } catch {
         return 'Arena';
       }
@@ -146,6 +169,8 @@ export default function MatchBoard({
     return () => window.removeEventListener(OUTBOX_EVENT, done);
   }, []);
   const localDraft = useLocalDraft(draftKey(userId, competitionId, 'matches'));
+  // Scores en direct des pistes, tant qu'il reste des rencontres non terminées (affichage seulement).
+  const live = useLiveScores(competitionId, !onPreviewSave && matches.some((m) => !m.isFinished));
   // Copie synchrone des saisies : l'enregistrement en arrière-plan et le passage au match suivant
   // lisent toujours la dernière frappe, même avant le prochain rendu.
   const draftsRef = useRef({});
@@ -174,9 +199,30 @@ export default function MatchBoard({
       }
     }
   }, [ready, seen, matches, seenKey]);
-  const newMatches = matches.filter((m) => linkedNew.includes(m.id) || (seen !== null && !seen.includes(m.id)));
+  // Nouvelles rencontres = apparues depuis la dernière visite ET encore à pronostiquer : une rencontre déjà
+  // pronostiquée, terminée ou close ne compte plus (le bouton mène toujours à un pronostic à faire).
+  const newMatches = matches.filter(
+    (m) =>
+      (linkedNew.includes(m.id) || (seen !== null && !seen.includes(m.id))) &&
+      !m.predictions?.some((p) => p.userId === userId) &&
+      !isMatchClosed(m, now),
+  );
+  // Le filtre commun inclut les nouvelles rencontres ; conserve le défilement et la surbrillance.
+  const [flashId, setFlashId] = useState(null);
   const showNew = () => {
-    setFilter('Nouveaux');
+    const ids = new Set(newMatches.map((m) => m.id));
+    setFilter('À compléter');
+    if (!ids.size) return;
+    // Première nouvelle rencontre dans l'ordre affiché (après application du filtre).
+    setTimeout(() => {
+      const el = [...document.querySelectorAll('.match-card')].find((e) => ids.has(Number(/(\d+)$/.exec(e.id)?.[1])));
+      const id = Number(/(\d+)$/.exec(el?.id || '')?.[1]) || [...ids][0];
+      setReveal({ id });
+      setFlashId(id);
+      el?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      el?.focus({ preventScroll: true });
+      setTimeout(() => setFlashId((current) => (current === id ? null : current)), 2600);
+    }, 60);
   };
   const markSeen = () => {
     setLinkedNew([]);
@@ -319,9 +365,11 @@ export default function MatchBoard({
         ready_.push([
           id,
           winnerOnly ? { winner: v.winner } : { predictedScore1: Number(v.score1), predictedScore2: Number(v.score2) },
+          mine(m) ? { ...mine(m) } : null,
         ]);
       }
       // Envois en parallèle (le serveur contrôle chaque clôture), puis un seul rafraîchissement.
+      const undoRecords = [];
       const results = await Promise.allSettled(
         ready_.map(([id, body]) =>
           onPreviewSave ? onPreviewSave(id, body) : API.post(`/matches/${id}/predict`, body),
@@ -331,6 +379,7 @@ export default function MatchBoard({
         const [id, body] = ready_[i];
         if (r.status === 'fulfilled') {
           saved.push(Number(id));
+          undoRecords.push({ id: Number(id), previous: ready_[i][2], saved: r.value?.data || null });
           dropWrite(`match:${id}`);
         } else if (!onPreviewSave && isNetworkError(r.reason)) {
           // Pas de réseau : gardé sur l'appareil et envoyé tout seul dès que la connexion revient.
@@ -354,6 +403,11 @@ export default function MatchBoard({
           return next;
         });
         for (const id of saved) message(id, 'Pronostic enregistré.');
+        clearTimeout(undoTimer.current);
+        setUndoMessage('');
+        setUndoSave({ records: undoRecords, until: Date.now() + 5000 });
+        undoTimer.current = setTimeout(() => setUndoSave(null), 5000);
+        if (!onPreviewSave) window.dispatchEvent(new Event(UX_SAVE));
         setKept((old) => new Set([...old, ...saved]));
       }
     } finally {
@@ -432,6 +486,17 @@ export default function MatchBoard({
     setReveal({ id: m.id });
     const prefix = view === 'Arbre' ? 'detail-' : '';
     document.getElementById(`${prefix}input-${m.id}-${side === 1 ? 2 : 1}`)?.focus({ preventScroll: true });
+  };
+  // Mode express : un toucher = vainqueur enregistré, sans ouvrir le score ni changer de match.
+  // Un pronostic déjà complet (score exact) n'est remplacé que si l'on choisit l'autre tireur.
+  const expressPick = (m, side) => {
+    if (!ready || isMatchClosed(m, now)) return;
+    if (pickedSide(m, values(m, draftsRef.current)) === side && !draftsRef.current[m.id]) return;
+    saveDrafts((old) => ({
+      ...old,
+      [m.id]: { score1: side === 1 ? m.maxScore || 15 : '', score2: side === 2 ? m.maxScore || 15 : '', winner: side },
+    }));
+    save([m.id]);
   };
   // Barre au-dessus du clavier (mobile) : match en cours de saisie.
   const [typingId, setTypingId] = useState(null);
@@ -528,17 +593,15 @@ export default function MatchBoard({
   const visible = (m) =>
     filter === 'Mes tireurs'
       ? isFollowedFencer(follows, m.player1) || isFollowedFencer(follows, m.player2)
-      : filter === 'Nouveaux'
-        ? newMatches.some((n) => n.id === m.id)
-        : filter === 'À venir'
-          ? isUpcoming(m)
-          : filter === 'À compléter'
-            ? (!mine(m) && !isMatchClosed(m, now)) || kept.has(m.id)
-            : filter === 'Ferment bientôt'
-              ? !isMatchClosed(m, now) && m.closesAt && Date.parse(m.closesAt) - now <= 3600000
-              : filter === 'Résultats publiés'
-                ? m.isFinished
-                : true;
+      : filter === 'En cours'
+        ? !!live.get(m.id) && !live.get(m.id).finished && !m.isFinished
+        : filter === 'À compléter'
+          ? (!mine(m) && !isMatchClosed(m, now)) || kept.has(m.id)
+          : filter === 'Ferment bientôt'
+            ? !isMatchClosed(m, now) && m.closesAt && Date.parse(m.closesAt) - now <= 3600000
+            : filter === 'Résultats publiés'
+              ? m.isFinished
+              : true;
   const groups = groupMatches(valid),
     next = () => {
       const target = valid.find((m) => !mine(m) && !isMatchClosed(m, now));
@@ -548,6 +611,46 @@ export default function MatchBoard({
     };
   const checked = [...new Set(valid.map((m) => m.sourceCheckedAt).filter(Boolean))];
   const tree = buildTree(valid, byes);
+  const undoLastSave = async () => {
+    if (!undoSave || busy || Date.now() >= undoSave.until) return;
+    const records = undoSave.records;
+    clearTimeout(undoTimer.current);
+    setUndoSave(null);
+    setBusy(true);
+    try {
+      const current = onPreviewSave
+        ? null
+        : (await API.get('/matches', { params: { competitionId }, forceRefresh: true })).data;
+      for (const record of records) {
+        const match = current?.find((m) => m.id === record.id);
+        if (!onPreviewSave && !canUndoPrediction(match, record.saved, userId, Date.now())) {
+          throw new Error('Annulation impossible : le match est clos ou le pronostic a changé.');
+        }
+        const body = restoreBody(record.previous);
+        if (body) {
+          if (onPreviewSave) await onPreviewSave(record.id, body);
+          else await API.post(`/matches/${record.id}/predict`, body);
+        } else if (onPreviewRemove) await onPreviewRemove(record.id);
+        else await API.delete(`/matches/${record.id}/predict`);
+      }
+      setUndoMessage('Dernier enregistrement annulé.');
+      setPicks((old) => {
+        const next = { ...old };
+        records.forEach((r) => delete next[r.id]);
+        return next;
+      });
+      saveDrafts((old) => {
+        const next = { ...old };
+        records.forEach((r) => delete next[r.id]);
+        return next;
+      });
+    } catch (error) {
+      setUndoMessage(error.response?.data?.error || error.message || 'Annulation non confirmée.');
+    } finally {
+      await onRefresh();
+      setBusy(false);
+    }
+  };
   const card = (m) => {
     const p = mine(m),
       v = values(m),
@@ -570,7 +673,7 @@ export default function MatchBoard({
       <article
         id={view === 'Arbre' ? `match-detail-${m.id}` : `match-${m.id}`}
         tabIndex={-1}
-        className={`match-card ${focusTarget?.id === m.id ? 'match-target' : ''}`}
+        className={`match-card ${focusTarget?.id === m.id || flashId === m.id ? 'match-target' : ''}`}
         key={m.id}
         onBlur={(e) => {
           if (!e.currentTarget.contains(e.relatedTarget)) leave(m);
@@ -584,6 +687,14 @@ export default function MatchBoard({
           </span>
           <span className={`status-pill ${p && !drafts[m.id] ? 'saved' : ''}`}>{status}</span>
         </div>
+        <LiveScore live={live.get(m.id)} onOpen={onOpenLive} />
+        <TouchStrip
+          history={live.get(m.id)?.history}
+          player1={m.player1}
+          player2={m.player2}
+          live={Boolean(live.get(m.id) && !live.get(m.id).finished)}
+          compact
+        />
         {[m.player1, m.player2].map((name, i) => (
           <label className={`opponent-row${picked === i + 1 ? ' is-picked' : ''}`} key={i}>
             {/* Structure d'origine conservée (mise en page des cartes) : le nom sert de bouton « vainqueur ». */}
@@ -701,6 +812,7 @@ export default function MatchBoard({
         ) : (
           <MatchTiming match={m} now={now} hideChecked={checked.length === 1} />
         )}
+        {!onPreviewSave && <MatchExtras match={m} prediction={p} />}
         <HeadToHead matchId={m.id} player1={m.player1} player2={m.player2} />
         {!onPreviewSave && <MatchSocial matchId={m.id} counts={m.social} isAdmin={isAdmin} />}
         {closed && <CrowdTrend match={m} />}
@@ -753,9 +865,7 @@ export default function MatchBoard({
       <>
         {newMatches.length > 0 && (
           <aside className="new-matches">
-            <strong>
-              {withCount(newMatches.length, 'nouvelle rencontre', 'nouvelles rencontres')} dans cette épreuve
-            </strong>{' '}
+            <strong>{withCount(newMatches.length, 'nouvelle rencontre', 'nouvelles rencontres')} à pronostiquer</strong>{' '}
             <button onClick={showNew}>Voir les nouvelles rencontres</button>{' '}
             <button className="button-link" onClick={markSeen}>
               Marquer comme vues
@@ -788,6 +898,16 @@ export default function MatchBoard({
       )}
       {ready && (
         <>
+          {(undoSave || undoMessage) && (
+            <div className="ux-undo-message" role="status">
+              <span>{undoSave ? 'Pronostic enregistré' : undoMessage}</span>
+              {undoSave && (
+                <button className="button-link" disabled={busy} onClick={undoLastSave}>
+                  Annuler
+                </button>
+              )}
+            </div>
+          )}
           <div className="board-head">
             <p className="board-summary">
               <strong>
@@ -797,7 +917,7 @@ export default function MatchBoard({
               compléter
             </p>
             <div className="filter-row view-toggle" role="group" aria-label="Affichage">
-              {['Arena', 'Liste', 'Arbre'].map((x) => (
+              {['Express', 'Arena', 'Liste', 'Arbre'].map((x) => (
                 <button
                   key={x}
                   aria-pressed={view === x}
@@ -824,8 +944,8 @@ export default function MatchBoard({
                 'Tous',
                 ...(follows?.matchNames.length ? ['Mes tireurs'] : []),
                 'À compléter',
-                'À venir',
                 'Ferment bientôt',
+                'En cours',
                 'Résultats publiés',
               ].map((x) => (
                 <button key={x} aria-pressed={filter === x} onClick={() => setFilter(x)}>
@@ -846,7 +966,82 @@ export default function MatchBoard({
               Pronostic suivant →
             </button>
           </div>
-          {view === 'Arena' ? (
+          {view === 'Express' ? (
+            <div className="express-board">
+              <p className="express-intro">
+                Touchez le vainqueur de chaque match : c’est enregistré tout de suite. Le score exact (+3 points)
+                s’ajoute ensuite, match par match.
+              </p>
+              {groups
+                .filter((g) => g.items.some(visible))
+                .map((g) => {
+                  const items = g.items.filter(visible);
+                  return (
+                    <section className="express-round" key={g.round}>
+                      <h2>
+                        {roundLabel(g.round)}
+                        <small>
+                          {items.filter((m) => mine(m)).length}/{items.length}
+                        </small>
+                      </h2>
+                      <ul>
+                        {items.map((m) => {
+                          const closed = !ready || isMatchClosed(m, now);
+                          const side = pickedSide(m, values(m));
+                          const p = mine(m);
+                          const saved = p && !drafts[m.id];
+                          const exact = saved && !p.winnerOnly && Number.isInteger(p.predictedScore1);
+                          return (
+                            <li key={m.id} className={`express-row${closed ? ' is-closed' : ''}`}>
+                              {[1, 2].map((i) => (
+                                <button
+                                  key={i}
+                                  type="button"
+                                  className={`express-pick side-${i}${side === i ? ' is-picked' : ''}`}
+                                  aria-pressed={side === i}
+                                  disabled={closed}
+                                  onClick={() => expressPick(m, i)}
+                                >
+                                  {m[`seed${i}`] ? <small>{m[`seed${i}`]}</small> : null}
+                                  <span>{m[`player${i}`]}</span>
+                                </button>
+                              ))}
+                              <span className="express-state">
+                                {m.isFinished
+                                  ? `${m.score1 ?? '–'}–${m.score2 ?? '–'}`
+                                  : closed
+                                    ? 'Clos'
+                                    : exact
+                                      ? `${p.predictedScore1}–${p.predictedScore2}`
+                                      : saved
+                                        ? '✓'
+                                        : ''}
+                              </span>
+                              {!closed && saved && !exact && (
+                                <button
+                                  type="button"
+                                  className="button-link express-score"
+                                  onClick={() => {
+                                    setView('Liste');
+                                    setReveal({ id: m.id });
+                                    setTimeout(() => {
+                                      const el = document.getElementById(`match-${m.id}`);
+                                      el?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                                    }, 60);
+                                  }}
+                                >
+                                  + score exact
+                                </button>
+                              )}
+                            </li>
+                          );
+                        })}
+                      </ul>
+                    </section>
+                  );
+                })}
+            </div>
+          ) : view === 'Arena' ? (
             <div className="arena-dashboard">
               <section className="arena-featured">
                 <p className="arena-eyebrow">LE PROCHAIN ASSAUT</p>

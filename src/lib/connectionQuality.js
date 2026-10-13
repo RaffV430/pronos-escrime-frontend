@@ -8,9 +8,9 @@ export const MODE_EVENT = 'pronos:data-mode';
 
 const SLOW_MS = 3000; // réponse lente
 const FAST_MS = 1200; // réponse rapide
-const WINDOW = 4; // nombre de mesures prises en compte pour s'activer
+const WINDOW = 6; // nombre de mesures prises en compte pour s'activer
 const RECOVER = 6; // réponses rapides d'affilée pour se désactiver
-const FAILURES = 2; // coupures récentes qui suffisent à s'activer
+const FAILURES = 3; // coupures récentes qui suffisent à s'activer
 const FAILURE_WINDOW = 3 * 60000;
 const HOLD = 5 * 60000; // durée minimale d'activation automatique (pas de clignotement)
 

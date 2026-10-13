@@ -1,3 +1,7 @@
+import GlobalSearch from './components/GlobalSearch';
+import GainAlerts from './components/GainAlerts';
+import AfterPredictionInstall from './components/AfterPredictionInstall';
+import { UxRoot } from './components/UxSettings';
 import { scopeLabels, predictionTabs } from './lib/delegationScope';
 import { RESULT_REFRESH_MS } from './lib/resultSync';
 import { useResultSync } from './lib/useResultSync';
@@ -34,6 +38,13 @@ import NotificationBanner from './components/NotificationBanner';
 import { ForgotPassword, ResetPassword } from './components/AccountRecovery';
 import { LegalPage, LegalLinks } from './components/LegalPages';
 import { legalPageFor } from './lib/legal.js';
+import { refonteOn, setRefonte } from './lib/refonte';
+import { NAV_CATALOG, mobileSlots, readNav, saveNav } from './lib/navPrefs';
+import NavEditor from './components/NavEditor';
+import LiveFollowAlert from './components/LiveFollowAlert';
+import { useLiveScores } from './lib/useLiveScores';
+import { hasActiveLiveScore } from './lib/liveScoreState';
+import { useI18n } from './i18n/context';
 import { TAB_TITLES, idOf, parseLocation, pathFor, pathForTab, tabFromPath } from './lib/routes.js';
 import { captureInvitation, clearInvitation } from './lib/invitation.js';
 import ResultFreshness from './components/ResultFreshness';
@@ -68,11 +79,81 @@ const Results = lazy(() => import('./components/Results'));
 const PublicTournament = lazy(() => import('./components/PublicTournament'));
 const PublicResults = lazy(() => import('./components/PublicResults'));
 const PublicCalendar = lazy(() => import('./components/PublicCalendar'));
+const RedesignHome = lazy(() => import('./components/RedesignHome'));
+const REFONTE = refonteOn();
+const LIVE_ICON = (
+  <svg
+    viewBox="0 0 24 24"
+    width="24"
+    height="24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="1.6"
+    aria-hidden="true"
+  >
+    <circle cx="12" cy="12" r="3" />
+    <path d="M6.3 6.3a8 8 0 0 0 0 11.4M17.7 6.3a8 8 0 0 1 0 11.4" />
+  </svg>
+);
+const HOME_ICON = (
+  <svg
+    viewBox="0 0 24 24"
+    width="24"
+    height="24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="1.8"
+    aria-hidden="true"
+  >
+    <path d="M4 10.5 12 4l8 6.5V20h-5.5v-5.5h-5V20H4Z" strokeLinejoin="round" />
+  </svg>
+);
+const COMMUNITY_ICON = (
+  <svg
+    viewBox="0 0 24 24"
+    width="24"
+    height="24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="1.6"
+    aria-hidden="true"
+  >
+    <circle cx="9" cy="8" r="3" />
+    <circle cx="17" cy="9.5" r="2.4" />
+    <path d="M3.5 19c.6-3.2 2.8-5 5.5-5s4.9 1.8 5.5 5M15 14.2c2.6-.3 4.6 1.3 5.3 4.3" />
+  </svg>
+);
+// Refonte : la barre suit le choix du joueur (3 à 5 onglets, dans son ordre).
+const customNav = (items, ids) => {
+  const byId = Object.fromEntries(items.map((item) => [item[0], item]));
+  // Maison dessinée (et non le caractère « ⌂ », que la police place trop bas dans le cercle).
+  if (byId.home) byId.home = ['home', HOME_ICON, byId.home[2]];
+  byId.live = ['live', LIVE_ICON, 'Direct'];
+  byId.community = ['community', COMMUNITY_ICON, 'Délégations'];
+  return ids.map((id) => byId[id]).filter(Boolean);
+};
+const MORE_ICON = (
+  <svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor" aria-hidden="true">
+    <circle cx="6" cy="12" r="1.8" />
+    <circle cx="12" cy="12" r="1.8" />
+    <circle cx="18" cy="12" r="1.8" />
+  </svg>
+);
+// Bascule temporaire entre les deux designs, avec choix mémorisé sur cet appareil.
+function RefonteToggle() {
+  const { t } = useI18n();
+  return (
+    <button type="button" className="refonte-toggle" onClick={() => setRefonte(!REFONTE)}>
+      {REFONTE ? t('refonte.toOld') : t('refonte.toNew')}
+    </button>
+  );
+}
 const AccountSettings = lazy(() => import('./components/AccountSettings'));
 const Community = lazy(() => import('./components/Community'));
 const tabFallback = <p className="muted load-state">Chargement…</p>;
 
 export default function App() {
+  const [globalSearch, setGlobalSearch] = useState(false);
   // Lien d'invitation (/rejoindre/<code>) : lu avant tout le reste, l'adresse redevient « / ».
   const [tutorialRequest, setTutorialRequest] = useState(0);
   // Arrivée par un lien précis (notification, partage, tableau) : ne pas lancer le tutoriel
@@ -82,6 +163,9 @@ export default function App() {
       !/^\/(accueil|connexion|inscription)?\/?$/.test(window.location.pathname) ||
       /[?&](tournament|event)=/.test(window.location.search),
   );
+  const { t, lang, setLang } = useI18n();
+  const [navTabs, setNavTabs] = useState(readNav);
+  const [navEditor, setNavEditor] = useState(false);
   const [accountOpen, setAccountOpen] = useState(false);
   const [supportOpen, setSupportOpen] = useState(false);
   const accountMenu = useRef(null);
@@ -169,7 +253,10 @@ export default function App() {
     }
   }, [user]);
   // Une adresse par section : l'onglet suit l'adresse (retour arrière du navigateur) et inversement.
-  const [matchTarget, setMatchTarget] = useState(null);
+  const [matchTarget, setMatchTarget] = useState(() => {
+    const id = Number(new URLSearchParams(location.search).get('match'));
+    return Number.isSafeInteger(id) && id > 0 ? { id } : null;
+  });
 
   // Gestion des compétitions et tournoi actif
   const [tournamentId, setTournamentId] = useState(null);
@@ -183,6 +270,11 @@ export default function App() {
   }, [selectedCompetitionId]);
 
   const [matches, setMatches] = useState([]);
+  const headerScores = useLiveScores(
+    selectedCompetitionId,
+    REFONTE && !!user && matches.some((m) => m.competitionId === selectedCompetitionId && !m.isFinished),
+  );
+  const showHeaderLive = hasActiveLiveScore(headerScores, matches, selectedCompetitionId);
   const [resultsVersion, setResultsVersion] = useState(0);
   const [competition, setCompetition] = useState(null);
   const [playTab, setPlayTab] = useState('tableau');
@@ -550,6 +642,13 @@ export default function App() {
       </Suspense>
     );
   if (legalPage) return <LegalPage page={legalPage} />;
+  // Maquette de refonte, consultable à côté du site actuel (/maquette).
+  if (/^\/maquette\/?$/.test(location.pathname))
+    return (
+      <Suspense fallback={<p style={{ textAlign: 'center', marginTop: '100px' }}>Chargement…</p>}>
+        <RedesignHome />
+      </Suspense>
+    );
   // Calendrier des épreuves (/calendrier), lisible avec ou sans compte.
   if (/^\/calendrier\/?$/.test(location.pathname))
     return (
@@ -587,12 +686,55 @@ export default function App() {
     return (
       <FencerFollowsProvider key={user.id} userId={user.id} competitionId={selectedCompetitionId}>
         <div className="app-shell redesigned">
+          <RefonteToggle />
+          {navEditor && (
+            <NavEditor
+              value={navTabs}
+              onClose={() => setNavEditor(false)}
+              onSave={(list) => {
+                saveNav(list);
+                setNavTabs(list);
+                setNavEditor(false);
+              }}
+            />
+          )}
           <header className="app-header">
             <div className="brand">
               <BrandMark />
               pronos<span>escrime</span>
             </div>
             <div className="account-actions">
+              <button
+                className="ux-search-trigger button-link"
+                aria-label="Rechercher dans l’application"
+                title="Rechercher"
+                onClick={() => setGlobalSearch(true)}
+              >
+                <svg
+                  viewBox="0 0 24 24"
+                  width="20"
+                  height="20"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.8"
+                  aria-hidden="true"
+                >
+                  <circle cx="10" cy="10" r="6" />
+                  <path d="m15 15 5 5" />
+                </svg>
+              </button>
+              <ConnectionStatus compact />
+              {REFONTE && showHeaderLive && (
+                <button
+                  type="button"
+                  className="header-live"
+                  aria-current={['live', 'results'].includes(mainTab) ? 'page' : undefined}
+                  onClick={() => navigate('live')}
+                >
+                  <span className="header-live-dot" aria-hidden="true" />
+                  {t('nav.live')}
+                </button>
+              )}
               <AdminAlerts user={user} onOpen={openAdminAlert} />
               <div
                 className="user-menu"
@@ -619,14 +761,18 @@ export default function App() {
                   {user.name || user.username} ⌄
                 </button>
                 {accountOpen && (
-                  <nav id="user-options" className="user-menu-panel" aria-label="Mon espace">
+                  <nav id="user-options" className="user-menu-panel" aria-label={t('menu.space')}>
                     {/* Sections hors barre principale : chacune n'apparaît qu'ici (aucun doublon). */}
                     {[
-                      ['live', 'Direct & résultats'],
-                      ['community', 'Délégations'],
+                      ...(REFONTE
+                        ? NAV_CATALOG.filter(([id]) => id !== 'live' && !navTabs.includes(id))
+                        : [
+                            ['live', 'Direct & résultats'],
+                            ['community', 'Délégations'],
+                          ]),
                       ['account', 'Mon compte et notifications'],
                       ...(user.isAdmin ? [['admin', 'Administration']] : []),
-                    ].map(([id, label]) => (
+                    ].map(([id]) => (
                       <button
                         key={id}
                         aria-current={mainTab === id || (id === 'live' && mainTab === 'results') ? 'page' : undefined}
@@ -635,17 +781,33 @@ export default function App() {
                           navigate(id);
                         }}
                       >
-                        {label}
+                        {id === 'account'
+                          ? t('menu.account')
+                          : id === 'admin'
+                            ? t('menu.admin')
+                            : id === 'live' && !REFONTE
+                              ? t('menu.liveResults')
+                              : t(`nav.${id}`)}
                       </button>
                     ))}
-                    <p className="user-menu-group">Aide</p>
+                    {REFONTE && (
+                      <button
+                        onClick={() => {
+                          setAccountOpen(false);
+                          setNavEditor(true);
+                        }}
+                      >
+                        {t('menu.customize')}
+                      </button>
+                    )}
+                    <p className="user-menu-group">{t('menu.help')}</p>
                     <button
                       onClick={() => {
                         setAccountOpen(false);
                         setTutorialRequest((v) => v + 1);
                       }}
                     >
-                      Tutoriel d’utilisation
+                      {t('menu.tutorial')}
                     </button>
                     <button
                       onClick={() => {
@@ -653,8 +815,19 @@ export default function App() {
                         setSupportOpen(true);
                       }}
                     >
-                      Signaler un problème
+                      {t('menu.support')}
                     </button>
+                    {import.meta.env.DEV && (
+                      <button
+                        aria-label={t('lang.switchAria')}
+                        onClick={() => {
+                          setAccountOpen(false);
+                          setLang(lang === 'fr' ? 'en' : 'fr');
+                        }}
+                      >
+                        {t('lang.label')} : {t('lang.switch')}
+                      </button>
+                    )}
                     <button
                       className="user-menu-separated"
                       onClick={() => {
@@ -669,7 +842,7 @@ export default function App() {
                         setAccountOpen(false);
                       }}
                     >
-                      {reducedData() ? 'Désactiver le mode connexion faible' : 'Mode connexion faible'}
+                      {reducedData() ? t('menu.lowDataOff') : t('menu.lowData')}
                     </button>
                     <button
                       className="user-menu-logout"
@@ -678,7 +851,7 @@ export default function App() {
                         runNavigation(handleLogout);
                       }}
                     >
-                      Déconnexion
+                      {t('menu.logout')}
                     </button>
                   </nav>
                 )}
@@ -703,9 +876,19 @@ export default function App() {
             }
           />
           <UpdateBanner onReload={runNavigation} />
-          <ConnectionStatus />
+          <LiveFollowAlert userId={user.id} competitionId={selectedCompetitionId} onOpen={() => navigate('live')} />
+          <UxRoot key={`ux:${user.id}`} userId={user.id} />
+          <GainAlerts key={`gains:${user.id}`} userId={user.id} />
+          <AfterPredictionInstall key={`install:${user.id}`} userId={user.id} />
+          {globalSearch && (
+            <GlobalSearch
+              onClose={() => setGlobalSearch(false)}
+              onNavigate={navigate}
+              onOpenEvent={openFollowedFencer}
+            />
+          )}
           <NotificationBanner userId={user.id} />
-          <nav className="primary-nav" aria-label="Navigation principale">
+          <nav className="primary-nav" aria-label={t('nav.main')}>
             {[
               ['home', '⌂', 'Accueil'],
               ['play', '◎', 'Pronostiquer'],
@@ -759,17 +942,34 @@ export default function App() {
                 </svg>,
                 'Mes tireurs',
               ],
-            ].map(([id, icon, label]) => (
-              <button
-                key={id}
-                data-tab={id}
-                aria-pressed={mainTab === id || (id === 'mine' && mainTab === 'season')}
-                onClick={() => navigate(id)}
-              >
-                <span aria-hidden="true">{icon}</span>
-                {label}
-              </button>
-            ))}
+            ]
+              .flatMap((item, i, items) =>
+                REFONTE
+                  ? i
+                    ? []
+                    : [
+                        ...customNav(items, navTabs),
+                        ...('more' in mobileSlots(navTabs) ? [['more', MORE_ICON, 'Plus']] : []),
+                      ]
+                  : [item],
+              )
+              .map(([id, icon]) => (
+                <button
+                  key={id}
+                  data-tab={id}
+                  className={REFONTE && id === 'home' ? 'nav-home' : id === 'more' ? 'nav-more' : undefined}
+                  style={REFONTE ? { '--mobile-order': mobileSlots(navTabs)[id] } : undefined}
+                  aria-pressed={
+                    mainTab === id ||
+                    (id === 'mine' && mainTab === 'season') ||
+                    (id === 'live' && mainTab === 'results')
+                  }
+                  onClick={() => (id === 'more' ? setAccountOpen(true) : navigate(id))}
+                >
+                  <span aria-hidden="true">{icon}</span>
+                  {t(`nav.${id}`)}
+                </button>
+              ))}
             {accountClub?.name && (
               <div className="arena-club">
                 <span>VOTRE CLUB</span>
@@ -820,17 +1020,21 @@ export default function App() {
               {mainTab === 'home' && (
                 <>
                   <ClubProfile key={user.id} prompt />
-                  <ArenaHome
-                    onFollowedFencer={openFollowedFencer}
-                    user={user}
-                    matches={matches}
-                    competition={competition}
-                    tournament={tournamentInfo}
-                    onPlay={() => navigate('play')}
-                    onMine={() => navigate('season')}
-                    onCommunity={() => navigate('community')}
-                    onLive={() => navigate('live')}
-                  />
+                  {REFONTE ? (
+                    <RedesignHome user={user} onNavigate={navigate} />
+                  ) : (
+                    <ArenaHome
+                      onFollowedFencer={openFollowedFencer}
+                      user={user}
+                      matches={matches}
+                      competition={competition}
+                      tournament={tournamentInfo}
+                      onPlay={() => navigate('play')}
+                      onMine={() => navigate('season')}
+                      onCommunity={() => navigate('community')}
+                      onLive={() => navigate('live')}
+                    />
+                  )}
                 </>
               )}
               {['live', 'results'].includes(mainTab) && (
@@ -889,6 +1093,7 @@ export default function App() {
                 </p>
               )}
               {!['me', 'season', 'account', 'mine', 'results', 'leaderboard', 'community'].includes(mainTab) &&
+                !(REFONTE && mainTab === 'home') &&
                 !(mainTab === 'admin' && adminSection !== 'event') && (
                   <EventSelector
                     hideCompact={mainTab === 'home'}
@@ -1171,6 +1376,11 @@ export default function App() {
                             ready={matchesReady}
                             stale={matchesStale}
                             onRefresh={(options) => fetchMatches(selectedCompetitionId, options)}
+                            onOpenLive={(id) => {
+                              setLiveView('matches');
+                              setLiveMatchId(id);
+                              navigate('live');
+                            }}
                             onDirtyChange={setDirty}
                           />
                         </>
@@ -1238,108 +1448,119 @@ export default function App() {
     );
   }
 
+  // Refonte : la nouvelle page d'entrée accueille les visiteurs (connexion et inscription inchangées).
+  if (REFONTE && !isAuthPath(location.pathname) && !invitation)
+    return (
+      <Suspense fallback={<p style={{ textAlign: 'center', marginTop: '100px' }}>Chargement…</p>}>
+        <RedesignHome />
+        <RefonteToggle />
+      </Suspense>
+    );
   return (
-    <Landing invitation={invitation} onInvitationInvalid={() => setInvitation(null)}>
-      <div className="auth-card">
-        {forgotPassword ? (
-          <ForgotPassword onBack={() => setForgotPassword(false)} />
-        ) : (
-          <>
-            <h2>{isRegister ? 'Inscription' : 'Connexion'}</h2>
-            {error && (
-              <p role="alert" className="form-error">
-                {error}
-              </p>
-            )}
-            <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-              {isRegister && (
-                <input
-                  type="text"
-                  aria-label="Nom d'utilisateur"
-                  autoComplete="nickname"
-                  placeholder="Nom d'utilisateur"
-                  required
-                  value={formData.username}
-                  onChange={(e) => setFormData({ ...formData, username: e.target.value })}
-                />
+    <>
+      <RefonteToggle />
+      <Landing invitation={invitation} onInvitationInvalid={() => setInvitation(null)}>
+        <div className="auth-card">
+          {forgotPassword ? (
+            <ForgotPassword onBack={() => setForgotPassword(false)} />
+          ) : (
+            <>
+              <h2>{isRegister ? 'Inscription' : 'Connexion'}</h2>
+              {error && (
+                <p role="alert" className="form-error">
+                  {error}
+                </p>
               )}
-              <input
-                type={isRegister ? 'email' : 'text'}
-                aria-label={isRegister ? 'Adresse e-mail' : 'Identifiant ou adresse e-mail'}
-                autoComplete={isRegister ? 'email' : 'username'}
-                autoCapitalize="none"
-                placeholder={isRegister ? 'Email' : 'Identifiant ou e-mail'}
-                required
-                value={formData.email}
-                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-              />
-              <div className="password-field">
+              <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                {isRegister && (
+                  <input
+                    type="text"
+                    aria-label="Nom d'utilisateur"
+                    autoComplete="nickname"
+                    placeholder="Nom d'utilisateur"
+                    required
+                    value={formData.username}
+                    onChange={(e) => setFormData({ ...formData, username: e.target.value })}
+                  />
+                )}
                 <input
-                  id="auth-password"
-                  aria-label="Mot de passe"
-                  type={showPassword ? 'text' : 'password'}
-                  autoComplete={isRegister ? 'new-password' : 'current-password'}
-                  placeholder="Mot de passe"
+                  type={isRegister ? 'email' : 'text'}
+                  aria-label={isRegister ? 'Adresse e-mail' : 'Identifiant ou adresse e-mail'}
+                  autoComplete={isRegister ? 'email' : 'username'}
+                  autoCapitalize="none"
+                  placeholder={isRegister ? 'Email' : 'Identifiant ou e-mail'}
                   required
-                  value={formData.password}
-                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                  value={formData.email}
+                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                 />
+                <div className="password-field">
+                  <input
+                    id="auth-password"
+                    aria-label="Mot de passe"
+                    type={showPassword ? 'text' : 'password'}
+                    autoComplete={isRegister ? 'new-password' : 'current-password'}
+                    placeholder="Mot de passe"
+                    required
+                    value={formData.password}
+                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                  />
+                  <button
+                    type="button"
+                    className="button-secondary"
+                    aria-controls="auth-password"
+                    aria-label={showPassword ? 'Masquer le mot de passe' : 'Afficher le mot de passe'}
+                    onClick={() => setShowPassword((visible) => !visible)}
+                  >
+                    {showPassword ? 'Masquer' : 'Afficher'}
+                  </button>
+                </div>
+                {twoFactor && !isRegister && (
+                  <input
+                    aria-label="Code de vérification"
+                    placeholder="Code à 6 chiffres de votre application"
+                    inputMode="numeric"
+                    autoComplete="one-time-code"
+                    pattern="[0-9 ]{6,7}"
+                    required
+                    autoFocus
+                    value={twoFactorCode}
+                    onChange={(e) => setTwoFactorCode(e.target.value)}
+                  />
+                )}
+                {isRegister && (
+                  <ClubChoice
+                    value={formData.clubChoice}
+                    onChange={(clubChoice) => setFormData({ ...formData, clubChoice })}
+                  />
+                )}
+                <button type="submit">{isRegister ? "S'inscrire" : 'Se connecter'}</button>
+              </form>
+              {!isRegister && passwordReset && (
+                <p>
+                  <button className="button-link" onClick={() => setForgotPassword(true)}>
+                    Mot de passe oublié ?
+                  </button>
+                </p>
+              )}
+              <p style={{ marginTop: '15px' }}>
+                {isRegister ? 'Déjà un compte ?' : 'Pas encore de compte ?'}{' '}
                 <button
-                  type="button"
-                  className="button-secondary"
-                  aria-controls="auth-password"
-                  aria-label={showPassword ? 'Masquer le mot de passe' : 'Afficher le mot de passe'}
-                  onClick={() => setShowPassword((visible) => !visible)}
+                  className="button-link"
+                  onClick={() => {
+                    location.assign(authPath(!isRegister, location.search));
+                  }}
+                  style={{ textDecoration: 'underline' }}
                 >
-                  {showPassword ? 'Masquer' : 'Afficher'}
-                </button>
-              </div>
-              {twoFactor && !isRegister && (
-                <input
-                  aria-label="Code de vérification"
-                  placeholder="Code à 6 chiffres de votre application"
-                  inputMode="numeric"
-                  autoComplete="one-time-code"
-                  pattern="[0-9 ]{6,7}"
-                  required
-                  autoFocus
-                  value={twoFactorCode}
-                  onChange={(e) => setTwoFactorCode(e.target.value)}
-                />
-              )}
-              {isRegister && (
-                <ClubChoice
-                  value={formData.clubChoice}
-                  onChange={(clubChoice) => setFormData({ ...formData, clubChoice })}
-                />
-              )}
-              <button type="submit">{isRegister ? "S'inscrire" : 'Se connecter'}</button>
-            </form>
-            {!isRegister && passwordReset && (
-              <p>
-                <button className="button-link" onClick={() => setForgotPassword(true)}>
-                  Mot de passe oublié ?
+                  {isRegister ? 'Se connecter' : "S'inscrire"}
                 </button>
               </p>
-            )}
-            <p style={{ marginTop: '15px' }}>
-              {isRegister ? 'Déjà un compte ?' : 'Pas encore de compte ?'}{' '}
-              <button
-                className="button-link"
-                onClick={() => {
-                  location.assign(authPath(!isRegister, location.search));
-                }}
-                style={{ textDecoration: 'underline' }}
-              >
-                {isRegister ? 'Se connecter' : "S'inscrire"}
-              </button>
-            </p>
-          </>
-        )}
-        <p className="muted auth-legal">
-          <LegalLinks />
-        </p>
-      </div>
-    </Landing>
+            </>
+          )}
+          <p className="muted auth-legal">
+            <LegalLinks />
+          </p>
+        </div>
+      </Landing>
+    </>
   );
 }
