@@ -357,3 +357,14 @@ html.club-arena .app-shell .touch-strip.is-compact button.touch-cell {
     transition: none;
   }
 }
+
+/* Cases alignées : aucune marge héritée des boutons du site, centrage vertical (même la case agrandie) */
+html.club-arena .touch-strip .touch-strip-cells {
+  align-items: center;
+}
+html.club-arena .touch-strip button.touch-cell {
+  margin: 0;
+}
+html.club-arena .touch-strip.is-live button.touch-cell[data-last] {
+  margin: 0 3px;
+}
