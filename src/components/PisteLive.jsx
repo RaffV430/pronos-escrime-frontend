@@ -26,7 +26,7 @@ export default function PisteLive({
   const filtered = pisteMatches(matches, { round, strip, mine, userId });
   // Scores en direct des pistes : une rencontre en cours passe devant dans le tableau de score.
   const live = useLiveScores(
-    competition?.id,
+    competition?.id ?? matches[0]?.competitionId,
     matches.some((m) => !m.isFinished),
   );
   const match =
