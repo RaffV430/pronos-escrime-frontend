@@ -1,3 +1,4 @@
+import { useUxSettings } from '../lib/useUxSettings';
 // Alerte « votre tireur monte en piste » : dès qu'un tireur suivi apparaît sur une piste en direct de
 // l'épreuve choisie, une alerte s'affiche une seule fois par rencontre (pour la session du navigateur).
 // En ligne, le même signal pourra déclencher une notification sur le téléphone.
@@ -23,10 +24,11 @@ const remember = (ids) => {
   }
 };
 
-export default function LiveFollowAlert({ competitionId, onOpen }) {
+export default function LiveFollowAlert({ userId, competitionId, onOpen }) {
+  const ux = useUxSettings(userId);
   const follows = useFencerFollows();
   const { t } = useI18n();
-  const following = Boolean(follows?.ready && follows.matchNames?.length);
+  const following = Boolean(ux.onStrip && follows?.ready && follows.matchNames?.length);
   const live = useLiveScores(competitionId, following);
   const [alerts, setAlerts] = useState([]);
   useEffect(() => {

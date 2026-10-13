@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import API from '../api';
 import { roundName } from './eventResults';
-import { closeOnBackdrop } from './dialogBackdrop';
+import { closeOnBackdrop, nestedDialogLayer } from './dialogBackdrop';
 import './Results.css';
 
 const signed = (n) => (n > 0 ? `+${n}` : String(n));
@@ -73,7 +73,7 @@ export function Competition({ c, open, matchId }) {
 }
 
 // Fiche d'un tireur : son parcours dans toutes les épreuves suivies par l'application.
-export default function FencerProfile({ name, onClose, matchId = null }) {
+export default function FencerProfile({ name, onClose, matchId = null, parentDialog = null, onPageBackdrop = null }) {
   const ref = useRef(null);
   const [data, setData] = useState(null);
   const [error, setError] = useState('');
@@ -93,9 +93,23 @@ export default function FencerProfile({ name, onClose, matchId = null }) {
       ref={ref}
       className="result-dialog fencer-profile"
       aria-labelledby="fencer-profile-title"
-      onClose={onClose}
+      onClose={(e) => {
+        e.stopPropagation();
+        onClose();
+      }}
       onClick={(e) => {
-        closeOnBackdrop(e);
+        if (parentDialog?.current && e.target === e.currentTarget) {
+          const layer = nestedDialogLayer(
+            { x: e.clientX, y: e.clientY },
+            e.currentTarget.getBoundingClientRect(),
+            parentDialog.current.getBoundingClientRect(),
+          );
+          if (layer === 'parent') e.currentTarget.close();
+          else if (layer === 'page') {
+            e.currentTarget.close();
+            onPageBackdrop?.();
+          }
+        } else closeOnBackdrop(e);
         e.stopPropagation(); // la carte du match sous la fenêtre ne doit pas réagir
       }}
     >

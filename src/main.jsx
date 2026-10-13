@@ -17,6 +17,7 @@ import './components/quick-predictions.css';
 import './components/compact-layout.css';
 // Aperçu de la refonte (chargé en dernier : ne s'applique que sous html.refonte).
 import './refonte.css';
+import './components/ux-integrated.css';
 import { refonteOn } from './lib/refonte';
 import ErrorBoundary from './components/ErrorBoundary.jsx';
 import { startMonitoring, reportError } from './lib/monitoring.js';

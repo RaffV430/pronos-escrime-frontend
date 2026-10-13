@@ -1,3 +1,5 @@
+import MatchExtras from './MatchExtras';
+import { restoreBody, canUndoPrediction, UX_SAVE } from '../lib/uxFeatures';
 import BoostBadge from './BoostBadge';
 import { useFencerFollows, isFollowedFencer } from '../lib/fencerFollows';
 import CrowdTrend from './CrowdTrend';
@@ -9,7 +11,7 @@ import useLocalDraft, { draftKey } from './useLocalDraft';
 import DraftNotice from './DraftNotice';
 import { withCount } from '../lib/plural';
 import MatchTiming from './MatchTiming';
-import { groupMatches, isMatchClosed, isUpcoming, validateScores, nextMatchId } from './matchPresentation';
+import { groupMatches, isMatchClosed, validateScores, nextMatchId } from './matchPresentation';
 import { useNow } from '../lib/polling';
 import { reducedData } from '../lib/fieldCache';
 import {
@@ -111,6 +113,10 @@ export default function MatchBoard({
   onOpenLive = null,
   onPreviewRemove,
 }) {
+  const [undoSave, setUndoSave] = useState(null),
+    [undoMessage, setUndoMessage] = useState('');
+  const undoTimer = useRef(null);
+  useEffect(() => () => clearTimeout(undoTimer.current), []);
   const clock = useNow(5000);
   const follows = useFencerFollows();
   const now = fixedNow ?? clock;
@@ -126,7 +132,13 @@ export default function MatchBoard({
   const [drafts, setDrafts] = useState({}),
     [messages, setMessages] = useState({}),
     [busy, setBusy] = useState(false),
-    [filter, setFilterState] = useState(linkedIds.length ? 'Nouveaux' : initialFilter),
+    [filter, setFilterState] = useState(
+      linkedIds.length || initialFilter === 'Nouveaux'
+        ? 'À compléter'
+        : initialFilter === 'À venir'
+          ? 'En cours'
+          : initialFilter,
+    ),
     // Matchs enregistrés depuis le choix du filtre : restent affichés (pas de saut d'écran avec « À compléter »).
     [kept, setKept] = useState(() => new Set()),
     [openId, setOpenId] = useState(null),
@@ -195,11 +207,11 @@ export default function MatchBoard({
       !m.predictions?.some((p) => p.userId === userId) &&
       !isMatchClosed(m, now),
   );
-  // Emmène directement à la première nouvelle rencontre : filtre « Nouveaux », défilement et surbrillance.
+  // Le filtre commun inclut les nouvelles rencontres ; conserve le défilement et la surbrillance.
   const [flashId, setFlashId] = useState(null);
   const showNew = () => {
     const ids = new Set(newMatches.map((m) => m.id));
-    setFilter('Nouveaux');
+    setFilter('À compléter');
     if (!ids.size) return;
     // Première nouvelle rencontre dans l'ordre affiché (après application du filtre).
     setTimeout(() => {
@@ -353,9 +365,11 @@ export default function MatchBoard({
         ready_.push([
           id,
           winnerOnly ? { winner: v.winner } : { predictedScore1: Number(v.score1), predictedScore2: Number(v.score2) },
+          mine(m) ? { ...mine(m) } : null,
         ]);
       }
       // Envois en parallèle (le serveur contrôle chaque clôture), puis un seul rafraîchissement.
+      const undoRecords = [];
       const results = await Promise.allSettled(
         ready_.map(([id, body]) =>
           onPreviewSave ? onPreviewSave(id, body) : API.post(`/matches/${id}/predict`, body),
@@ -365,6 +379,7 @@ export default function MatchBoard({
         const [id, body] = ready_[i];
         if (r.status === 'fulfilled') {
           saved.push(Number(id));
+          undoRecords.push({ id: Number(id), previous: ready_[i][2], saved: r.value?.data || null });
           dropWrite(`match:${id}`);
         } else if (!onPreviewSave && isNetworkError(r.reason)) {
           // Pas de réseau : gardé sur l'appareil et envoyé tout seul dès que la connexion revient.
@@ -388,6 +403,11 @@ export default function MatchBoard({
           return next;
         });
         for (const id of saved) message(id, 'Pronostic enregistré.');
+        clearTimeout(undoTimer.current);
+        setUndoMessage('');
+        setUndoSave({ records: undoRecords, until: Date.now() + 5000 });
+        undoTimer.current = setTimeout(() => setUndoSave(null), 5000);
+        if (!onPreviewSave) window.dispatchEvent(new Event(UX_SAVE));
         setKept((old) => new Set([...old, ...saved]));
       }
     } finally {
@@ -573,17 +593,15 @@ export default function MatchBoard({
   const visible = (m) =>
     filter === 'Mes tireurs'
       ? isFollowedFencer(follows, m.player1) || isFollowedFencer(follows, m.player2)
-      : filter === 'Nouveaux'
-        ? newMatches.some((n) => n.id === m.id) || kept.has(m.id)
-        : filter === 'À venir'
-          ? isUpcoming(m)
-          : filter === 'À compléter'
-            ? (!mine(m) && !isMatchClosed(m, now)) || kept.has(m.id)
-            : filter === 'Ferment bientôt'
-              ? !isMatchClosed(m, now) && m.closesAt && Date.parse(m.closesAt) - now <= 3600000
-              : filter === 'Résultats publiés'
-                ? m.isFinished
-                : true;
+      : filter === 'En cours'
+        ? !!live.get(m.id) && !live.get(m.id).finished && !m.isFinished
+        : filter === 'À compléter'
+          ? (!mine(m) && !isMatchClosed(m, now)) || kept.has(m.id)
+          : filter === 'Ferment bientôt'
+            ? !isMatchClosed(m, now) && m.closesAt && Date.parse(m.closesAt) - now <= 3600000
+            : filter === 'Résultats publiés'
+              ? m.isFinished
+              : true;
   const groups = groupMatches(valid),
     next = () => {
       const target = valid.find((m) => !mine(m) && !isMatchClosed(m, now));
@@ -593,6 +611,46 @@ export default function MatchBoard({
     };
   const checked = [...new Set(valid.map((m) => m.sourceCheckedAt).filter(Boolean))];
   const tree = buildTree(valid, byes);
+  const undoLastSave = async () => {
+    if (!undoSave || busy || Date.now() >= undoSave.until) return;
+    const records = undoSave.records;
+    clearTimeout(undoTimer.current);
+    setUndoSave(null);
+    setBusy(true);
+    try {
+      const current = onPreviewSave
+        ? null
+        : (await API.get('/matches', { params: { competitionId }, forceRefresh: true })).data;
+      for (const record of records) {
+        const match = current?.find((m) => m.id === record.id);
+        if (!onPreviewSave && !canUndoPrediction(match, record.saved, userId, Date.now())) {
+          throw new Error('Annulation impossible : le match est clos ou le pronostic a changé.');
+        }
+        const body = restoreBody(record.previous);
+        if (body) {
+          if (onPreviewSave) await onPreviewSave(record.id, body);
+          else await API.post(`/matches/${record.id}/predict`, body);
+        } else if (onPreviewRemove) await onPreviewRemove(record.id);
+        else await API.delete(`/matches/${record.id}/predict`);
+      }
+      setUndoMessage('Dernier enregistrement annulé.');
+      setPicks((old) => {
+        const next = { ...old };
+        records.forEach((r) => delete next[r.id]);
+        return next;
+      });
+      saveDrafts((old) => {
+        const next = { ...old };
+        records.forEach((r) => delete next[r.id]);
+        return next;
+      });
+    } catch (error) {
+      setUndoMessage(error.response?.data?.error || error.message || 'Annulation non confirmée.');
+    } finally {
+      await onRefresh();
+      setBusy(false);
+    }
+  };
   const card = (m) => {
     const p = mine(m),
       v = values(m),
@@ -754,6 +812,7 @@ export default function MatchBoard({
         ) : (
           <MatchTiming match={m} now={now} hideChecked={checked.length === 1} />
         )}
+        {!onPreviewSave && <MatchExtras match={m} prediction={p} />}
         <HeadToHead matchId={m.id} player1={m.player1} player2={m.player2} />
         {!onPreviewSave && <MatchSocial matchId={m.id} counts={m.social} isAdmin={isAdmin} />}
         {closed && <CrowdTrend match={m} />}
@@ -839,6 +898,16 @@ export default function MatchBoard({
       )}
       {ready && (
         <>
+          {(undoSave || undoMessage) && (
+            <div className="ux-undo-message" role="status">
+              <span>{undoSave ? 'Pronostic enregistré' : undoMessage}</span>
+              {undoSave && (
+                <button className="button-link" disabled={busy} onClick={undoLastSave}>
+                  Annuler
+                </button>
+              )}
+            </div>
+          )}
           <div className="board-head">
             <p className="board-summary">
               <strong>
@@ -874,10 +943,9 @@ export default function MatchBoard({
               {[
                 'Tous',
                 ...(follows?.matchNames.length ? ['Mes tireurs'] : []),
-                ...(newMatches.length || filter === 'Nouveaux' ? ['Nouveaux'] : []),
                 'À compléter',
-                'À venir',
                 'Ferment bientôt',
+                'En cours',
                 'Résultats publiés',
               ].map((x) => (
                 <button key={x} aria-pressed={filter === x} onClick={() => setFilter(x)}>

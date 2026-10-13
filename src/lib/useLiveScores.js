@@ -3,13 +3,14 @@
 // Coupé quand la page est cachée, rouvert dès qu'elle revient. Affichage seulement, jamais de points.
 import { useEffect, useState } from 'react';
 import API from '../api';
+import { scoresForCompetition } from './liveScoreState';
 
 const EVERY_MS = 4000;
 const EMPTY = new Map();
 const toMap = (data) => new Map((Array.isArray(data) ? data : []).map((x) => [x.matchId, x]));
 
 export function useLiveScores(competitionId, active = true) {
-  const [live, setLive] = useState(EMPTY);
+  const [snapshot, setSnapshot] = useState({ competitionId: null, scores: EMPTY });
   useEffect(() => {
     if (!competitionId || !active) return undefined;
     let stopped = false,
@@ -20,7 +21,7 @@ export function useLiveScores(competitionId, active = true) {
       if (stopped || document.hidden) return;
       try {
         const { data } = await API.get(`/matches/live/${competitionId}`);
-        if (!stopped) setLive(toMap(data));
+        if (!stopped) setSnapshot({ competitionId, scores: toMap(data) });
       } catch {
         /* le dernier état reste affiché */
       }
@@ -33,7 +34,7 @@ export function useLiveScores(competitionId, active = true) {
       source.onmessage = (event) => {
         failures = 0;
         try {
-          setLive(toMap(JSON.parse(event.data)));
+          setSnapshot({ competitionId, scores: toMap(JSON.parse(event.data)) });
         } catch {
           /* message illisible : ignoré */
         }
@@ -61,7 +62,7 @@ export function useLiveScores(competitionId, active = true) {
       document.removeEventListener('visibilitychange', visibility);
     };
   }, [competitionId, active]);
-  return competitionId && active ? live : EMPTY;
+  return scoresForCompetition(snapshot, competitionId, active);
 }
 
 export const clockLabel = (seconds) =>

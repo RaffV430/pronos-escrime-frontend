@@ -1,3 +1,4 @@
+import { UX_SAVE } from '../lib/uxFeatures';
 import BoostBadge from './BoostBadge';
 import { RESULT_REFRESH_MS } from '../lib/resultSync';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -138,6 +139,7 @@ function PredictionRow({ userId, pool, fencer, closed, onRefresh, reportDirty, l
     try {
       await API.put(`/pools/${pool.id}/fencers/${fencer.id}/prediction`, body);
       dropWrite(outboxKey);
+      window.dispatchEvent(new Event(UX_SAVE));
       localDraft.discard();
       setDirty(false);
       setFeedback('');

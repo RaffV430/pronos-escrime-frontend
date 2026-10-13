@@ -1,3 +1,7 @@
+import GlobalSearch from './components/GlobalSearch';
+import GainAlerts from './components/GainAlerts';
+import AfterPredictionInstall from './components/AfterPredictionInstall';
+import { UxRoot } from './components/UxSettings';
 import { scopeLabels, predictionTabs } from './lib/delegationScope';
 import { RESULT_REFRESH_MS } from './lib/resultSync';
 import { useResultSync } from './lib/useResultSync';
@@ -38,6 +42,8 @@ import { refonteOn, setRefonte } from './lib/refonte';
 import { NAV_CATALOG, mobileSlots, readNav, saveNav } from './lib/navPrefs';
 import NavEditor from './components/NavEditor';
 import LiveFollowAlert from './components/LiveFollowAlert';
+import { useLiveScores } from './lib/useLiveScores';
+import { hasActiveLiveScore } from './lib/liveScoreState';
 import { useI18n } from './i18n/context';
 import { TAB_TITLES, idOf, parseLocation, pathFor, pathForTab, tabFromPath } from './lib/routes.js';
 import { captureInvitation, clearInvitation } from './lib/invitation.js';
@@ -148,6 +154,7 @@ const Community = lazy(() => import('./components/Community'));
 const tabFallback = <p className="muted load-state">Chargement…</p>;
 
 export default function App() {
+  const [globalSearch, setGlobalSearch] = useState(false);
   // Lien d'invitation (/rejoindre/<code>) : lu avant tout le reste, l'adresse redevient « / ».
   const [tutorialRequest, setTutorialRequest] = useState(0);
   // Arrivée par un lien précis (notification, partage, tableau) : ne pas lancer le tutoriel
@@ -247,7 +254,10 @@ export default function App() {
     }
   }, [user]);
   // Une adresse par section : l'onglet suit l'adresse (retour arrière du navigateur) et inversement.
-  const [matchTarget, setMatchTarget] = useState(null);
+  const [matchTarget, setMatchTarget] = useState(() => {
+    const id = Number(new URLSearchParams(location.search).get('match'));
+    return Number.isSafeInteger(id) && id > 0 ? { id } : null;
+  });
 
   // Gestion des compétitions et tournoi actif
   const [tournamentId, setTournamentId] = useState(null);
@@ -261,6 +271,11 @@ export default function App() {
   }, [selectedCompetitionId]);
 
   const [matches, setMatches] = useState([]);
+  const headerScores = useLiveScores(
+    selectedCompetitionId,
+    REFONTE && !!user && matches.some((m) => m.competitionId === selectedCompetitionId && !m.isFinished),
+  );
+  const showHeaderLive = hasActiveLiveScore(headerScores, matches, selectedCompetitionId);
   const [resultsVersion, setResultsVersion] = useState(0);
   const [competition, setCompetition] = useState(null);
   const [playTab, setPlayTab] = useState('tableau');
@@ -690,7 +705,27 @@ export default function App() {
               pronos<span>escrime</span>
             </div>
             <div className="account-actions">
-              {REFONTE && (
+              <button
+                className="ux-search-trigger button-link"
+                aria-label="Rechercher dans l’application"
+                title="Rechercher"
+                onClick={() => setGlobalSearch(true)}
+              >
+                <svg
+                  viewBox="0 0 24 24"
+                  width="20"
+                  height="20"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.8"
+                  aria-hidden="true"
+                >
+                  <circle cx="10" cy="10" r="6" />
+                  <path d="m15 15 5 5" />
+                </svg>
+              </button>
+              <ConnectionStatus compact />
+              {REFONTE && showHeaderLive && (
                 <button
                   type="button"
                   className="header-live"
@@ -840,8 +875,17 @@ export default function App() {
             }
           />
           <UpdateBanner onReload={runNavigation} />
-          <LiveFollowAlert competitionId={selectedCompetitionId} onOpen={() => navigate('live')} />
-          <ConnectionStatus />
+          <LiveFollowAlert userId={user.id} competitionId={selectedCompetitionId} onOpen={() => navigate('live')} />
+          <UxRoot key={`ux:${user.id}`} userId={user.id} />
+          <GainAlerts key={`gains:${user.id}`} userId={user.id} />
+          <AfterPredictionInstall key={`install:${user.id}`} userId={user.id} />
+          {globalSearch && (
+            <GlobalSearch
+              onClose={() => setGlobalSearch(false)}
+              onNavigate={navigate}
+              onOpenEvent={openFollowedFencer}
+            />
+          )}
           <NotificationBanner userId={user.id} />
           <nav className="primary-nav" aria-label={t('nav.main')}>
             {[

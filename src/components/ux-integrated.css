@@ -1,0 +1,455 @@
+/* Ajouts fonctionnels : la refonte garde sa navigation, ses cartes et ses dimensions. */
+html.refonte .match-board .board-head {
+  display: grid;
+  grid-template-columns: minmax(120px, 1fr) minmax(0, 1.8fr);
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  min-width: 0;
+}
+html.refonte .match-board .board-head .view-toggle.filter-row {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  min-width: 0;
+  width: 100%;
+  margin: 0;
+}
+html.refonte .match-board .board-head .view-toggle button {
+  width: 100%;
+  min-width: 0;
+  justify-content: center;
+  min-height: 44px;
+}
+html.refonte .match-board .board-head .board-summary {
+  display: block;
+  font-size: 13px;
+  margin: 0;
+  padding: 0;
+}
+.ux-match-extras {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 12px;
+  font-size: 12px;
+  margin: 8px 0;
+}
+.ux-match-extras summary {
+  cursor: pointer;
+  font-weight: 600;
+}
+.ux-match-extras p {
+  font-size: 12px;
+}
+.ux-match-extras .button-link {
+  min-height: 32px;
+  font-size: 12px;
+  padding: 3px 0;
+}
+.ux-next-opponent {
+  display: block;
+  color: var(--muted);
+  font-size: 12px;
+  margin-top: 4px;
+}
+.ux-season-curve {
+  margin: 16px 0;
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+}
+.ux-season-curve summary {
+  cursor: pointer;
+  font-weight: 700;
+}
+.ux-season-curve svg {
+  width: 100%;
+  max-height: 230px;
+}
+.ux-season-curve p {
+  font-size: 14px;
+}
+.ux-season-curve select {
+  max-width: 100%;
+}
+.ux-appearance {
+  margin: 20px 0;
+}
+.ux-global-search {
+  width: min(680px, calc(100vw - 32px));
+  max-height: 85dvh;
+  overflow: auto;
+}
+.ux-global-search input {
+  width: 100%;
+}
+.ux-global-search ul {
+  list-style: none;
+  padding: 0;
+}
+.ux-global-search li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  border-bottom: 1px solid var(--border);
+  padding: 8px 0;
+}
+.ux-global-search li .button-link {
+  text-align: left;
+}
+.ux-global-search small {
+  display: block;
+  color: var(--muted);
+  font-size: 12px;
+}
+.ux-search-trigger {
+  font-size: 24px;
+  min-width: 38px;
+  padding: 5px;
+}
+.ux-connection {
+  position: relative;
+}
+.ux-connection summary {
+  cursor: pointer;
+  list-style: none;
+  font-size: 20px;
+  padding: 8px;
+}
+.ux-connection > div {
+  position: absolute;
+  right: 0;
+  top: 100%;
+  width: min(300px, 85vw);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 14px;
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: 0 8px 28px #0002;
+  z-index: 45;
+  font-size: 13px;
+}
+.ux-undo-message {
+  position: fixed;
+  bottom: 95px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  width: max-content;
+  max-width: calc(100% - 24px);
+  z-index: 60;
+  padding: 10px 16px;
+  border-radius: 12px;
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--border);
+  box-shadow: 0 8px 24px #0002;
+  font-size: 14px;
+}
+.ux-undo-message .button-link {
+  padding: 5px 0;
+  min-height: 32px;
+}
+.ux-install-suggestion {
+  position: fixed;
+  right: 16px;
+  bottom: 155px;
+  width: min(330px, calc(100vw - 32px));
+  z-index: 48;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: 0 8px 32px #0002;
+  padding: 18px;
+  font-size: 14px;
+}
+.ux-install-suggestion > .button-link:first-child {
+  float: right;
+}
+.ux-install-suggestion details {
+  padding: 8px 0;
+}
+.ux-gain-alerts {
+  position: fixed;
+  right: 16px;
+  bottom: 95px;
+  z-index: 46;
+  width: min(340px, calc(100vw - 32px));
+}
+.ux-gain-alerts p {
+  padding: 12px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  border-radius: 12px;
+  box-shadow: 0 5px 20px #0002;
+  font-size: 13px;
+}
+.ux-gain-alerts button {
+  float: right;
+}
+html.adapted-colors {
+  --lamp-left: #2878c8;
+  --lamp-left-text: #2878c8;
+  --lamp-right: #dc7d26;
+  --touch-red: #2878c8;
+  --touch-green: #dc7d26;
+}
+html.adapted-colors .live-score {
+  --touch-red: #2878c8;
+  --touch-green: #dc7d26;
+}
+html.club-arena.adapted-colors .arena-avatar.avatar-0 {
+  background: #2878c8;
+  border-color: #2878c8;
+}
+html.club-arena.adapted-colors .arena-avatar.avatar-1 {
+  background: #dc7d26;
+  border-color: #dc7d26;
+}
+html.club-arena.adapted-colors .touch-strip .touch-cell.by-1 {
+  background: #2878c8;
+}
+html.club-arena.adapted-colors .touch-strip .touch-cell.by-2 {
+  background: #dc7d26;
+}
+html.club-arena.adapted-colors .touch-strip .touch-cell.by-double {
+  background: linear-gradient(135deg, #2878c8 50%, #dc7d26 50%);
+}
+html.club-arena.adapted-colors .piste-live-athlete.lamp-1.is-lit {
+  background: #2878c8;
+}
+html.club-arena.adapted-colors .piste-live-athlete.lamp-2.is-lit {
+  background: #dc7d26;
+}
+@media (max-width: 600px) {
+  html.refonte .match-board .board-head {
+    grid-template-columns: 1fr;
+  }
+  .ux-global-search .filter-row {
+    flex-wrap: wrap;
+  }
+  .ux-search-trigger {
+    min-width: 32px;
+  }
+  .ux-global-search li {
+    flex-wrap: wrap;
+  }
+}
+html.club-arena.adapted-colors .crowd-bar {
+  background: #dc7d26;
+}
+html.club-arena.adapted-colors .crowd-bar > span {
+  background: #2878c8;
+}
+.ux-next-alert {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  padding: 10px 12px;
+  background: var(--surface-2);
+  border-radius: 10px;
+}
+/* Notifications : profils visibles, détails à la demande, sans multiplier les menus. */
+html.club-arena .notification-settings > summary {
+  min-height: 42px;
+}
+html.club-arena .notification-settings .notification-device {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 14px;
+  align-items: center;
+}
+html.club-arena .notification-settings .notification-device p {
+  margin: 4px 0;
+  font-size: 12px;
+}
+html.club-arena .notification-settings .notification-device > .muted {
+  flex-basis: 100%;
+}
+html.club-arena .notification-settings .ux-notification-profile {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px 10px;
+  padding: 12px;
+  margin: 12px 0;
+}
+html.club-arena .notification-settings .ux-notification-profile > small {
+  grid-column: 1/-1;
+  font-size: 12px;
+}
+html.club-arena .notification-settings .ux-notification-profile .check-row {
+  padding: 8px;
+  margin: 0;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  font-size: 14px;
+  min-height: 42px;
+}
+html.club-arena .notification-settings .ux-notification-profile .check-row:has(input:checked) {
+  border-color: var(--accent);
+  color: var(--accent-link);
+}
+html.club-arena .notification-settings .ux-notification-advanced {
+  margin: 10px 0;
+}
+html.club-arena .notification-settings .ux-notification-advanced > summary {
+  cursor: pointer;
+  padding: 10px 0;
+  font-size: 14px;
+  font-weight: 600;
+}
+html.club-arena .notification-settings .ux-notification-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 8px;
+}
+html.club-arena .notification-settings .ux-notification-grid fieldset {
+  min-width: 0;
+  margin: 0;
+  padding: 12px;
+}
+html.club-arena .notification-settings .ux-notification-grid .check-row {
+  gap: 8px;
+  margin: 4px 0;
+  font-size: 13px;
+  align-items: start;
+}
+html.club-arena .notification-settings .ux-notification-grid input[type='checkbox'],
+html.club-arena .notification-settings .ux-notification-grid input[type='radio'] {
+  margin-top: 2px;
+  width: 18px;
+  height: 18px;
+  min-height: 0;
+  flex-shrink: 0;
+}
+html.club-arena .notification-settings .ux-notification-save {
+  position: sticky;
+  bottom: 82px;
+  padding: 10px 0;
+  background: var(--surface);
+  z-index: 2;
+}
+html.club-arena .notification-settings .ux-notification-save button {
+  min-height: 42px;
+  font-size: 14px;
+}
+.ux-challenge-dialog {
+  width: min(480px, calc(100vw - 28px));
+  max-height: 88dvh;
+  overflow: auto;
+  padding: 18px;
+}
+.ux-challenge-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+.ux-challenge-heading h2 {
+  margin: 0 0 12px;
+  font-size: 24px;
+}
+.ux-challenge-image {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: 14px;
+}
+.ux-challenge-text {
+  font-size: 14px;
+  margin: 12px 0 8px;
+}
+.ux-challenge-link {
+  font-weight: 600;
+  font-size: 14px;
+}
+.ux-challenge-dialog .muted {
+  font-size: 12px;
+  line-height: 1.5;
+  margin: 8px 0;
+}
+.ux-challenge-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+.ux-challenge-actions button,
+.ux-challenge-actions a {
+  font-size: 13px;
+  min-height: 40px;
+  padding: 8px 12px;
+}
+@media (max-width: 600px) {
+  html.club-arena .notification-settings .ux-notification-grid {
+    grid-template-columns: 1fr;
+  }
+  html.club-arena .notification-settings .ux-notification-profile {
+    gap: 6px;
+    padding: 10px;
+  }
+  html.club-arena .notification-settings .ux-notification-profile .check-row {
+    font-size: 13px;
+  }
+  .ux-challenge-dialog {
+    padding: 14px;
+  }
+}
+.ux-challenge-heading > button {
+  flex: 0 0 36px;
+  width: 36px;
+  min-height: 36px;
+  height: 36px;
+  padding: 4px;
+  font-size: 20px;
+  display: grid;
+  place-items: center;
+}
+.notification-settings .ux-notification-save > small {
+  margin-right: auto;
+  font-size: 12px;
+}
+html.club-arena .notification-settings {
+  padding: 16px 20px;
+}
+html.club-arena .notification-settings .notification-device {
+  margin: 0;
+  padding: 0;
+}
+html.club-arena .notification-settings .ux-notification-save {
+  padding: 6px 0;
+  margin: 0;
+}
+html.club-arena .notification-settings .ux-notification-advanced {
+  margin: 4px 0;
+}
+.ux-global-search li.ux-search-group {
+  display: block;
+}
+.ux-search-group > details {
+  width: 100%;
+}
+.ux-search-group summary {
+  cursor: pointer;
+  padding: 10px 0;
+}
+/* Le panneau fermé reste une simple ligne, sans réserver la hauteur du contenu. */
+html.club-arena details.notification-settings:not([open]) {
+  padding: 12px 20px;
+  min-height: 0;
+}
+html.club-arena details.notification-settings:not([open]) > summary {
+  min-height: 24px;
+  margin: 0;
+  line-height: 24px;
+}

@@ -7,7 +7,7 @@ const time = (at) => new Date(at).toLocaleTimeString('fr-FR', { hour: '2-digit',
 
 // Bandeau d'état du réseau : hors ligne, mode connexion faible (automatique ou choisi) et pronostics
 // en attente d'envoi.
-export default function ConnectionStatus() {
+export default function ConnectionStatus({ compact = false }) {
   const [offline, setOffline] = useState(!navigator.onLine);
   const [checkedAt, setCheckedAt] = useState(null);
   const [reason, setReason] = useState(lowConnectionReason);
@@ -39,6 +39,44 @@ export default function ConnectionStatus() {
     };
   }, []);
   if (!offline && !reason && !waiting) return null;
+  if (compact)
+    return (
+      <details className="ux-connection" role="status">
+        <summary
+          aria-label={
+            offline ? 'Hors connexion' : waiting ? `${waiting} pronostics en attente` : 'Mode connexion faible'
+          }
+          title={offline ? 'Hors connexion' : 'Connexion faible'}
+        >
+          ◔{waiting > 0 && <small>{waiting}</small>}
+        </summary>
+        <div>
+          <p>
+            {offline
+              ? 'Hors connexion : les données restent disponibles sur cet appareil.'
+              : 'Mode connexion faible : actualisation espacée et affichage allégé.'}
+          </p>
+          {waiting > 0 && <p>{waiting} pronostic(s) en attente d’envoi.</p>}
+          {waiting > 0 && (
+            <button className="button-link" onClick={flush}>
+              Réessayer
+            </button>
+          )}
+          {!offline && reason && (
+            <button
+              className="button-link"
+              onClick={() => {
+                detector?.reset();
+                setDataMode('auto');
+                applyMode();
+              }}
+            >
+              Revenir en mode automatique
+            </button>
+          )}
+        </div>
+      </details>
+    );
   return (
     <div className="connection-status" role="status">
       {offline ? (

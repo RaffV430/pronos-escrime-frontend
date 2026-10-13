@@ -1,3 +1,4 @@
+import { UX_SAVE } from '../lib/uxFeatures';
 import { RESULT_REFRESH_MS } from '../lib/resultSync';
 import { useState, useEffect, useRef } from 'react';
 import API from '../api';
@@ -125,6 +126,7 @@ export default function PodiumPrediction({ selectedCompetitionId, user, adminOnl
       localDraft.discard();
       setDirty(false);
       setMessage('Pronostic enregistré avec succès !');
+      window.dispatchEvent(new Event(UX_SAVE));
     } catch (err) {
       if (err.response?.status === 403) setIsLocked(true);
       setMessage(err.response?.data?.error || 'Erreur lors de l’enregistrement.');

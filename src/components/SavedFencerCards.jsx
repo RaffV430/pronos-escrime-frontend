@@ -1,3 +1,5 @@
+import NextAssaultAlert from './NextAssaultAlert';
+import { nextOpponent } from '../lib/uxFeatures';
 import { RESULT_REFRESH_MS } from '../lib/resultSync';
 import { useResultSync } from '../lib/useResultSync';
 import { fencerProgress, sortFencerCards } from '../lib/fencerProgress';
@@ -200,6 +202,9 @@ export default function SavedFencerCards({ tournaments, userId, onOpen }) {
               {progress.finished ? 'Épreuve terminée pour ce tireur' : appearance ? schedule.strip : 'Favori conservé'}
             </span>
           </small>
+          {!progress.finished && nextOpponent(target?.match, appearance?.entryName) && (
+            <small className="ux-next-opponent">Adversaire : {nextOpponent(target.match, appearance.entryName)}</small>
+          )}
         </span>
         <div className="fencer-card-actions">
           {target && !progress.finished && (
@@ -232,6 +237,7 @@ export default function SavedFencerCards({ tournaments, userId, onOpen }) {
   return (
     <section className="saved-fencer-cards followed-event-fencers" aria-label="Mes tireurs enregistrés">
       <h2>Mes tireurs · {follows.favorites.length}</h2>
+      <NextAssaultAlert userId={userId} appearances={appearances} onOpen={onOpen} now={observedAt} />
       {historyFavorite && <FencerHistory favorite={historyFavorite} onClose={() => setHistoryFavorite(null)} />}
       {seasonFavorite && <FencerSeason favorite={seasonFavorite} onClose={() => setSeasonFavorite(null)} />}
       <p className="saved-fencer-refresh">Mise à jour automatique</p>

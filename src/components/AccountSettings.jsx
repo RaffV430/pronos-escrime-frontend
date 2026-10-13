@@ -1,3 +1,4 @@
+import { UxAppearance } from './UxSettings';
 import ClubProfile from './ClubProfile';
 import { useState } from 'react';
 import API from '../api';
@@ -102,6 +103,7 @@ export default function AccountSettings({ user, onDeleted, onPublicListingSaved 
       </p>
 
       <ThemeSettings />
+      <UxAppearance userId={user.id} />
 
       <PublicListing initial={user.publicListing} onSaved={onPublicListingSaved} />
 

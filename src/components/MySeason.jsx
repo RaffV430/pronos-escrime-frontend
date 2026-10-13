@@ -1,3 +1,4 @@
+import SeasonCurve from './SeasonCurve';
 import { useEffect, useMemo, useState } from 'react';
 import API from '../api';
 import { roundLabel } from './matchPresentation';
@@ -93,6 +94,7 @@ export default function MySeason({ userId, playerName = '' }) {
             {totals.podium} · Défis {totals.challenge}
             {totals.adjustment !== 0 && ` · Ajustements ${signedPoints(totals.adjustment)}`}
           </p>
+          <SeasonCurve tournaments={data.tournaments} />
           <SeasonBadges badges={data.badges} />
           <SeasonAnalysis analysis={data.analysis} />
 
