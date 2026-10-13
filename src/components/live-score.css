@@ -1,0 +1,72 @@
+.live-score {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 10px;
+  margin: 6px 0;
+  padding: 8px 12px;
+  border-radius: 12px;
+  border: 1px solid #e5484d66;
+  background: #e5484d14;
+  font-size: 13px;
+}
+.live-score-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: 11px;
+  color: #e5484d;
+}
+.live-score-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #e5484d;
+  animation: live-score-pulse 1.6s ease-out infinite;
+}
+@keyframes live-score-pulse {
+  0% {
+    box-shadow: 0 0 0 0 #e5484d99;
+  }
+  70% {
+    box-shadow: 0 0 0 7px #e5484d00;
+  }
+  100% {
+    box-shadow: 0 0 0 0 #e5484d00;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .live-score-dot {
+    animation: none;
+  }
+}
+.live-score-meta {
+  color: var(--muted, #5b6b80);
+  font-variant-numeric: tabular-nums;
+}
+.live-score-value {
+  margin-left: auto;
+  font-size: 20px;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em;
+}
+.live-score-value span {
+  display: inline-block;
+  min-width: 1.2em;
+  text-align: center;
+  border-radius: 6px;
+}
+.live-score-value .is-lit {
+  background: #e5484d;
+  color: #fff;
+}
+.live-score.is-compact {
+  margin: 4px 0 0;
+  padding: 4px 8px;
+}
+.live-score.is-compact .live-score-value {
+  font-size: 16px;
+}
