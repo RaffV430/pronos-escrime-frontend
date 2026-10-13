@@ -141,6 +141,7 @@ export default {
   'live.strip': 'Strip {strip}',
   'live.period': ({ n }) => `${ordinal(n)} period`,
   'live.periodShort': ({ n }) => `${ordinal(n)} per.`,
+  'live.invalidTouch': 'Off-target touch',
   'live.seeBig': 'Full screen →',
   'live.openAria': 'Live, {s1} to {s2}: open the full view',
   'live.noticeLive': ({ n }) =>

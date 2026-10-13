@@ -323,10 +323,34 @@ html.club-arena .app-shell .touch-strip.is-compact button.touch-cell {
 .club-arena .piste-live-athlete.is-lit :is(h2, small, .piste-live-score-number) {
   color: #fff;
 }
-.club-arena .piste-live-athlete.is-white {
+.club-arena .piste-live-athlete:is(.lamp-1, .lamp-2).is-white {
+  background: #ffffff;
   box-shadow:
-    inset 0 0 0 4px #ffffff,
-    inset 0 0 36px #ffffffcc;
+    inset 0 0 0 4px #9aa6b8,
+    0 0 24px #9aa6b866;
+}
+.white-lamp-badge {
+  grid-column: 1 / -1;
+  justify-self: start;
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: #13213a;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+.white-lamp-badge::before {
+  content: '';
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 0 8px #fff;
 }
 @media (prefers-reduced-motion: reduce) {
   .club-arena .piste-live-athlete {

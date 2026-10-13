@@ -143,6 +143,7 @@ export default {
   'live.strip': 'Piste {strip}',
   'live.period': ({ n }) => `${n === 1 ? '1re' : `${n}e`} période`,
   'live.periodShort': ({ n }) => `${n === 1 ? '1re' : `${n}e`} pér.`,
+  'live.invalidTouch': 'Touche non valable',
   'live.seeBig': 'Voir en grand →',
   'live.openAria': 'En direct, {s1} à {s2} : voir le suivi en grand',
   'live.noticeLive': ({ n }) =>

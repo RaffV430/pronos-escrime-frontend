@@ -139,6 +139,11 @@ export default function PisteLive({
                       .join('')}
                   </span>
                   <AdaptiveFencerName name={match[`player${i}`]} country={match[`player${i}Country`]} />
+                  {isLive(match.id) &&
+                    !live.get(match.id)[`fencer${i}`]?.lamp &&
+                    live.get(match.id)[`fencer${i}`]?.white && (
+                      <span className="white-lamp-badge">{t('live.invalidTouch')}</span>
+                    )}
                   <strong className="piste-live-score-number">
                     {match.isFinished && Number.isInteger(match[`score${i}`])
                       ? match[`score${i}`]
