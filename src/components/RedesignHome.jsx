@@ -167,7 +167,8 @@ function usePlayer(user) {
       API.get('/matches/leaderboard', { signal: c.signal }),
       API.get('/me/season', { signal: c.signal }),
       API.get('/community/leagues', { signal: c.signal }),
-    ]).then(([board, season, leagues]) => {
+      API.get('/community/favorite', { signal: c.signal }),
+    ]).then(([board, season, leagues, favorite]) => {
       if (c.signal.aborted) return;
       const rows = board.status === 'fulfilled' && Array.isArray(board.value.data) ? board.value.data : [];
       const index = rows.findIndex((r) => r.id === user.id);
@@ -179,7 +180,13 @@ function usePlayer(user) {
         points: row?.totalPoints ?? 0,
         gap: ahead && row ? Math.max(0, ahead.totalPoints - row.totalPoints) : null,
         best: season.status === 'fulfilled' ? season.value.data?.analysis?.bestCall || null : null,
-        leagues: leagues.status === 'fulfilled' && Array.isArray(leagues.value.data) ? leagues.value.data : [],
+        favoriteLeague:
+          leagues.status === 'fulfilled' && favorite.status === 'fulfilled'
+            ? (Array.isArray(leagues.value.data) ? leagues.value.data : []).find(
+                (league) => league.id === favorite.value.data?.leagueId,
+              ) || null
+            : null,
+        favoriteFailed: leagues.status === 'rejected' || favorite.status === 'rejected',
       });
     });
     return () => c.abort();
@@ -562,26 +569,37 @@ export default function RedesignHome({ user = null, onNavigate = null }) {
                 {t('home.seeSeason')}
               </a>
             </article>
-            <article className="rd-card">
-              <p className="rd-card-tag">{t('home.myLeagues')}</p>
-              {me?.leagues?.length ? (
-                <ul className="rd-leagues">
-                  {me.leagues.slice(0, 3).map((l) => (
-                    <li key={l.id}>
-                      <span className="rd-league-avatar" aria-hidden="true">
-                        {l.name.slice(0, 2).toUpperCase()}
-                      </span>
-                      <strong>{l.name}</strong>
-                      <span>{t('home.members', { n: l._count?.members ?? '' })}</span>
-                    </li>
-                  ))}
-                </ul>
+            <article className="rd-card rd-favorite-league">
+              <p className="rd-card-tag">★ Ma délégation favorite</p>
+              {me?.favoriteLeague ? (
+                <div className="rd-favorite-summary">
+                  <span className="rd-league-avatar" aria-hidden="true">
+                    {me.favoriteLeague.name.slice(0, 2).toUpperCase()}
+                  </span>
+                  <div>
+                    <h3>{me.favoriteLeague.name}</h3>
+                    <p className="rd-muted">
+                      {me.favoriteLeague._count?.members ?? 0}{' '}
+                      {me.favoriteLeague._count?.members === 1 ? 'membre' : 'membres'}
+                    </p>
+                  </div>
+                </div>
               ) : (
-                <p className="rd-muted">{t('home.leaguesHint')}</p>
+                <p className="rd-muted">
+                  {!me
+                    ? 'Chargement de votre favorite…'
+                    : me.favoriteFailed
+                      ? 'Votre délégation favorite est momentanément indisponible.'
+                      : 'Choisissez votre délégation favorite pour la retrouver ici.'}
+                </p>
               )}
-              <a href="/communaute" onClick={go('community')}>
-                {me?.leagues?.length ? t('home.seeRankings') : t('home.createLeague')}
-              </a>
+              {me?.favoriteLeague ? (
+                <a href={`/communaute?league=${me.favoriteLeague.id}`}>Voir son classement →</a>
+              ) : (
+                <a href="/communaute" onClick={go('community')}>
+                  {me?.favoriteFailed ? 'Voir mes délégations →' : 'Choisir ma favorite →'}
+                </a>
+              )}
             </article>
           </div>
         </section>
