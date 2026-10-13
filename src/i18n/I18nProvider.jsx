@@ -6,7 +6,7 @@ import { initialLanguage, localeOf, saveLanguage } from './language';
 import { translate } from './translate';
 
 export default function I18nProvider({ children }) {
-  const [lang, setLangState] = useState(initialLanguage);
+  const [lang, setLangState] = useState(() => (import.meta.env.DEV ? initialLanguage() : 'fr'));
   useEffect(() => {
     document.documentElement.lang = lang;
   }, [lang]);
@@ -15,6 +15,7 @@ export default function I18nProvider({ children }) {
       lang,
       locale: localeOf(lang),
       setLang: (next) => {
+        if (!import.meta.env.DEV) return;
         saveLanguage(next);
         setLangState(next);
       },

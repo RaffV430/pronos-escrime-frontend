@@ -139,10 +139,9 @@ const MORE_ICON = (
     <circle cx="18" cy="12" r="1.8" />
   </svg>
 );
-// Bascule entre l'ancien et le nouveau design, visible uniquement en local.
+// Bascule temporaire entre les deux designs, avec choix mémorisé sur cet appareil.
 function RefonteToggle() {
   const { t } = useI18n();
-  if (!import.meta.env.DEV) return null;
   return (
     <button type="button" className="refonte-toggle" onClick={() => setRefonte(!REFONTE)}>
       {REFONTE ? t('refonte.toOld') : t('refonte.toNew')}
@@ -818,15 +817,17 @@ export default function App() {
                     >
                       {t('menu.support')}
                     </button>
-                    <button
-                      aria-label={t('lang.switchAria')}
-                      onClick={() => {
-                        setAccountOpen(false);
-                        setLang(lang === 'fr' ? 'en' : 'fr');
-                      }}
-                    >
-                      {t('lang.label')} : {t('lang.switch')}
-                    </button>
+                    {import.meta.env.DEV && (
+                      <button
+                        aria-label={t('lang.switchAria')}
+                        onClick={() => {
+                          setAccountOpen(false);
+                          setLang(lang === 'fr' ? 'en' : 'fr');
+                        }}
+                      >
+                        {t('lang.label')} : {t('lang.switch')}
+                      </button>
+                    )}
                     <button
                       className="user-menu-separated"
                       onClick={() => {

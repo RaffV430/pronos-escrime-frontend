@@ -291,14 +291,16 @@ export default function RedesignHome({ user = null, onNavigate = null }) {
           <nav className="rd-top-links" aria-label="Navigation">
             <a href="/calendrier">{t('home.calendarLink')}</a>
             <a href="/resultats">{t('home.resultsLink')}</a>
-            <button
-              type="button"
-              className="rd-lang"
-              aria-label={t('lang.switchAria')}
-              onClick={() => setLang(lang === 'fr' ? 'en' : 'fr')}
-            >
-              {lang === 'fr' ? 'EN' : 'FR'}
-            </button>
+            {import.meta.env.DEV && (
+              <button
+                type="button"
+                className="rd-lang"
+                aria-label={t('lang.switchAria')}
+                onClick={() => setLang(lang === 'fr' ? 'en' : 'fr')}
+              >
+                {lang === 'fr' ? 'EN' : 'FR'}
+              </button>
+            )}
             <a className="rd-top-cta" href={signedIn ? '/accueil' : '/connexion'}>
               {signedIn ? t('menu.space') : t('home.login')}
             </a>
