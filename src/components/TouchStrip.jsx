@@ -24,22 +24,30 @@ export default function TouchStrip({ history, player1, player2, compact = false,
           </small>
         )}
       </p>
-      <div className="touch-strip-cells" role="list">
-        {touches.map((t, i) => (
-          <button
-            type="button"
-            role="listitem"
-            key={i}
-            className={`touch-cell by-${t.by}${picked === i ? ' is-picked' : ''}`}
-            style={{ '--strength': (0.45 + (0.55 * (i + 1)) / touches.length).toFixed(2) }}
-            aria-label={`${t.score1}–${t.score2}, ${who(t)}, ${clockLabel(t.clock)}`}
-            onClick={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              setPicked(picked === i ? null : i);
-            }}
-          />
-        ))}
+      <div className="touch-strip-track">
+        <div className="touch-strip-cells" role="list">
+          {touches.map((t, i) => (
+            <button
+              type="button"
+              role="listitem"
+              key={i}
+              className={`touch-cell by-${t.by}${picked === i ? ' is-picked' : ''}`}
+              data-last={i === touches.length - 1 ? '' : undefined}
+              aria-label={`${t.score1}–${t.score2}, ${who(t)}, ${clockLabel(t.clock)}`}
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                setPicked(picked === i ? null : i);
+              }}
+            />
+          ))}
+        </div>
+        {touches.length > 1 && (
+          <p className="touch-strip-axis" aria-hidden="true">
+            <span>1re touche</span>
+            <span>dernière →</span>
+          </p>
+        )}
       </div>
       {shown && (
         <p className="touch-strip-caption">

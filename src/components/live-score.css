@@ -71,131 +71,6 @@
   font-size: 16px;
 }
 
-/* Tableau de score en grand (Direct) */
-.live-board {
-  --red: #ef5a62;
-  --green: #4cc38a;
-  background: #0d131c;
-  color: #eef2f7;
-  border: 1px solid #ffffff1a;
-  border-radius: 22px;
-  overflow: hidden;
-  margin: 10px 0;
-}
-.live-board-lamps {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  height: 6px;
-}
-.live-board-lamps span {
-  background: #ffffff14;
-  transition: background 0.15s ease;
-}
-.live-board-lamps span:first-child.is-lit {
-  background: var(--red);
-  box-shadow: 0 0 18px var(--red);
-}
-.live-board-lamps span:last-child.is-lit {
-  background: var(--green);
-  box-shadow: 0 0 18px var(--green);
-}
-.live-board-duel {
-  position: relative;
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-}
-.live-board-side {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  text-align: center;
-  gap: 4px;
-  padding: 18px 10px 14px;
-  min-width: 0;
-}
-.live-board-side.side-1 {
-  background: linear-gradient(180deg, #ef5a6233, #ef5a620d);
-}
-.live-board-side.side-2 {
-  background: linear-gradient(180deg, #4cc38a2e, #4cc38a0a);
-}
-.live-board-avatar {
-  display: grid;
-  place-items: center;
-  width: 58px;
-  height: 58px;
-  border-radius: 50%;
-  font:
-    800 20px 'Barlow Condensed',
-    sans-serif;
-  color: #fff;
-  border: 3px solid currentColor;
-}
-.side-1 .live-board-avatar {
-  background: #b9473b;
-  border-color: var(--red);
-}
-.side-2 .live-board-avatar {
-  background: #3f8a5e;
-  border-color: var(--green);
-}
-.live-board-name {
-  font:
-    800 clamp(18px, 5.5vw, 26px) / 1.05 'Barlow Condensed',
-    sans-serif;
-  text-transform: uppercase;
-  overflow-wrap: anywhere;
-}
-.live-board-side small {
-  color: #a3adbd;
-  font-size: 12px;
-}
-.live-board-score {
-  font:
-    800 clamp(64px, 22vw, 112px) / 1 'Barlow Condensed',
-    sans-serif;
-  font-variant-numeric: tabular-nums;
-  color: #eef2f7;
-  margin-top: 6px;
-}
-.side-1.is-leading .live-board-score {
-  color: var(--red);
-}
-.side-2.is-leading .live-board-score {
-  color: var(--green);
-}
-.live-board-clock {
-  position: absolute;
-  left: 50%;
-  top: 46%;
-  transform: translate(-50%, -50%);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 8px 12px;
-  border-radius: 14px;
-  background: #0b1018;
-  border: 1px solid #ffffff26;
-  box-shadow: 0 6px 20px #0008;
-}
-.live-board-clock b {
-  font:
-    800 26px/1 'Barlow Condensed',
-    sans-serif;
-  color: #ffc531;
-  font-variant-numeric: tabular-nums;
-}
-.live-board-clock small {
-  font-size: 10px;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: #a3adbd;
-}
-.live-board .touch-strip {
-  border-top: 1px solid #ffffff14;
-  padding: 12px 14px 14px;
-}
-
 /* Fil des touches */
 .touch-strip {
   margin: 6px 0;
@@ -331,15 +206,64 @@
   padding: 0 6px;
 }
 
-/* Chrono entre les deux scores (pas sur les noms), cases carrées quel que soit le thème */
-.live-board-clock {
-  top: auto;
-  bottom: 22%;
-  transform: translate(-50%, 50%);
-}
+/* Cases carrées quel que soit le thème */
 html.club-arena .app-shell .touch-strip button.touch-cell {
   border-radius: 5px;
 }
 html.club-arena .app-shell .touch-strip.is-compact button.touch-cell {
   border-radius: 3px;
+}
+
+/* Couleurs franches et sens de lecture (gauche = première touche, droite = dernière) */
+.touch-strip {
+  --touch-red: #e11d2e;
+  --touch-green: #0f9d58;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: var(--surface-2, #eef2f8);
+}
+.club-arena .touch-strip .touch-cell {
+  opacity: 1;
+}
+.club-arena .touch-strip .touch-cell.by-1,
+.club-arena .touch-strip .touch-cell.by-1:hover:not(:disabled) {
+  background: var(--touch-red);
+}
+.club-arena .touch-strip .touch-cell.by-2,
+.club-arena .touch-strip .touch-cell.by-2:hover:not(:disabled) {
+  background: var(--touch-green);
+}
+.club-arena .touch-strip .touch-cell.by-double,
+.club-arena .touch-strip .touch-cell.by-double:hover:not(:disabled) {
+  background: linear-gradient(135deg, var(--touch-red) 50%, var(--touch-green) 50%);
+}
+.club-arena .touch-strip .touch-cell[data-last] {
+  outline: 2px solid var(--text, #13213a);
+  outline-offset: 2px;
+}
+.touch-strip-title {
+  color: var(--muted, #5b6b80);
+}
+.touch-strip-axis {
+  display: flex;
+  justify-content: space-between;
+  margin: 4px 0 0;
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted, #5b6b80);
+}
+.touch-strip-caption small {
+  color: var(--muted, #5b6b80);
+}
+.touch-strip.is-compact {
+  padding: 6px 8px;
+}
+.touch-strip-track {
+  display: inline-flex;
+  flex-direction: column;
+  max-width: 100%;
+}
+.touch-strip-axis {
+  gap: 16px;
 }
