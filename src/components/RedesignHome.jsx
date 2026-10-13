@@ -194,6 +194,57 @@ function usePlayer(user) {
   return me;
 }
 
+function FavoriteRanking({ leagueId, userId }) {
+  const [ranking, setRanking] = useState(null);
+  const [failed, setFailed] = useState(false);
+  useEffect(() => {
+    const controller = new AbortController();
+    API.get(`/community/leagues/${leagueId}`, { signal: controller.signal })
+      .then(({ data }) => {
+        if (!controller.signal.aborted) setRanking(Array.isArray(data.ranking) ? data.ranking : []);
+      })
+      .catch(() => {
+        if (!controller.signal.aborted) setFailed(true);
+      });
+    return () => controller.abort();
+  }, [leagueId]);
+  const me = ranking?.find((row) => row.id === userId);
+  const points = (value) => Number(value).toLocaleString('fr-FR', { maximumFractionDigits: 2 });
+  return (
+    <div className="rd-favorite-ranking">
+      <p className="rd-muted">Classement de la saison</p>
+      {me && (
+        <div className="rd-favorite-stats">
+          <span>
+            Votre place <strong>#{me.rank}</strong>
+          </span>
+          <span>
+            Vos points <strong>{points(me.totalPoints)} pts</strong>
+          </span>
+        </div>
+      )}
+      {ranking?.length > 0 && (
+        <ol className="rd-favorite-top" aria-label="Premiers membres de la délégation">
+          {ranking.slice(0, 3).map((row) => (
+            <li key={row.id} className={row.id === userId ? 'is-me' : ''}>
+              <span>#{row.rank}</span>
+              <strong>
+                {row.name}
+                {row.id === userId ? ' · Vous' : ''}
+              </strong>
+              <span>{points(row.totalPoints)} pts</span>
+            </li>
+          ))}
+        </ol>
+      )}
+      {!ranking && (
+        <p className="rd-muted">{failed ? 'Aperçu du classement indisponible.' : 'Chargement du classement…'}</p>
+      )}
+      {ranking?.length === 0 && <p className="rd-muted">Le classement apparaîtra après les premiers pronostics.</p>}
+    </div>
+  );
+}
+
 export default function RedesignHome({ user = null, onNavigate = null }) {
   const me = usePlayer(user);
   const { t, lang, locale, setLang } = useI18n();
@@ -592,6 +643,9 @@ export default function RedesignHome({ user = null, onNavigate = null }) {
                       ? 'Votre délégation favorite est momentanément indisponible.'
                       : 'Choisissez votre délégation favorite pour la retrouver ici.'}
                 </p>
+              )}
+              {me?.favoriteLeague && (
+                <FavoriteRanking key={me.favoriteLeague.id} leagueId={me.favoriteLeague.id} userId={user.id} />
               )}
               {me?.favoriteLeague ? (
                 <a href={`/communaute?league=${me.favoriteLeague.id}`}>Voir son classement →</a>

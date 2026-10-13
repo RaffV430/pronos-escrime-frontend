@@ -1042,3 +1042,59 @@
 .rd-favorite-summary p {
   margin: 0;
 }
+
+.rd-favorite-league .rd-favorite-summary {
+  margin-bottom: 0;
+}
+.rd-favorite-ranking > p {
+  margin: 0 0 8px;
+  font-size: 12px;
+}
+.rd-favorite-stats {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+.rd-favorite-stats > span {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 10px;
+  background: var(--rd-surface-2);
+  border-radius: 10px;
+  font-size: 12px;
+}
+.rd-favorite-stats strong {
+  font-size: 16px;
+}
+.rd-favorite-top {
+  list-style: none;
+  margin: 0 0 8px;
+  padding: 0;
+  display: grid;
+  gap: 6px;
+}
+.rd-favorite-top li {
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+}
+.rd-favorite-top strong {
+  overflow-wrap: anywhere;
+}
+.rd-favorite-top li > span {
+  color: var(--rd-muted);
+}
+.rd-favorite-top .is-me strong {
+  color: var(--rd-accent);
+}
+@media (max-width: 380px) {
+  .rd-favorite-stats > span {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
