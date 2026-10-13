@@ -963,3 +963,18 @@
   background: #7fb2ff;
   color: #06101f;
 }
+
+/* Bouton de langue (visiteurs) */
+.rd .rd-lang {
+  min-height: 32px;
+  padding: 0 10px;
+  border-radius: 999px;
+  border: 1px solid #ffffff38;
+  background: transparent;
+  color: var(--rd-hero-text);
+  font:
+    700 12px 'Barlow',
+    sans-serif;
+  letter-spacing: 0.08em;
+  cursor: pointer;
+}

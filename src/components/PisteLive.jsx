@@ -1,5 +1,6 @@
 import AdaptiveFencerName from './AdaptiveFencerName';
-import { eventNameFr } from '../lib/eventName';
+import { eventNameFor } from '../lib/eventName';
+import { useI18n } from '../i18n/context';
 import { useState } from 'react';
 import CrowdTrend from './CrowdTrend';
 import { roundLabel, groupMatches } from './matchPresentation';
@@ -20,6 +21,15 @@ export default function PisteLive({
   initialMatchId = null,
   embedded = false,
 }) {
+  const { t, lang } = useI18n();
+  const STATUS = {
+    'Vérification en cours': 'status.checking',
+    'Résultat publié': 'status.published',
+    'Résultat attendu': 'status.waiting',
+    'Pronostics ouverts': 'status.open',
+  };
+  const statusLabel = (m) => t(STATUS[pisteStatus(m)] || pisteStatus(m));
+  const roundName = (r) => (['T4', 'T2'].includes(r) ? t(`round.${r}`) : roundLabel(r));
   const [round, setRound] = useState('');
   const [strip, setStrip] = useState('');
   const [mine, setMine] = useState(false);
@@ -52,65 +62,61 @@ export default function PisteLive({
       {!embedded && (
         <header className="piste-live-heading">
           <div>
-            <p className="arena-eyebrow">AU BORD DES PISTES</p>
-            <h1>Suivi des rencontres</h1>
-            <p>{eventNameFr(competition?.name) || 'Choisissez une épreuve'}</p>
+            <p className="arena-eyebrow">{t('live.eyebrow')}</p>
+            <h1>{t('live.heading')}</h1>
+            <p>{eventNameFor(lang, competition?.name) || t('live.chooseEvent')}</p>
           </div>
           <button className="button-secondary" onClick={() => onPlay(match)}>
-            Pronostiquer →
+            {t('live.play')}
           </button>
         </header>
       )}
-      <p className="piste-live-notice">
-        {liveCount
-          ? `${liveCount} ${liveCount > 1 ? 'rencontres' : 'rencontre'} en direct : score et chrono des pistes en temps réel. Les points sont attribués sur le résultat officiel.`
-          : 'Résultats actualisés automatiquement depuis le dernier import officiel. Les scores en direct apparaissent dès qu’une rencontre suivie est sur la piste.'}
-      </p>
-      {stale && <p role="status">Connexion interrompue : les dernières données reçues restent affichées.</p>}
+      <p className="piste-live-notice">{liveCount ? t('live.noticeLive', { n: liveCount }) : t('live.noticeIdle')}</p>
+      {stale && <p role="status">{t('live.stale')}</p>}
       {error && <p role="alert">{error}</p>}
       <div className="piste-live-filters">
         <label>
-          Tour
+          {t('live.round')}
           <select value={round} onChange={(e) => setRound(e.target.value)}>
-            <option value="">Tous les tours</option>
+            <option value="">{t('live.allRounds')}</option>
             {groupMatches(matches).map((g) => (
               <option key={g.round} value={g.round}>
-                {roundLabel(g.round)}
+                {roundName(g.round)}
               </option>
             ))}
           </select>
         </label>
         <label>
-          Piste
+          {t('live.stripLabel')}
           <select value={strip} onChange={(e) => setStrip(e.target.value)}>
-            <option value="">Toutes les pistes</option>
+            <option value="">{t('live.allStrips')}</option>
             {strips.map((s) => (
               <option key={s} value={s}>
-                Piste {s}
+                {t('live.stripOption', { strip: s })}
               </option>
             ))}
           </select>
         </label>
         <button className="button-secondary" aria-pressed={mine} onClick={() => setMine(!mine)}>
-          Mes pronos seulement
+          {t('live.mineOnly')}
         </button>
       </div>
       {!ready ? (
-        <p>Chargement des rencontres…</p>
+        <p>{t('live.loading')}</p>
       ) : !match ? (
         <div className="feature-panel">
-          <h2>Aucune rencontre pour ces critères</h2>
-          <p>Les affiches apparaîtront dès leur import officiel.</p>
+          <h2>{t('live.none')}</h2>
+          <p>{t('live.noneHint')}</p>
         </div>
       ) : (
         <>
           <article className="piste-live-score" key={match.id}>
             <div className="piste-live-meta">
               <span>
-                {roundLabel(match.round)}
-                {match.strip ? ` · Piste ${match.strip}` : ''}
+                {roundName(match.round)}
+                {match.strip ? ` · ${t('live.strip', { strip: match.strip })}` : ''}
               </span>
-              <span>{pisteStatus(match)}</span>
+              <span>{statusLabel(match)}</span>
             </div>
             <LiveScore live={live.get(match.id)} />
             <div className="piste-live-duel">
@@ -142,44 +148,36 @@ export default function PisteLive({
             />
             <div className="piste-live-panels">
               <section>
-                <p className="arena-eyebrow">VOTRE PRONOSTIC</p>
+                <p className="arena-eyebrow">{t('live.yourPrediction')}</p>
                 <h3>
-                  {prediction ? `${prediction.predictedScore1} – ${prediction.predictedScore2}` : 'Non renseigné'}
+                  {prediction ? `${prediction.predictedScore1} – ${prediction.predictedScore2}` : t('live.notSet')}
                 </h3>
-                <p>
-                  {points === null
-                    ? 'Les points seront affichés après validation du résultat.'
-                    : `${points} ${points > 1 ? 'points gagnés' : 'point gagné'}`}
-                </p>
+                <p>{points === null ? t('live.pointsLater') : t('live.pointsWon', { n: points })}</p>
               </section>
               <section>
-                <p className="arena-eyebrow">LES CHOIX DES JOUEURS</p>
-                {match.crowd?.total ? (
-                  <CrowdTrend match={match} />
-                ) : (
-                  <p>Tendances disponibles après la clôture des pronostics, si des choix ont été enregistrés.</p>
-                )}
+                <p className="arena-eyebrow">{t('live.crowd')}</p>
+                {match.crowd?.total ? <CrowdTrend match={match} /> : <p>{t('live.crowdLater')}</p>}
               </section>
             </div>
             {onFollow && (
               <div className="filter-row">
                 <button className="button-secondary" onClick={() => onFollow?.(match)}>
-                  Voir dans le tableau →
+                  {t('live.inBracket')}
                 </button>
                 <button className="button-secondary" onClick={() => onPlay(match)}>
-                  Pronostic de ce match →
+                  {t('live.thisPrediction')}
                 </button>
               </div>
             )}
             {source && (
               <a href={source} target="_blank" rel="noreferrer">
-                Voir le suivi officiel ↗
+                {t('live.official')}
               </a>
             )}
           </article>
           <div className="piste-live-bottom">
             <section>
-              <h2>Les rencontres de l’épreuve</h2>
+              <h2>{t('live.matches')}</h2>
               <div className="piste-live-grid">
                 {filtered.map((m) => (
                   <button
@@ -189,8 +187,9 @@ export default function PisteLive({
                     onClick={() => setSelectedId(m.id)}
                   >
                     <small>
-                      {roundLabel(m.round)}
-                      {m.strip ? ` · Piste ${m.strip}` : ''} · {isLive(m.id) ? '● En direct' : pisteStatus(m)}
+                      {roundName(m.round)}
+                      {m.strip ? ` · ${t('live.strip', { strip: m.strip })}` : ''} ·{' '}
+                      {isLive(m.id) ? t('live.tileLive') : statusLabel(m)}
                     </small>
                     <span>
                       {m.player1}
@@ -205,7 +204,7 @@ export default function PisteLive({
               </div>
             </section>
             <aside className="feature-panel">
-              <h2>Derniers résultats</h2>
+              <h2>{t('live.latest')}</h2>
               {finished.length ? (
                 finished.map((m) => {
                   const p = pistePrediction(m, userId);
@@ -215,18 +214,14 @@ export default function PisteLive({
                         {m.player1} / {m.player2}
                       </strong>
                       <p>
-                        {roundLabel(m.round)} · {m.score1 ?? '—'} – {m.score2 ?? '—'}
+                        {roundName(m.round)} · {m.score1 ?? '—'} – {m.score2 ?? '—'}
                       </p>
-                      {p.points !== null && (
-                        <b className="piste-live-points">
-                          +{p.points} {p.points > 1 ? 'points' : 'point'}
-                        </b>
-                      )}
+                      {p.points !== null && <b className="piste-live-points">{t('live.points', { n: p.points })}</b>}
                     </div>
                   );
                 })
               ) : (
-                <p>Les résultats publiés apparaîtront ici.</p>
+                <p>{t('live.resultsSoon')}</p>
               )}
             </aside>
           </div>

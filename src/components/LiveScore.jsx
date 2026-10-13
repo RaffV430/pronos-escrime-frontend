@@ -1,12 +1,13 @@
 // Bandeau « En direct » d'une rencontre : piste, chrono, période et score qui évolue.
 // Avec onOpen, tout le bandeau ouvre le suivi en grand dans le Direct.
 import { clockLabel } from '../lib/useLiveScores';
+import { useI18n } from '../i18n/context';
 import './live-score.css';
 
 export default function LiveScore({ live, compact = false, onOpen = null }) {
+  const { t } = useI18n();
   if (!live || live.finished) return null;
-  const period =
-    live.period > 0 && live.period < 10 ? ` · ${live.period === 1 ? '1re' : `${live.period}e`} période` : '';
+  const period = live.period > 0 && live.period < 10 ? ` · ${t('live.period', { n: live.period })}` : '';
   const Tag = onOpen ? 'button' : 'div';
   return (
     <Tag
@@ -14,7 +15,7 @@ export default function LiveScore({ live, compact = false, onOpen = null }) {
       className={`live-score${compact ? ' is-compact' : ''}`}
       role={onOpen ? undefined : 'status'}
       aria-live="polite"
-      aria-label={onOpen ? `En direct, ${live.score1} à ${live.score2} : voir le suivi en grand` : undefined}
+      aria-label={onOpen ? t('live.openAria', { s1: live.score1, s2: live.score2 }) : undefined}
       onClick={
         onOpen
           ? (e) => {
@@ -27,10 +28,10 @@ export default function LiveScore({ live, compact = false, onOpen = null }) {
     >
       <span className="live-score-tag">
         <span className="live-score-dot" aria-hidden="true" />
-        En direct
+        {t('live.badge')}
       </span>
       <span className="live-score-meta">
-        Piste {live.strip}
+        {t('live.strip', { strip: live.strip })}
         {clockLabel(live.clock) && ` · ${clockLabel(live.clock)}`}
         {period}
       </span>
@@ -38,7 +39,7 @@ export default function LiveScore({ live, compact = false, onOpen = null }) {
         <span className={live.fencer1?.lamp ? 'is-lit' : undefined}>{live.score1}</span>–
         <span className={live.fencer2?.lamp ? 'is-lit' : undefined}>{live.score2}</span>
       </b>
-      {onOpen && <span className="live-score-open">Voir en grand →</span>}
+      {onOpen && <span className="live-score-open">{t('live.seeBig')}</span>}
     </Tag>
   );
 }

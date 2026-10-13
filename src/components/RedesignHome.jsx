@@ -2,7 +2,8 @@
 // du calendrier et des derniers podiums. Ne remplace aucune page existante.
 import { useEffect, useMemo, useState } from 'react';
 import API from '../api';
-import { eventNameFr } from '../lib/eventName';
+import { eventLabelFor, eventNameFor } from '../lib/eventName';
+import { useI18n } from '../i18n/context';
 import { segment } from '../lib/routes';
 import './redesign.css';
 
@@ -11,12 +12,14 @@ const WEAPONS = {
   Épée: { key: 'epee', short: 'E' },
   Sabre: { key: 'sabre', short: 'S' },
 };
-const GENDERS = { H: 'Hommes', F: 'Dames', HD: 'Hommes & Dames', D: 'Dames' };
-const CATEGORY = (c) =>
-  c === 'SENIOR' ? 'Seniors' : /^V\d$/.test(c) ? 'Vétérans' : /^M\d+$/.test(c) ? c : c.toLowerCase();
-const categories = (list = []) => [...new Set(list.map(CATEGORY))].join(' · ');
+const gender = (t, g) => (['H', 'F', 'D', 'HD'].includes(g) ? t(`gender.${g}`) : '');
+const CATEGORY = (t, c) =>
+  c === 'SENIOR' ? t('category.SENIOR') : /^V\d$/.test(c) ? t('category.VET') : /^M\d+$/.test(c) ? c : c.toLowerCase();
+const categories = (t, list = []) => [...new Set(list.map((c) => CATEGORY(t, c)))].join(' · ');
 const day = (iso) => new Date(`${iso}T12:00:00`);
-const dateLabel = (iso, opts) => day(iso).toLocaleDateString('fr-FR', opts);
+const dateLabel = (locale, iso, opts) => day(iso).toLocaleDateString(locale, opts);
+// Nom d'épreuve sans l'arme (déjà montrée par la pastille).
+const withoutWeapon = (text) => text.replace(/^(Fleuret|Épée|Sabre|Foil) · /, '');
 const weaponOf = (name = '') =>
   /foil|fleuret/i.test(name)
     ? 'Fleuret'
@@ -67,7 +70,6 @@ function withDemo(events) {
   );
   return [...events, ...extra].sort((a, b) => a.start.localeCompare(b.start) || byWeapon(a, b));
 }
-const others = (n) => (n > 1 ? `${n} autres épreuves` : '1 autre épreuve');
 const readWeapon = () => {
   try {
     return localStorage.getItem('rd-weapon') || 'ALL';
@@ -78,12 +80,17 @@ const readWeapon = () => {
 
 function WeaponSummary({ list }) {
   // Pastilles par arme avec leur nombre d'épreuves : « F 1 · E 2 · S 1 ».
+  const { t } = useI18n();
   return (
-    <span className="rd-summary" aria-label="Épreuves par arme">
+    <span className="rd-summary" aria-label={t('home.byWeapon')}>
       {ORDER.map((w) => {
         const n = list.filter((e) => e.weapon === w).length;
         return n ? (
-          <span key={w} className={`rd-summary-item rd-weapon-${WEAPONS[w].key}`} title={`${n} × ${w}`}>
+          <span
+            key={w}
+            className={`rd-summary-item rd-weapon-${WEAPONS[w].key}`}
+            title={`${n} × ${t(`weapon.${WEAPONS[w].key}`)}`}
+          >
             <span aria-hidden="true">{WEAPONS[w].short}</span>
             {n}
           </span>
@@ -94,16 +101,17 @@ function WeaponSummary({ list }) {
 }
 
 function EventRow({ e }) {
+  const { t, lang } = useI18n();
   return (
     <li className="rd-row">
       <WeaponChip weapon={e.weapon} />
       <span className="rd-row-main">
         <strong>{e.city}</strong>
         <span>
-          {e.label} · {categories(e.categories)} · {GENDERS[e.gender] || ''}
+          {eventLabelFor(lang, e.label)} · {categories(t, e.categories)} · {gender(t, e.gender)}
         </span>
       </span>
-      {e.demo && <em className="rd-demo-tag">fictif</em>}
+      {e.demo && <em className="rd-demo-tag">{t('home.fictional')}</em>}
     </li>
   );
 }
@@ -125,12 +133,13 @@ function useCountdown(iso) {
 }
 
 function WeaponChip({ weapon }) {
+  const { t } = useI18n();
   const w = WEAPONS[weapon];
   if (!w) return null;
   return (
     <span className={`rd-weapon rd-weapon-${w.key}`}>
       <span aria-hidden="true">{w.short}</span>
-      {weapon}
+      {t(`weapon.${w.key}`)}
     </span>
   );
 }
@@ -180,6 +189,7 @@ function usePlayer(user) {
 
 export default function RedesignHome({ user = null, onNavigate = null }) {
   const me = usePlayer(user);
+  const { t, lang, locale, setLang } = useI18n();
   // Dans l'application, les liens internes changent d'onglet sans recharger la page.
   const go = (tab) => (event) => {
     if (!onNavigate) return;
@@ -257,8 +267,13 @@ export default function RedesignHome({ user = null, onNavigate = null }) {
   const openFirst = open && (!next || open.startsAt.slice(0, 10) <= next.start);
   const countdown = useCountdown(openFirst ? open.startsAt : next?.start);
   const primary = signedIn
-    ? { href: '/pronostiquer', label: 'Faire mes pronostics', tab: 'play' }
-    : { href: '/inscription', label: 'Créer mon compte gratuit' };
+    ? { href: '/pronostiquer', label: t('home.play'), tab: 'play' }
+    : { href: '/inscription', label: t('home.signup') };
+  const countdownUnits = (c) => [
+    [c.days, t('home.days')],
+    [c.hours, t('home.hours')],
+    [c.minutes, t('home.minutes')],
+  ];
 
   return (
     <div className={user ? 'rd rd-dashboard' : 'rd'}>
@@ -273,10 +288,18 @@ export default function RedesignHome({ user = null, onNavigate = null }) {
             </span>
           </a>
           <nav className="rd-top-links" aria-label="Navigation">
-            <a href="/calendrier">Calendrier</a>
-            <a href="/resultats">Résultats</a>
+            <a href="/calendrier">{t('home.calendarLink')}</a>
+            <a href="/resultats">{t('home.resultsLink')}</a>
+            <button
+              type="button"
+              className="rd-lang"
+              aria-label={t('lang.switchAria')}
+              onClick={() => setLang(lang === 'fr' ? 'en' : 'fr')}
+            >
+              {lang === 'fr' ? 'EN' : 'FR'}
+            </button>
             <a className="rd-top-cta" href={signedIn ? '/accueil' : '/connexion'}>
-              {signedIn ? 'Mon espace' : 'Se connecter'}
+              {signedIn ? t('menu.space') : t('home.login')}
             </a>
           </nav>
         </header>
@@ -284,76 +307,67 @@ export default function RedesignHome({ user = null, onNavigate = null }) {
 
       {demo && (
         <p className="rd-demo-banner" role="note">
-          Démonstration : des épreuves d’épée et de sabre <strong>fictives</strong> sont ajoutées au calendrier réel.
+          {t('home.demo')}
         </p>
       )}
       <section className="rd-hero" aria-labelledby="rd-hero-title">
-        <p className="rd-eyebrow">
-          Fleuret · Épée · Sabre — saison {season}–{season + 1}
-        </p>
+        <p className="rd-eyebrow">{t('home.season', { from: season, to: season + 1 })}</p>
         {user ? (
           <>
             <h1 id="rd-hero-title">
-              Salut {user.name || user.username},
+              {t('home.hello', { name: user.name || user.username })}
               <br />
-              <span>en garde !</span>
+              <span>{t('home.enGarde')}</span>
             </h1>
-            <div className="rd-stats" aria-label="Ma saison">
+            <div className="rd-stats" aria-label={t('home.myStats')}>
               <a href="/classements" onClick={go('leaderboard')}>
-                <b>{me?.rank ? `${me.rank}e` : '–'}</b>
-                <span>{me?.players ? `sur ${me.players} joueurs` : 'au classement'}</span>
+                <b>{me?.rank ? t('home.rank', { rank: me.rank }) : '–'}</b>
+                <span>{me?.players ? t('home.rankOf', { n: me.players }) : t('home.inRanking')}</span>
               </a>
               <a href="/mes-pronostics" onClick={go('mine')}>
                 <b>{me ? me.points : '–'}</b>
-                <span>points cette saison</span>
+                <span>{t('home.points')}</span>
               </a>
               <a href="/classements" onClick={go('leaderboard')}>
                 <b>{me?.gap != null ? `+${me.gap}` : '–'}</b>
-                <span>{me?.gap != null ? 'pts pour gagner une place' : 'vous menez !'}</span>
+                <span>{me?.gap != null ? t('home.gap') : t('home.leading')}</span>
               </a>
             </div>
           </>
         ) : (
           <>
             <h1 id="rd-hero-title">
-              Chaque touche compte.
+              {t('home.title1')}
               <br />
-              <span>Pronostiquez-la.</span>
+              <span>{t('home.title2')}</span>
             </h1>
-            <p className="rd-lead">
-              Le rendez-vous des passionnés d’escrime : pronostics, résultats en direct et classements entre amis, club
-              et délégations.
-            </p>
+            <p className="rd-lead">{t('home.lead')}</p>
           </>
         )}
         <Piste />
         {openFirst ? (
-          <article className="rd-next rd-next-open" aria-label="Prochaine épreuve, pronostics ouverts">
+          <article className="rd-next rd-next-open" aria-label={t('home.openAria')}>
             <div className="rd-next-head">
-              <span className="rd-next-tag">{countdown?.live ? '● En cours' : 'Pronostics ouverts'}</span>
+              <span className="rd-next-tag">{countdown?.live ? t('home.liveNow') : t('home.openTag')}</span>
               <WeaponChip weapon={weaponOf(open.name)} />
             </div>
-            <h2>{eventNameFr(open.name).replace(/^(Fleuret|Épée|Sabre) · /, '')}</h2>
+            <h2>{withoutWeapon(eventNameFor(lang, open.name))}</h2>
             <p className="rd-next-meta">
               {open.tournament.name}
               <br />
               {open.tournament.city ? `${open.tournament.city} · ` : ''}
-              {new Date(open.startsAt).toLocaleString('fr-FR', {
+              {new Date(open.startsAt).toLocaleString(locale, {
                 weekday: 'long',
                 day: 'numeric',
                 month: 'long',
                 hour: '2-digit',
                 minute: '2-digit',
               })}{' '}
-              (heure de Paris)
+              {t('home.parisTime')}
             </p>
             {countdown && !countdown.live && (
-              <div className="rd-countdown" role="timer" aria-label="Temps avant le début">
-                {[
-                  [countdown.days, 'jours'],
-                  [countdown.hours, 'heures'],
-                  [countdown.minutes, 'min'],
-                ].map(([value, unit]) => (
+              <div className="rd-countdown" role="timer" aria-label={t('home.countdownAria')}>
+                {countdownUnits(countdown).map(([value, unit]) => (
                   <span key={unit}>
                     <b>{String(value).padStart(2, '0')}</b>
                     {unit}
@@ -365,48 +379,46 @@ export default function RedesignHome({ user = null, onNavigate = null }) {
               className="rd-button rd-next-cta"
               href={`/pronostiquer/${segment(open.tournament.name, open.tournament.id)}/${segment(open.name, open.id)}/poules`}
             >
-              {countdown?.live ? 'Suivre et pronostiquer →' : 'Pronostiquer cette épreuve →'}
+              {countdown?.live ? t('home.followAndPlay') : t('home.playThis')}
             </a>
           </article>
         ) : next ? (
-          <article className="rd-next" aria-label={nextDay.length > 1 ? 'Prochaine journée' : 'Prochaine épreuve'}>
+          <article className="rd-next" aria-label={nextDay.length > 1 ? t('home.nextDay') : t('home.nextEvent')}>
             <div className="rd-next-head">
               <span className="rd-next-tag">
-                {nextDay.length > 1 ? `Prochaine journée · ${nextDay.length} épreuves` : 'Prochaine épreuve'}
+                {nextDay.length > 1 ? t('home.nextDayCount', { n: nextDay.length }) : t('home.nextEvent')}
               </span>
               {nextDay.length > 1 ? <WeaponSummary list={nextDay} /> : <WeaponChip weapon={next.weapon} />}
             </div>
             {nextDay.length > 1 ? (
               <>
-                <h2>{dateLabel(next.start, { weekday: 'long', day: 'numeric', month: 'long' })}</h2>
+                <h2>{dateLabel(locale, next.start, { weekday: 'long', day: 'numeric', month: 'long' })}</h2>
                 <ul className="rd-next-list">
                   {nextDay.slice(0, 4).map((e) => (
                     <EventRow key={e.id} e={e} />
                   ))}
                   {nextDay.length > 4 && (
                     <li className="rd-more">
-                      <a href="/calendrier">+ {others(nextDay.length - 4)} ce jour-là →</a>
+                      <a href="/calendrier">
+                        {t('home.moreThatDay', { others: t('home.others', { n: nextDay.length - 4 }) })}
+                      </a>
                     </li>
                   )}
                 </ul>
               </>
             ) : (
               <>
-                <h2>{next.label}</h2>
+                <h2>{eventLabelFor(lang, next.label)}</h2>
                 <p className="rd-next-meta">
-                  {next.city} · {dateLabel(next.start, { weekday: 'long', day: 'numeric', month: 'long' })}
+                  {next.city} · {dateLabel(locale, next.start, { weekday: 'long', day: 'numeric', month: 'long' })}
                   <br />
-                  {GENDERS[next.gender] || ''} · {categories(next.categories)}
+                  {gender(t, next.gender)} · {categories(t, next.categories)}
                 </p>
               </>
             )}
             {countdown && !countdown.live && (
-              <div className="rd-countdown" role="timer" aria-label="Temps avant le début">
-                {[
-                  [countdown.days, 'jours'],
-                  [countdown.hours, 'heures'],
-                  [countdown.minutes, 'min'],
-                ].map(([value, unit]) => (
+              <div className="rd-countdown" role="timer" aria-label={t('home.countdownAria')}>
+                {countdownUnits(countdown).map(([value, unit]) => (
                   <span key={unit}>
                     <b>{String(value).padStart(2, '0')}</b>
                     {unit}
@@ -414,7 +426,7 @@ export default function RedesignHome({ user = null, onNavigate = null }) {
                 ))}
               </div>
             )}
-            {countdown?.live && <p className="rd-live-badge">● En cours</p>}
+            {countdown?.live && <p className="rd-live-badge">{t('home.liveNow')}</p>}
           </article>
         ) : (
           <div className="rd-next rd-skeleton" aria-hidden="true" />
@@ -425,11 +437,11 @@ export default function RedesignHome({ user = null, onNavigate = null }) {
           </a>
           {user ? (
             <a className="rd-button rd-button-ghost" href="/direct" onClick={go('live')}>
-              Suivre le direct
+              {t('home.followLive')}
             </a>
           ) : (
             <a className="rd-button rd-button-ghost" href="/calendrier">
-              Voir le calendrier
+              {t('home.calendar')}
             </a>
           )}
         </div>
@@ -437,11 +449,11 @@ export default function RedesignHome({ user = null, onNavigate = null }) {
 
       <section className="rd-section" aria-labelledby="rd-agenda">
         <div className="rd-section-head">
-          <h2 id="rd-agenda">À l’affiche</h2>
-          <a href="/calendrier">Tout le calendrier →</a>
+          <h2 id="rd-agenda">{t('home.agenda')}</h2>
+          <a href="/calendrier">{t('home.allCalendar')}</a>
         </div>
         {weaponsPresent.length > 1 && (
-          <div className="rd-filter" role="group" aria-label="Filtrer par arme">
+          <div className="rd-filter" role="group" aria-label={t('home.filterWeapon')}>
             {['ALL', ...weaponsPresent].map((w) => (
               <button
                 key={w}
@@ -451,7 +463,7 @@ export default function RedesignHome({ user = null, onNavigate = null }) {
                 onClick={() => setWeapon(w)}
               >
                 {w !== 'ALL' && <span aria-hidden="true">{WEAPONS[w].short}</span>}
-                {w === 'ALL' ? 'Toutes' : w}
+                {w === 'ALL' ? t('home.allWeapons') : t(`weapon.${WEAPONS[w].key}`)}
                 <small>{w === 'ALL' ? all.length : all.filter((e) => e.weapon === w).length}</small>
               </button>
             ))}
@@ -462,12 +474,12 @@ export default function RedesignHome({ user = null, onNavigate = null }) {
             <article className="rd-day" role="listitem" key={date}>
               <header className="rd-day-head">
                 <div className="rd-day-date">
-                  <b>{dateLabel(date, { day: 'numeric' })}</b>
-                  <span>{dateLabel(date, { month: 'short' }).replace('.', '')}</span>
+                  <b>{dateLabel(locale, date, { day: 'numeric' })}</b>
+                  <span>{dateLabel(locale, date, { month: 'short' }).replace('.', '')}</span>
                 </div>
                 <div>
-                  <strong>{dateLabel(date, { weekday: 'long' })}</strong>
-                  <span>{list.length > 1 ? `${list.length} épreuves` : '1 épreuve'}</span>
+                  <strong>{dateLabel(locale, date, { weekday: 'long' })}</strong>
+                  <span>{t('home.events', { n: list.length })}</span>
                 </div>
                 {list.length > 1 && <WeaponSummary list={list} />}
               </header>
@@ -475,7 +487,7 @@ export default function RedesignHome({ user = null, onNavigate = null }) {
                 {list.slice(0, 4).map((e) => (
                   <EventRow key={e.id} e={e} />
                 ))}
-                {list.length > 4 && <li className="rd-more">+ {others(list.length - 4)}</li>}
+                {list.length > 4 && <li className="rd-more">+ {t('home.others', { n: list.length - 4 })}</li>}
               </ul>
             </article>
           ))}
@@ -486,14 +498,14 @@ export default function RedesignHome({ user = null, onNavigate = null }) {
       {latest && (
         <section className="rd-section" aria-labelledby="rd-podiums">
           <div className="rd-section-head">
-            <h2 id="rd-podiums">Derniers podiums</h2>
-            <a href="/resultats">Tous les résultats →</a>
+            <h2 id="rd-podiums">{t('home.podiums')}</h2>
+            <a href="/resultats">{t('home.allResults')}</a>
           </div>
           <article className="rd-results">
             <header>
               <h3>{latest.name}</h3>
               <p>
-                {latest.city} · {dateLabel(latest.start, { day: 'numeric', month: 'long' })}
+                {latest.city} · {dateLabel(locale, latest.start, { day: 'numeric', month: 'long' })}
               </p>
             </header>
             <div className="rd-podium-grid">
@@ -501,7 +513,7 @@ export default function RedesignHome({ user = null, onNavigate = null }) {
                 <div className="rd-podium" key={c.id}>
                   <p className="rd-podium-event">
                     <WeaponChip weapon={weaponOf(c.name)} />
-                    {eventNameFr(c.name).replace(/^(Fleuret|Épée|Sabre) · /, '')}
+                    {withoutWeapon(eventNameFor(lang, c.name))}
                   </p>
                   <ol>
                     {c.podium.slice(0, 3).map((p, i) => (
@@ -523,34 +535,32 @@ export default function RedesignHome({ user = null, onNavigate = null }) {
 
       {user && (
         <section className="rd-section rd-mine" aria-labelledby="rd-mine">
-          <h2 id="rd-mine">Ma saison</h2>
+          <h2 id="rd-mine">{t('home.mySeason')}</h2>
           <div className="rd-mine-grid">
             <article className="rd-card">
-              <p className="rd-card-tag">Mon meilleur coup</p>
+              <p className="rd-card-tag">{t('home.bestCall')}</p>
               {me?.best ? (
                 <>
                   <h3>{me.best.name}</h3>
                   <p className="rd-best">
                     <span>
-                      Pronostic <b>{me.best.prediction}</b>
+                      {t('home.prediction')} <b>{me.best.prediction}</b>
                     </span>
                     <span>
-                      Résultat <b>{me.best.result}</b>
+                      {t('home.result')} <b>{me.best.result}</b>
                     </span>
-                    <em>
-                      +{me.best.points} pt{me.best.points > 1 ? 's' : ''}
-                    </em>
+                    <em>{t('home.pts', { n: me.best.points })}</em>
                   </p>
                 </>
               ) : (
-                <p className="rd-muted">Votre premier pronostic réussi apparaîtra ici.</p>
+                <p className="rd-muted">{t('home.firstCall')}</p>
               )}
               <a href="/ma-saison" onClick={go('season')}>
-                Voir ma saison →
+                {t('home.seeSeason')}
               </a>
             </article>
             <article className="rd-card">
-              <p className="rd-card-tag">Mes délégations</p>
+              <p className="rd-card-tag">{t('home.myLeagues')}</p>
               {me?.leagues?.length ? (
                 <ul className="rd-leagues">
                   {me.leagues.slice(0, 3).map((l) => (
@@ -559,18 +569,15 @@ export default function RedesignHome({ user = null, onNavigate = null }) {
                         {l.name.slice(0, 2).toUpperCase()}
                       </span>
                       <strong>{l.name}</strong>
-                      <span>{l._count?.members ?? ''} membres</span>
+                      <span>{t('home.members', { n: l._count?.members ?? '' })}</span>
                     </li>
                   ))}
                 </ul>
               ) : (
-                <p className="rd-muted">
-                  Défiez votre salle d’armes ou vos proches : créez une délégation et invitez-les par leur nom
-                  d’utilisateur.
-                </p>
+                <p className="rd-muted">{t('home.leaguesHint')}</p>
               )}
               <a href="/communaute" onClick={go('community')}>
-                {me?.leagues?.length ? 'Voir les classements →' : 'Créer ma délégation →'}
+                {me?.leagues?.length ? t('home.seeRankings') : t('home.createLeague')}
               </a>
             </article>
           </div>
@@ -580,40 +587,37 @@ export default function RedesignHome({ user = null, onNavigate = null }) {
       {!user && (
         <>
           <section className="rd-section" aria-labelledby="rd-how">
-            <h2 id="rd-how">Comment ça marche</h2>
+            <h2 id="rd-how">{t('home.how')}</h2>
             <ol className="rd-steps">
               <li>
                 <span className="rd-step-num">1</span>
-                <h3>Choisissez une épreuve</h3>
-                <p>Les compétitions nationales et internationales, au fleuret, à l’épée et au sabre.</p>
+                <h3>{t('home.step1')}</h3>
+                <p>{t('home.step1Text')}</p>
               </li>
               <li>
                 <span className="rd-step-num">2</span>
-                <h3>Pronostiquez avant l’assaut</h3>
-                <p>Poules, tableau et podium. Le bon vainqueur rapporte, le score exact rapporte plus.</p>
+                <h3>{t('home.step2')}</h3>
+                <p>{t('home.step2Text')}</p>
               </li>
               <li>
                 <span className="rd-step-num">3</span>
-                <h3>Suivez en direct, grimpez au classement</h3>
-                <p>Résultats officiels mis à jour pendant la compétition, points et classements aussitôt.</p>
+                <h3>{t('home.step3')}</h3>
+                <p>{t('home.step3Text')}</p>
               </li>
             </ol>
           </section>
 
           <section className="rd-section rd-friends" aria-labelledby="rd-friends">
             <div>
-              <h2 id="rd-friends">Plus fun à plusieurs</h2>
-              <p>
-                Créez une délégation avec votre salle d’armes, votre famille ou vos partenaires d’entraînement.
-                Invitez-les par leur nom d’utilisateur, et que le meilleur pronostiqueur gagne.
-              </p>
+              <h2 id="rd-friends">{t('home.friends')}</h2>
+              <p>{t('home.friendsText')}</p>
             </div>
             <div className="rd-friends-board" aria-hidden="true">
-              <small>Exemple de classement</small>
+              <small>{t('home.sampleRanking')}</small>
               {[
-                ['1', 'Vous', '128'],
-                ['2', 'Le maître d’armes', '121'],
-                ['3', 'La salle', '97'],
+                ['1', t('home.sampleYou'), '128'],
+                ['2', t('home.sampleMaster'), '121'],
+                ['3', t('home.sampleClub'), '97'],
               ].map(([rank, who, pts]) => (
                 <div key={rank} className={rank === '1' ? 'is-me' : ''}>
                   <b>{rank}</b>
@@ -624,8 +628,8 @@ export default function RedesignHome({ user = null, onNavigate = null }) {
             </div>
           </section>
 
-          <section className="rd-final" aria-label="Commencer">
-            <h2>Prêt à croiser le fer ?</h2>
+          <section className="rd-final" aria-label={t('home.start')}>
+            <h2>{t('home.ready')}</h2>
             <a className="rd-button" href={primary.href}>
               {primary.label} →
             </a>
@@ -634,10 +638,10 @@ export default function RedesignHome({ user = null, onNavigate = null }) {
       )}
 
       {!signedIn && !user && (
-        <div className="rd-sticky" role="region" aria-label="Inscription">
-          <span>C’est gratuit</span>
+        <div className="rd-sticky" role="region" aria-label={t('home.signupAria')}>
+          <span>{t('home.free')}</span>
           <a className="rd-button" href="/inscription">
-            Créer mon compte
+            {t('home.createAccount')}
           </a>
         </div>
       )}

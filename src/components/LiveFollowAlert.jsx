@@ -4,6 +4,7 @@
 import { useEffect, useState } from 'react';
 import { isFollowedFencer, useFencerFollows } from '../lib/fencerFollows';
 import { useLiveScores } from '../lib/useLiveScores';
+import { useI18n } from '../i18n/context';
 import './live-score.css';
 
 const KEY = 'pronos:live-alerts';
@@ -24,6 +25,7 @@ const remember = (ids) => {
 
 export default function LiveFollowAlert({ competitionId, onOpen }) {
   const follows = useFencerFollows();
+  const { t } = useI18n();
   const following = Boolean(follows?.ready && follows.matchNames?.length);
   const live = useLiveScores(competitionId, following);
   const [alerts, setAlerts] = useState([]);
@@ -51,8 +53,8 @@ export default function LiveFollowAlert({ competitionId, onOpen }) {
         <div className="live-follow-alert" key={a.matchId}>
           <span className="live-score-dot" aria-hidden="true" />
           <p>
-            <strong>{a.fencer.name}</strong> monte en piste {a.strip}
-            {a.opponent?.name ? ` face à ${a.opponent.name}` : ''}.
+            {t('alert.onStrip', { name: a.fencer.name, strip: a.strip })}
+            {a.opponent?.name ? t('alert.against', { name: a.opponent.name }) : ''}.
           </p>
           <button
             type="button"
@@ -61,9 +63,9 @@ export default function LiveFollowAlert({ competitionId, onOpen }) {
               onOpen?.(a.matchId);
             }}
           >
-            Suivre
+            {t('alert.follow')}
           </button>
-          <button type="button" className="button-link" aria-label="Fermer l’alerte" onClick={() => close(a.matchId)}>
+          <button type="button" className="button-link" aria-label={t('alert.close')} onClick={() => close(a.matchId)}>
             ✕
           </button>
         </div>

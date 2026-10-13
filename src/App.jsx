@@ -38,6 +38,7 @@ import { refonteOn, setRefonte } from './lib/refonte';
 import { NAV_CATALOG, mobileSlots, readNav, saveNav } from './lib/navPrefs';
 import NavEditor from './components/NavEditor';
 import LiveFollowAlert from './components/LiveFollowAlert';
+import { useI18n } from './i18n/context';
 import { TAB_TITLES, idOf, parseLocation, pathFor, pathForTab, tabFromPath } from './lib/routes.js';
 import { captureInvitation, clearInvitation } from './lib/invitation.js';
 import ResultFreshness from './components/ResultFreshness';
@@ -134,10 +135,11 @@ const MORE_ICON = (
 );
 // Bascule entre l'ancien et le nouveau design, visible uniquement en local.
 function RefonteToggle() {
+  const { t } = useI18n();
   if (!import.meta.env.DEV) return null;
   return (
     <button type="button" className="refonte-toggle" onClick={() => setRefonte(!REFONTE)}>
-      {REFONTE ? 'Nouveau design · revenir à l’ancien' : 'Voir le nouveau design'}
+      {REFONTE ? t('refonte.toOld') : t('refonte.toNew')}
     </button>
   );
 }
@@ -155,6 +157,7 @@ export default function App() {
       !/^\/(accueil|connexion|inscription)?\/?$/.test(window.location.pathname) ||
       /[?&](tournament|event)=/.test(window.location.search),
   );
+  const { t, lang, setLang } = useI18n();
   const [navTabs, setNavTabs] = useState(readNav);
   const [navEditor, setNavEditor] = useState(false);
   const [accountOpen, setAccountOpen] = useState(false);
@@ -695,7 +698,7 @@ export default function App() {
                   onClick={() => navigate('live')}
                 >
                   <span className="header-live-dot" aria-hidden="true" />
-                  Direct
+                  {t('nav.live')}
                 </button>
               )}
               <AdminAlerts user={user} onOpen={openAdminAlert} />
@@ -724,7 +727,7 @@ export default function App() {
                   {user.name || user.username} ⌄
                 </button>
                 {accountOpen && (
-                  <nav id="user-options" className="user-menu-panel" aria-label="Mon espace">
+                  <nav id="user-options" className="user-menu-panel" aria-label={t('menu.space')}>
                     {/* Sections hors barre principale : chacune n'apparaît qu'ici (aucun doublon). */}
                     {[
                       ...(REFONTE
@@ -735,7 +738,7 @@ export default function App() {
                           ]),
                       ['account', 'Mon compte et notifications'],
                       ...(user.isAdmin ? [['admin', 'Administration']] : []),
-                    ].map(([id, label]) => (
+                    ].map(([id]) => (
                       <button
                         key={id}
                         aria-current={mainTab === id || (id === 'live' && mainTab === 'results') ? 'page' : undefined}
@@ -744,7 +747,13 @@ export default function App() {
                           navigate(id);
                         }}
                       >
-                        {label}
+                        {id === 'account'
+                          ? t('menu.account')
+                          : id === 'admin'
+                            ? t('menu.admin')
+                            : id === 'live' && !REFONTE
+                              ? t('menu.liveResults')
+                              : t(`nav.${id}`)}
                       </button>
                     ))}
                     {REFONTE && (
@@ -754,17 +763,17 @@ export default function App() {
                           setNavEditor(true);
                         }}
                       >
-                        Personnaliser la barre…
+                        {t('menu.customize')}
                       </button>
                     )}
-                    <p className="user-menu-group">Aide</p>
+                    <p className="user-menu-group">{t('menu.help')}</p>
                     <button
                       onClick={() => {
                         setAccountOpen(false);
                         setTutorialRequest((v) => v + 1);
                       }}
                     >
-                      Tutoriel d’utilisation
+                      {t('menu.tutorial')}
                     </button>
                     <button
                       onClick={() => {
@@ -772,7 +781,16 @@ export default function App() {
                         setSupportOpen(true);
                       }}
                     >
-                      Signaler un problème
+                      {t('menu.support')}
+                    </button>
+                    <button
+                      aria-label={t('lang.switchAria')}
+                      onClick={() => {
+                        setAccountOpen(false);
+                        setLang(lang === 'fr' ? 'en' : 'fr');
+                      }}
+                    >
+                      {t('lang.label')} : {t('lang.switch')}
                     </button>
                     <button
                       className="user-menu-separated"
@@ -788,7 +806,7 @@ export default function App() {
                         setAccountOpen(false);
                       }}
                     >
-                      {reducedData() ? 'Désactiver le mode connexion faible' : 'Mode connexion faible'}
+                      {reducedData() ? t('menu.lowDataOff') : t('menu.lowData')}
                     </button>
                     <button
                       className="user-menu-logout"
@@ -797,7 +815,7 @@ export default function App() {
                         runNavigation(handleLogout);
                       }}
                     >
-                      Déconnexion
+                      {t('menu.logout')}
                     </button>
                   </nav>
                 )}
@@ -825,7 +843,7 @@ export default function App() {
           <LiveFollowAlert competitionId={selectedCompetitionId} onOpen={() => navigate('live')} />
           <ConnectionStatus />
           <NotificationBanner userId={user.id} />
-          <nav className="primary-nav" aria-label="Navigation principale">
+          <nav className="primary-nav" aria-label={t('nav.main')}>
             {[
               ['home', '⌂', 'Accueil'],
               ['play', '◎', 'Pronostiquer'],
@@ -890,7 +908,7 @@ export default function App() {
                       ]
                   : [item],
               )
-              .map(([id, icon, label]) => (
+              .map(([id, icon]) => (
                 <button
                   key={id}
                   data-tab={id}
@@ -904,7 +922,7 @@ export default function App() {
                   onClick={() => (id === 'more' ? setAccountOpen(true) : navigate(id))}
                 >
                   <span aria-hidden="true">{icon}</span>
-                  {label}
+                  {t(`nav.${id}`)}
                 </button>
               ))}
             {accountClub?.name && (

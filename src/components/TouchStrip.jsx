@@ -3,48 +3,37 @@
 import { useState } from 'react';
 import { clockLabel } from '../lib/useLiveScores';
 import { shortName } from '../lib/fencerName';
+import { useI18n } from '../i18n/context';
 
-const periodLabel = (p) => (p > 0 && p < 10 ? ` · ${p}${p === 1 ? 're' : 'e'} pér.` : '');
-
-export default function TouchStrip({
-  history,
-  player1,
-  player2,
-  live = false,
-  compact = false,
-  title = 'Fil des touches',
-}) {
+export default function TouchStrip({ history, player1, player2, live = false, compact = false, title = null }) {
   // Assaut en cours : dernière case agrandie. À la fin, elle reste agrandie quelques secondes puis
   // reprend sa taille (animation CSS) ; un match déjà terminé à l'ouverture s'affiche normalement.
+  const { t } = useI18n();
+  const periodLabel = (p) => (p > 0 && p < 10 ? ` · ${t('live.periodShort', { n: p })}` : '');
   const [wasLive, setWasLive] = useState(live);
   if (live && !wasLive) setWasLive(true);
-  const touches = (history || []).filter((t) => [1, 2, 'double'].includes(t.by));
-  const start = (history || []).find((t) => t.by === 'start');
+  const touches = (history || []).filter((x) => [1, 2, 'double'].includes(x.by));
+  const start = (history || []).find((x) => x.by === 'start');
   const [picked, setPicked] = useState(null);
   if (!touches.length && !start) return null;
   const shown = picked === null ? touches.at(-1) : touches[picked];
-  const who = (t) => (t.by === 1 ? shortName(player1) : t.by === 2 ? shortName(player2) : 'Coup double');
+  const who = (x) => (x.by === 1 ? shortName(player1) : x.by === 2 ? shortName(player2) : t('touches.double'));
   return (
     <div className={`touch-strip${compact ? ' is-compact' : ''}${live ? ' is-live' : wasLive ? ' is-ending' : ''}`}>
       <p className="touch-strip-title">
-        {title}
-        {start && (
-          <small>
-            {' '}
-            · suivi dès {start.score1}–{start.score2}
-          </small>
-        )}
+        {title || t('touches.title')}
+        {start && <small> · {t('touches.since', { s1: start.score1, s2: start.score2 })}</small>}
       </p>
       <div className="touch-strip-track">
         <div className="touch-strip-cells" role="list">
-          {touches.map((t, i) => (
+          {touches.map((x, i) => (
             <button
               type="button"
               role="listitem"
               key={i}
-              className={`touch-cell by-${t.by}${picked === i ? ' is-picked' : ''}`}
+              className={`touch-cell by-${x.by}${picked === i ? ' is-picked' : ''}`}
               data-last={i === touches.length - 1 ? '' : undefined}
-              aria-label={`${t.score1}–${t.score2}, ${who(t)}, ${clockLabel(t.clock)}`}
+              aria-label={`${x.score1}–${x.score2}, ${who(x)}, ${clockLabel(x.clock)}`}
               onClick={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
@@ -55,8 +44,8 @@ export default function TouchStrip({
         </div>
         {touches.length > 1 && (
           <p className="touch-strip-axis" aria-hidden="true">
-            <span>1re touche</span>
-            <span>dernière →</span>
+            <span>{t('touches.first')}</span>
+            <span>{t('touches.last')}</span>
           </p>
         )}
       </div>
@@ -68,7 +57,7 @@ export default function TouchStrip({
           {who(shown)}
           {clockLabel(shown.clock) && ` · ${clockLabel(shown.clock)}`}
           {periodLabel(shown.period)}
-          {picked === null && touches.length > 1 && <small> · dernière touche</small>}
+          {picked === null && touches.length > 1 && <small> · {t('touches.lastTouch')}</small>}
         </p>
       )}
     </div>

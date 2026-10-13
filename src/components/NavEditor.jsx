@@ -1,10 +1,11 @@
 // Personnaliser la barre de navigation (aperçu de la refonte) : choisir 3 à 5 onglets et leur ordre.
 import { useEffect, useRef, useState } from 'react';
 import { NAV_CATALOG, NAV_DEFAULT, NAV_MAX, NAV_MIN } from '../lib/navPrefs';
-
-const LABEL = Object.fromEntries(NAV_CATALOG);
+import { useI18n } from '../i18n/context';
 
 export default function NavEditor({ value, onSave, onClose }) {
+  const { t } = useI18n();
+  const LABEL = Object.fromEntries(NAV_CATALOG.map(([id]) => [id, t(`nav.${id}`)]));
   const [list, setList] = useState(value);
   const dialog = useRef(null);
   useEffect(() => {
@@ -24,23 +25,20 @@ export default function NavEditor({ value, onSave, onClose }) {
   const hidden = NAV_CATALOG.map(([id]) => id).filter((id) => !list.includes(id));
   return (
     <dialog ref={dialog} className="nav-editor" aria-labelledby="nav-editor-title" onClose={onClose}>
-      <h2 id="nav-editor-title">Personnaliser la barre</h2>
-      <p className="muted">
-        Choisissez de {NAV_MIN} à {NAV_MAX} onglets et leur ordre. Les autres restent dans le menu de votre compte. Sur
-        mobile, Accueil est au centre ; avec 4 onglets, un bouton « Plus » complète la barre.
-      </p>
-      <ol className="nav-editor-list" aria-label="Onglets affichés">
+      <h2 id="nav-editor-title">{t('navEditor.title')}</h2>
+      <p className="muted">{t('navEditor.help', { min: NAV_MIN, max: NAV_MAX })}</p>
+      <ol className="nav-editor-list" aria-label={t('navEditor.shown')}>
         {list.map((id, i) => (
           <li key={id} className={id === 'home' ? 'is-locked' : undefined}>
             <span className="nav-editor-rank">{i + 1}</span>
             <strong>
               {LABEL[id]}
-              {id === 'home' && <small>Toujours là · au centre sur mobile</small>}
+              {id === 'home' && <small>{t('navEditor.homeLocked')}</small>}
             </strong>
             <button
               type="button"
               className="button-secondary"
-              aria-label={`Monter ${LABEL[id]}`}
+              aria-label={t('navEditor.up', { label: LABEL[id] })}
               disabled={i <= 1}
               onClick={() => move(id, -1)}
             >
@@ -49,7 +47,7 @@ export default function NavEditor({ value, onSave, onClose }) {
             <button
               type="button"
               className="button-secondary"
-              aria-label={`Descendre ${LABEL[id]}`}
+              aria-label={t('navEditor.down', { label: LABEL[id] })}
               disabled={id === 'home' || i === list.length - 1}
               onClick={() => move(id, 1)}
             >
@@ -58,18 +56,18 @@ export default function NavEditor({ value, onSave, onClose }) {
             <button
               type="button"
               className="button-secondary nav-editor-remove"
-              aria-label={`Retirer ${LABEL[id]}`}
+              aria-label={t('navEditor.removeAria', { label: LABEL[id] })}
               disabled={id === 'home' || list.length <= NAV_MIN}
               onClick={() => toggle(id)}
             >
-              Retirer
+              {t('navEditor.remove')}
             </button>
           </li>
         ))}
       </ol>
       {hidden.length > 0 && (
         <>
-          <p className="nav-editor-subtitle">Dans le menu du compte</p>
+          <p className="nav-editor-subtitle">{t('navEditor.inMenu')}</p>
           <ul className="nav-editor-hidden">
             {hidden.map((id) => (
               <li key={id}>
@@ -84,18 +82,18 @@ export default function NavEditor({ value, onSave, onClose }) {
               </li>
             ))}
           </ul>
-          {list.length >= NAV_MAX && <p className="muted">Retirez un onglet pour en ajouter un autre.</p>}
+          {list.length >= NAV_MAX && <p className="muted">{t('navEditor.full')}</p>}
         </>
       )}
       <div className="nav-editor-actions">
         <button type="button" className="button-secondary" onClick={() => setList(NAV_DEFAULT)}>
-          Barre par défaut
+          {t('navEditor.default')}
         </button>
         <button type="button" className="button-secondary" onClick={onClose}>
-          Annuler
+          {t('navEditor.cancel')}
         </button>
         <button type="button" onClick={() => onSave(list)}>
-          Enregistrer
+          {t('navEditor.save')}
         </button>
       </div>
     </dialog>
