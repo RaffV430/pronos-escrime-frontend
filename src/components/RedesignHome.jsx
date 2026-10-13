@@ -577,8 +577,8 @@ export default function RedesignHome({ user = null, onNavigate = null }) {
                     {withoutWeapon(eventNameFor(lang, c.name))}
                   </p>
                   <ol>
-                    {c.podium.slice(0, 3).map((p, i) => (
-                      <li key={`${p.place}-${p.name}`} className={`rd-medal rd-medal-${i + 1}`}>
+                    {c.podium.map((p) => (
+                      <li key={`${p.place}-${p.name}`} className={`rd-medal rd-medal-${p.place}`}>
                         <span className="rd-medal-dot" aria-hidden="true">
                           {p.place}
                         </span>
