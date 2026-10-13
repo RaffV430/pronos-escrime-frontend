@@ -23,6 +23,7 @@ import {
 import HeadToHead from './HeadToHead';
 import LiveScore from './LiveScore';
 import TouchStrip from './TouchStrip';
+import './express.css';
 import { useLiveScores } from '../lib/useLiveScores';
 import MatchSocial from './MatchSocial';
 import BracketTree from './BracketTree.jsx';
@@ -55,7 +56,7 @@ function KeyboardBar({ children }) {
   );
 }
 
-const VIEW_LABELS = { Arena: 'Cartes', Liste: 'Liste', Arbre: 'Tableau complet' };
+const VIEW_LABELS = { Express: 'Express', Arena: 'Cartes', Liste: 'Liste', Arbre: 'Tableau complet' };
 // Pictogrammes des trois affichages (le libellé reste lisible sur grand écran et pour les lecteurs d'écran).
 function ViewIcon({ view }) {
   const common = {
@@ -72,6 +73,12 @@ function ViewIcon({ view }) {
       <svg {...common}>
         <rect x="3" y="3" width="14" height="14" rx="2.5" />
         <path d="M3 10h14" />
+      </svg>
+    );
+  if (view === 'Express')
+    return (
+      <svg {...common}>
+        <path d="M11 2 4 11h5l-1 7 7-9h-5l1-7Z" strokeLinejoin="round" />
       </svg>
     );
   if (view === 'Liste')
@@ -129,7 +136,7 @@ export default function MatchBoard({
         const savedView = localStorage.getItem('pronos:match-view');
         // Connexion faible : la liste, l'affichage le plus léger, sauf choix de la liste déjà fait.
         if (reducedData()) return 'Liste';
-        return ['Arena', 'Arbre', 'Liste'].includes(savedView) ? savedView : 'Arena';
+        return ['Arena', 'Arbre', 'Liste', 'Express'].includes(savedView) ? savedView : 'Arena';
       } catch {
         return 'Arena';
       }
@@ -459,6 +466,17 @@ export default function MatchBoard({
     setReveal({ id: m.id });
     const prefix = view === 'Arbre' ? 'detail-' : '';
     document.getElementById(`${prefix}input-${m.id}-${side === 1 ? 2 : 1}`)?.focus({ preventScroll: true });
+  };
+  // Mode express : un toucher = vainqueur enregistré, sans ouvrir le score ni changer de match.
+  // Un pronostic déjà complet (score exact) n'est remplacé que si l'on choisit l'autre tireur.
+  const expressPick = (m, side) => {
+    if (!ready || isMatchClosed(m, now)) return;
+    if (pickedSide(m, values(m, draftsRef.current)) === side && !draftsRef.current[m.id]) return;
+    saveDrafts((old) => ({
+      ...old,
+      [m.id]: { score1: side === 1 ? m.maxScore || 15 : '', score2: side === 2 ? m.maxScore || 15 : '', winner: side },
+    }));
+    save([m.id]);
   };
   // Barre au-dessus du clavier (mobile) : match en cours de saisie.
   const [typingId, setTypingId] = useState(null);
@@ -830,7 +848,7 @@ export default function MatchBoard({
               compléter
             </p>
             <div className="filter-row view-toggle" role="group" aria-label="Affichage">
-              {['Arena', 'Liste', 'Arbre'].map((x) => (
+              {['Express', 'Arena', 'Liste', 'Arbre'].map((x) => (
                 <button
                   key={x}
                   aria-pressed={view === x}
@@ -880,7 +898,82 @@ export default function MatchBoard({
               Pronostic suivant →
             </button>
           </div>
-          {view === 'Arena' ? (
+          {view === 'Express' ? (
+            <div className="express-board">
+              <p className="express-intro">
+                Touchez le vainqueur de chaque match : c’est enregistré tout de suite. Le score exact (+3 points)
+                s’ajoute ensuite, match par match.
+              </p>
+              {groups
+                .filter((g) => g.items.some(visible))
+                .map((g) => {
+                  const items = g.items.filter(visible);
+                  return (
+                    <section className="express-round" key={g.round}>
+                      <h2>
+                        {roundLabel(g.round)}
+                        <small>
+                          {items.filter((m) => mine(m)).length}/{items.length}
+                        </small>
+                      </h2>
+                      <ul>
+                        {items.map((m) => {
+                          const closed = !ready || isMatchClosed(m, now);
+                          const side = pickedSide(m, values(m));
+                          const p = mine(m);
+                          const saved = p && !drafts[m.id];
+                          const exact = saved && !p.winnerOnly && Number.isInteger(p.predictedScore1);
+                          return (
+                            <li key={m.id} className={`express-row${closed ? ' is-closed' : ''}`}>
+                              {[1, 2].map((i) => (
+                                <button
+                                  key={i}
+                                  type="button"
+                                  className={`express-pick side-${i}${side === i ? ' is-picked' : ''}`}
+                                  aria-pressed={side === i}
+                                  disabled={closed}
+                                  onClick={() => expressPick(m, i)}
+                                >
+                                  {m[`seed${i}`] ? <small>{m[`seed${i}`]}</small> : null}
+                                  <span>{m[`player${i}`]}</span>
+                                </button>
+                              ))}
+                              <span className="express-state">
+                                {m.isFinished
+                                  ? `${m.score1 ?? '–'}–${m.score2 ?? '–'}`
+                                  : closed
+                                    ? 'Clos'
+                                    : exact
+                                      ? `${p.predictedScore1}–${p.predictedScore2}`
+                                      : saved
+                                        ? '✓'
+                                        : ''}
+                              </span>
+                              {!closed && saved && !exact && (
+                                <button
+                                  type="button"
+                                  className="button-link express-score"
+                                  onClick={() => {
+                                    setView('Liste');
+                                    setReveal({ id: m.id });
+                                    setTimeout(() => {
+                                      const el = document.getElementById(`match-${m.id}`);
+                                      el?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                                    }, 60);
+                                  }}
+                                >
+                                  + score exact
+                                </button>
+                              )}
+                            </li>
+                          );
+                        })}
+                      </ul>
+                    </section>
+                  );
+                })}
+            </div>
+          ) : view === 'Arena' ? (
             <div className="arena-dashboard">
               <section className="arena-featured">
                 <p className="arena-eyebrow">LE PROCHAIN ASSAUT</p>
