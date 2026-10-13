@@ -110,3 +110,8 @@ html.club-arena .app-shell .express-board button.express-score {
   font-weight: 600;
   text-decoration: underline;
 }
+
+/* Le choix d'affichage reste à la même place, que le compteur soit affiché ou non (vue Cartes). */
+html.club-arena .match-board .board-head .view-toggle.filter-row {
+  margin-left: auto;
+}
