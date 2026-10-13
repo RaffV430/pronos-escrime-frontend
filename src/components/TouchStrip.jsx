@@ -6,7 +6,18 @@ import { shortName } from '../lib/fencerName';
 
 const periodLabel = (p) => (p > 0 && p < 10 ? ` · ${p}${p === 1 ? 're' : 'e'} pér.` : '');
 
-export default function TouchStrip({ history, player1, player2, compact = false, title = 'Fil des touches' }) {
+export default function TouchStrip({
+  history,
+  player1,
+  player2,
+  live = false,
+  compact = false,
+  title = 'Fil des touches',
+}) {
+  // Assaut en cours : dernière case agrandie. À la fin, elle reste agrandie quelques secondes puis
+  // reprend sa taille (animation CSS) ; un match déjà terminé à l'ouverture s'affiche normalement.
+  const [wasLive, setWasLive] = useState(live);
+  if (live && !wasLive) setWasLive(true);
   const touches = (history || []).filter((t) => [1, 2, 'double'].includes(t.by));
   const start = (history || []).find((t) => t.by === 'start');
   const [picked, setPicked] = useState(null);
@@ -14,7 +25,7 @@ export default function TouchStrip({ history, player1, player2, compact = false,
   const shown = picked === null ? touches.at(-1) : touches[picked];
   const who = (t) => (t.by === 1 ? shortName(player1) : t.by === 2 ? shortName(player2) : 'Coup double');
   return (
-    <div className={`touch-strip${compact ? ' is-compact' : ''}`}>
+    <div className={`touch-strip${compact ? ' is-compact' : ''}${live ? ' is-live' : wasLive ? ' is-ending' : ''}`}>
       <p className="touch-strip-title">
         {title}
         {start && (

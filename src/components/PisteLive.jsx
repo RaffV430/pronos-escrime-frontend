@@ -134,7 +134,12 @@ export default function PisteLive({
                 </div>
               ))}
             </div>
-            <TouchStrip history={live.get(match.id)?.history} player1={match.player1} player2={match.player2} />
+            <TouchStrip
+              history={live.get(match.id)?.history}
+              player1={match.player1}
+              player2={match.player2}
+              live={isLive(match.id)}
+            />
             <div className="piste-live-panels">
               <section>
                 <p className="arena-eyebrow">VOTRE PRONOSTIC</p>

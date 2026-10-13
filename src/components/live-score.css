@@ -237,15 +237,38 @@ html.club-arena .app-shell .touch-strip.is-compact button.touch-cell {
 .club-arena .touch-strip .touch-cell.by-double:hover:not(:disabled) {
   background: linear-gradient(135deg, var(--touch-red) 50%, var(--touch-green) 50%);
 }
-.club-arena .touch-strip .touch-cell[data-last] {
-  outline: 2px solid var(--text, #13213a);
-  outline-offset: 2px;
+/* Dernière touche : un peu plus grande pendant l'assaut, puis retour à la normale ~4 s après la fin */
+.club-arena .touch-strip .touch-cell {
+  transform-origin: center;
+}
+.club-arena .touch-strip.is-live .touch-cell[data-last] {
+  transform: scale(1.3);
+  margin: 0 3px;
+}
+.club-arena .touch-strip.is-ending .touch-cell[data-last] {
+  animation: touch-last-settle 0.5s ease 4s both;
+}
+@keyframes touch-last-settle {
+  from {
+    transform: scale(1.3);
+    margin: 0 3px;
+  }
+  to {
+    transform: scale(1);
+    margin: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .club-arena .touch-strip.is-ending .touch-cell[data-last] {
+    animation-duration: 0.01s;
+  }
 }
 .touch-strip-title {
   color: var(--muted, #5b6b80);
 }
 .touch-strip-axis {
   display: flex;
+  opacity: 0.6;
   justify-content: space-between;
   margin: 4px 0 0;
   font-size: 10px;

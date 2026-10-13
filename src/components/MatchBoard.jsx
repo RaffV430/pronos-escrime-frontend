@@ -605,7 +605,13 @@ export default function MatchBoard({
           <span className={`status-pill ${p && !drafts[m.id] ? 'saved' : ''}`}>{status}</span>
         </div>
         <LiveScore live={live.get(m.id)} onOpen={onOpenLive} />
-        <TouchStrip history={live.get(m.id)?.history} player1={m.player1} player2={m.player2} compact />
+        <TouchStrip
+          history={live.get(m.id)?.history}
+          player1={m.player1}
+          player2={m.player2}
+          live={Boolean(live.get(m.id) && !live.get(m.id).finished)}
+          compact
+        />
         {[m.player1, m.player2].map((name, i) => (
           <label className={`opponent-row${picked === i + 1 ? ' is-picked' : ''}`} key={i}>
             {/* Structure d'origine conservée (mise en page des cartes) : le nom sert de bouton « vainqueur ». */}
