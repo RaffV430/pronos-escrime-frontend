@@ -21,6 +21,8 @@ import {
   queueWrite,
 } from '../lib/outbox';
 import HeadToHead from './HeadToHead';
+import LiveScore from './LiveScore';
+import { useLiveScores } from '../lib/useLiveScores';
 import MatchSocial from './MatchSocial';
 import BracketTree from './BracketTree.jsx';
 import { buildTree } from './bracketTree';
@@ -146,6 +148,8 @@ export default function MatchBoard({
     return () => window.removeEventListener(OUTBOX_EVENT, done);
   }, []);
   const localDraft = useLocalDraft(draftKey(userId, competitionId, 'matches'));
+  // Scores en direct des pistes, tant qu'il reste des rencontres non terminées (affichage seulement).
+  const live = useLiveScores(competitionId, !onPreviewSave && matches.some((m) => !m.isFinished));
   // Copie synchrone des saisies : l'enregistrement en arrière-plan et le passage au match suivant
   // lisent toujours la dernière frappe, même avant le prochain rendu.
   const draftsRef = useRef({});
@@ -584,6 +588,7 @@ export default function MatchBoard({
           </span>
           <span className={`status-pill ${p && !drafts[m.id] ? 'saved' : ''}`}>{status}</span>
         </div>
+        <LiveScore live={live.get(m.id)} />
         {[m.player1, m.player2].map((name, i) => (
           <label className={`opponent-row${picked === i + 1 ? ' is-picked' : ''}`} key={i}>
             {/* Structure d'origine conservée (mise en page des cartes) : le nom sert de bouton « vainqueur ». */}
