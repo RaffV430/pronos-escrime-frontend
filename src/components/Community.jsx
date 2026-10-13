@@ -221,6 +221,22 @@ export default function Community({ tournamentId: preferred = null, userId, onPr
       setDetailScope(scope);
       setDetail(data);
     });
+  useEffect(() => {
+    const requested = Number(new URLSearchParams(location.search).get('league'));
+    if (!Number.isSafeInteger(requested) || requested <= 0 || !leagues?.some((league) => league.id === requested))
+      return;
+    const controller = new AbortController();
+    API.get(`/community/leagues/${requested}`, { signal: controller.signal })
+      .then(({ data }) => {
+        if (controller.signal.aborted) return;
+        setDetailScope('');
+        setDetail(data);
+      })
+      .catch(() => {
+        if (!controller.signal.aborted) setMessage('Classement momentanément indisponible.');
+      });
+    return () => controller.abort();
+  }, [leagues]);
   const detailId = detail?.league?.id;
   useEffect(() => {
     if (detailId) rankingSection.current?.scrollIntoView({ block: 'start', behavior: 'smooth' });
@@ -239,7 +255,7 @@ export default function Community({ tournamentId: preferred = null, userId, onPr
       </header>
       {message && <p role="status">{message}</p>}
       <p className="muted delegation-help">
-        Ouvrez un classement ou choisissez votre favorite : elle apparaît en premier sur l’accueil.
+        Ouvrez un classement ou choisissez votre favorite : elle dispose de sa propre carte sur l’accueil.
       </p>
       {invitations.length > 0 && (
         <section className="delegation-invitations" aria-label="Invitations reçues">
