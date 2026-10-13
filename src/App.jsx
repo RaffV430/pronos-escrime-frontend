@@ -1458,6 +1458,7 @@ export default function App() {
     );
   return (
     <Landing invitation={invitation} onInvitationInvalid={() => setInvitation(null)}>
+      <RefonteToggle />
       <div className="auth-card">
         {forgotPassword ? (
           <ForgotPassword onBack={() => setForgotPassword(false)} />
