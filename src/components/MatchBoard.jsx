@@ -180,7 +180,14 @@ export default function MatchBoard({
       }
     }
   }, [ready, seen, matches, seenKey]);
-  const newMatches = matches.filter((m) => linkedNew.includes(m.id) || (seen !== null && !seen.includes(m.id)));
+  // Nouvelles rencontres = apparues depuis la dernière visite ET encore à pronostiquer : une rencontre déjà
+  // pronostiquée, terminée ou close ne compte plus (le bouton mène toujours à un pronostic à faire).
+  const newMatches = matches.filter(
+    (m) =>
+      (linkedNew.includes(m.id) || (seen !== null && !seen.includes(m.id))) &&
+      !m.predictions?.some((p) => p.userId === userId) &&
+      !isMatchClosed(m, now),
+  );
   // Emmène directement à la première nouvelle rencontre : filtre « Nouveaux », défilement et surbrillance.
   const [flashId, setFlashId] = useState(null);
   const showNew = () => {
@@ -549,7 +556,7 @@ export default function MatchBoard({
     filter === 'Mes tireurs'
       ? isFollowedFencer(follows, m.player1) || isFollowedFencer(follows, m.player2)
       : filter === 'Nouveaux'
-        ? newMatches.some((n) => n.id === m.id)
+        ? newMatches.some((n) => n.id === m.id) || kept.has(m.id)
         : filter === 'À venir'
           ? isUpcoming(m)
           : filter === 'À compléter'
@@ -781,9 +788,7 @@ export default function MatchBoard({
       <>
         {newMatches.length > 0 && (
           <aside className="new-matches">
-            <strong>
-              {withCount(newMatches.length, 'nouvelle rencontre', 'nouvelles rencontres')} dans cette épreuve
-            </strong>{' '}
+            <strong>{withCount(newMatches.length, 'nouvelle rencontre', 'nouvelles rencontres')} à pronostiquer</strong>{' '}
             <button onClick={showNew}>Voir les nouvelles rencontres</button>{' '}
             <button className="button-link" onClick={markSeen}>
               Marquer comme vues
