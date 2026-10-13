@@ -1,4 +1,5 @@
 import ClubProfile from './ClubProfile';
+import { initialLeagueRanking } from '../lib/initialLeagueRanking';
 import { scopeLabels, sectionChoices, selectedSections, toggleSection } from '../lib/delegationScope';
 import { useState, useEffect, useRef } from 'react';
 import { PistePodium } from './PisteExperience';
@@ -99,6 +100,7 @@ function Ranking({ rows, onDuel, userId }) {
 // par tournoi ou sur la saison, création et adhésion, puis le classement des clubs et les défis d'un tournoi.
 export default function Community({ tournamentId: preferred = null, userId, onPronosticate }) {
   const rankingSection = useRef(null);
+  const [initialRanking] = useState(() => initialLeagueRanking(location.search));
   const [favoriteId, setFavoriteId] = useState(null);
   const [favoriteBusy, setFavoriteBusy] = useState(false);
   const [leagues, setLeagues] = useState(null),
@@ -216,16 +218,16 @@ export default function Community({ tournamentId: preferred = null, userId, onPr
   const scoped = (scope) => (scope ? `?tournamentId=${scope}` : '');
   const openDetail = (leagueId, scope) =>
     action(async () => {
+      initialRanking.cancel();
       setDuel(null);
       const { data } = await API.get(`/community/leagues/${leagueId}${scoped(scope)}`);
       setDetailScope(scope);
       setDetail(data);
     });
   useEffect(() => {
-    const requested = Number(new URLSearchParams(location.search).get('league'));
-    if (!Number.isSafeInteger(requested) || requested <= 0 || !leagues?.some((league) => league.id === requested))
-      return;
-    const controller = new AbortController();
+    const request = initialRanking.start(leagues);
+    if (!request) return;
+    const { id: requested, controller } = request;
     API.get(`/community/leagues/${requested}`, { signal: controller.signal })
       .then(({ data }) => {
         if (controller.signal.aborted) return;
@@ -236,7 +238,7 @@ export default function Community({ tournamentId: preferred = null, userId, onPr
         if (!controller.signal.aborted) setMessage('Classement momentanément indisponible.');
       });
     return () => controller.abort();
-  }, [leagues]);
+  }, [leagues, initialRanking]);
   const detailId = detail?.league?.id;
   useEffect(() => {
     if (detailId) rankingSection.current?.scrollIntoView({ block: 'start', behavior: 'smooth' });
