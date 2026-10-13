@@ -22,6 +22,7 @@ import {
 } from '../lib/outbox';
 import HeadToHead from './HeadToHead';
 import LiveScore from './LiveScore';
+import BoutFlow from './BoutFlow';
 import { useLiveScores } from '../lib/useLiveScores';
 import MatchSocial from './MatchSocial';
 import BracketTree from './BracketTree.jsx';
@@ -179,8 +180,22 @@ export default function MatchBoard({
     }
   }, [ready, seen, matches, seenKey]);
   const newMatches = matches.filter((m) => linkedNew.includes(m.id) || (seen !== null && !seen.includes(m.id)));
+  // Emmène directement à la première nouvelle rencontre : filtre « Nouveaux », défilement et surbrillance.
+  const [flashId, setFlashId] = useState(null);
   const showNew = () => {
+    const ids = new Set(newMatches.map((m) => m.id));
     setFilter('Nouveaux');
+    if (!ids.size) return;
+    // Première nouvelle rencontre dans l'ordre affiché (après application du filtre).
+    setTimeout(() => {
+      const el = [...document.querySelectorAll('.match-card')].find((e) => ids.has(Number(/(\d+)$/.exec(e.id)?.[1])));
+      const id = Number(/(\d+)$/.exec(el?.id || '')?.[1]) || [...ids][0];
+      setReveal({ id });
+      setFlashId(id);
+      el?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      el?.focus({ preventScroll: true });
+      setTimeout(() => setFlashId((current) => (current === id ? null : current)), 2600);
+    }, 60);
   };
   const markSeen = () => {
     setLinkedNew([]);
@@ -574,7 +589,7 @@ export default function MatchBoard({
       <article
         id={view === 'Arbre' ? `match-detail-${m.id}` : `match-${m.id}`}
         tabIndex={-1}
-        className={`match-card ${focusTarget?.id === m.id ? 'match-target' : ''}`}
+        className={`match-card ${focusTarget?.id === m.id || flashId === m.id ? 'match-target' : ''}`}
         key={m.id}
         onBlur={(e) => {
           if (!e.currentTarget.contains(e.relatedTarget)) leave(m);
@@ -589,6 +604,7 @@ export default function MatchBoard({
           <span className={`status-pill ${p && !drafts[m.id] ? 'saved' : ''}`}>{status}</span>
         </div>
         <LiveScore live={live.get(m.id)} />
+        <BoutFlow history={live.get(m.id)?.history} player1={m.player1} player2={m.player2} />
         {[m.player1, m.player2].map((name, i) => (
           <label className={`opponent-row${picked === i + 1 ? ' is-picked' : ''}`} key={i}>
             {/* Structure d'origine conservée (mise en page des cartes) : le nom sert de bouton « vainqueur ». */}
@@ -828,6 +844,7 @@ export default function MatchBoard({
               {[
                 'Tous',
                 ...(follows?.matchNames.length ? ['Mes tireurs'] : []),
+                ...(newMatches.length || filter === 'Nouveaux' ? ['Nouveaux'] : []),
                 'À compléter',
                 'À venir',
                 'Ferment bientôt',

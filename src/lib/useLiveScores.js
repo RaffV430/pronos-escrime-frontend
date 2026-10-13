@@ -1,32 +1,64 @@
-// Scores en direct des pistes (FencingTimeLive, via le serveur) : relus toutes les 4 s tant que l'épreuve
-// a des rencontres non terminées et que la page est visible. Affichage seulement, jamais de points.
+// Scores en direct des pistes (FencingTimeLive, via le serveur), poussés à chaque touche par un flux
+// continu (Server-Sent Events). Si le flux n'est pas disponible, relecture toutes les 4 s.
+// Coupé quand la page est cachée, rouvert dès qu'elle revient. Affichage seulement, jamais de points.
 import { useEffect, useState } from 'react';
 import API from '../api';
 
 const EVERY_MS = 4000;
 const EMPTY = new Map();
+const toMap = (data) => new Map((Array.isArray(data) ? data : []).map((x) => [x.matchId, x]));
 
 export function useLiveScores(competitionId, active = true) {
   const [live, setLive] = useState(EMPTY);
   useEffect(() => {
     if (!competitionId || !active) return undefined;
     let stopped = false,
-      timer = null;
-    const load = async () => {
-      if (!document.hidden) {
-        try {
-          const { data } = await API.get(`/matches/live/${competitionId}`);
-          if (!stopped) setLive(new Map((Array.isArray(data) ? data : []).map((x) => [x.matchId, x])));
-        } catch {
-          /* réseau ou serveur indisponible : le dernier état reste affiché jusqu'au prochain essai */
-        }
+      source = null,
+      timer = null,
+      failures = 0;
+    const poll = async () => {
+      if (stopped || document.hidden) return;
+      try {
+        const { data } = await API.get(`/matches/live/${competitionId}`);
+        if (!stopped) setLive(toMap(data));
+      } catch {
+        /* le dernier état reste affiché */
       }
-      if (!stopped) timer = setTimeout(load, EVERY_MS);
+      if (!stopped) timer = setTimeout(poll, EVERY_MS);
     };
-    load();
+    const open = () => {
+      if (stopped || document.hidden || source) return;
+      if (typeof EventSource === 'undefined' || failures > 2) return poll();
+      source = new EventSource(`${API.defaults.baseURL}/public/competitions/${competitionId}/live/stream`);
+      source.onmessage = (event) => {
+        failures = 0;
+        try {
+          setLive(toMap(JSON.parse(event.data)));
+        } catch {
+          /* message illisible : ignoré */
+        }
+      };
+      source.onerror = () => {
+        failures++;
+        if (failures > 2) {
+          source?.close();
+          source = null;
+          poll();
+        }
+      };
+    };
+    const close = () => {
+      source?.close();
+      source = null;
+      clearTimeout(timer);
+    };
+    const visibility = () => (document.hidden ? close() : open());
+    document.addEventListener('visibilitychange', visibility);
+    open();
     return () => {
       stopped = true;
-      clearTimeout(timer);
+      close();
+      document.removeEventListener('visibilitychange', visibility);
     };
   }, [competitionId, active]);
   return competitionId && active ? live : EMPTY;

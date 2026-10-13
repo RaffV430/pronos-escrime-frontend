@@ -5,6 +5,7 @@ import CrowdTrend from './CrowdTrend';
 import { roundLabel, groupMatches } from './matchPresentation';
 import { officialLink, pisteMatches, pistePrediction, pisteStatus } from '../lib/pisteLive';
 import LiveScore from './LiveScore';
+import BoutFlow from './BoutFlow';
 import { useLiveScores } from '../lib/useLiveScores';
 
 export default function PisteLive({
@@ -29,9 +30,11 @@ export default function PisteLive({
     competition?.id ?? matches[0]?.competitionId,
     matches.some((m) => !m.isFinished),
   );
+  const isLive = (id) => Boolean(live.get(id) && !live.get(id).finished);
+  const liveCount = [...live.values()].filter((x) => !x.finished).length;
   const match =
     filtered.find((m) => m.id === selectedId) ||
-    filtered.find((m) => live.has(m.id)) ||
+    filtered.find((m) => isLive(m.id)) ||
     filtered.find((m) => !m.isFinished && m.isClosed) ||
     filtered.filter((m) => m.isFinished).at(-1) ||
     filtered[0];
@@ -59,8 +62,8 @@ export default function PisteLive({
         </header>
       )}
       <p className="piste-live-notice">
-        {live.size
-          ? `${live.size} ${live.size > 1 ? 'rencontres' : 'rencontre'} en direct : score et chrono des pistes en temps réel. Les points sont attribués sur le résultat officiel.`
+        {liveCount
+          ? `${liveCount} ${liveCount > 1 ? 'rencontres' : 'rencontre'} en direct : score et chrono des pistes en temps réel. Les points sont attribués sur le résultat officiel.`
           : 'Résultats actualisés automatiquement depuis le dernier import officiel. Les scores en direct apparaissent dès qu’une rencontre suivie est sur la piste.'}
       </p>
       {stale && <p role="status">Connexion interrompue : les dernières données reçues restent affichées.</p>}
@@ -110,6 +113,7 @@ export default function PisteLive({
               <span>{pisteStatus(match)}</span>
             </div>
             <LiveScore live={live.get(match.id)} />
+            <BoutFlow history={live.get(match.id)?.history} player1={match.player1} player2={match.player2} open />
             <div className="piste-live-duel">
               {[1, 2].map((i) => (
                 <div className={`piste-live-athlete lamp-${i}`} key={i}>
@@ -124,7 +128,9 @@ export default function PisteLive({
                   <strong className="piste-live-score-number">
                     {match.isFinished && Number.isInteger(match[`score${i}`])
                       ? match[`score${i}`]
-                      : (live.get(match.id)?.[`score${i}`] ?? '—')}
+                      : isLive(match.id)
+                        ? live.get(match.id)[`score${i}`]
+                        : '—'}
                   </strong>
                 </div>
               ))}
@@ -179,15 +185,15 @@ export default function PisteLive({
                   >
                     <small>
                       {roundLabel(m.round)}
-                      {m.strip ? ` · Piste ${m.strip}` : ''} · {live.has(m.id) ? '● En direct' : pisteStatus(m)}
+                      {m.strip ? ` · Piste ${m.strip}` : ''} · {isLive(m.id) ? '● En direct' : pisteStatus(m)}
                     </small>
                     <span>
                       {m.player1}
-                      <b>{m.isFinished ? (m.score1 ?? '—') : (live.get(m.id)?.score1 ?? '—')}</b>
+                      <b>{m.isFinished ? (m.score1 ?? '—') : isLive(m.id) ? live.get(m.id).score1 : '—'}</b>
                     </span>
                     <span>
                       {m.player2}
-                      <b>{m.isFinished ? (m.score2 ?? '—') : (live.get(m.id)?.score2 ?? '—')}</b>
+                      <b>{m.isFinished ? (m.score2 ?? '—') : isLive(m.id) ? live.get(m.id).score2 : '—'}</b>
                     </span>
                   </button>
                 ))}

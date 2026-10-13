@@ -3,7 +3,7 @@ import { clockLabel } from '../lib/useLiveScores';
 import './live-score.css';
 
 export default function LiveScore({ live, compact = false }) {
-  if (!live) return null;
+  if (!live || live.finished) return null;
   const period = live.period > 0 && live.period < 10 ? ` · ${live.period}e période` : '';
   return (
     <div className={`live-score${compact ? ' is-compact' : ''}`} role="status" aria-live="polite">

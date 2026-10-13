@@ -499,3 +499,12 @@ html.club-arena.refonte .app-shell.redesigned .primary-nav button.nav-home > spa
     box-shadow: 0 0 0 7px #fff;
   }
 }
+
+/* En-tête : « Direct » et le compte restent sur une ligne */
+html.club-arena.refonte .app-shell.redesigned .app-header .account-actions {
+  flex-wrap: nowrap;
+  align-items: center;
+}
+html.club-arena.refonte .app-shell.redesigned .app-header :is(.user-menu-trigger, .header-live) {
+  white-space: nowrap;
+}

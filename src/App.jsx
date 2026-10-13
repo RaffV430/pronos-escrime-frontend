@@ -37,6 +37,7 @@ import { legalPageFor } from './lib/legal.js';
 import { refonteOn, setRefonte } from './lib/refonte';
 import { NAV_CATALOG, mobileSlots, readNav, saveNav } from './lib/navPrefs';
 import NavEditor from './components/NavEditor';
+import LiveFollowAlert from './components/LiveFollowAlert';
 import { TAB_TITLES, idOf, parseLocation, pathFor, pathForTab, tabFromPath } from './lib/routes.js';
 import { captureInvitation, clearInvitation } from './lib/invitation.js';
 import ResultFreshness from './components/ResultFreshness';
@@ -821,6 +822,7 @@ export default function App() {
             }
           />
           <UpdateBanner onReload={runNavigation} />
+          <LiveFollowAlert competitionId={selectedCompetitionId} onOpen={() => navigate('live')} />
           <ConnectionStatus />
           <NotificationBanner userId={user.id} />
           <nav className="primary-nav" aria-label="Navigation principale">
