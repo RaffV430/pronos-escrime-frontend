@@ -22,7 +22,7 @@ import {
 } from '../lib/outbox';
 import HeadToHead from './HeadToHead';
 import LiveScore from './LiveScore';
-import BoutFlow from './BoutFlow';
+import TouchStrip from './TouchStrip';
 import { useLiveScores } from '../lib/useLiveScores';
 import MatchSocial from './MatchSocial';
 import BracketTree from './BracketTree.jsx';
@@ -101,6 +101,7 @@ export default function MatchBoard({
   onDirtyChange,
   focusTarget,
   onPreviewSave,
+  onOpenLive = null,
   onPreviewRemove,
 }) {
   const clock = useNow(5000);
@@ -603,8 +604,8 @@ export default function MatchBoard({
           </span>
           <span className={`status-pill ${p && !drafts[m.id] ? 'saved' : ''}`}>{status}</span>
         </div>
-        <LiveScore live={live.get(m.id)} />
-        <BoutFlow history={live.get(m.id)?.history} player1={m.player1} player2={m.player2} />
+        <LiveScore live={live.get(m.id)} onOpen={onOpenLive} />
+        <TouchStrip history={live.get(m.id)?.history} player1={m.player1} player2={m.player2} compact />
         {[m.player1, m.player2].map((name, i) => (
           <label className={`opponent-row${picked === i + 1 ? ' is-picked' : ''}`} key={i}>
             {/* Structure d'origine conservée (mise en page des cartes) : le nom sert de bouton « vainqueur ». */}

@@ -4,8 +4,7 @@ import { useState } from 'react';
 import CrowdTrend from './CrowdTrend';
 import { roundLabel, groupMatches } from './matchPresentation';
 import { officialLink, pisteMatches, pistePrediction, pisteStatus } from '../lib/pisteLive';
-import LiveScore from './LiveScore';
-import BoutFlow from './BoutFlow';
+import LiveBoard from './LiveBoard';
 import { useLiveScores } from '../lib/useLiveScores';
 
 export default function PisteLive({
@@ -112,29 +111,31 @@ export default function PisteLive({
               </span>
               <span>{pisteStatus(match)}</span>
             </div>
-            <LiveScore live={live.get(match.id)} />
-            <BoutFlow history={live.get(match.id)?.history} player1={match.player1} player2={match.player2} open />
-            <div className="piste-live-duel">
-              {[1, 2].map((i) => (
-                <div className={`piste-live-athlete lamp-${i}`} key={i}>
-                  <span className="arena-avatar">
-                    {match[`player${i}`]
-                      ?.split(/\s+/)
-                      .slice(0, 2)
-                      .map((s) => s[0])
-                      .join('')}
-                  </span>
-                  <AdaptiveFencerName name={match[`player${i}`]} country={match[`player${i}Country`]} />
-                  <strong className="piste-live-score-number">
-                    {match.isFinished && Number.isInteger(match[`score${i}`])
-                      ? match[`score${i}`]
-                      : isLive(match.id)
-                        ? live.get(match.id)[`score${i}`]
-                        : '—'}
-                  </strong>
-                </div>
-              ))}
-            </div>
+            {live.get(match.id) ? (
+              <LiveBoard match={match} live={live.get(match.id)} />
+            ) : (
+              <div className="piste-live-duel">
+                {[1, 2].map((i) => (
+                  <div className={`piste-live-athlete lamp-${i}`} key={i}>
+                    <span className="arena-avatar">
+                      {match[`player${i}`]
+                        ?.split(/\s+/)
+                        .slice(0, 2)
+                        .map((s) => s[0])
+                        .join('')}
+                    </span>
+                    <AdaptiveFencerName name={match[`player${i}`]} country={match[`player${i}Country`]} />
+                    <strong className="piste-live-score-number">
+                      {match.isFinished && Number.isInteger(match[`score${i}`])
+                        ? match[`score${i}`]
+                        : isLive(match.id)
+                          ? live.get(match.id)[`score${i}`]
+                          : '—'}
+                    </strong>
+                  </div>
+                ))}
+              </div>
+            )}
             <div className="piste-live-panels">
               <section>
                 <p className="arena-eyebrow">VOTRE PRONOSTIC</p>

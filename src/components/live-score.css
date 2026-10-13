@@ -71,101 +71,221 @@
   font-size: 16px;
 }
 
-/* Physionomie du match */
-.bout-flow {
-  margin: 6px 0;
-  font-size: 13px;
-}
-.bout-flow summary {
-  cursor: pointer;
-  font-weight: 700;
-  color: var(--accent-link, var(--primary, #225da8));
-  padding: 4px 0;
-}
-.bout-flow svg {
-  display: block;
-  width: 100%;
-  height: auto;
-  border-radius: 10px;
+/* Tableau de score en grand (Direct) */
+.live-board {
+  --red: #ef5a62;
+  --green: #4cc38a;
+  background: #0d131c;
+  color: #eef2f7;
+  border: 1px solid #ffffff1a;
+  border-radius: 22px;
   overflow: hidden;
-  margin: 6px 0 4px;
+  margin: 10px 0;
 }
-.bout-flow-p1 {
-  fill: #e5484d14;
+.live-board-lamps {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  height: 6px;
 }
-.bout-flow-p2 {
-  fill: #12a37414;
+.live-board-lamps span {
+  background: #ffffff14;
+  transition: background 0.15s ease;
 }
-.bout-flow-axis {
-  stroke: var(--border, #d8e1ed);
-  stroke-dasharray: 3 3;
+.live-board-lamps span:first-child.is-lit {
+  background: var(--red);
+  box-shadow: 0 0 18px var(--red);
 }
-.bout-flow-line {
-  fill: none;
-  stroke: var(--text, #20324a);
-  stroke-width: 1.8;
-  stroke-linejoin: round;
+.live-board-lamps span:last-child.is-lit {
+  background: var(--green);
+  box-shadow: 0 0 18px var(--green);
 }
-.bout-flow-dot {
-  fill: var(--text, #20324a);
+.live-board-duel {
+  position: relative;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
 }
-.bout-flow-dot.by-1 {
-  fill: #e5484d;
-}
-.bout-flow-dot.by-2 {
-  fill: #12a374;
-}
-.bout-flow-dot.by-double {
-  fill: #e2b33c;
-}
-.bout-flow-legend {
+.live-board-side {
   display: flex;
-  justify-content: space-between;
-  gap: 8px;
-  font-size: 12px;
-  font-weight: 600;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 4px;
+  padding: 18px 10px 14px;
+  min-width: 0;
 }
-.bout-flow-legend .by-1::before,
-.bout-flow-legend .by-2::before {
-  content: '';
-  display: inline-block;
-  width: 8px;
-  height: 8px;
+.live-board-side.side-1 {
+  background: linear-gradient(180deg, #ef5a6233, #ef5a620d);
+}
+.live-board-side.side-2 {
+  background: linear-gradient(180deg, #4cc38a2e, #4cc38a0a);
+}
+.live-board-avatar {
+  display: grid;
+  place-items: center;
+  width: 58px;
+  height: 58px;
   border-radius: 50%;
-  margin-right: 5px;
-  background: #e5484d;
+  font:
+    800 20px 'Barlow Condensed',
+    sans-serif;
+  color: #fff;
+  border: 3px solid currentColor;
 }
-.bout-flow-legend .by-2::before {
-  background: #12a374;
+.side-1 .live-board-avatar {
+  background: #b9473b;
+  border-color: var(--red);
 }
-.bout-flow-touches {
-  list-style: none;
-  margin: 8px 0 0;
-  padding: 0;
-  max-height: 180px;
-  overflow-y: auto;
-  display: grid;
-  gap: 2px;
+.side-2 .live-board-avatar {
+  background: #3f8a5e;
+  border-color: var(--green);
 }
-.bout-flow-touches li {
-  display: grid;
-  grid-template-columns: 52px 1fr auto;
-  gap: 8px;
-  padding: 3px 6px;
-  border-radius: 6px;
+.live-board-name {
+  font:
+    800 clamp(18px, 5.5vw, 26px) / 1.05 'Barlow Condensed',
+    sans-serif;
+  text-transform: uppercase;
+  overflow-wrap: anywhere;
+}
+.live-board-side small {
+  color: #a3adbd;
+  font-size: 12px;
+}
+.live-board-score {
+  font:
+    800 clamp(64px, 22vw, 112px) / 1 'Barlow Condensed',
+    sans-serif;
+  font-variant-numeric: tabular-nums;
+  color: #eef2f7;
+  margin-top: 6px;
+}
+.side-1.is-leading .live-board-score {
+  color: var(--red);
+}
+.side-2.is-leading .live-board-score {
+  color: var(--green);
+}
+.live-board-clock {
+  position: absolute;
+  left: 50%;
+  top: 46%;
+  transform: translate(-50%, -50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 8px 12px;
+  border-radius: 14px;
+  background: #0b1018;
+  border: 1px solid #ffffff26;
+  box-shadow: 0 6px 20px #0008;
+}
+.live-board-clock b {
+  font:
+    800 26px/1 'Barlow Condensed',
+    sans-serif;
+  color: #ffc531;
   font-variant-numeric: tabular-nums;
 }
-.bout-flow-touches li.by-1 {
-  background: #e5484d12;
+.live-board-clock small {
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #a3adbd;
 }
-.bout-flow-touches li.by-2 {
-  background: #12a37412;
+.live-board .touch-strip {
+  border-top: 1px solid #ffffff14;
+  padding: 12px 14px 14px;
 }
-.bout-flow-touches li.by-double {
-  background: #e2b33c1f;
+
+/* Fil des touches */
+.touch-strip {
+  margin: 6px 0;
 }
-.bout-flow-touches small {
+.touch-strip-title {
+  margin: 0 0 6px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #a3adbd;
+}
+.touch-strip-title small {
+  letter-spacing: 0;
+  text-transform: none;
+  font-weight: 500;
+}
+.touch-strip-cells {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.club-arena .touch-strip .touch-cell {
+  width: 22px;
+  height: 22px;
+  min-height: 0;
+  padding: 0;
+  border-radius: 5px;
+  border: 0;
+  cursor: pointer;
+  opacity: var(--strength, 1);
+}
+.club-arena .touch-strip .touch-cell.by-1,
+.club-arena .touch-strip .touch-cell.by-1:hover:not(:disabled) {
+  background: #ef5a62;
+}
+.club-arena .touch-strip .touch-cell.by-2,
+.club-arena .touch-strip .touch-cell.by-2:hover:not(:disabled) {
+  background: #4cc38a;
+}
+.club-arena .touch-strip .touch-cell.by-double,
+.club-arena .touch-strip .touch-cell.by-double:hover:not(:disabled) {
+  background: linear-gradient(135deg, #ef5a62 50%, #4cc38a 50%);
+}
+.club-arena .touch-strip .touch-cell.is-picked {
+  opacity: 1;
+  outline: 2px solid #ffc531;
+  outline-offset: 1px;
+}
+.touch-strip-caption {
+  margin: 8px 0 0;
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+.touch-strip-caption small {
+  color: #a3adbd;
+}
+.touch-strip.is-compact .touch-strip-title {
   color: var(--muted, #5b6b80);
+}
+.club-arena .touch-strip.is-compact .touch-cell {
+  width: 14px;
+  height: 14px;
+  border-radius: 3px;
+}
+.touch-strip.is-compact .touch-strip-caption {
+  margin-top: 4px;
+  font-size: 12px;
+}
+
+/* Bandeau « En direct » cliquable */
+.club-arena button.live-score {
+  width: 100%;
+  font: inherit;
+  text-align: left;
+  color: inherit;
+  cursor: pointer;
+}
+.club-arena button.live-score,
+.club-arena button.live-score:hover:not(:disabled) {
+  background: #e5484d14;
+  border: 1px solid #e5484d66;
+}
+.club-arena button.live-score:hover:not(:disabled) {
+  background: #e5484d24;
+}
+.live-score-open {
+  font-size: 12px;
+  font-weight: 700;
+  color: #e5484d;
 }
 
 /* Alerte « votre tireur monte en piste » */
@@ -209,4 +329,17 @@
   border: 0;
   color: #a9b6cc;
   padding: 0 6px;
+}
+
+/* Chrono entre les deux scores (pas sur les noms), cases carrées quel que soit le thème */
+.live-board-clock {
+  top: auto;
+  bottom: 22%;
+  transform: translate(-50%, 50%);
+}
+html.club-arena .app-shell .touch-strip button.touch-cell {
+  border-radius: 5px;
+}
+html.club-arena .app-shell .touch-strip.is-compact button.touch-cell {
+  border-radius: 3px;
 }

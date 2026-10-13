@@ -1313,6 +1313,11 @@ export default function App() {
                             ready={matchesReady}
                             stale={matchesStale}
                             onRefresh={(options) => fetchMatches(selectedCompetitionId, options)}
+                            onOpenLive={(id) => {
+                              setLiveView('matches');
+                              setLiveMatchId(id);
+                              navigate('live');
+                            }}
                             onDirtyChange={setDirty}
                           />
                         </>
