@@ -4,6 +4,10 @@ import { clockLabel } from '../lib/useLiveScores';
 import { useI18n } from '../i18n/context';
 import './live-score.css';
 
+// Lampe de l'appareil : rouge pour le tireur 1, verte pour le tireur 2 (comme le fil des touches),
+// blanche pour une touche non valable (fleuret).
+const lampClass = (fencer, side) => (fencer?.lamp ? `is-lit is-lit-${side}` : fencer?.white ? 'is-white' : undefined);
+
 export default function LiveScore({ live, compact = false, onOpen = null }) {
   const { t } = useI18n();
   if (!live || live.finished) return null;
@@ -36,8 +40,8 @@ export default function LiveScore({ live, compact = false, onOpen = null }) {
         {period}
       </span>
       <b className="live-score-value">
-        <span className={live.fencer1?.lamp ? 'is-lit' : undefined}>{live.score1}</span>–
-        <span className={live.fencer2?.lamp ? 'is-lit' : undefined}>{live.score2}</span>
+        <span className={lampClass(live.fencer1, 1)}>{live.score1}</span>–
+        <span className={lampClass(live.fencer2, 2)}>{live.score2}</span>
       </b>
       {onOpen && <span className="live-score-open">{t('live.seeBig')}</span>}
     </Tag>
