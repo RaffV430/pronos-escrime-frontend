@@ -299,3 +299,37 @@ html.club-arena .app-shell .touch-strip.is-compact button.touch-cell {
 .touch-strip-axis {
   gap: 16px;
 }
+
+/* Grand affichage : la moitié du tireur qui touche s'allume (rouge / vert), blanche si touche non valable */
+.club-arena .piste-live-athlete {
+  transition:
+    background 0.15s ease,
+    box-shadow 0.15s ease;
+}
+.club-arena .piste-live-athlete.lamp-1.is-lit {
+  background: linear-gradient(180deg, #e11d2e, #e11d2ecc);
+  box-shadow:
+    inset 0 0 40px #ff6b7a,
+    0 0 28px #e11d2e88;
+  color: #fff;
+}
+.club-arena .piste-live-athlete.lamp-2.is-lit {
+  background: linear-gradient(180deg, #0f9d58, #0f9d58cc);
+  box-shadow:
+    inset 0 0 40px #5ee69c,
+    0 0 28px #0f9d5888;
+  color: #fff;
+}
+.club-arena .piste-live-athlete.is-lit :is(h2, small, .piste-live-score-number) {
+  color: #fff;
+}
+.club-arena .piste-live-athlete.is-white {
+  box-shadow:
+    inset 0 0 0 4px #ffffff,
+    inset 0 0 36px #ffffffcc;
+}
+@media (prefers-reduced-motion: reduce) {
+  .club-arena .piste-live-athlete {
+    transition: none;
+  }
+}

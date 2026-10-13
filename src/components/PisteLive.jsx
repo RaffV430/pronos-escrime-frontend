@@ -121,7 +121,16 @@ export default function PisteLive({
             <LiveScore live={live.get(match.id)} />
             <div className="piste-live-duel">
               {[1, 2].map((i) => (
-                <div className={`piste-live-athlete lamp-${i}`} key={i}>
+                <div
+                  className={`piste-live-athlete lamp-${i}${
+                    isLive(match.id) && live.get(match.id)[`fencer${i}`]?.lamp
+                      ? ' is-lit'
+                      : isLive(match.id) && live.get(match.id)[`fencer${i}`]?.white
+                        ? ' is-white'
+                        : ''
+                  }`}
+                  key={i}
+                >
                   <span className="arena-avatar">
                     {match[`player${i}`]
                       ?.split(/\s+/)
