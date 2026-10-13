@@ -212,7 +212,8 @@ export default function RedesignHome({ user = null, onNavigate = null }) {
     API.get('/public/calendar', { signal: c.signal })
       .then(({ data }) => setEvents(data?.events || []))
       .catch(() => setEvents([]));
-    API.get('/public/tournaments', { signal: c.signal })
+    // Toujours la liste à jour : une copie gardée sur l'appareil pourrait ignorer une épreuve qui vient d'ouvrir.
+    API.get('/public/tournaments', { signal: c.signal, forceRefresh: true })
       .then(({ data }) => setTournaments(Array.isArray(data) ? data : []))
       .catch(() => setTournaments([]));
     API.get('/public/results', { signal: c.signal })
