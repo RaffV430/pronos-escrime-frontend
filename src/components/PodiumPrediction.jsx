@@ -32,6 +32,8 @@ export default function PodiumPrediction({ selectedCompetitionId, user, adminOnl
   const lockedRef = useRef(false);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
+  const [opening, setOpening] = useState({ notYetOpen: false });
+  const waitingRef = useRef(false);
   const [busy, setBusy] = useState(false);
   const [lockBusy, setLockBusy] = useState(false);
   const [adminMessage, setAdminMessage] = useState('');
@@ -67,7 +69,9 @@ export default function PodiumPrediction({ selectedCompetitionId, user, adminOnl
         if (controller.signal.aborted) return;
         setOptions(opt.data);
         setIsLocked(status.data.isLocked);
-        lockedRef.current = status.data.isLocked;
+        setOpening(status.data);
+        waitingRef.current = Boolean(status.data.notYetOpen);
+        lockedRef.current = status.data.isLocked && !status.data.notYetOpen;
         setLegacy(pick.data || {});
         setError('');
         const ids = { ...(pick.data.selectionIds || {}) };
@@ -77,7 +81,7 @@ export default function PodiumPrediction({ selectedCompetitionId, user, adminOnl
           if (!ids[k] && matches.length === 1) ids[k] = matches[0].id;
         }
         setSelected(ids);
-        if (status.data.isLocked || user?.isAdmin) {
+        if ((status.data.isLocked && !status.data.notYetOpen) || user?.isAdmin) {
           const all = await API.get(`/podium/all/competition/${selectedCompetitionId}`, { signal: controller.signal });
           if (!controller.signal.aborted) setAllPredictions(all.data);
         }
@@ -94,8 +98,15 @@ export default function PodiumPrediction({ selectedCompetitionId, user, adminOnl
           signal: controller.signal,
         });
         if (!controller.signal.aborted) {
+          if (waitingRef.current && !status.data.notYetOpen) {
+            const roster = await API.get(`/podium/options/${selectedCompetitionId}`, { signal: controller.signal });
+            if (controller.signal.aborted) return;
+            setOptions(roster.data);
+          }
           setIsLocked(status.data.isLocked);
-          lockedRef.current = status.data.isLocked;
+          setOpening(status.data);
+          waitingRef.current = Boolean(status.data.notYetOpen);
+          lockedRef.current = status.data.isLocked && !status.data.notYetOpen;
         }
       } catch {
         /* Do not replace a valid status with an invented one. */
@@ -108,13 +119,13 @@ export default function PodiumPrediction({ selectedCompetitionId, user, adminOnl
   }, [selectedCompetitionId, user?.isAdmin]);
 
   useEffect(() => {
-    if (!isLocked || !selectedCompetitionId) return;
+    if (!isLocked || opening.notYetOpen || !selectedCompetitionId) return;
     const controller = new AbortController();
     API.get(`/podium/all/competition/${selectedCompetitionId}`, { signal: controller.signal })
       .then(({ data }) => setAllPredictions(data))
       .catch(() => {});
     return () => controller.abort();
-  }, [isLocked, selectedCompetitionId]);
+  }, [isLocked, opening.notYetOpen, selectedCompetitionId]);
 
   const submit = async (e) => {
     e.preventDefault();
@@ -140,7 +151,7 @@ export default function PodiumPrediction({ selectedCompetitionId, user, adminOnl
       const { data } = await API.put(`/podium/competition/${selectedCompetitionId}/toggle-lock`, {
         isLocked: !isLocked,
       });
-      setIsLocked(data.competition.isPodiumLocked);
+      setIsLocked(data.competition.isPodiumLocked || opening.notYetOpen);
       setAdminMessage(data.message);
     } catch (err) {
       setAdminMessage(err.response?.data?.error || 'Erreur lors du verrouillage.');
@@ -181,7 +192,10 @@ export default function PodiumPrediction({ selectedCompetitionId, user, adminOnl
           {options && (
             <>
               <p className="muted">
-                {options.entries.length} engagés · liste complète, y compris les exemptions du premier tour.
+                {options.entries.length}{' '}
+                {opening.notYetOpen
+                  ? 'tireurs actuellement disponibles · liste du tableau principal à confirmer.'
+                  : 'engagés · liste complète, y compris les exemptions du premier tour.'}
               </p>
             </>
           )}
@@ -197,7 +211,7 @@ export default function PodiumPrediction({ selectedCompetitionId, user, adminOnl
               <p>👑 ESPACE ADMIN</p>
               <button
                 type="button"
-                disabled={lockBusy || !options || !!options.resolvedAt || !!options.official}
+                disabled={lockBusy || opening.notYetOpen || !options || !!options.resolvedAt || !!options.official}
                 onClick={toggleLock}
               >
                 {isLocked ? '🔓 Déverrouiller la saisie aux joueurs' : '🔒 Bloquer la saisie aux joueurs'}
@@ -233,7 +247,8 @@ export default function PodiumPrediction({ selectedCompetitionId, user, adminOnl
           )}
           {!adminOnly && (
             <>
-              {options && isLocked && <p>🔒 Les pronostics sont clos pour cette épreuve.</p>}
+              {opening.notYetOpen && <p role="status">{opening.reason}</p>}
+              {options && isLocked && !opening.notYetOpen && <p>🔒 Les pronostics sont clos pour cette épreuve.</p>}
               {!options && !error && <p role="status">Vérification de la disponibilité…</p>}
               {options ? (
                 <form onSubmit={submit} className="podium-form">
@@ -325,7 +340,7 @@ export default function PodiumPrediction({ selectedCompetitionId, user, adminOnl
                 !error && <p>Chargement des engagés…</p>
               )}
               {message && <p role="status">{message}</p>}
-              {isLocked && (
+              {isLocked && !opening.notYetOpen && (
                 <div>
                   <h4>Pronostics podium des participants</h4>
                   {allPredictions.length ? (
