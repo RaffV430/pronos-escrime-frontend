@@ -6,6 +6,7 @@ export function calendarPredictionPath(event) {
   if (competitions.length !== 1) return base;
   const competition = competitions[0];
   const view = event.predictionView === 'tableau' ? 'tableau' : 'poules';
-  const phase = view === 'tableau' && event.tableauPhase === 'main' ? '?phase=main' : '';
+  const phase =
+    view === 'tableau' && ['main', 'preliminary'].includes(event.tableauPhase) ? `?phase=${event.tableauPhase}` : '';
   return `${base}/${segment(competition.name, competition.id)}/${view}${phase}`;
 }

@@ -10,3 +10,16 @@ test('carte J1 vers poules, carte J2 vers principal, aucune dépendance à la da
   );
   assert.equal(calendarPredictionPath({ ...event, competitions: [] }), '/pronostiquer/test-7');
 });
+
+test('carte J1 après poules vers préliminaire distinct du principal', () => {
+  assert.equal(
+    calendarPredictionPath({
+      tournamentId: 7,
+      tournamentName: 'Test',
+      competitions: [{ id: 20, name: 'Foil' }],
+      predictionView: 'tableau',
+      tableauPhase: 'preliminary',
+    }),
+    '/pronostiquer/test-7/foil-20/tableau?phase=preliminary',
+  );
+});
