@@ -77,7 +77,17 @@ function LiveCell({ fencer, bouts }) {
   );
 }
 
-function PredictionRow({ userId, pool, fencer, closed, onRefresh, reportDirty, live = false }) {
+function PredictionRow({
+  userId,
+  pool,
+  fencer,
+  closed,
+  onRefresh,
+  reportDirty,
+  registerSave,
+  batchBusy,
+  live = false,
+}) {
   const follows = useFencerFollows();
   const localDraft = useLocalDraft(draftKey(userId, pool.competitionId, `pool-${fencer.id}`));
   const [wins, setWins] = useState(fencer.prediction?.wins ?? '');
@@ -126,8 +136,9 @@ function PredictionRow({ userId, pool, fencer, closed, onRefresh, reportDirty, l
   const losses = wins === '' ? '' : bouts - Number(wins);
   const minimum = wins === '' ? -5 * bouts : Number(wins) - 5 * losses;
   const maximum = wins === '' ? 5 * bouts : 5 * Number(wins) - losses;
-  async function save(event) {
-    event.preventDefault();
+  async function save(event, batch = false) {
+    event?.preventDefault();
+    if (closed || busy) return 'failed';
     setBusy(true);
     setFeedback('');
     const body = {
@@ -143,7 +154,8 @@ function PredictionRow({ userId, pool, fencer, closed, onRefresh, reportDirty, l
       localDraft.discard();
       setDirty(false);
       setFeedback('');
-      onRefresh();
+      if (!batch) onRefresh();
+      return 'saved';
     } catch (error) {
       if (isNetworkError(error)) {
         // Pas de réseau : gardé sur l'appareil et envoyé tout seul dès que la connexion revient.
@@ -155,8 +167,10 @@ function PredictionRow({ userId, pool, fencer, closed, onRefresh, reportDirty, l
         });
         setDirty(false);
         setFeedback('Pas de réseau : pronostic gardé et envoyé automatiquement dès que la connexion revient.');
+        return 'queued';
       } else if (isClosedRefusal(error.response?.status)) refusedClosed();
       else setFeedback(message(error));
+      return 'failed';
     } finally {
       setBusy(false);
     }
@@ -179,6 +193,18 @@ function PredictionRow({ userId, pool, fencer, closed, onRefresh, reportDirty, l
     }
   }
   const formId = `pool-prediction-${pool.id}-${fencer.id}`;
+  useEffect(() => {
+    const formValid = document.getElementById(formId)?.checkValidity();
+    registerSave(fencer.id, async () => {
+      if (!dirty || closed || busy) return 'skipped';
+      if (!formValid) {
+        setFeedback('Vérifiez les victoires et l’indice. Votre saisie est conservée.');
+        return 'failed';
+      }
+      return save(null, true);
+    });
+    return () => registerSave(fencer.id, null);
+  });
   // Suspension temporaire (contrôle FencingTimeLive en retard), à distinguer d'un blocage définitif.
   const pending = closed && !pool.isFinal && !pool.isClosed && !fencer.firstResultAt && Boolean(pool.sourceUnavailable);
   const lockReason = pool.isFinal
@@ -232,7 +258,7 @@ function PredictionRow({ userId, pool, fencer, closed, onRefresh, reportDirty, l
               setWins(e.target.value);
               localDraft.persist({ wins: e.target.value, indicator });
             }}
-            disabled={closed || busy}
+            disabled={closed || busy || batchBusy}
           />
         )}
       </td>
@@ -266,7 +292,7 @@ function PredictionRow({ userId, pool, fencer, closed, onRefresh, reportDirty, l
               setIndicator(next);
               localDraft.persist({ wins, indicator: next });
             }}
-            disabled={closed || busy}
+            disabled={closed || busy || batchBusy}
           />
         )}
       </td>
@@ -328,7 +354,7 @@ function PredictionRow({ userId, pool, fencer, closed, onRefresh, reportDirty, l
                 </span>
               ) : (
                 <button
-                  disabled={busy}
+                  disabled={busy || batchBusy}
                   type="submit"
                   className="pool-save"
                   aria-label={`Enregistrer le pronostic de ${fencer.name}`}
@@ -347,7 +373,7 @@ function PredictionRow({ userId, pool, fencer, closed, onRefresh, reportDirty, l
               )}
               {fencer.prediction && (
                 <button
-                  disabled={busy}
+                  disabled={busy || batchBusy}
                   type="button"
                   className="pool-secondary pool-icon-button"
                   aria-label={`Supprimer le pronostic de ${fencer.name}`}
@@ -659,6 +685,38 @@ function CreatePool({ competitionId, onRefresh }) {
 
 function PoolList({ competitionId, user, onDirtyChange, refreshVersion }) {
   const [dirtyRows, setDirtyRows] = useState({});
+  const saves = useRef(new Map());
+  const [batchBusy, setBatchBusy] = useState(false);
+  const [batchFeedback, setBatchFeedback] = useState('');
+  const registerSave = useCallback((id, save) => {
+    if (save) saves.current.set(id, save);
+    else saves.current.delete(id);
+  }, []);
+  async function saveAll() {
+    if (batchBusy) return;
+    setBatchBusy(true);
+    setBatchFeedback('');
+    const results = [];
+    try {
+      for (const save of [...saves.current.values()]) {
+        try {
+          results.push(await save());
+        } catch {
+          results.push('failed');
+        }
+      }
+      const saved = results.filter((r) => r === 'saved').length;
+      const queued = results.filter((r) => r === 'queued').length;
+      const failed = results.filter((r) => r === 'failed').length;
+      setBatchFeedback(
+        `${saved} pronostic(s) enregistré(s).${queued ? ` ${queued} en attente de connexion.` : ''}${failed ? ` ${failed} non enregistré(s) : consultez les lignes concernées.` : ''}`,
+      );
+    } finally {
+      setBatchBusy(false);
+      reload({ force: true });
+    }
+  }
+
   // Filtre « Mes tireurs » : seulement les poules où figure un tireur suivi.
   const poolFollows = useFencerFollows();
   const [onlyMine, setOnlyMine] = useState(false);
@@ -723,6 +781,10 @@ function PoolList({ competitionId, user, onDirtyChange, refreshVersion }) {
         <button className="pool-secondary" onClick={reload} disabled={loading}>
           Actualiser
         </button>
+        <button onClick={saveAll} disabled={loading || batchBusy || !dirty}>
+          {batchBusy ? 'Enregistrement…' : 'Tout enregistrer'}
+        </button>
+        {batchFeedback && <span role="status">{batchFeedback}</span>}
         <span role="status">{loading ? 'Chargement des poules…' : withCount(pools.length, 'poule')}</span>
         {pools.some(hasMine) && (
           <div className="filter-row" role="group" aria-label="Filtrer les poules">
@@ -915,6 +977,8 @@ function PoolList({ competitionId, user, onDirtyChange, refreshVersion }) {
                               userId={user.id}
                               key={`${fencer.id}-${fencer.prediction?.updatedAt || 'none'}`}
                               reportDirty={reportDirty}
+                              registerSave={registerSave}
+                              batchBusy={batchBusy}
                               pool={pool}
                               fencer={fencer}
                               closed={
