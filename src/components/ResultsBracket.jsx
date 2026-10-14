@@ -7,7 +7,16 @@ import { roundName, shortName, shortRoundName } from './eventResults';
 function Side({ m, n, won }) {
   const follows = useFencerFollows();
   const seed = seedOf(m, n);
-  const score = m.resultType === 'MEDICAL_WITHDRAWAL' ? (won ? '' : 'ab.') : (m[`score${n}`] ?? '');
+  const score =
+    m.resultType === 'MEDICAL_WITHDRAWAL'
+      ? won
+        ? ''
+        : 'ab.'
+      : m.resultType === 'NO_SHOW'
+        ? won
+          ? ''
+          : 'forf.'
+        : (m[`score${n}`] ?? '');
   return (
     <span className={`rb-side${won ? ' is-win' : ''}`}>
       <span className="rb-seed">{seed ? seed : ''}</span>

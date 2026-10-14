@@ -80,7 +80,9 @@ function MatchDialog({ match, onClose }) {
                   <FencerLink name={s.name} matchId={match.id} />{' '}
                   {s.country && <small className="muted">{s.country}</small>}
                 </td>
-                <td className="result-score">{match.resultType === 'MEDICAL_WITHDRAWAL' ? '' : (s.score ?? '')}</td>
+                <td className="result-score">
+                  {['MEDICAL_WITHDRAWAL', 'NO_SHOW'].includes(match.resultType) ? '' : (s.score ?? '')}
+                </td>
               </tr>
             );
           })}
@@ -88,6 +90,9 @@ function MatchDialog({ match, onClose }) {
       </table>
       {match.resultType === 'MEDICAL_WITHDRAWAL' && (
         <p>Abandon : {match.winner === 1 ? match.player1 : match.player2} qualifié(e).</p>
+      )}
+      {match.resultType === 'NO_SHOW' && (
+        <p>Forfait (adversaire absent) : {match.winner === 1 ? match.player1 : match.player2} qualifié(e).</p>
       )}
       {match.pointsPending && <p className="muted">Résultat en cours de vérification.</p>}
       {!publicMode && (

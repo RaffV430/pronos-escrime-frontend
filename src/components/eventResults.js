@@ -63,6 +63,7 @@ export const MEDALS = { 1: '🥇', 2: '🥈', 3: '🥉' };
 
 // Score d'un match terminé, vainqueur en premier (« 15–8 »), ou mention du retrait.
 export function resultText(m) {
+  if (m.resultType === 'NO_SHOW') return 'forfait';
   if (m.resultType === 'MEDICAL_WITHDRAWAL') return 'abandon';
   if (!Number.isInteger(m.score1) || !Number.isInteger(m.score2)) return '';
   return m.winner === 2 ? `${m.score2}–${m.score1}` : `${m.score1}–${m.score2}`;
