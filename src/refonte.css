@@ -201,12 +201,20 @@
   color: var(--gold);
 }
 
-/* Bascule ancien / nouveau design (local uniquement) */
-.refonte-toggle {
+/* Actions fixes, regroupées pour éviter les chevauchements. */
+.floating-actions {
   position: fixed;
   right: 12px;
   bottom: 84px;
   z-index: 60;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  max-width: calc(100vw - 24px);
+  flex-wrap: wrap;
+}
+.refonte-toggle {
   padding: 8px 14px;
   border-radius: 999px;
   border: 1px solid #ffffff40;
@@ -228,7 +236,7 @@
   color: #241a02;
 }
 @media (min-width: 761px) {
-  .refonte-toggle {
+  .floating-actions {
     bottom: 16px;
   }
 }

@@ -143,9 +143,12 @@ const MORE_ICON = (
 function RefonteToggle() {
   const { t } = useI18n();
   return (
-    <button type="button" className="refonte-toggle" onClick={() => setRefonte(!REFONTE)}>
+    <div className="floating-actions">
+      <div id="pool-save-action" />
+      <button type="button" className="refonte-toggle" onClick={() => setRefonte(!REFONTE)}>
       {REFONTE ? t('refonte.toOld') : t('refonte.toNew')}
-    </button>
+      </button>
+    </div>
   );
 }
 const AccountSettings = lazy(() => import('./components/AccountSettings'));

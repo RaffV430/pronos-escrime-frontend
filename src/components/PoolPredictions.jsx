@@ -1,3 +1,4 @@
+import { createPortal } from 'react-dom';
 import { UX_SAVE } from '../lib/uxFeatures';
 import BoostBadge from './BoostBadge';
 import { RESULT_REFRESH_MS } from '../lib/resultSync';
@@ -687,6 +688,10 @@ function PoolList({ competitionId, user, onDirtyChange, refreshVersion }) {
   const [dirtyRows, setDirtyRows] = useState({});
   const saves = useRef(new Map());
   const [batchBusy, setBatchBusy] = useState(false);
+  const [saveTarget, setSaveTarget] = useState(null);
+  useEffect(() => {
+    setSaveTarget(document.getElementById('pool-save-action'));
+  }, []);
   const [batchFeedback, setBatchFeedback] = useState('');
   const registerSave = useCallback((id, save) => {
     if (save) saves.current.set(id, save);
@@ -781,9 +786,12 @@ function PoolList({ competitionId, user, onDirtyChange, refreshVersion }) {
         <button className="pool-secondary" onClick={reload} disabled={loading}>
           Actualiser
         </button>
-        <button onClick={saveAll} disabled={loading || batchBusy || !dirty}>
-          {batchBusy ? 'Enregistrement…' : 'Tout enregistrer'}
-        </button>
+        {(dirty || batchBusy) && saveTarget && createPortal(
+          <button className="pool-floating-save" onClick={saveAll} disabled={loading || batchBusy}>
+            {batchBusy ? 'Enregistrement…' : 'Tout enregistrer'}
+          </button>,
+          saveTarget,
+        )}
         {batchFeedback && <span role="status">{batchFeedback}</span>}
         <span role="status">{loading ? 'Chargement des poules…' : withCount(pools.length, 'poule')}</span>
         {pools.some(hasMine) && (
