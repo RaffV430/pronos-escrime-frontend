@@ -5,6 +5,7 @@ export const ADMIN_SECTIONS = [
   ['tournaments', 'Tournois et calendrier', 'Préparer un tournoi, calendrier automatique, circuits'],
   ['clubs', 'Clubs et tireurs', 'Demandes de clubs, responsables, clubs des tireurs'],
   ['sync', 'Suivi des sites officiels', 'État des contrôles FencingTimeLive et engarde'],
+  ['announcements', 'Annonces', 'Préparer et envoyer une notification générale'],
   ['journal', 'Journal', 'Dernières actions d’administration'],
 ];
 const KEY = 'pronos:admin-section';

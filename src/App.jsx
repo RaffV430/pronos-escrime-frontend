@@ -67,6 +67,7 @@ const CircuitSettings = lazy(() => import('./components/CircuitSettings'));
 const SyncHealth = lazy(() => import('./components/SyncHealth'));
 const CalendarWatch = lazy(() => import('./components/CalendarWatch'));
 const FtlTournamentSetup = lazy(() => import('./components/FtlTournamentSetup'));
+const AdminAnnouncements = lazy(() => import('./components/AdminAnnouncements'));
 const AdminJournal = lazy(() => import('./components/AdminJournal'));
 const adminFallback = <p className="muted">Chargement des outils d’administration…</p>;
 // Onglets secondaires chargés à la première ouverture : l'écran des matchs s'affiche plus vite.
@@ -146,7 +147,7 @@ function RefonteToggle() {
     <div className="floating-actions">
       <div id="pool-save-action" />
       <button type="button" className="refonte-toggle" onClick={() => setRefonte(!REFONTE)}>
-      {REFONTE ? t('refonte.toOld') : t('refonte.toNew')}
+        {REFONTE ? t('refonte.toOld') : t('refonte.toNew')}
       </button>
     </div>
   );
@@ -1005,6 +1006,7 @@ export default function App() {
                     )}
                     {adminSection === 'sync' && <SyncHealth destination={adminTarget} />}
                     {adminSection === 'journal' && <AdminJournal />}
+                    {adminSection === 'announcements' && <AdminAnnouncements />}
                   </Suspense>
                 </>
               )}
