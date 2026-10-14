@@ -251,8 +251,14 @@ export default function MatchBoard({
   const queued = useRef(new Set());
   const saveRef = useRef(null);
   const shiftAlone = useRef(false);
+  const mainOnly = new URLSearchParams(location.search).get('phase') === 'main';
   const valid = matches.filter(
-    (m) => m.player1?.trim() && m.player2?.trim() && m.player1 !== 'En attente...' && m.player2 !== 'En attente...',
+    (m) =>
+      (!mainOnly || !m.round?.startsWith('J1:')) &&
+      m.player1?.trim() &&
+      m.player2?.trim() &&
+      m.player1 !== 'En attente...' &&
+      m.player2 !== 'En attente...',
   );
   const multiphase = valid.some((m) => m.round?.startsWith('J1:'));
   const mine = (m) => m.predictions?.find((p) => p.userId === userId);
@@ -910,6 +916,11 @@ export default function MatchBoard({
                 </button>
               )}
             </div>
+          )}
+          {mainOnly && (
+            <p className="muted">
+              Tableau principal du J2 · <a href={location.pathname}>Voir les deux journées</a>
+            </p>
           )}
           {valid.some((m) => m.round?.startsWith('J1:')) && (
             <p className="muted">

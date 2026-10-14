@@ -1,9 +1,11 @@
-import { segment } from './routes';
+import { segment } from './routes.js';
 export function calendarPredictionPath(event) {
   if (!event.tournamentId) return '/calendrier';
   const base = `/pronostiquer/${segment(event.tournamentName || event.label, event.tournamentId)}`;
   const competitions = event.competitions || [];
   if (competitions.length !== 1) return base;
   const competition = competitions[0];
-  return `${base}/${segment(competition.name, competition.id)}/poules`;
+  const view = event.predictionView === 'tableau' ? 'tableau' : 'poules';
+  const phase = view === 'tableau' && event.tableauPhase === 'main' ? '?phase=main' : '';
+  return `${base}/${segment(competition.name, competition.id)}/${view}${phase}`;
 }
