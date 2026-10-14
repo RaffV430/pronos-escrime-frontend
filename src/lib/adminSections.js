@@ -11,7 +11,13 @@ export const ADMIN_SECTIONS = [
 const KEY = 'pronos:admin-section';
 
 export function sectionForDestination(destination) {
-  return destination?.panel === 'clubs' ? 'clubs' : destination?.panel === 'sync' ? 'sync' : null;
+  return destination?.panel === 'tournaments'
+    ? 'tournaments'
+    : destination?.panel === 'clubs'
+      ? 'clubs'
+      : destination?.panel === 'sync'
+        ? 'sync'
+        : null;
 }
 export function storedSection() {
   try {

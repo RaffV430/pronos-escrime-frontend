@@ -3,9 +3,13 @@ import API from '../api';
 import VenuePicker from './VenuePicker';
 import { parisTime } from '../lib/venue.js';
 import { sourceOf } from '../lib/sources.js';
-export default function FtlTournamentSetup({ onConfigured }) {
-  const [sourceUrl, setSource] = useState(''),
-    [venue, setVenue] = useState({ city: '', timezone: '', offset: '' }),
+export default function FtlTournamentSetup({ onConfigured, initialEvent = null }) {
+  const [sourceUrl, setSource] = useState(initialEvent?.sourceUrl || ''),
+    [venue, setVenue] = useState({
+      city: initialEvent?.city || '',
+      timezone: initialEvent?.timezone || '',
+      offset: '',
+    }),
     [preview, setPreview] = useState(null),
     [selected, setSelected] = useState([]),
     [busy, setBusy] = useState(false),
@@ -34,7 +38,9 @@ export default function FtlTournamentSetup({ onConfigured }) {
         return;
       }
       setPreview(data);
-      setSelected(data.events.map((e) => e.eventId));
+      setSelected(
+        data.events.filter((e) => (initialEvent ? e.eventId === initialEvent.eventId : true)).map((e) => e.eventId),
+      );
     } catch (e) {
       setMessage(e.response?.data?.error || 'Calendrier indisponible. Réessayez.');
     } finally {
@@ -63,7 +69,7 @@ export default function FtlTournamentSetup({ onConfigured }) {
     }
   };
   return (
-    <details className="feature-panel tournament-setup">
+    <details className="feature-panel tournament-setup" open={initialEvent ? true : undefined}>
       <summary>Préparer un tournoi (FencingTimeLive ou engarde-service)</summary>
       <p>
         Un seul lien pour retrouver les épreuves individuelles et par équipes, puis choisir celles à proposer aux

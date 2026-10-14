@@ -66,6 +66,7 @@ const FtlControl = lazy(() => import('./components/FtlControl'));
 const CircuitSettings = lazy(() => import('./components/CircuitSettings'));
 const SyncHealth = lazy(() => import('./components/SyncHealth'));
 const CalendarWatch = lazy(() => import('./components/CalendarWatch'));
+const AdminFtlDiscovery = lazy(() => import('./components/AdminFtlDiscovery'));
 const FtlTournamentSetup = lazy(() => import('./components/FtlTournamentSetup'));
 const AdminAnnouncements = lazy(() => import('./components/AdminAnnouncements'));
 const AdminJournal = lazy(() => import('./components/AdminJournal'));
@@ -230,6 +231,7 @@ export default function App() {
     const section = sectionForDestination(adminTarget);
     if (section) setAdminSection(section);
   }, [adminTarget]);
+  const [detectedEvent, setDetectedEvent] = useState(null);
   const chooseAdminSection = (section) => {
     setAdminSection(section);
     storeSection(section);
@@ -991,7 +993,12 @@ export default function App() {
                   <Suspense fallback={adminFallback}>
                     {adminSection === 'tournaments' && (
                       <>
-                        <FtlTournamentSetup onConfigured={() => setEventListVersion((v) => v + 1)} />
+                        <AdminFtlDiscovery onPrepare={setDetectedEvent} />
+                        <FtlTournamentSetup
+                          key={detectedEvent?.eventId || 'manual'}
+                          initialEvent={detectedEvent}
+                          onConfigured={() => setEventListVersion((v) => v + 1)}
+                        />
                         <CalendarWatch />
                         <CircuitSettings />
                       </>

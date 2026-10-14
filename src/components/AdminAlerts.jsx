@@ -41,7 +41,7 @@ export default function AdminAlerts({ user, onOpen }) {
   return counts?.total > 0 ? (
     <button
       className="button-secondary admin-alert-button"
-      onClick={() => onOpen(counts.clubs ? 'clubs' : 'sync')}
+      onClick={() => onOpen(counts.clubs ? 'clubs' : counts.events ? 'tournaments' : 'sync')}
       aria-label={`${counts.total} alerte(s) administrateur`}
     >
       {counts.total} alerte(s)
