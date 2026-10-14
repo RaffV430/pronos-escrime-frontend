@@ -1,7 +1,7 @@
 export function adminDestination(search = '') {
   const q = new URLSearchParams(search);
   const panel = q.get('panel');
-  if (!['clubs', 'sync'].includes(panel)) return null;
+  if (!['clubs', 'sync', 'tournaments'].includes(panel)) return null;
   const id = Number(q.get('request'));
   return { panel, requestId: Number.isSafeInteger(id) && id > 0 ? id : null };
 }
