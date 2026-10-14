@@ -51,7 +51,9 @@ function PublicMatchDialog({ match, onClose }) {
                 {match[`player${n}Country`] && <small className="muted">{match[`player${n}Country`]}</small>}
               </td>
               <td className="result-score">
-                {match.pointsPending || match.resultType === 'MEDICAL_WITHDRAWAL' ? '' : (match[`score${n}`] ?? '')}
+                {match.pointsPending || ['MEDICAL_WITHDRAWAL', 'NO_SHOW'].includes(match.resultType)
+                  ? ''
+                  : (match[`score${n}`] ?? '')}
               </td>
             </tr>
           ))}
@@ -59,6 +61,7 @@ function PublicMatchDialog({ match, onClose }) {
       </table>
       {match.pointsPending && <p role="status">Résultat à confirmer par un administrateur. Points en attente.</p>}
       {match.resultType === 'MEDICAL_WITHDRAWAL' && <p>Abandon.</p>}
+      {match.resultType === 'NO_SHOW' && <p>Forfait : adversaire absent.</p>}
       {!match.isFinished && !match.winner && <p className="muted">Match à venir.</p>}
       <button type="button" className="button-secondary" onClick={() => ref.current?.close()}>
         Fermer

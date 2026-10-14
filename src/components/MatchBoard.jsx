@@ -798,9 +798,11 @@ export default function MatchBoard({
         ) : m.isFinished ? (
           <div className="official-result">
             <p>
-              {m.resultType === 'MEDICAL_WITHDRAWAL'
-                ? `Retrait médical · Victoire ${m.winnerName}`
-                : `Résultat : ${m.score1} – ${m.score2}`}
+              {m.resultType === 'NO_SHOW'
+                ? `Forfait (adversaire absent) · Victoire ${m.winnerName}`
+                : m.resultType === 'MEDICAL_WITHDRAWAL'
+                  ? `Retrait médical · Victoire ${m.winnerName}`
+                  : `Résultat : ${m.score1} – ${m.score2}`}
             </p>
             {p && (
               <strong>

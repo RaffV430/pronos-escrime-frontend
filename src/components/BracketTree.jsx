@@ -129,9 +129,11 @@ export default function BracketTree({
           <span className="tree-result">
             {m.pointsPending
               ? 'Points à valider'
-              : m.resultType === 'MEDICAL_WITHDRAWAL'
-                ? 'Abandon'
-                : `Résultat : ${m.score1}–${m.score2}`}{' '}
+              : m.resultType === 'NO_SHOW'
+                ? 'Forfait'
+                : m.resultType === 'MEDICAL_WITHDRAWAL'
+                  ? 'Abandon'
+                  : `Résultat : ${m.score1}–${m.score2}`}{' '}
             <span className={`tree-chip ${p ? (total > 0 ? 'is-good' : 'is-wrong') : ''}`}>
               {m.pointsPending ? 'En attente' : p ? `${total > 0 ? '+' : ''}${total} pt${total > 1 ? 's' : ''}` : '—'}
             </span>
