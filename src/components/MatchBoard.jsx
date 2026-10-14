@@ -251,10 +251,13 @@ export default function MatchBoard({
   const queued = useRef(new Set());
   const saveRef = useRef(null);
   const shiftAlone = useRef(false);
-  const mainOnly = new URLSearchParams(location.search).get('phase') === 'main';
+  const requestedPhase = new URLSearchParams(location.search).get('phase');
+  const mainOnly = requestedPhase === 'main';
+  const preliminaryOnly = requestedPhase === 'preliminary';
   const valid = matches.filter(
     (m) =>
       (!mainOnly || !m.round?.startsWith('J1:')) &&
+      (!preliminaryOnly || m.round?.startsWith('J1:')) &&
       m.player1?.trim() &&
       m.player2?.trim() &&
       m.player1 !== 'En attente...' &&
@@ -917,9 +920,10 @@ export default function MatchBoard({
               )}
             </div>
           )}
-          {mainOnly && (
+          {(mainOnly || preliminaryOnly) && (
             <p className="muted">
-              Tableau principal du J2 · <a href={location.pathname}>Voir les deux journées</a>
+              {mainOnly ? 'Tableau principal du J2' : 'Tableau préliminaire du J1'} ·{' '}
+              <a href={location.pathname}>Voir les deux journées</a>
             </p>
           )}
           {valid.some((m) => m.round?.startsWith('J1:')) && (

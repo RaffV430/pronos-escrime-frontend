@@ -104,9 +104,31 @@ function WeaponSummary({ list }) {
 function EventRow({ e }) {
   const { t, lang } = useI18n();
   const Link = e.demo ? 'span' : 'a';
+  const open = async (click) => {
+    if (
+      click.button !== 0 ||
+      click.metaKey ||
+      click.ctrlKey ||
+      click.shiftKey ||
+      click.altKey ||
+      !e.id?.startsWith('prepared:') ||
+      e.predictionView === 'tableau'
+    )
+      return;
+    click.preventDefault();
+    let destination = e;
+    try {
+      const { data } = await API.get('/public/calendar', { forceRefresh: true });
+      destination = data.events?.find((event) => event.id === e.id) || e;
+    } catch {
+      /* Le lien existant reste accessible si la connexion est indisponible. */
+    }
+    location.assign(calendarPredictionPath(destination));
+  };
+
   return (
     <li className="rd-row">
-      <Link className="rd-row-link" {...(!e.demo ? { href: calendarPredictionPath(e) } : {})}>
+      <Link className="rd-row-link" {...(!e.demo ? { href: calendarPredictionPath(e), onClick: open } : {})}>
         <WeaponChip weapon={e.weapon} />
         <span className="rd-row-main">
           <strong>{e.city}</strong>
