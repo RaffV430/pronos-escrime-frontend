@@ -5,6 +5,7 @@ import API from '../api';
 import { eventLabelFor, eventNameFor } from '../lib/eventName';
 import { useI18n } from '../i18n/context';
 import { segment } from '../lib/routes';
+import { calendarPredictionPath } from '../lib/calendarLinks';
 import './redesign.css';
 
 const WEAPONS = {
@@ -102,16 +103,19 @@ function WeaponSummary({ list }) {
 
 function EventRow({ e }) {
   const { t, lang } = useI18n();
+  const Link = e.demo ? 'span' : 'a';
   return (
     <li className="rd-row">
-      <WeaponChip weapon={e.weapon} />
-      <span className="rd-row-main">
-        <strong>{e.city}</strong>
-        <span>
-          {eventLabelFor(lang, e.label)} · {categories(t, e.categories)} · {gender(t, e.gender)}
+      <Link className="rd-row-link" {...(!e.demo ? { href: calendarPredictionPath(e) } : {})}>
+        <WeaponChip weapon={e.weapon} />
+        <span className="rd-row-main">
+          <strong>{e.city}</strong>
+          <span>
+            {eventLabelFor(lang, e.label)} · {categories(t, e.categories)} · {gender(t, e.gender)}
+          </span>
         </span>
-      </span>
-      {e.demo && <em className="rd-demo-tag">{t('home.fictional')}</em>}
+        {e.demo && <em className="rd-demo-tag">{t('home.fictional')}</em>}
+      </Link>
     </li>
   );
 }
