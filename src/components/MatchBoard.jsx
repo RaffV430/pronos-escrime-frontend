@@ -1,3 +1,4 @@
+import { createPortal } from 'react-dom';
 import MatchExtras from './MatchExtras';
 import { restoreBody, canUndoPrediction, UX_SAVE } from '../lib/uxFeatures';
 import BoostBadge from './BoostBadge';
@@ -267,6 +268,10 @@ export default function MatchBoard({
   const mine = (m) => m.predictions?.find((p) => p.userId === userId);
   // Saisies en attente d'envoi (sans réseau) : déjà prises en charge, elles ne bloquent pas la navigation.
   const [queuedIds, setQueuedIds] = useState(() => new Set());
+  const [saveTarget, setSaveTarget] = useState(null);
+  useEffect(() => {
+    setSaveTarget(document.getElementById('pool-save-action'));
+  }, []);
   const dirty = Object.keys(drafts).some((id) => !queuedIds.has(Number(id)));
   useEffect(() => {
     onDirtyChange(dirty);
@@ -1192,13 +1197,16 @@ export default function MatchBoard({
           </button>
         </KeyboardBar>
       )}
-      {dirty && (
-        <div className="save-dock">
-          <span>{withCount(Object.keys(drafts).length, 'saisie non enregistrée', 'saisies non enregistrées')}</span>
-          <button disabled={busy || !ready} onClick={() => save(Object.keys(drafts))}>
-            {busy ? 'Enregistrement…' : 'Tout enregistrer'}
-          </button>
-        </div>
+      {(dirty || busy) && saveTarget && createPortal(
+        <button
+          className="tableau-floating-save"
+          disabled={busy || !ready}
+          onClick={() => save(Object.keys(drafts))}
+          title={withCount(Object.keys(drafts).length, 'saisie non enregistrée', 'saisies non enregistrées')}
+        >
+          {busy ? 'Enregistrement…' : 'Tout enregistrer'}
+        </button>,
+        saveTarget,
       )}
     </section>
   );
