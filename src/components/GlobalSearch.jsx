@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import API from '../api';
 import { groupSearchResults } from '../lib/searchResults';
+import { searchEvents, searchText } from '../lib/searchEvents';
 import FencerProfile from './FencerProfile';
 import { useFencerFollows } from '../lib/fencerFollows';
 import { nestedDialogLayer } from './dialogBackdrop';
@@ -24,6 +25,7 @@ export default function GlobalSearch({ onClose, onNavigate, onOpenEvent }) {
         API.get('/public/tournaments', { signal: c.signal }),
         API.get('/matches/leaderboard', { signal: c.signal }),
         API.get('/community/leagues', { signal: c.signal }),
+        API.get('/public/calendar', { signal: c.signal }),
       ]);
       if (c.signal.aborted) return;
       const data = result.map((r) => (r.status === 'fulfilled' ? r.value.data : null));
@@ -31,16 +33,7 @@ export default function GlobalSearch({ onClose, onNavigate, onOpenEvent }) {
         ready: true,
         failed: result.some((r) => r.status === 'rejected'),
         items: [
-          ...(Array.isArray(data[0]) ? data[0] : []).flatMap((t) =>
-            (t.competitions || []).map((event) => ({
-              kind: 'event',
-              key: `e:${event.id}`,
-              name: `${t.name} · ${event.name}`,
-              detail: 'Épreuve',
-              event,
-              tournament: t,
-            })),
-          ),
+          ...searchEvents(Array.isArray(data[0]) ? data[0] : [], Array.isArray(data[3]?.events) ? data[3].events : []),
           ...(Array.isArray(data[1]) ? data[1] : []).map((p) => ({
             kind: 'player',
             key: `p:${p.id || p.userId}`,
@@ -100,14 +93,15 @@ export default function GlobalSearch({ onClose, onNavigate, onOpenEvent }) {
     .filter(
       (item) =>
         (type === 'all' || item.kind === type) &&
-        item.name.toLocaleLowerCase('fr').includes(query.toLocaleLowerCase('fr')),
+        searchText(item.searchable || `${item.name} ${item.detail}`).includes(searchText(query)),
     )
     .slice(0, 30);
   const open = (item) => {
     if (item.kind === 'fencer') setAthlete(item.athlete);
     else {
       onClose();
-      if (item.kind === 'event')
+      if (item.calendar) location.assign('/calendrier');
+      else if (item.kind === 'event')
         onOpenEvent({ event: item.event, tournament: item.tournament, mode: 'follow', match: null });
       else onNavigate(item.kind === 'player' ? 'leaderboard' : 'community');
     }
