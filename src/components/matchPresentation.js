@@ -1,5 +1,7 @@
-export function roundLabel(round) {
-  return { T4: 'Semi-finales', T2: 'Finale' }[round] || round;
+export function roundLabel(round, multiphase = false) {
+  if (round?.startsWith('J1:')) return `${round.slice(3)} · J1 préliminaire`;
+  const label = { T4: 'Semi-finales', T2: 'Finale' }[round] || round;
+  return multiphase ? `${label} · J2 principal` : label;
 }
 export function isMatchClosed(match, now) {
   if (match.isFinished || match.syncIssue) return true;
@@ -29,7 +31,13 @@ export function groupMatches(matches) {
     groups.get(key).push(match);
   }
   const roundOrder = (value) =>
-    /^T\d+$/.test(value) ? -Number(value.slice(1)) : /final/i.test(value) && !/demi|quart/i.test(value) ? 0 : 1;
+    value?.startsWith('J1:')
+      ? -10000 - Number(value.slice(4))
+      : /^T\d+$/.test(value)
+        ? -Number(value.slice(1))
+        : /final/i.test(value) && !/demi|quart/i.test(value)
+          ? 0
+          : 1;
   return [...groups]
     .sort(([a], [b]) => roundOrder(a) - roundOrder(b))
     .map(([round, items]) => ({

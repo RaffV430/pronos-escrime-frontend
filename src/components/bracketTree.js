@@ -45,6 +45,8 @@ export function predictedWinner(m, value) {
 // byes : exempts publiés par le site officiel ([{ round, pos, name }]), affichés avant leur match suivant.
 export function buildTree(matches, byes = []) {
   const active = matches.filter((m) => m.resultType !== 'CANCELLED');
+  // Deux phases ne forment pas un arbre continu : la vue par tours conserve tous les matchs.
+  if (active.some((m) => m.round?.startsWith('J1:'))) return null;
   const tableau = active.filter((m) => roundSize(m.round));
   if (!tableau.length) return null;
   const sizes = [...new Set(tableau.map((m) => roundSize(m.round)))];
