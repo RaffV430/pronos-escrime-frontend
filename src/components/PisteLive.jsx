@@ -4,7 +4,7 @@ import { useI18n } from '../i18n/context';
 import { useState } from 'react';
 import CrowdTrend from './CrowdTrend';
 import { roundLabel, groupMatches } from './matchPresentation';
-import { officialLink, pisteMatches, pistePrediction, pisteStatus } from '../lib/pisteLive';
+import { officialLink, pisteMatches, pistePrediction, pisteStatus, ftlPresentation } from '../lib/pisteLive';
 import TouchStrip from './TouchStrip';
 import LiveScore from './LiveScore';
 import { useLiveScores } from '../lib/useLiveScores';
@@ -49,6 +49,7 @@ export default function PisteLive({
     filtered.filter((m) => m.isFinished).at(-1) ||
     filtered[0];
   const { prediction, points } = pistePrediction(match, userId);
+  const { match: displayMatch, live: displayLive } = ftlPresentation(match, live.get(match?.id));
   const source = officialLink(match?.sourceUrl || competition?.sourceUrl);
   const strips = [...new Set(matches.map((m) => String(m.strip || '')).filter(Boolean))].sort((a, b) =>
     a.localeCompare(b, 'fr', { numeric: true }),
@@ -118,53 +119,55 @@ export default function PisteLive({
               </span>
               <span>{statusLabel(match)}</span>
             </div>
-            <LiveScore live={live.get(match.id)} />
+            <LiveScore live={displayLive} />
             <div className="piste-live-duel">
               {[1, 2].map((i) => (
                 <div
                   className={`piste-live-athlete lamp-${i}${
-                    isLive(match.id) && live.get(match.id)[`fencer${i}`]?.lamp
+                    isLive(match.id) && displayLive[`fencer${i}`]?.lamp
                       ? ' is-lit'
-                      : isLive(match.id) && live.get(match.id)[`fencer${i}`]?.white
+                      : isLive(match.id) && displayLive[`fencer${i}`]?.white
                         ? ' is-white'
                         : ''
                   }`}
                   key={i}
                 >
                   <span className="arena-avatar">
-                    {match[`player${i}`]
+                    {displayMatch[`player${i}`]
                       ?.split(/\s+/)
                       .slice(0, 2)
                       .map((s) => s[0])
                       .join('')}
                   </span>
-                  <AdaptiveFencerName name={match[`player${i}`]} country={match[`player${i}Country`]} />
+                  <AdaptiveFencerName name={displayMatch[`player${i}`]} country={displayMatch[`player${i}Country`]} />
                   {isLive(match.id) &&
-                    !live.get(match.id)[`fencer${i}`]?.lamp &&
-                    live.get(match.id)[`fencer${i}`]?.white && (
+                    !displayLive[`fencer${i}`]?.lamp &&
+                    displayLive[`fencer${i}`]?.white && (
                       <span className="white-lamp-badge">{t('live.invalidTouch')}</span>
                     )}
                   <strong className="piste-live-score-number">
-                    {match.isFinished && Number.isInteger(match[`score${i}`])
-                      ? match[`score${i}`]
+                    {match.isFinished && Number.isInteger(displayMatch[`score${i}`])
+                      ? displayMatch[`score${i}`]
                       : isLive(match.id)
-                        ? live.get(match.id)[`score${i}`]
+                        ? displayLive[`score${i}`]
                         : '—'}
                   </strong>
                 </div>
               ))}
             </div>
             <TouchStrip
-              history={live.get(match.id)?.history}
-              player1={match.player1}
-              player2={match.player2}
+              history={displayLive?.history}
+              player1={displayMatch.player1}
+              player2={displayMatch.player2}
               live={isLive(match.id)}
             />
             <div className="piste-live-panels">
               <section>
                 <p className="arena-eyebrow">{t('live.yourPrediction')}</p>
                 <h3>
-                  {prediction ? `${prediction.predictedScore1} – ${prediction.predictedScore2}` : t('live.notSet')}
+                  {prediction ? (displayLive?.ftlLeftPlayer === 2 && !displayLive.finished
+                    ? `${prediction.predictedScore2} – ${prediction.predictedScore1}`
+                    : `${prediction.predictedScore1} – ${prediction.predictedScore2}`) : t('live.notSet')}
                 </h3>
                 <p>{points === null ? t('live.pointsLater') : t('live.pointsWon', { n: points })}</p>
               </section>
