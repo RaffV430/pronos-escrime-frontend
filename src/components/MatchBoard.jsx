@@ -254,6 +254,7 @@ export default function MatchBoard({
   const valid = matches.filter(
     (m) => m.player1?.trim() && m.player2?.trim() && m.player1 !== 'En attente...' && m.player2 !== 'En attente...',
   );
+  const multiphase = valid.some((m) => m.round?.startsWith('J1:'));
   const mine = (m) => m.predictions?.find((p) => p.userId === userId);
   // Saisies en attente d'envoi (sans réseau) : déjà prises en charge, elles ne bloquent pas la navigation.
   const [queuedIds, setQueuedIds] = useState(() => new Set());
@@ -681,7 +682,7 @@ export default function MatchBoard({
       >
         <div className="match-meta">
           <span>
-            {m.sourceKey ? `Match ${m.sourceKey.split(':').pop()}` : `#${m.id}`} · {roundLabel(m.round)}
+            {m.sourceKey ? `Match ${m.sourceKey.split(':').pop()}` : `#${m.id}`} · {roundLabel(m.round, multiphase)}
             {m.strip && <span className="match-strip"> · {stripLabel(m.strip)}</span>}{' '}
             <BoostBadge multiplier={m.pointsMultiplier} compact />
           </span>
@@ -910,6 +911,12 @@ export default function MatchBoard({
               )}
             </div>
           )}
+          {valid.some((m) => m.round?.startsWith('J1:')) && (
+            <p className="muted">
+              J1 : tableau préliminaire jusqu’aux 32 qualifiés. J2 : tableau principal à partir du T64. Les pronostics
+              des deux phases sont conservés.
+            </p>
+          )}
           <div className="board-head">
             <p className="board-summary">
               <strong>
@@ -981,7 +988,7 @@ export default function MatchBoard({
                   return (
                     <section className="express-round" key={g.round}>
                       <h2>
-                        {roundLabel(g.round)}
+                        {roundLabel(g.round, multiphase)}
                         <small>
                           {items.filter((m) => mine(m)).length}/{items.length}
                         </small>
@@ -1078,7 +1085,7 @@ export default function MatchBoard({
                         setReveal({ id: m.id });
                       }}
                     >
-                      {roundLabel(m.round)} · {m.player1} / {m.player2}
+                      {roundLabel(m.round, multiphase)} · {m.player1} / {m.player2}
                     </button>
                   ))}
                 </div>
@@ -1112,7 +1119,7 @@ export default function MatchBoard({
               />
               {tree.bronze && (
                 <section className="round-column tree-bronze">
-                  <h2>{roundLabel('Bronze')}</h2>
+                  <h2>{roundLabel('Bronze', multiphase)}</h2>
                   <div className="match-grid">{card(tree.bronze)}</div>
                 </section>
               )}
@@ -1124,7 +1131,8 @@ export default function MatchBoard({
                 .map(({ round, items }) => (
                   <section className="round-column" key={round}>
                     <h2>
-                      {roundLabel(round)} {items.some((m) => m.pointsMultiplier > 1) && <BoostBadge compact />}{' '}
+                      {roundLabel(round, multiphase)}{' '}
+                      {items.some((m) => m.pointsMultiplier > 1) && <BoostBadge compact />}{' '}
                       <span className="round-count">
                         {items.filter((m) => mine(m)).length}/{items.length}
                       </span>
