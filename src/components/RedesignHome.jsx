@@ -4,7 +4,6 @@ import { useEffect, useMemo, useState } from 'react';
 import API from '../api';
 import { eventLabelFor, eventNameFor } from '../lib/eventName';
 import { useI18n } from '../i18n/context';
-import { segment } from '../lib/routes';
 import { calendarPredictionPath } from '../lib/calendarLinks';
 import './redesign.css';
 
@@ -282,8 +281,7 @@ export default function RedesignHome({ user = null, onNavigate = null }) {
   };
   const [events, setEvents] = useState(null);
   const [results, setResults] = useState(null);
-  const [tournaments, setTournaments] = useState([]);
-  const [loadedAt] = useState(() => Date.now());
+  const [open, setOpen] = useState(null);
   const signedIn = (() => {
     try {
       return Boolean(localStorage.getItem('token'));
@@ -296,14 +294,23 @@ export default function RedesignHome({ user = null, onNavigate = null }) {
     API.get('/public/calendar', { signal: c.signal })
       .then(({ data }) => setEvents(data?.events || []))
       .catch(() => setEvents([]));
-    // Toujours la liste à jour : une copie gardée sur l'appareil pourrait ignorer une épreuve qui vient d'ouvrir.
-    API.get('/public/tournaments', { signal: c.signal, forceRefresh: true })
-      .then(({ data }) => setTournaments(Array.isArray(data) ? data : []))
-      .catch(() => setTournaments([]));
+    const loadNext = () => {
+      if (document.hidden) return;
+      API.get('/public/next-prediction', { signal: c.signal, forceRefresh: true })
+        .then(({ data }) => setOpen(data || null))
+        .catch(() => setOpen(null));
+    };
+    loadNext();
+    const nextTimer = setInterval(loadNext, 60000);
+    document.addEventListener('visibilitychange', loadNext);
     API.get('/public/results', { signal: c.signal })
       .then(({ data }) => setResults(Array.isArray(data) ? data : []))
       .catch(() => setResults([]));
-    return () => c.abort();
+    return () => {
+      c.abort();
+      clearInterval(nextTimer);
+      document.removeEventListener('visibilitychange', loadNext);
+    };
   }, []);
   const demo = new URLSearchParams(location.search).get('demo') === 'armes';
   const [weapon, setWeaponState] = useState(readWeapon);
@@ -341,15 +348,7 @@ export default function RedesignHome({ user = null, onNavigate = null }) {
   // Saison d'escrime : de septembre à août.
   const season = new Date().getFullYear() - (new Date().getMonth() < 8 ? 1 : 0);
   // Épreuve déjà importée et ouverte aux pronostics : elle passe avant le calendrier général.
-  const open = useMemo(() => {
-    const soon = loadedAt - 10 * 3600000;
-    return tournaments
-      .filter((t) => !t.finished)
-      .flatMap((t) => (t.competitions || []).map((c) => ({ ...c, tournament: t })))
-      .filter((c) => c.startsAt && Date.parse(c.startsAt) >= soon)
-      .sort((a, b) => Date.parse(a.startsAt) - Date.parse(b.startsAt))[0];
-  }, [tournaments, loadedAt]);
-  const openFirst = open && (!next || open.startsAt.slice(0, 10) <= next.start);
+  const openFirst = Boolean(open);
   const countdown = useCountdown(openFirst ? open.startsAt : next?.start);
   const primary = signedIn
     ? { href: '/pronostiquer', label: t('home.play'), tab: 'play' }
@@ -435,10 +434,11 @@ export default function RedesignHome({ user = null, onNavigate = null }) {
         {openFirst ? (
           <article className="rd-next rd-next-open" aria-label={t('home.openAria')}>
             <div className="rd-next-head">
-              <span className="rd-next-tag">{countdown?.live ? t('home.liveNow') : t('home.openTag')}</span>
+              <span className="rd-next-tag">{t('home.openTag')}</span>
               <WeaponChip weapon={weaponOf(open.name)} />
             </div>
             <h2>{withoutWeapon(eventNameFor(lang, open.name))}</h2>
+            <p className="rd-next-stage">{open.stage}</p>
             <p className="rd-next-meta">
               {open.tournament.name}
               <br />
@@ -449,6 +449,7 @@ export default function RedesignHome({ user = null, onNavigate = null }) {
                 month: 'long',
                 hour: '2-digit',
                 minute: '2-digit',
+                timeZone: 'Europe/Paris',
               })}{' '}
               {t('home.parisTime')}
             </p>
@@ -464,9 +465,15 @@ export default function RedesignHome({ user = null, onNavigate = null }) {
             )}
             <a
               className="rd-button rd-next-cta"
-              href={`/pronostiquer/${segment(open.tournament.name, open.tournament.id)}/${segment(open.name, open.id)}/poules`}
+              href={calendarPredictionPath({
+                tournamentId: open.tournament.id,
+                tournamentName: open.tournament.name,
+                competitions: [{ id: open.id, name: open.name }],
+                predictionView: open.view,
+                tableauPhase: open.phase,
+              })}
             >
-              {countdown?.live ? t('home.followAndPlay') : t('home.playThis')}
+              Pronostiquer cette étape →
             </a>
           </article>
         ) : next ? (
