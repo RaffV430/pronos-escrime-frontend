@@ -45,7 +45,7 @@ export default function CalendarWatch() {
       </summary>
       <p className="muted">
         Toutes les 3 heures, les épreuves du calendrier qui commencent dans les deux mois sont recherchées sur
-        FencingTimeLive et engarde-service. Dès qu’un tournoi est publié, ses épreuves de fleuret correspondantes sont
+        FencingTimeLive et engarde-service. Dès qu’un tournoi est publié, ses épreuves correspondantes au calendrier sont
         ajoutées et vous êtes prévenu.
         {last &&
           ` Dernier passage : ${new Date(last.createdAt).toLocaleString('fr-FR')} (${last.after?.checked ?? 0} épreuves vérifiées).`}
