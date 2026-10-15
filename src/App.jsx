@@ -694,11 +694,7 @@ export default function App() {
       <FencerFollowsProvider key={user.id} userId={user.id} competitionId={selectedCompetitionId}>
         <div className="app-shell redesigned">
           <StagingLiveDemo onOpen={(info) => runNavigation(() => {
-            setTournamentId(info.tournamentId);
-            selectCompetition(info.competitionId);
-            setLiveView('matches');
-            setMainTab('live');
-            setEventListVersion(v => v + 1);
+            location.assign(`/direct?tournament=${info.tournamentId}&event=${info.competitionId}`);
           })} />
           <RefonteToggle />
           {navEditor && (
