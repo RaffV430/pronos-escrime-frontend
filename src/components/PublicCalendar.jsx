@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import StagingCalendarChecks from './StagingCalendarChecks';
 import PublicHeader from './PublicHeader';
 import UpcomingCalendar from './UpcomingCalendar';
 import { LegalLinks } from './LegalPages';
@@ -23,6 +24,7 @@ export default function PublicCalendar() {
           Saison 2026-2027, d’après le calendrier de la Fédération française d’escrime. Les épreuves arrivent dans
           l’application dès leur publication sur les sites officiels de suivi.
         </p>
+        <StagingCalendarChecks />
         <UpcomingCalendar title="Épreuves à venir" headingLevel={2} />
       </main>
       <footer className="site-footer">
