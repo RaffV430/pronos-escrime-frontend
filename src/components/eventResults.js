@@ -89,6 +89,7 @@ export const cityName = (city) =>
     .trim();
 // Nom court d'un tour pour les onglets du tableau (« T64 », « Quarts », « Demies », « Finale »).
 export function shortRoundName(round) {
+  if (round?.startsWith('J1:')) return `${shortRoundName(round.slice(3))} J1`;
   const n = Number(/^T(\d+)$/.exec(round || '')?.[1]);
   if (n === 2) return 'Finale';
   if (n === 4) return 'Demies';
