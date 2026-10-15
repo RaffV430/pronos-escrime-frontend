@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import API from '../api';
+import FtlNameReview from './FtlNameReview';
 
 const LEVELS = {
   error: { icon: '❌', label: 'En panne' },
@@ -25,6 +26,7 @@ export default function SyncHealth({ destination }) {
     if (destination?.panel === 'sync') panel.current?.scrollIntoView({ block: 'start' });
   }, [destination]);
   const [data, setData] = useState(null);
+  const [reviewId, setReviewId] = useState(null);
   const [error, setError] = useState('');
   const [now, setNow] = useState(0); // heure du serveur au moment de la lecture
   const load = useCallback(
@@ -142,6 +144,13 @@ export default function SyncHealth({ destination }) {
                 <li key={warning}>{warning}</li>
               ))}
             </ul>
+            <button
+              className="button-secondary"
+              onClick={() => setReviewId(reviewId === c.competitionId ? null : c.competitionId)}
+            >
+              {reviewId === c.competitionId ? 'Fermer la vérification' : 'Vérifier et corriger les noms'}
+            </button>
+            {reviewId === c.competitionId && <FtlNameReview competitionId={c.competitionId} />}
           </section>
         ))}
       <p className="muted">
