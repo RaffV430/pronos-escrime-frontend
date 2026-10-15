@@ -1,3 +1,4 @@
+import StagingLiveDemo from './components/StagingLiveDemo';
 import GlobalSearch from './components/GlobalSearch';
 import GainAlerts from './components/GainAlerts';
 import AfterPredictionInstall from './components/AfterPredictionInstall';
@@ -692,6 +693,13 @@ export default function App() {
     return (
       <FencerFollowsProvider key={user.id} userId={user.id} competitionId={selectedCompetitionId}>
         <div className="app-shell redesigned">
+          <StagingLiveDemo onOpen={(info) => runNavigation(() => {
+            setTournamentId(info.tournamentId);
+            selectCompetition(info.competitionId);
+            setLiveView('matches');
+            setMainTab('live');
+            setEventListVersion(v => v + 1);
+          })} />
           <RefonteToggle />
           {navEditor && (
             <NavEditor
