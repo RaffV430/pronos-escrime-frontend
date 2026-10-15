@@ -1,0 +1,57 @@
+.live-pistes h2 span {
+  font-size: 0.75em;
+}
+.live-pistes-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr));
+  gap: 12px;
+}
+.live-pistes .live-pistes-card {
+  display: block;
+  text-align: left;
+  color: inherit;
+  background: transparent;
+  border: 1px solid var(--border, #526079);
+  border-radius: 12px;
+  padding: 14px;
+  min-width: 0;
+  cursor: pointer;
+}
+.live-pistes .live-pistes-card:hover:not(:disabled) {
+  background: var(--soft);
+  color: inherit;
+}
+.live-pistes .live-pistes-card[aria-pressed='true'] {
+  background: var(--soft);
+  color: inherit;
+  border-color: #4c95ff;
+  box-shadow: 0 0 0 1px #4c95ff;
+}
+.live-pistes-meta {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 6px 12px;
+  font-size: 0.85rem;
+}
+.live-pistes-duel {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin: 14px 0;
+}
+.live-pistes-duel > span {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.live-pistes-duel > span:last-child {
+  text-align: right;
+}
+.live-pistes-duel span {
+  overflow-wrap: anywhere;
+  font-weight: 700;
+}
+.live-pistes-duel b {
+  font-size: 2rem;
+}

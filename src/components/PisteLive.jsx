@@ -7,6 +7,7 @@ import { roundLabel, groupMatches } from './matchPresentation';
 import { officialLink, pisteMatches, pistePrediction, pisteStatus, ftlPresentation } from '../lib/pisteLive';
 import TouchStrip from './TouchStrip';
 import LiveScore from './LiveScore';
+import LivePistes from './LivePistes';
 import { useLiveScores } from '../lib/useLiveScores';
 
 export default function PisteLive({
@@ -20,6 +21,7 @@ export default function PisteLive({
   onFollow,
   initialMatchId = null,
   embedded = false,
+  showLiveOverview = false,
 }) {
   const { t, lang } = useI18n();
   const STATUS = {
@@ -75,6 +77,21 @@ export default function PisteLive({
       <p className="piste-live-notice">{liveCount ? t('live.noticeLive', { n: liveCount }) : t('live.noticeIdle')}</p>
       {stale && <p role="status">{t('live.stale')}</p>}
       {error && <p role="alert">{error}</p>}
+      {showLiveOverview && (
+        <LivePistes
+          matches={matches}
+          live={live}
+          selectedId={match?.id}
+          ready={ready}
+          error={error}
+          onSelect={(id) => {
+            setRound('');
+            setStrip('');
+            setMine(false);
+            setSelectedId(id);
+          }}
+        />
+      )}
       <div className="piste-live-filters">
         <label>
           {t('live.round')}

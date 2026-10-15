@@ -1196,6 +1196,7 @@ export default function App() {
                       key={`${selectedCompetitionId}:${liveMatchId}`}
                       initialMatchId={liveMatchId}
                       embedded
+                      showLiveOverview
                       matches={matches}
                       competition={competition}
                       userId={user.id}
