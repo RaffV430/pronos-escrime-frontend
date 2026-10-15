@@ -53,3 +53,20 @@ test('patches : scores, lampes, touches, correction, suppression et reconnexion'
   assert.equal(applyLiveMessage(scores, { version: 1, reset: false, matches: [], removed: [2] }).size, 0);
   assert.equal(applyLiveMessage(scores, [initial]).get(1).score1, 1);
 });
+
+import { withLiveDetection } from '../src/lib/liveScoreState.js';
+test('affiche préchargée ouverte, départ uniquement sur signal serveur, persistance et autre match', () => {
+  const match = { id: 1, liveDetectedAt: null };
+  const scores = new Map([
+    [1, { started: false, score1: 0, score2: 0, clock: 180, updatedAt: '2026-10-16T00:00:00Z' }],
+  ]);
+  assert.equal(withLiveDetection(match, scores).liveDetectedAt, null);
+  scores.set(1, { ...scores.get(1), started: true, clock: 179 });
+  assert.equal(withLiveDetection(match, scores).liveDetectedAt, '2026-10-16T00:00:00Z');
+  assert.equal(withLiveDetection({ id: 2 }, scores).liveDetectedAt, null);
+  assert.equal(
+    withLiveDetection({ ...match, liveDetectedAt: '2026-10-16T00:00:00Z' }, new Map()).liveDetectedAt,
+    '2026-10-16T00:00:00Z',
+  );
+  assert.equal(match.liveDetectedAt, null);
+});

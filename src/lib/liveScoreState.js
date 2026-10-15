@@ -26,3 +26,9 @@ export function applyLiveMessage(previous, data) {
   }
   return next;
 }
+
+// Le serveur décide du départ : la simple présence d’une affiche live ne suffit pas.
+export function withLiveDetection(match, scores) {
+  const signal = scores.get(match.id);
+  return { ...match, liveDetectedAt: match.liveDetectedAt || (signal?.started === true ? signal.updatedAt : null) };
+}

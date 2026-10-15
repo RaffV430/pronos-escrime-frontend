@@ -4,7 +4,8 @@ export const GENDERS = {
   H: { icon: '♂', short: 'Hommes', label: 'Épreuve hommes seulement' },
   F: { icon: '♀', short: 'Dames', label: 'Épreuve dames seulement' },
 };
-const CATEGORIES = { SENIOR: 'Seniors', M20: 'M20 (juniors)', M17: 'M17 (cadets)', M15: 'M15', M13: 'M13' };
+export const calendarWeapons = (e) => e.weapons || [e.weapon].filter(Boolean);
+const CATEGORIES = { U23: 'U23', SENIOR: 'Seniors', M20: 'M20 (juniors)', M17: 'M17 (cadets)', M15: 'M15', M13: 'M13' };
 const MONTHS = ['janv.', 'févr.', 'mars', 'avr.', 'mai', 'juin', 'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.'];
 const MONTHS_LONG = [
   'Janvier',
@@ -53,3 +54,8 @@ export function calendarLink(e, publicPath) {
 }
 export const calendarFormat = (format) =>
   format === 'TEAM' ? 'Équipes' : format === 'BOTH' ? 'Individuel et équipes' : 'Individuel';
+
+export const calendarLevel = (e) => e.level || (/international|monde|europe|jeux/i.test(e.label) ? 'international' : 'national');
+export function filterCalendar(events, { weapon = '', category = '', level = '' } = {}) {
+  return events.filter(e => (!weapon || calendarWeapons(e).includes(weapon)) && (!category || e.categories.includes(category)) && (!level || calendarLevel(e) === level));
+}
