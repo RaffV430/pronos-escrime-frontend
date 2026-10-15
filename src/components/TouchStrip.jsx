@@ -5,7 +5,7 @@ import { clockLabel } from '../lib/useLiveScores';
 import { shortName } from '../lib/fencerName';
 import { useI18n } from '../i18n/context';
 
-export default function TouchStrip({ history, player1, player2, live = false, compact = false, title = null }) {
+export default function TouchStrip({ history, player1, player2, live = false, compact = false, title = null, issue = null }) {
   // Assaut en cours : dernière case agrandie. À la fin, elle reste agrandie quelques secondes puis
   // reprend sa taille (animation CSS) ; un match déjà terminé à l'ouverture s'affiche normalement.
   const { t } = useI18n();
@@ -15,6 +15,7 @@ export default function TouchStrip({ history, player1, player2, live = false, co
   const touches = (history || []).filter((x) => [1, 2, 'double'].includes(x.by));
   const start = (history || []).find((x) => x.by === 'start');
   const [picked, setPicked] = useState(null);
+  if (issue) return <p className="touch-strip-warning" role="status">{issue}</p>;
   if (!touches.length && !start) return null;
   const shown = picked === null ? touches.at(-1) : touches[picked];
   const who = (x) => (x.by === 1 ? shortName(player1) : x.by === 2 ? shortName(player2) : t('touches.double'));

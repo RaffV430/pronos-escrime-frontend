@@ -183,6 +183,7 @@ export default function PisteLive({
             </div>
             <TouchStrip
               history={displayLive?.history}
+              issue={displayLive?.historyIssue}
               player1={displayMatch.player1}
               player2={displayMatch.player2}
               live={isLive(match.id)}

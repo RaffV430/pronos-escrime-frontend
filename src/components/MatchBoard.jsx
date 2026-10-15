@@ -705,6 +705,7 @@ export default function MatchBoard({
         <LiveScore live={live.get(m.id)} onOpen={onOpenLive} />
         <TouchStrip
           history={live.get(m.id)?.history}
+          issue={live.get(m.id)?.historyIssue}
           player1={m.player1}
           player2={m.player2}
           live={Boolean(live.get(m.id) && !live.get(m.id).finished)}
