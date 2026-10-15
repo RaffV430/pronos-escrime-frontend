@@ -935,6 +935,13 @@ export default function MatchBoard({
             <p className="muted">
               J1 : tableau préliminaire jusqu’aux 32 qualifiés. J2 : tableau principal à partir du T64. Les pronostics
               des deux phases sont conservés.
+              {!mainOnly && !preliminaryOnly && (
+                <>
+                  {' '}
+                  <a href={`${location.pathname}?phase=preliminary`}>Voir l’arbre J1</a> ·{' '}
+                  <a href={`${location.pathname}?phase=main`}>Voir l’arbre J2</a>
+                </>
+              )}
             </p>
           )}
           <div className="board-head">
@@ -1197,17 +1204,19 @@ export default function MatchBoard({
           </button>
         </KeyboardBar>
       )}
-      {(dirty || busy) && saveTarget && createPortal(
-        <button
-          className="tableau-floating-save"
-          disabled={busy || !ready}
-          onClick={() => save(Object.keys(drafts))}
-          title={withCount(Object.keys(drafts).length, 'saisie non enregistrée', 'saisies non enregistrées')}
-        >
-          {busy ? 'Enregistrement…' : 'Tout enregistrer'}
-        </button>,
-        saveTarget,
-      )}
+      {(dirty || busy) &&
+        saveTarget &&
+        createPortal(
+          <button
+            className="tableau-floating-save"
+            disabled={busy || !ready}
+            onClick={() => save(Object.keys(drafts))}
+            title={withCount(Object.keys(drafts).length, 'saisie non enregistrée', 'saisies non enregistrées')}
+          >
+            {busy ? 'Enregistrement…' : 'Tout enregistrer'}
+          </button>,
+          saveTarget,
+        )}
     </section>
   );
 }

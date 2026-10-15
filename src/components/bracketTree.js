@@ -2,7 +2,7 @@
 // parts égales, donc chaque match se centre entre les deux matchs d'où viennent ses tireurs.
 // Les positions viennent du numéro officiel (sourceKey « …:n »), jamais de l'ordre d'affichage.
 
-export const roundSize = (round) => (/^T\d+$/.test(round || '') ? Number(round.slice(1)) : null);
+export const roundSize = (round) => Number(/^(?:J1:)?T(\d+)$/.exec(round || '')?.[1]) || null;
 export const slotPosition = (m) => Number(m?.sourceKey?.match(/:(\d+)$/)?.[1]);
 const winnerSide = (m) =>
   m?.winner === 1 || m?.winner === 2
@@ -46,14 +46,17 @@ export function predictedWinner(m, value) {
 export function buildTree(matches, byes = []) {
   const active = matches.filter((m) => m.resultType !== 'CANCELLED');
   // Deux phases ne forment pas un arbre continu : la vue par tours conserve tous les matchs.
-  if (active.some((m) => m.round?.startsWith('J1:'))) return null;
+  const preliminary = active.some((m) => m.round?.startsWith('J1:'));
+  if (preliminary && active.some((m) => !m.round?.startsWith('J1:'))) return null;
+  const prefix = preliminary ? 'J1:' : '';
+  const last = preliminary ? 64 : 2;
   const tableau = active.filter((m) => roundSize(m.round));
   if (!tableau.length) return null;
   const sizes = [...new Set(tableau.map((m) => roundSize(m.round)))];
   const first = Math.max(...sizes);
-  if (!Number.isInteger(Math.log2(first)) || first < 2) return null;
+  if (!Number.isInteger(Math.log2(first)) || first < last) return null;
   const rounds = [];
-  for (let n = first; n >= 2; n /= 2) {
+  for (let n = first; n >= last; n /= 2) {
     const items = tableau.filter((m) => roundSize(m.round) === n);
     const positions = items.map(slotPosition);
     if (
@@ -61,7 +64,7 @@ export function buildTree(matches, byes = []) {
       new Set(positions).size !== positions.length
     )
       return null;
-    rounds.push({ round: `T${n}`, size: n, byPosition: new Map(items.map((m) => [slotPosition(m), m])) });
+    rounds.push({ round: `${prefix}T${n}`, size: n, byPosition: new Map(items.map((m) => [slotPosition(m), m])) });
   }
   const bronze = active.filter((m) => m.round === 'Bronze');
   return {
@@ -107,7 +110,7 @@ function advanceFor(rounds, index, pos) {
 // kind : 'real' (connu officiellement), 'pick' (votre qualifié d'après votre pronostic), 'tbd'.
 export function entrantFrom(tree, roundIndex, pos, valueOf) {
   const prev = tree.rounds[roundIndex - 1];
-  const label = `Vainqueur ${prev.round} n°${pos}`;
+  const label = `Vainqueur ${prev.round.replace('J1:', '')}${prev.round.startsWith('J1:') ? ' J1' : ''} n°${pos}`;
   const slot = prev.slots[pos - 1];
   if (!slot) return { kind: 'tbd', name: label };
   if (slot.advance) return { kind: 'real', ...slot.advance };

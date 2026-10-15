@@ -121,6 +121,7 @@ export default function SyncHealth({ destination }) {
                       </small>
                     )}
                     {c.lastError && <small className="sync-health-error">{c.lastError}</small>}
+                    {c.warnings?.length > 0 && <small> · {c.warnings.length} avertissement(s) ci-dessous</small>}
                   </td>
                   <td>{ago(c.lastFinishedAt, now)}</td>
                   <td>{c.status === 'COMPLETE' ? 'Terminé' : inText(c.nextAutomaticAt, now)}</td>
@@ -130,6 +131,19 @@ export default function SyncHealth({ destination }) {
           </table>
         </div>
       )}
+      {data?.competitions
+        ?.filter((c) => c.warnings?.length)
+        .map((c) => (
+          <section key={c.competitionId} aria-label={`Import à vérifier · ${c.competition}`}>
+            <h3>Import à vérifier · {c.competition}</h3>
+            {c.tournament && <p className="muted">{c.tournament}</p>}
+            <ul>
+              {c.warnings.map((warning) => (
+                <li key={warning}>{warning}</li>
+              ))}
+            </ul>
+          </section>
+        ))}
       <p className="muted">
         En cas de panne (3 échecs d’affilée), les administrateurs sont prévenus par e-mail et notification, puis au
         rétablissement.
