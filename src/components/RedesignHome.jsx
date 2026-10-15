@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import API from '../api';
 import { eventLabelFor, eventNameFor } from '../lib/eventName';
 import { useI18n } from '../i18n/context';
+import { calendarWeapons } from '../lib/calendar';
 import { calendarPredictionPath } from '../lib/calendarLinks';
 import './redesign.css';
 
@@ -14,7 +15,7 @@ const WEAPONS = {
 };
 const gender = (t, g) => (['H', 'F', 'D', 'HD'].includes(g) ? t(`gender.${g}`) : '');
 const CATEGORY = (t, c) =>
-  c === 'SENIOR' ? t('category.SENIOR') : /^V\d$/.test(c) ? t('category.VET') : /^M\d+$/.test(c) ? c : c.toLowerCase();
+  c === 'SENIOR' ? t('category.SENIOR') : /^V\d$/.test(c) ? t('category.VET') : /^(M\d+|U23)$/.test(c) ? c : c.toLowerCase();
 const categories = (t, list = []) => [...new Set(list.map((c) => CATEGORY(t, c)))].join(' · ');
 const day = (iso) => new Date(`${iso}T12:00:00`);
 const dateLabel = (locale, iso, opts) => day(iso).toLocaleDateString(locale, opts);
@@ -84,7 +85,7 @@ function WeaponSummary({ list }) {
   return (
     <span className="rd-summary" aria-label={t('home.byWeapon')}>
       {ORDER.map((w) => {
-        const n = list.filter((e) => e.weapon === w).length;
+        const n = list.filter((e) => calendarWeapons(e).includes(w)).length;
         return n ? (
           <span
             key={w}
@@ -160,6 +161,7 @@ function useCountdown(iso) {
 function WeaponChip({ weapon }) {
   const { t } = useI18n();
   const w = WEAPONS[weapon];
+  if (weapon === 'Toutes armes') return <span className="rd-weapon">Fleuret · Épée · Sabre</span>;
   if (!w) return null;
   return (
     <span className={`rd-weapon rd-weapon-${w.key}`}>
@@ -328,9 +330,9 @@ export default function RedesignHome({ user = null, onNavigate = null }) {
     return demo ? withDemo(list) : list;
   }, [events, today, demo]);
   // Les armes réellement présentes : le filtre n'apparaît que s'il y a un choix à faire.
-  const weaponsPresent = ORDER.filter((w) => all.some((e) => e.weapon === w));
+  const weaponsPresent = ORDER.filter((w) => all.some((e) => calendarWeapons(e).includes(w)));
   const activeWeapon = weaponsPresent.includes(weapon) ? weapon : 'ALL';
-  const upcoming = activeWeapon === 'ALL' ? all : all.filter((e) => e.weapon === activeWeapon);
+  const upcoming = activeWeapon === 'ALL' ? all : all.filter((e) => calendarWeapons(e).includes(activeWeapon));
   // Prochaine journée : toutes les épreuves de cette date, pas seulement la première.
   const nextDate = upcoming[0]?.start;
   const nextDay = upcoming.filter((e) => e.start === nextDate).sort(byWeapon);
@@ -558,7 +560,7 @@ export default function RedesignHome({ user = null, onNavigate = null }) {
               >
                 {w !== 'ALL' && <span aria-hidden="true">{WEAPONS[w].short}</span>}
                 {w === 'ALL' ? t('home.allWeapons') : t(`weapon.${WEAPONS[w].key}`)}
-                <small>{w === 'ALL' ? all.length : all.filter((e) => e.weapon === w).length}</small>
+                <small>{w === 'ALL' ? all.length : all.filter((e) => calendarWeapons(e).includes(w)).length}</small>
               </button>
             ))}
           </div>
