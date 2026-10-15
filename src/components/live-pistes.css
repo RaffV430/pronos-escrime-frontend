@@ -55,3 +55,40 @@
 .live-pistes-duel b {
   font-size: 2rem;
 }
+
+.live-pistes-number {
+  align-self: flex-start;
+  display: inline-block;
+  min-width: 1.7em;
+  padding: 2px 8px;
+  border-radius: 8px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+.live-pistes-duel > span:last-child .live-pistes-number {
+  align-self: flex-end;
+}
+.live-pistes-number.lamp-1.is-lit {
+  background: var(--touch-red, #e11d2e);
+  color: #fff;
+  box-shadow:
+    0 0 0 2px var(--touch-red, #e11d2e),
+    0 0 16px var(--touch-red, #e11d2e);
+}
+.live-pistes-number.lamp-2.is-lit {
+  background: var(--touch-green, #0f9d58);
+  color: #fff;
+  box-shadow:
+    0 0 0 2px var(--touch-green, #0f9d58),
+    0 0 16px var(--touch-green, #0f9d58);
+}
+.live-pistes-number.is-white {
+  background: #fff;
+  color: #13213a;
+  box-shadow:
+    0 0 0 2px #9aa6b8,
+    0 0 16px #ffffff;
+}
+.piste-live-score {
+  scroll-margin-top: 110px;
+}

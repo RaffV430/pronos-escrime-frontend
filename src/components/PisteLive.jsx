@@ -1,7 +1,7 @@
 import AdaptiveFencerName from './AdaptiveFencerName';
 import { eventNameFor } from '../lib/eventName';
 import { useI18n } from '../i18n/context';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import CrowdTrend from './CrowdTrend';
 import { roundLabel, groupMatches } from './matchPresentation';
 import { officialLink, pisteMatches, pistePrediction, pisteStatus, ftlPresentation } from '../lib/pisteLive';
@@ -36,6 +36,7 @@ export default function PisteLive({
   const [strip, setStrip] = useState('');
   const [mine, setMine] = useState(false);
   const [selectedId, setSelectedId] = useState(initialMatchId);
+  const scoreRef = useRef(null);
   const filtered = pisteMatches(matches, { round, strip, mine, userId });
   // Scores en direct des pistes : une rencontre en cours passe devant dans le tableau de score.
   const live = useLiveScores(
@@ -89,6 +90,14 @@ export default function PisteLive({
             setStrip('');
             setMine(false);
             setSelectedId(id);
+            requestAnimationFrame(() => {
+              const target = scoreRef.current;
+              target?.focus({ preventScroll: true });
+              target?.scrollIntoView({
+                behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth',
+                block: 'start',
+              });
+            });
           }}
         />
       )}
@@ -128,7 +137,7 @@ export default function PisteLive({
         </div>
       ) : (
         <>
-          <article className="piste-live-score" key={match.id}>
+          <article className="piste-live-score" key={match.id} ref={scoreRef} tabIndex={-1}>
             <div className="piste-live-meta">
               <span>
                 {roundName(match.round)}

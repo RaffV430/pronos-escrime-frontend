@@ -33,13 +33,16 @@ test('les côtés FTL sont respectés sans toucher aux identifiants, pronostics 
     { id: 2, round: 'T64', player1: 'Gamma', player2: 'Delta' },
   ];
   const live = new Map([
-    [1, { ...score, ftlLeftPlayer: 2 }],
+    [1, { ...score, ftlLeftPlayer: 2, fencer1: { lamp: true }, fencer2: { white: true } }],
     [2, score],
   ]);
   const before = structuredClone(matches);
   const rows = livePistes(matches, live, now);
   assert.equal(rows[0].match.player1, 'Beta');
   assert.equal(rows[0].live.score1, 8);
+  assert.deepEqual(rows[0].live.fencer1, { white: true });
+  assert.deepEqual(rows[0].live.fencer2, { lamp: true });
+  assert.deepEqual(live.get(1).fencer1, { lamp: true });
   assert.deepEqual(
     rows.map((x) => [x.match.id, x.match.round]),
     [
