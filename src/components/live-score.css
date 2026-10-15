@@ -368,3 +368,13 @@ html.club-arena .touch-strip button.touch-cell {
 html.club-arena .touch-strip.is-live button.touch-cell[data-last] {
   margin: 0 3px;
 }
+
+.touch-strip-warning {
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-left: 4px solid #b7791f;
+  border-radius: 8px;
+  background: var(--soft);
+  color: var(--text);
+  font-size: 0.9rem;
+}
