@@ -46,7 +46,7 @@ export default function CalendarWatch() {
       <p className="muted">
         Toutes les 3 heures, les épreuves du calendrier qui commencent dans les deux mois sont recherchées sur
         FencingTimeLive et engarde-service. Dès qu’un tournoi est publié, ses épreuves correspondantes au calendrier sont
-        ajoutées et vous êtes prévenu.
+        ajoutées et vous êtes prévenu. Les sources déjà reliées sont relues à chaque passage pour trouver les ajouts tardifs. Une publication sur une autre plateforme est signalée pour vérification, sans créer de doublon ni remplacer la source retenue.
         {last &&
           ` Dernier passage : ${new Date(last.createdAt).toLocaleString('fr-FR')} (${last.after?.checked ?? 0} épreuves vérifiées).`}
       </p>
@@ -54,6 +54,7 @@ export default function CalendarWatch() {
         {state.busy ? 'Recherche en cours…' : 'Vérifier maintenant'}
       </button>
       {state.message && <p role="status">{state.message}</p>}
+      {last?.after?.problems?.length > 0 && <div role="status"><strong>Publications à vérifier</strong><ul>{last.after.problems.map((p,i) => <li key={i}>{p}</li>)}</ul></div>}
       <ul className="calendar-watch-list">
         {next.map((e) => (
           <li key={e.id}>
