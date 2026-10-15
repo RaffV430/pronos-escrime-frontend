@@ -43,7 +43,12 @@ export default function LivePistes({ matches, live, selectedId, onSelect, ready,
                 <span key={i}>
                   <span>{m[`player${i}`]}</span>
                   <small>{m[`player${i}Country`]}</small>
-                  <b>{s[`score${i}`] ?? '—'}</b>
+                  <b
+                    className={`live-pistes-number lamp-${i}${s[`fencer${i}`]?.lamp ? ' is-lit' : s[`fencer${i}`]?.white ? ' is-white' : ''}`}
+                    aria-label={`Score ${s[`score${i}`] ?? 'indisponible'}${s[`fencer${i}`]?.lamp ? ', lampe allumée' : s[`fencer${i}`]?.white ? ', touche non valable' : ''}`}
+                  >
+                    {s[`score${i}`] ?? '—'}
+                  </b>
                 </span>
               ))}
             </span>
