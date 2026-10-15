@@ -1,3 +1,4 @@
+import { withLiveDetection } from '../lib/liveScoreState';
 import { createPortal } from 'react-dom';
 import MatchExtras from './MatchExtras';
 import { restoreBody, canUndoPrediction, UX_SAVE } from '../lib/uxFeatures';
@@ -172,10 +173,7 @@ export default function MatchBoard({
   const localDraft = useLocalDraft(draftKey(userId, competitionId, 'matches'));
   // Scores en direct des pistes, tant qu'il reste des rencontres non terminées (affichage seulement).
   const live = useLiveScores(competitionId, !onPreviewSave && matches.some((m) => !m.isFinished));
-  const withLiveLock = (match) => ({
-    ...match,
-    liveDetectedAt: match.liveDetectedAt || (live.has(match.id) ? (live.get(match.id).updatedAt || '1970-01-01T00:00:00.001Z') : null),
-  });
+  const withLiveLock = (match) => withLiveDetection(match, live);
   const closedMatch = (match, at) => isMatchClosed(withLiveLock(match), at);
   // Copie synchrone des saisies : l'enregistrement en arrière-plan et le passage au match suivant
   // lisent toujours la dernière frappe, même avant le prochain rendu.
@@ -902,9 +900,7 @@ export default function MatchBoard({
           onRestore={(value) =>
             saveDrafts(
               Object.fromEntries(
-                Object.entries(value).filter(([id]) =>
-                  valid.some((m) => String(m.id) === id && !closedMatch(m, now)),
-                ),
+                Object.entries(value).filter(([id]) => valid.some((m) => String(m.id) === id && !closedMatch(m, now))),
               ),
             )
           }
@@ -955,8 +951,7 @@ export default function MatchBoard({
               <strong>
                 {valid.filter((m) => mine(m)).length}/{valid.length}
               </strong>{' '}
-              enregistrés · <strong>{valid.filter((m) => !mine(m) && !closedMatch(m, now)).length}</strong> à
-              compléter
+              enregistrés · <strong>{valid.filter((m) => !mine(m) && !closedMatch(m, now)).length}</strong> à compléter
             </p>
             <div className="filter-row view-toggle" role="group" aria-label="Affichage">
               {['Express', 'Arena', 'Liste', 'Arbre'].map((x) => (
