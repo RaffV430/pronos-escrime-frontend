@@ -172,6 +172,11 @@ export default function MatchBoard({
   const localDraft = useLocalDraft(draftKey(userId, competitionId, 'matches'));
   // Scores en direct des pistes, tant qu'il reste des rencontres non terminées (affichage seulement).
   const live = useLiveScores(competitionId, !onPreviewSave && matches.some((m) => !m.isFinished));
+  const withLiveLock = (match) => ({
+    ...match,
+    liveDetectedAt: match.liveDetectedAt || (live.has(match.id) ? (live.get(match.id).updatedAt || '1970-01-01T00:00:00.001Z') : null),
+  });
+  const closedMatch = (match, at) => isMatchClosed(withLiveLock(match), at);
   // Copie synchrone des saisies : l'enregistrement en arrière-plan et le passage au match suivant
   // lisent toujours la dernière frappe, même avant le prochain rendu.
   const draftsRef = useRef({});
@@ -206,7 +211,7 @@ export default function MatchBoard({
     (m) =>
       (linkedNew.includes(m.id) || (seen !== null && !seen.includes(m.id))) &&
       !m.predictions?.some((p) => p.userId === userId) &&
-      !isMatchClosed(m, now),
+      !closedMatch(m, now),
   );
   // Le filtre commun inclut les nouvelles rencontres ; conserve le défilement et la surbrillance.
   const [flashId, setFlashId] = useState(null);
@@ -368,7 +373,7 @@ export default function MatchBoard({
           message(id, `${invalid} Ou touchez simplement le nom du vainqueur.`, true);
           continue;
         }
-        if (!ready || isMatchClosed(m, Date.now())) {
+        if (!ready || closedMatch(m, Date.now())) {
           message(
             id,
             'Le match est clos ou sa disponibilité ne peut pas être vérifiée. Votre saisie est conservée.',
@@ -449,7 +454,7 @@ export default function MatchBoard({
         : [...document.querySelectorAll('input[id^="input-"][id$="-1"]')].map((el) => Number(el.id.split('-')[1]));
     return nextMatchId(ordered, current, (mid) => {
       const m = valid.find((x) => x.id === mid);
-      return Boolean(m) && !isMatchClosed(m, Date.now()) && !mine(m) && !draftsRef.current[mid];
+      return Boolean(m) && !closedMatch(m, Date.now()) && !mine(m) && !draftsRef.current[mid];
     });
   };
   // Passe au match suivant. Le focus est déplacé tout de suite (dans le geste de l'utilisateur) :
@@ -489,7 +494,7 @@ export default function MatchBoard({
   };
   // Pronostic simplifié : toucher le nom du vainqueur suffit (score facultatif).
   const pick = (m, side) => {
-    if (!ready || isMatchClosed(m, now)) return;
+    if (!ready || closedMatch(m, now)) return;
     if (pickedSide(m, values(m, draftsRef.current)) === side && !draftsRef.current[m.id]) return;
     saveDrafts((old) => ({
       ...old,
@@ -505,7 +510,7 @@ export default function MatchBoard({
   // Mode express : un toucher = vainqueur enregistré, sans ouvrir le score ni changer de match.
   // Un pronostic déjà complet (score exact) n'est remplacé que si l'on choisit l'autre tireur.
   const expressPick = (m, side) => {
-    if (!ready || isMatchClosed(m, now)) return;
+    if (!ready || closedMatch(m, now)) return;
     if (pickedSide(m, values(m, draftsRef.current)) === side && !draftsRef.current[m.id]) return;
     saveDrafts((old) => ({
       ...old,
@@ -580,7 +585,7 @@ export default function MatchBoard({
   };
   // Tab ou toucher ailleurs : un match quitté avec deux scores valides est enregistré.
   const leave = (m) => {
-    if (!draftsRef.current[m.id] || !ready || isMatchClosed(m, now)) return;
+    if (!draftsRef.current[m.id] || !ready || closedMatch(m, now)) return;
     if (validateScores(values(m, draftsRef.current), m.maxScore || 15)) return;
     save([m.id]);
   };
@@ -611,15 +616,15 @@ export default function MatchBoard({
       : filter === 'En cours'
         ? !!live.get(m.id) && !live.get(m.id).finished && !m.isFinished
         : filter === 'À compléter'
-          ? (!mine(m) && !isMatchClosed(m, now)) || kept.has(m.id)
+          ? (!mine(m) && !closedMatch(m, now)) || kept.has(m.id)
           : filter === 'Ferment bientôt'
-            ? !isMatchClosed(m, now) && m.closesAt && Date.parse(m.closesAt) - now <= 3600000
+            ? !closedMatch(m, now) && m.closesAt && Date.parse(m.closesAt) - now <= 3600000
             : filter === 'Résultats publiés'
               ? m.isFinished
               : true;
   const groups = groupMatches(valid),
     next = () => {
-      const target = valid.find((m) => !mine(m) && !isMatchClosed(m, now));
+      const target = valid.find((m) => !mine(m) && !closedMatch(m, now));
       setFilter('À compléter');
       if (target) setReveal({ id: target.id });
       if (target) setTimeout(() => document.getElementById(`input-${target.id}-1`)?.focus(), 50);
@@ -669,7 +674,7 @@ export default function MatchBoard({
   const card = (m) => {
     const p = mine(m),
       v = values(m),
-      closed = isMatchClosed(m, now),
+      closed = closedMatch(m, now),
       status = !ready
         ? 'Vérification…'
         : m.isFinished
@@ -828,7 +833,7 @@ export default function MatchBoard({
             )}
           </div>
         ) : (
-          <MatchTiming match={m} now={now} hideChecked={checked.length === 1} />
+          <MatchTiming match={withLiveLock(m)} now={now} hideChecked={checked.length === 1} />
         )}
         {!onPreviewSave && <MatchExtras match={m} prediction={p} />}
         <HeadToHead matchId={m.id} player1={m.player1} player2={m.player2} />
@@ -898,7 +903,7 @@ export default function MatchBoard({
             saveDrafts(
               Object.fromEntries(
                 Object.entries(value).filter(([id]) =>
-                  valid.some((m) => String(m.id) === id && !isMatchClosed(m, now)),
+                  valid.some((m) => String(m.id) === id && !closedMatch(m, now)),
                 ),
               ),
             )
@@ -950,7 +955,7 @@ export default function MatchBoard({
               <strong>
                 {valid.filter((m) => mine(m)).length}/{valid.length}
               </strong>{' '}
-              enregistrés · <strong>{valid.filter((m) => !mine(m) && !isMatchClosed(m, now)).length}</strong> à
+              enregistrés · <strong>{valid.filter((m) => !mine(m) && !closedMatch(m, now)).length}</strong> à
               compléter
             </p>
             <div className="filter-row view-toggle" role="group" aria-label="Affichage">
@@ -998,7 +1003,7 @@ export default function MatchBoard({
             <button
               className="button-link"
               onClick={next}
-              disabled={!valid.some((m) => !mine(m) && !isMatchClosed(m, now))}
+              disabled={!valid.some((m) => !mine(m) && !closedMatch(m, now))}
             >
               Pronostic suivant →
             </button>
@@ -1023,7 +1028,7 @@ export default function MatchBoard({
                       </h2>
                       <ul>
                         {items.map((m) => {
-                          const closed = !ready || isMatchClosed(m, now);
+                          const closed = !ready || closedMatch(m, now);
                           const side = pickedSide(m, values(m));
                           const p = mine(m);
                           const saved = p && !drafts[m.id];
@@ -1090,7 +1095,7 @@ export default function MatchBoard({
                   const candidates = valid.filter(visible);
                   const featured =
                     candidates.find((m) => m.id === reveal?.id) ||
-                    candidates.find((m) => !mine(m) && !isMatchClosed(m, now)) ||
+                    candidates.find((m) => !mine(m) && !closedMatch(m, now)) ||
                     candidates[0];
                   return featured ? card(featured) : <p>Aucun match pour ce filtre.</p>;
                 })()}
@@ -1132,7 +1137,7 @@ export default function MatchBoard({
                 drafts={drafts}
                 values={values}
                 mine={mine}
-                isClosed={(m) => isMatchClosed(m, now)}
+                isClosed={(m) => closedMatch(m, now)}
                 visible={visible}
                 isFollowed={(name) => isFollowedFencer(follows, name)}
                 onType={type}

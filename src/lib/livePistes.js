@@ -16,3 +16,13 @@ export function livePistes(matches, live, now) {
       return [ftlPresentation(m, score)];
     });
 }
+
+export function livePredictionLabel(match, live, userId) {
+  const p = match.predictions?.find((p) => p.userId === userId);
+  if (!p) return 'Votre prono : non renseigné';
+  if (p.winnerOnly)
+    return `Votre prono : ${p.predictedScore1 > p.predictedScore2 ? match.player1 : match.player2} vainqueur`;
+  const scores =
+    live?.ftlLeftPlayer === 2 ? [p.predictedScore2, p.predictedScore1] : [p.predictedScore1, p.predictedScore2];
+  return `Votre prono : ${scores[0]} – ${scores[1]}`;
+}

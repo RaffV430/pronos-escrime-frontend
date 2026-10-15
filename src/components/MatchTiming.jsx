@@ -5,18 +5,21 @@ export default function MatchTiming({ match, now, hideChecked = false }) {
   return (
     <div className="timing">
       <p>
-        {isMatchClosed(match, now)
-          ? 'Pronostics clos'
-          : match.manualUnlockUntil
-            ? `Réouvert jusqu’à ${date(match.manualUnlockUntil)}`
-            : match.awaitingPreviousRound
-              ? 'Ouvert · en attente de la fin du tour précédent'
-              : match.closesAt
-                ? `Ferme le ${date(match.closesAt)}`
-                : 'Ouvert · horaire de clôture à confirmer'}
+        {match.liveDetectedAt
+          ? 'Pronostics clos · score live détecté pour cette rencontre'
+          : isMatchClosed(match, now)
+            ? 'Pronostics clos'
+            : match.manualUnlockUntil
+              ? `Réouvert jusqu’à ${date(match.manualUnlockUntil)}`
+              : match.awaitingPreviousRound
+                ? 'Ouvert · en attente de la fin du tour précédent'
+                : match.closesAt
+                  ? `Ferme le ${date(match.closesAt)}`
+                  : 'Ouvert · horaire de clôture à confirmer'}
       </p>
       {isMatchClosed(match, now) &&
         !match.isFinished &&
+        !match.liveDetectedAt &&
         !match.startsAt &&
         !match.isLocked &&
         !match.syncIssue &&

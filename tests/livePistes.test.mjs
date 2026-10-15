@@ -53,3 +53,25 @@ test('les côtés FTL sont respectés sans toucher aux identifiants, pronostics 
   assert.deepEqual(matches, before);
   assert.equal(live.get(1).score1, 6);
 });
+
+test('le rappel du prono conserve le sens officiel, le vainqueur seul et la confidentialité', async () => {
+  const { livePredictionLabel } = await import('../src/lib/livePistes.js');
+  const m = {
+    player1: 'Alpha',
+    player2: 'Beta',
+    predictions: [{ userId: 1, predictedScore1: 15, predictedScore2: 8 }],
+  };
+  const before = structuredClone(m);
+  assert.equal(livePredictionLabel(m, { ftlLeftPlayer: 1 }, 1), 'Votre prono : 15 – 8');
+  assert.equal(livePredictionLabel(m, { ftlLeftPlayer: 2 }, 1), 'Votre prono : 8 – 15');
+  assert.equal(livePredictionLabel(m, {}, 2), 'Votre prono : non renseigné');
+  assert.deepEqual(m, before);
+  assert.equal(
+    livePredictionLabel(
+      { ...m, predictions: [{ userId: 1, predictedScore1: 0, predictedScore2: 1, winnerOnly: true }] },
+      { ftlLeftPlayer: 2 },
+      1,
+    ),
+    'Votre prono : Beta vainqueur',
+  );
+});

@@ -85,6 +85,7 @@ export default function PisteLive({
           selectedId={match?.id}
           ready={ready}
           error={error}
+          userId={userId}
           onSelect={(id) => {
             setRound('');
             setStrip('');

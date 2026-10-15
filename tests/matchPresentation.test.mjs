@@ -170,3 +170,12 @@ test('piste « Podium » affichée telle quelle', async () => {
   assert.equal(stripLabel('Podium'), 'Podium');
   assert.equal(stripLabel('4'), 'Piste 4');
 });
+
+test('le live de cette rencontre prime une réouverture, sans fermer une autre rencontre', () => {
+  const open = { closesAt: '2030-01-01T12:00:00Z', manualUnlockUntil: '2030-01-01T12:00:00Z' };
+  assert.equal(
+    isMatchClosed({ ...open, liveDetectedAt: '2026-10-15T07:00:00Z' }, Date.parse('2026-10-15T07:01:00Z')),
+    true,
+  );
+  assert.equal(isMatchClosed(open, Date.parse('2026-10-15T07:01:00Z')), false);
+});
