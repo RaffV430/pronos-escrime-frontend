@@ -92,3 +92,13 @@
 .piste-live-score {
   scroll-margin-top: 110px;
 }
+
+.live-pistes-prediction {
+  display: block;
+  margin: 8px 0;
+  padding: 6px 8px;
+  background: var(--soft);
+  border-radius: 6px;
+  font-size: 0.85rem;
+  overflow-wrap: anywhere;
+}

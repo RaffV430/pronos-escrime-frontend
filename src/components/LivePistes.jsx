@@ -1,9 +1,9 @@
-import { livePistes } from '../lib/livePistes';
+import { livePistes, livePredictionLabel } from '../lib/livePistes';
 import { clockLabel } from '../lib/useLiveScores';
 import { useNow } from '../lib/polling';
 import { roundLabel } from './matchPresentation';
 import './live-pistes.css';
-export default function LivePistes({ matches, live, selectedId, onSelect, ready, error }) {
+export default function LivePistes({ matches, live, selectedId, onSelect, ready, error, userId }) {
   const now = useNow(5000);
   const rows = livePistes(matches, live, now);
   return (
@@ -51,6 +51,13 @@ export default function LivePistes({ matches, live, selectedId, onSelect, ready,
                   </b>
                 </span>
               ))}
+            </span>
+            <span className="live-pistes-prediction">
+              {livePredictionLabel(
+                matches.find((match) => match.id === m.id),
+                s,
+                userId,
+              )}
             </span>
             <span className="live-pistes-meta">
               <span>

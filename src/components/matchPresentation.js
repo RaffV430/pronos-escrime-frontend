@@ -4,7 +4,7 @@ export function roundLabel(round, multiphase = false) {
   return multiphase ? `${label} · J2 principal` : label;
 }
 export function isMatchClosed(match, now) {
-  if (match.isFinished || match.syncIssue) return true;
+  if (match.liveDetectedAt || match.isFinished || match.syncIssue) return true;
   if (match.manualUnlockUntil) return now >= Date.parse(match.manualUnlockUntil);
   return Boolean(
     match.timingUnverified ||
