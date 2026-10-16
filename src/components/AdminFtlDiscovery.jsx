@@ -21,7 +21,7 @@ export default function AdminFtlDiscovery({ onPrepare }) {
   const ignore = async (t, e) => {
     setBusy(true);
     try {
-      await API.post(`/admin/ftl/discovered-events/${t.tournamentId}/${e.eventId}/ignore`);
+      await API.post(`/admin/ftl/discovered-events/${t.tournamentId}/${encodeURIComponent(e.eventId)}/ignore`);
       await load();
       setMessage('Épreuve ignorée.');
       window.dispatchEvent(new Event('pronos:admin-alerts-changed'));
@@ -49,7 +49,7 @@ export default function AdminFtlDiscovery({ onPrepare }) {
   };
   return (
     <section className="feature-panel">
-      <h2>Nouvelles épreuves FTL à vérifier</h2>
+      <h2>Nouvelles épreuves FTL et Engarde à vérifier</h2>
       <p>
         Contrôle toutes les heures des tournois suivis autour de leurs dates de compétition. Aucune épreuve n’est
         ajoutée sans votre choix.
