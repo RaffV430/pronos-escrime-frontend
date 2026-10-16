@@ -770,3 +770,9 @@ button[aria-pressed='true'] {
     margin-left: auto;
   }
 }
+
+.sync-health-resume {
+  display: block;
+  min-width: 12rem;
+  margin-top: 0.35rem;
+}

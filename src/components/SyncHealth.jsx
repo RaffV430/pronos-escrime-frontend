@@ -13,11 +13,7 @@ const ago = (date, now) => {
   const min = Math.round((now - Date.parse(date)) / 60000);
   return min < 1 ? 'à l’instant' : min < 60 ? `il y a ${min} min` : new Date(date).toLocaleString('fr-FR');
 };
-const inText = (date, now) => {
-  if (!date) return '—';
-  const min = Math.round((Date.parse(date) - now) / 60000);
-  return min <= 0 ? 'en retard' : min < 60 ? `dans ${min} min` : new Date(date).toLocaleString('fr-FR');
-};
+import { nextControlText, resumeText } from '../lib/syncHealth.js';
 
 // État du suivi FencingTimeLive de toutes les épreuves en cours : une panne se voit au premier coup d'œil.
 export default function SyncHealth({ destination }) {
@@ -116,6 +112,7 @@ export default function SyncHealth({ destination }) {
                   </th>
                   <td>
                     <span aria-hidden="true">{LEVELS[c.level].icon}</span> {LEVELS[c.level].label}
+                    {c.waitingForJ2 && <small className="sync-health-resume">{resumeText(c.waitingForJ2)}</small>}
                     {c.failures > 0 && (
                       <small>
                         {' '}
@@ -126,7 +123,7 @@ export default function SyncHealth({ destination }) {
                     {c.warnings?.length > 0 && <small> · {c.warnings.length} avertissement(s) ci-dessous</small>}
                   </td>
                   <td>{ago(c.lastFinishedAt, now)}</td>
-                  <td>{c.status === 'COMPLETE' ? 'Terminé' : inText(c.nextAutomaticAt, now)}</td>
+                  <td>{c.status === 'COMPLETE' ? 'Terminé' : nextControlText(c, now)}</td>
                 </tr>
               ))}
             </tbody>
