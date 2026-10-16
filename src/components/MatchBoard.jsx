@@ -32,6 +32,7 @@ import { useLiveScores } from '../lib/useLiveScores';
 import MatchSocial from './MatchSocial';
 import BracketTree from './BracketTree.jsx';
 import { buildTree } from './bracketTree';
+import { defaultTableauPhase, tableauPhase } from './tableauPhase';
 
 // Barre collée au-dessus du clavier du téléphone (suit la zone visible quand le clavier s'ouvre).
 function KeyboardBar({ children }) {
@@ -175,6 +176,26 @@ export default function MatchBoard({
   const live = useLiveScores(competitionId, !onPreviewSave && matches.some((m) => !m.isFinished));
   const withLiveLock = (match) => withLiveDetection(match, live);
   const closedMatch = (match, at) => isMatchClosed(withLiveLock(match), at);
+  const requestedPhase = new URLSearchParams(location.search).get('phase');
+  const allValid = matches.filter(
+    (m) => m.player1?.trim() && m.player2?.trim() && m.player1 !== 'En attente...' && m.player2 !== 'En attente...',
+  );
+  const multiphase = matches.some((m) => m.round?.startsWith('J1:'));
+  // Choix initial seulement : un chrono qui démarre ne fait pas changer de journée pendant la saisie.
+  const [selectedPhase, setSelectedPhase] = useState(() => {
+    if (['main', 'preliminary'].includes(requestedPhase)) return requestedPhase;
+    const target = matches.find((m) => m.id === focusTarget?.id || linkedIds.includes(m.id));
+    return target ? tableauPhase(target) : defaultTableauPhase(allValid, (m) => closedMatch(m, now));
+  });
+  const choosePhase = (phase) => {
+    setSelectedPhase(phase);
+    setFilter('Tous');
+    setOpenId(null);
+    const url = new URL(location.href);
+    url.searchParams.set('phase', phase);
+    history.replaceState(history.state, '', url);
+  };
+  const valid = allValid.filter((m) => !multiphase || tableauPhase(m) === selectedPhase);
   // Copie synchrone des saisies : l'enregistrement en arrière-plan et le passage au match suivant
   // lisent toujours la dernière frappe, même avant le prochain rendu.
   const draftsRef = useRef({});
@@ -215,6 +236,7 @@ export default function MatchBoard({
   const [flashId, setFlashId] = useState(null);
   const showNew = () => {
     const ids = new Set(newMatches.map((m) => m.id));
+    if (newMatches[0]) setSelectedPhase(tableauPhase(newMatches[0]));
     setFilter('À compléter');
     if (!ids.size) return;
     // Première nouvelle rencontre dans l'ordre affiché (après application du filtre).
@@ -239,9 +261,12 @@ export default function MatchBoard({
     }
     setFilter('Tous');
   };
+  const focusedPhase = matches.find((m) => m.id === focusTarget?.id);
+  const focusedPhaseName = focusedPhase ? tableauPhase(focusedPhase) : null;
   useEffect(() => {
     if (!focusTarget) return;
     setFilter('Tous');
+    if (focusedPhaseName) setSelectedPhase(focusedPhaseName);
     setReveal({ id: focusTarget.id });
     const timer = setTimeout(() => {
       const el = document.getElementById(`match-${focusTarget.id}`);
@@ -249,25 +274,12 @@ export default function MatchBoard({
       el?.focus({ preventScroll: true });
     }, 50);
     return () => clearTimeout(timer);
-  }, [focusTarget]);
+  }, [focusTarget, focusedPhaseName]);
   const saving = useRef(false);
   // Enregistrements demandés pendant un envoi : traités juste après (aucune saisie perdue).
   const queued = useRef(new Set());
   const saveRef = useRef(null);
   const shiftAlone = useRef(false);
-  const requestedPhase = new URLSearchParams(location.search).get('phase');
-  const mainOnly = requestedPhase === 'main';
-  const preliminaryOnly = requestedPhase === 'preliminary';
-  const valid = matches.filter(
-    (m) =>
-      (!mainOnly || !m.round?.startsWith('J1:')) &&
-      (!preliminaryOnly || m.round?.startsWith('J1:')) &&
-      m.player1?.trim() &&
-      m.player2?.trim() &&
-      m.player1 !== 'En attente...' &&
-      m.player2 !== 'En attente...',
-  );
-  const multiphase = valid.some((m) => m.round?.startsWith('J1:'));
   const mine = (m) => m.predictions?.find((p) => p.userId === userId);
   // Saisies en attente d'envoi (sans réseau) : déjà prises en charge, elles ne bloquent pas la navigation.
   const [queuedIds, setQueuedIds] = useState(() => new Set());
@@ -362,7 +374,7 @@ export default function MatchBoard({
     try {
       const ready_ = [];
       for (const id of ids) {
-        const m = valid.find((m) => m.id === Number(id));
+        const m = allValid.find((m) => m.id === Number(id));
         if (!m) continue;
         const v = values(m, draftsRef.current),
           winnerOnly = [1, 2].includes(v.winner) && v[`score${v.winner === 1 ? 2 : 1}`] === '',
@@ -900,7 +912,9 @@ export default function MatchBoard({
           onRestore={(value) =>
             saveDrafts(
               Object.fromEntries(
-                Object.entries(value).filter(([id]) => valid.some((m) => String(m.id) === id && !closedMatch(m, now))),
+                Object.entries(value).filter(([id]) =>
+                  allValid.some((m) => String(m.id) === id && !closedMatch(m, now)),
+                ),
               ),
             )
           }
@@ -927,24 +941,28 @@ export default function MatchBoard({
               )}
             </div>
           )}
-          {(mainOnly || preliminaryOnly) && (
-            <p className="muted">
-              {mainOnly ? 'Tableau principal du J2' : 'Tableau préliminaire du J1'} ·{' '}
-              <a href={location.pathname}>Voir les deux journées</a>
-            </p>
-          )}
-          {valid.some((m) => m.round?.startsWith('J1:')) && (
-            <p className="muted">
-              J1 : tableau préliminaire jusqu’aux 32 qualifiés. J2 : tableau principal à partir du T64. Les pronostics
-              des deux phases sont conservés.
-              {!mainOnly && !preliminaryOnly && (
-                <>
-                  {' '}
-                  <a href={`${location.pathname}?phase=preliminary`}>Voir l’arbre J1</a> ·{' '}
-                  <a href={`${location.pathname}?phase=main`}>Voir l’arbre J2</a>
-                </>
-              )}
-            </p>
+          {multiphase && (
+            <div className="tableau-phase-picker">
+              <div className="filter-row" role="group" aria-label="Journée du tableau">
+                {[
+                  ['preliminary', 'J1 · Préliminaire'],
+                  ['main', 'J2 · Principal'],
+                ].map(([phase, label]) => (
+                  <button
+                    key={phase}
+                    type="button"
+                    aria-pressed={selectedPhase === phase}
+                    onClick={() => choosePhase(phase)}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+              <p className="muted">
+                {selectedPhase === 'preliminary' ? 'Tableau préliminaire du J1' : 'Tableau principal du J2'}
+                {!valid.length ? ' · Pas encore publié.' : ''}
+              </p>
+            </div>
           )}
           <div className="board-head">
             <p className="board-summary">
