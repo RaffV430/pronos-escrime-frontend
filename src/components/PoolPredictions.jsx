@@ -22,6 +22,7 @@ import { withCount } from '../lib/plural';
 import { pollWhileVisible, useNow } from '../lib/polling';
 import { useFencerFollows, isFollowedFencer } from '../lib/fencerFollows';
 import { stripLabel } from './matchPresentation';
+import { poolRounds } from './eventResults';
 
 const message = (error) => error.response?.data?.error || 'Connexion impossible. Réessayez.';
 const signed = (value) => (value == null ? '—' : value > 0 ? `+${value}` : String(value));
@@ -753,6 +754,8 @@ function PoolList({ competitionId, user, onDirtyChange, refreshVersion }) {
     };
   }, [dirty, onDirtyChange]);
   const [pools, setPools] = useState([]);
+  const [selectedRound, setSelectedRound] = useState('all');
+  useEffect(() => setSelectedRound('all'), [competitionId]);
   const [expandedGroups, setExpandedGroups] = useState({ pending: true, published: false });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -780,18 +783,27 @@ function PoolList({ competitionId, user, onDirtyChange, refreshVersion }) {
     return () => controller.abort();
   }, [competitionId, refresh, refreshVersion]);
   useEffect(() => pollWhileVisible(reload, RESULT_REFRESH_MS), [reload]);
+  const selectRound = (round) => {
+    setSelectedRound(round);
+    setExpandedGroups({ pending: true, published: true });
+  };
+  const rounds = poolRounds(pools);
+  const visiblePools =
+    selectedRound === 'all' ? pools : rounds.find((r) => String(r.round) === selectedRound)?.pools || pools;
   return (
     <>
       <div className="pool-toolbar">
         <button className="pool-secondary" onClick={reload} disabled={loading}>
           Actualiser
         </button>
-        {(dirty || batchBusy) && saveTarget && createPortal(
-          <button className="pool-floating-save" onClick={saveAll} disabled={loading || batchBusy}>
-            {batchBusy ? 'Enregistrement…' : 'Tout enregistrer'}
-          </button>,
-          saveTarget,
-        )}
+        {(dirty || batchBusy) &&
+          saveTarget &&
+          createPortal(
+            <button className="pool-floating-save" onClick={saveAll} disabled={loading || batchBusy}>
+              {batchBusy ? 'Enregistrement…' : 'Tout enregistrer'}
+            </button>,
+            saveTarget,
+          )}
         {batchFeedback && <span role="status">{batchFeedback}</span>}
         <span role="status">{loading ? 'Chargement des poules…' : withCount(pools.length, 'poule')}</span>
         {pools.some(hasMine) && (
@@ -805,6 +817,22 @@ function PoolList({ competitionId, user, onDirtyChange, refreshVersion }) {
           </div>
         )}
       </div>
+      {rounds.length > 1 && (
+        <div className="filter-row" role="group" aria-label="Choisir le tour de poules">
+          <button aria-pressed={selectedRound === 'all'} onClick={() => selectRound('all')}>
+            Tous les tours
+          </button>
+          {rounds.map((r) => (
+            <button
+              key={r.round}
+              aria-pressed={selectedRound === String(r.round)}
+              onClick={() => selectRound(String(r.round))}
+            >
+              Tour {r.round} · {withCount(r.pools.length, 'poule')}
+            </button>
+          ))}
+        </div>
+      )}
       {error && (
         <p role="alert" className="pool-error">
           {error}
@@ -822,7 +850,7 @@ function PoolList({ competitionId, user, onDirtyChange, refreshVersion }) {
           {
             key: 'pending',
             title: 'Poules à compléter',
-            items: pools
+            items: visiblePools
               .filter((pool) => !pool.isFinal && (!onlyMine || hasMine(pool)))
               .sort((a, b) => a.name.localeCompare(b.name, 'fr', { numeric: true })),
             empty: 'Toutes les poules disponibles ont un résultat publié.',
@@ -830,7 +858,7 @@ function PoolList({ competitionId, user, onDirtyChange, refreshVersion }) {
           {
             key: 'published',
             title: 'Résultats publiés',
-            items: pools
+            items: visiblePools
               .filter((pool) => pool.isFinal && (!onlyMine || hasMine(pool)))
               .sort((a, b) => a.name.localeCompare(b.name, 'fr', { numeric: true })),
             empty: 'Aucun résultat de poule publié pour le moment.',

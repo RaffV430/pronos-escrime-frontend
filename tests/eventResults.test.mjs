@@ -140,3 +140,15 @@ test('noms compacts, onglets de tours et classement des poules', () => {
     ],
   );
 });
+
+test('multi-day Engarde pool labels retain all rounds and pool IDs', () => {
+  const pools = [
+    { id: 11, name: 'Tour 1 · J1 · Poule 1' },
+    { id: 21, name: 'Tour 2 · J1 · Poule 1' },
+    { id: 31, name: 'Tour 3 · J1 · Poule 1' },
+    { id: 41, name: 'Tour 4 · J2 · Poule 1' },
+  ];
+  assert.deepEqual(poolRounds(pools).map(r => [r.round, r.pools.map(p => p.id)]), [
+    [1, [11]], [2, [21]], [3, [31]], [4, [41]],
+  ]);
+});

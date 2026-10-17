@@ -4,6 +4,7 @@ import { useFencerFollows, isFollowedFencer } from '../lib/fencerFollows';
 import { useEffect, useRef, useState } from 'react';
 import API from '../api';
 import { plural } from './resultPresentation';
+import { withCount } from '../lib/plural';
 import { poolRounds, poolStanding } from './eventResults';
 import { FencerLink } from './FencerProfile';
 import { usePublicMode } from '../lib/publicMode';
@@ -116,7 +117,12 @@ function PoolMatrix({ pool, onOpen }) {
             <tr key={f.id}>
               <td>
                 <button type="button" className="result-pool-name" onClick={() => onOpen(f)}>
-                  {isFollowedFencer(follows, f.name) && <span className="favorite-star" aria-label="Tireur favori">★ </span>}{f.name}
+                  {isFollowedFencer(follows, f.name) && (
+                    <span className="favorite-star" aria-label="Tireur favori">
+                      ★{' '}
+                    </span>
+                  )}
+                  {f.name}
                   {f.countryCode && <small className="muted"> {f.countryCode}</small>}
                 </button>
               </td>
@@ -146,18 +152,27 @@ export default function ResultsPools({ competitionId, poolsOverride }) {
   const [pools, setPools] = useState(null);
   const [error, setError] = useState('');
   const [open, setOpen] = useState(null);
+  const [selectedRound, setSelectedRound] = useState('all');
+  useEffect(() => setSelectedRound('all'), [competitionId]);
   useEffect(() => {
-    if (poolsOverride) { setPools(poolsOverride); return; }
+    if (poolsOverride) {
+      setPools(poolsOverride);
+      return;
+    }
     const c = new AbortController();
-    const refresh = () => (publicMode
-      ? API.get(`/public/competitions/${competitionId}/pools`, { signal: c.signal })
-      : API.get('/pools', { params: { competitionId }, signal: c.signal })
-    )
-      .then(({ data }) => setPools(data))
-      .catch(() => !c.signal.aborted && setError('Poules indisponibles.'));
+    const refresh = () =>
+      (publicMode
+        ? API.get(`/public/competitions/${competitionId}/pools`, { signal: c.signal })
+        : API.get('/pools', { params: { competitionId }, signal: c.signal })
+      )
+        .then(({ data }) => setPools(data))
+        .catch(() => !c.signal.aborted && setError('Poules indisponibles.'));
     refresh();
     const stop = pollWhileVisible(refresh, RESULT_REFRESH_MS);
-    return () => { c.abort(); stop(); };
+    return () => {
+      c.abort();
+      stop();
+    };
   }, [competitionId, publicMode, poolsOverride]);
   if (error) return <p className="muted">{error}</p>;
   if (!pools) return <p className="muted">Chargement…</p>;
@@ -165,55 +180,78 @@ export default function ResultsPools({ competitionId, poolsOverride }) {
   const rounds = poolRounds(pools);
   return (
     <div className="result-pools">
-      {rounds.map((r) => (
-        <section key={r.round}>
-          {rounds.length > 1 && <h4>Tour {r.round}</h4>}
-          {r.pools.some(hasBouts) && (
-            <p className="muted result-matrix-legend">
-              Chaque ligne se lit de gauche à droite : V = victoire (V4 : victoire à 4 touches), un chiffre seul =
-              touches données dans une défaite.
-            </p>
-          )}
-          <div className={`result-pool-grid${r.pools.some(hasBouts) ? ' has-matrix' : ''}`}>
-            {r.pools.map((pool) =>
-              hasBouts(pool) ? (
-                <PoolMatrix key={pool.id} pool={pool} onOpen={(f) => setOpen({ fencer: f, pool })} />
-              ) : (
-                <table key={pool.id} className="result-pool">
-                  <caption>{pool.name.replace(/^Tour \d+ · /, '')}</caption>
-                  <thead>
-                    <tr>
-                      <th scope="col">Tireur</th>
-                      <th scope="col" title="Victoires">
-                        V
-                      </th>
-                      <th scope="col">Ind.</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {poolStanding(pool.fencers).map((f) => (
-                      <tr key={f.id}>
-                        <td>
-                          <button
-                            type="button"
-                            className="result-pool-name"
-                            onClick={() => setOpen({ fencer: f, pool })}
-                          >
-                            {isFollowedFencer(follows, f.name) && <span className="favorite-star" aria-label="Tireur favori">★ </span>}{f.name}
-                            {f.countryCode && <small className="muted"> {f.countryCode}</small>}
-                          </button>
-                        </td>
-                        <td>{f.wins ?? '—'}</td>
-                        <td>{f.indicator === null ? '—' : signed(f.indicator)}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              ),
+      {rounds.length > 1 && (
+        <div className="filter-row" role="group" aria-label="Choisir le tour de poules">
+          <button aria-pressed={selectedRound === 'all'} onClick={() => setSelectedRound('all')}>
+            Tous les tours
+          </button>
+          {rounds.map((r) => (
+            <button
+              key={r.round}
+              aria-pressed={selectedRound === String(r.round)}
+              onClick={() => setSelectedRound(String(r.round))}
+            >
+              Tour {r.round} · {withCount(r.pools.length, 'poule')}
+            </button>
+          ))}
+        </div>
+      )}
+      {rounds
+        .filter((r) => selectedRound === 'all' || String(r.round) === selectedRound)
+        .map((r) => (
+          <section key={r.round}>
+            {rounds.length > 1 && <h4>Tour {r.round}</h4>}
+            {r.pools.some(hasBouts) && (
+              <p className="muted result-matrix-legend">
+                Chaque ligne se lit de gauche à droite : V = victoire (V4 : victoire à 4 touches), un chiffre seul =
+                touches données dans une défaite.
+              </p>
             )}
-          </div>
-        </section>
-      ))}
+            <div className={`result-pool-grid${r.pools.some(hasBouts) ? ' has-matrix' : ''}`}>
+              {r.pools.map((pool) =>
+                hasBouts(pool) ? (
+                  <PoolMatrix key={pool.id} pool={pool} onOpen={(f) => setOpen({ fencer: f, pool })} />
+                ) : (
+                  <table key={pool.id} className="result-pool">
+                    <caption>{pool.name.replace(/^Tour \d+ · /, '')}</caption>
+                    <thead>
+                      <tr>
+                        <th scope="col">Tireur</th>
+                        <th scope="col" title="Victoires">
+                          V
+                        </th>
+                        <th scope="col">Ind.</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {poolStanding(pool.fencers).map((f) => (
+                        <tr key={f.id}>
+                          <td>
+                            <button
+                              type="button"
+                              className="result-pool-name"
+                              onClick={() => setOpen({ fencer: f, pool })}
+                            >
+                              {isFollowedFencer(follows, f.name) && (
+                                <span className="favorite-star" aria-label="Tireur favori">
+                                  ★{' '}
+                                </span>
+                              )}
+                              {f.name}
+                              {f.countryCode && <small className="muted"> {f.countryCode}</small>}
+                            </button>
+                          </td>
+                          <td>{f.wins ?? '—'}</td>
+                          <td>{f.indicator === null ? '—' : signed(f.indicator)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                ),
+              )}
+            </div>
+          </section>
+        ))}
       {open && <FencerDialog fencer={open.fencer} pool={open.pool} onClose={() => setOpen(null)} />}
     </div>
   );
