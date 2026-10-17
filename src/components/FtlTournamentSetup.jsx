@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import API from '../api';
 import VenuePicker from './VenuePicker';
 import { parisTime } from '../lib/venue.js';
@@ -15,6 +15,15 @@ export default function FtlTournamentSetup({ onConfigured, initialEvent = null }
     [busy, setBusy] = useState(false),
     [message, setMessage] = useState(''),
     [result, setResult] = useState(null);
+  const panel = useRef(null);
+  const heading = useRef(null);
+  useEffect(() => {
+    if (!initialEvent || !panel.current) return;
+    // Un nouveau clic sur la même alerte doit aussi rouvrir et retrouver le formulaire.
+    panel.current.open = true;
+    heading.current?.focus({ preventScroll: true });
+    panel.current.scrollIntoView({ block: 'start' });
+  }, [initialEvent]);
   const provider = sourceOf(sourceUrl);
   const inspect = async (e) => {
     e.preventDefault();
@@ -69,8 +78,14 @@ export default function FtlTournamentSetup({ onConfigured, initialEvent = null }
     }
   };
   return (
-    <details className="feature-panel tournament-setup" open={initialEvent ? true : undefined}>
-      <summary>Préparer un tournoi (FencingTimeLive ou engarde-service)</summary>
+    <details ref={panel} className="feature-panel tournament-setup" open={initialEvent ? true : undefined}>
+      <summary ref={heading}>Préparer un tournoi (FencingTimeLive ou engarde-service)</summary>
+      {initialEvent && (
+        <p role="status">
+          Préparation de l’épreuve : <strong>{initialEvent.event}</strong>. Vérifiez les informations, puis affichez les
+          épreuves du tournoi.
+        </p>
+      )}
       <p>
         Un seul lien pour retrouver les épreuves individuelles et par équipes, puis choisir celles à proposer aux
         joueurs. Un tournoi peut être préparé avant la publication des engagés : le suivi automatique les importera dès
