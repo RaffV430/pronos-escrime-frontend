@@ -176,7 +176,12 @@ export default function ResultsPools({ competitionId, poolsOverride }) {
   }, [competitionId, publicMode, poolsOverride]);
   if (error) return <p className="muted">{error}</p>;
   if (!pools) return <p className="muted">Chargement…</p>;
-  if (!pools.length) return <p className="muted">Aucune poule suivie pour cette épreuve.</p>;
+  if (!pools.length)
+    return (
+      <p className="muted">
+        Aucune poule importée pour cette épreuve. Cela ne confirme pas leur absence sur le site officiel.
+      </p>
+    );
   const rounds = poolRounds(pools);
   return (
     <div className="result-pools">
