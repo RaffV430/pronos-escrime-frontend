@@ -24,6 +24,7 @@ import ClubAdministration from './components/ClubAdministration';
 import FencerAffiliationAdministration from './components/FencerAffiliationAdministration';
 import AdminFencerAliases from './components/AdminFencerAliases';
 import { CompetitionFollow } from './components/EventWorkspace';
+import StandingsAccess from './components/StandingsAccess';
 import { FencerFollowsProvider } from './components/FencerFollowsProvider';
 import { isAuthPath, authPath } from './lib/authNavigation';
 import { ArenaHome, PisteFencers } from './components/PisteExperience';
@@ -436,6 +437,13 @@ export default function App() {
     runNavigation(() => {
       setDirty(false);
       setMainTab(tab);
+    });
+
+  const openEventStandings = () =>
+    runNavigation(() => {
+      setDirty(false);
+      setLiveView('ranking');
+      setMainTab('live');
     });
 
   const openAdminAlert = (panel) =>
@@ -1191,6 +1199,7 @@ export default function App() {
                       </button>
                     ))}
                   </nav>
+                  {competition && liveView !== 'ranking' && <StandingsAccess onOpen={openEventStandings} />}
                   {liveView === 'matches' ? (
                     <PisteLive
                       key={`${selectedCompetitionId}:${liveMatchId}`}
@@ -1294,6 +1303,7 @@ export default function App() {
                   {mainTab === 'play' && (
                     <>
                       <h1 className="visually-hidden">Pronostiquer</h1>
+                      <StandingsAccess onOpen={openEventStandings} />
                       <ClosingCountdown
                         matches={matches}
                         userId={user.id}
