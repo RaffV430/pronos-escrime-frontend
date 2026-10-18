@@ -20,6 +20,7 @@ import {
 } from './eventResults';
 import ResultsBracket from './ResultsBracket';
 import ResultsPools from './ResultsPools';
+import OfficialStandings from './OfficialStandings';
 import { FencerLink } from './FencerProfile';
 import { buildTree } from './bracketTree';
 import { usePublicMode } from '../lib/publicMode';
@@ -227,6 +228,14 @@ function Competition({ c, tournament, focused = false }) {
         >
           Poules
         </button>
+        <button
+          type="button"
+          className={view === 'standings' ? '' : 'button-secondary'}
+          aria-expanded={view === 'standings'}
+          onClick={() => toggle('standings')}
+        >
+          Classements
+        </button>
         {c.sourceUrl && (
           <a href={c.sourceUrl} target="_blank" rel="noreferrer">
             Site officiel
@@ -235,6 +244,7 @@ function Competition({ c, tournament, focused = false }) {
       </p>
       {view === 'tableau' && <CompetitionMatches competitionId={c.id} />}
       {view === 'pools' && <ResultsPools competitionId={c.id} />}
+      {view === 'standings' && <OfficialStandings key={c.id} competitionId={c.id} />}
     </div>
   );
 }
