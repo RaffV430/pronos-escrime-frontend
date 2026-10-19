@@ -17,14 +17,22 @@ export function Competition({ c, open, matchId }) {
       <summary>
         <span>
           <strong>{c.tournament}</strong>
-          <small>{[c.competition, day(c.date)].filter(Boolean).join(' · ')}</small>
+          <small>{[c.competition, !c.detailMissing && day(c.date)].filter(Boolean).join(' · ')}</small>
         </span>
-        {c.result && (
+        {c.result ? (
           <span className="fp-result">
             {c.result.round ? `Éliminé · ${roundName(c.result.round).toLowerCase()}` : c.result.label}
           </span>
+        ) : (
+          c.detailMissing && <span className="fp-result muted">Engagé</span>
         )}
       </summary>
+      {c.detailMissing && (
+        <p className="fp-block muted">
+          Épreuve connue par la liste officielle des engagés : le détail des poules et du tableau n’est pas disponible
+          dans l’application.
+        </p>
+      )}
       {c.pools.map((p) => (
         <section key={p.poolId} className="fp-block">
           <h4>
