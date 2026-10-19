@@ -41,6 +41,7 @@ import { legalPageFor } from './lib/legal.js';
 import { refonteOn, setRefonte } from './lib/refonte';
 import { NAV_CATALOG, NAV2_CATALOG, NAV2_KEY, mobileSlots, readNav, saveNav } from './lib/navPrefs';
 import NavEditor from './components/NavEditor';
+import { setReloadBlocked } from './lib/chunkReload';
 import { nav2On, setNav2, NAV2_TABS, nav2Active } from './lib/nav2';
 import MySpace, { HubTrail } from './components/MySpace';
 import EventCards from './components/EventCards';
@@ -356,6 +357,19 @@ export default function App() {
   const [landingPending, setLandingPending] = useState(false);
   const [landingFilter, setLandingFilter] = useState('Tous');
   const [dirty, setDirty] = useState(false);
+  useEffect(() => {
+    setReloadBlocked(dirty);
+    const protect = (event) => {
+      if (dirty) {
+        event.preventDefault();
+        event.returnValue = '';
+      }
+    };
+    window.addEventListener('beforeunload', protect);
+    return () => {
+      window.removeEventListener('beforeunload', protect);
+    };
+  }, [dirty]);
   const [matchesReady, setMatchesReady] = useState(false);
   const [matchesError, setMatchesError] = useState('');
   // Données déjà affichées mais dernier rafraîchissement raté (wifi de salle) : on prévient sans bloquer.
@@ -739,7 +753,7 @@ export default function App() {
               {...(NAV2 ? { catalog: NAV2_CATALOG, defaults: NAV2_TABS } : {})}
               onClose={() => setNavEditor(false)}
               onSave={(list) => {
-                saveNav(list, NAV2 ? NAV2_KEY : undefined);
+                saveNav(NAV2 ? list || NAV2_TABS : list, NAV2 ? NAV2_KEY : undefined);
                 setNavTabs(list);
                 setNavEditor(false);
               }}
@@ -844,6 +858,9 @@ export default function App() {
                                 : t(`nav.${id}`)}
                       </button>
                     ))}
+                    {!NAV2 && (
+                      <button onClick={() => runNavigation(() => setNav2(true))}>Activer la nouvelle navigation</button>
+                    )}
                     {REFONTE && !NAV2 && (
                       <button
                         onClick={() => {
@@ -1124,7 +1141,7 @@ export default function App() {
                       () => (reducedData() ? setDataMode('auto') : setDataMode('on')),
                     ],
                     [REFONTE ? 'Revenir à l’ancien design' : 'Essayer le nouveau design', () => setRefonte(!REFONTE)],
-                    ['Revenir à la navigation actuelle (maquette)', () => setNav2(false)],
+                    ['Revenir temporairement à l’ancienne navigation', () => runNavigation(() => setNav2(false))],
                     ['Déconnexion', () => runNavigation(handleLogout), 'danger'],
                   ]}
                 />

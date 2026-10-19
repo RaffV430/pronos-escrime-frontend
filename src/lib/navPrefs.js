@@ -20,7 +20,18 @@ export const NAV_MAX = 5;
 export function readNav(fallback = NAV_DEFAULT, catalog = NAV_CATALOG, key = KEY) {
   const known = new Set(catalog.map(([id]) => id));
   try {
-    const list = JSON.parse(localStorage.getItem(key) || 'null');
+    let raw = localStorage.getItem(key);
+    if (raw === null && key === NAV2_KEY) {
+      raw = localStorage.getItem(KEY);
+      if (raw !== null) {
+        try {
+          localStorage.setItem(NAV2_KEY, raw);
+        } catch {
+          /* lecture seule possible */
+        }
+      }
+    }
+    const list = JSON.parse(raw || 'null');
     if (Array.isArray(list)) {
       // Accueil est obligatoire et toujours en tête (en haut sur ordinateur, au centre sur mobile).
       const clean = ['home', ...new Set(list.filter((id) => known.has(id) && id !== 'home'))].slice(0, NAV_MAX);

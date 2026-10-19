@@ -1,27 +1,32 @@
-// Maquette « navigation 2 » : ?nav=2 l'active sur cet appareil, ?nav=1 revient à la navigation actuelle.
-// Simple aperçu à tester : rien ne change pour les autres joueurs tant qu'elle n'est pas activée chez eux.
-const KEY = 'pronos:nav2';
+// Navigation par défaut ; ?nav=1 permet un retour temporaire à l’ancienne.
+// Le choix reste propre à cet appareil.
+const KEY = 'pronos:navigation-choice';
 
 export function nav2On() {
+  const asked = new URLSearchParams(location.search).get('nav');
+  if (asked === '1' || asked === '2') {
+    try {
+      localStorage.setItem(KEY, asked);
+    } catch {
+      /* URL reste prioritaire */
+    }
+    return asked === '2';
+  }
   try {
-    const asked = new URLSearchParams(location.search).get('nav');
-    if (asked === '2') localStorage.setItem(KEY, '1');
-    if (asked === '1') localStorage.removeItem(KEY);
-    return localStorage.getItem(KEY) === '1';
+    return localStorage.getItem(KEY) !== '1';
   } catch {
-    return false;
+    return true;
   }
 }
 
 export function setNav2(on) {
   try {
-    if (on) localStorage.setItem(KEY, '1');
-    else localStorage.removeItem(KEY);
+    localStorage.setItem(KEY, on ? '2' : '1');
   } catch {
-    /* préférence non gardée */
+    /* URL reste utilisable */
   }
   const url = new URL(location.href);
-  url.searchParams.delete('nav');
+  url.searchParams.set('nav', on ? '2' : '1');
   location.replace(url.pathname + url.search + url.hash);
 }
 
