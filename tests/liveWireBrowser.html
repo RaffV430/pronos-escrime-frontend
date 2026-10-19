@@ -1,0 +1,14 @@
+<!doctype html><html lang="fr"><meta charset="utf-8"><title>Test local du direct compressé</title><style>body{font:18px system-ui;max-width:820px;margin:40px auto;padding:20px}li{margin:20px 0}.ok{color:#17622d}.fail{color:#9c1822}</style><h1>Direct — vérification locale</h1><p>Données synthétiques uniquement. Serveurs 5268 et 5269, aucune production.</p><ul id="results"></ul><script type="module">
+import {createLiveConnections} from '/src/lib/liveConnection.js';
+import {createLiveWireDecoder} from '/src/lib/liveWire.js';
+const rows=document.querySelector('#results');
+const decoder=createLiveWireDecoder();
+const capabilities=document.createElement('li');capabilities.textContent='Décompression navigateur : '+(decoder?'disponible':'absente, repli attendu');rows.append(capabilities);
+for(const [id,title,decodeWire] of [[1,'Message compressé, Unicode, delta et historique',decoder],[2,'Message corrompu : reprise automatique classique',decoder],[3,'Navigateur sans décodeur : SSE classique',null]]){
+const li=document.createElement('li');li.textContent=title+' : en cours';rows.append(li);
+let stop,finished=false;
+const timeout=setTimeout(()=>{if(!finished){li.className='fail';li.textContent=title+' : ÉCHEC (délai)';stop?.();}},5000);
+const subscribe=createLiveConnections({eventSource:EventSource,get:()=>Promise.reject(Error('Aucun polling attendu')),baseURL:'http://127.0.0.1:5268',document,decodeWire});
+stop=subscribe(id,scores=>{const row=scores.get(1);if(row?.score1===4){finished=true;clearTimeout(timeout);const ok=row.history.length===2&&row.label.startsWith('Fictif é🤺');li.className=ok?'ok':'fail';li.textContent=title+(ok?' : RÉUSSI':' : ÉCHEC');queueMicrotask(()=>stop());}});
+}
+</script></html>
