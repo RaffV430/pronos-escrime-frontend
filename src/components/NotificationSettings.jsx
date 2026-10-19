@@ -1,5 +1,6 @@
 import { inferredProfile, notificationProfile, readUx, writeUx } from '../lib/uxFeatures';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { FOCUS_KEY } from '../lib/fencerNotifPrompt';
 import API from '../api';
 import { pushSupport, applicationKey, disableThisDevice } from '../lib/notifications';
 // Fuseau horaire de l'appareil (heures silencieuses), détecté automatiquement.
@@ -11,7 +12,25 @@ const deviceTimezone = () => {
   }
 };
 const withDeviceTime = (preferences) => ({ ...preferences, timezone: deviceTimezone() });
+// Arrivée depuis l'invitation « Mes tireurs » : panneau ouvert, options présélectionnées (à confirmer).
+// Lecture sans effacer (React peut appeler l'initialisation deux fois) ; effacé une fois appliqué.
+const readFocus = () => {
+  try {
+    return sessionStorage.getItem(FOCUS_KEY);
+  } catch {
+    return null;
+  }
+};
+const clearFocus = () => {
+  try {
+    sessionStorage.removeItem(FOCUS_KEY);
+  } catch {
+    /* rien à effacer */
+  }
+};
 export default function NotificationSettings({ userId }) {
+  const panel = useRef(null);
+  const [focus, setFocus] = useState(readFocus);
   const [chosenProfile, setChosenProfile] = useState(null);
   const [advancedOpen, setAdvancedOpen] = useState(false);
   const [modified, setModified] = useState(false);
@@ -197,9 +216,30 @@ export default function NotificationSettings({ userId }) {
       </span>
     </label>
   );
+  useEffect(() => {
+    if (focus && panel.current && !panel.current.open) {
+      panel.current.open = true;
+      setOpen(true);
+    }
+  }, [focus]);
+  useEffect(() => {
+    if (focus !== 'fencers' || !ready) return;
+    clearFocus();
+    setFocus(null);
+    setPreferences((p) => ({ ...p, fencerEntries: true, fencerResults: true }));
+    setAdvancedOpen(true);
+    setModified(true);
+    setMessage(
+      enabled
+        ? 'Notifications de vos tireurs cochées : touchez « Enregistrer mes choix » pour confirmer.'
+        : 'Notifications de vos tireurs cochées : activez les notifications sur cet appareil pour les recevoir.',
+    );
+    setTimeout(() => panel.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 0);
+  }, [focus, ready, enabled]);
   const permission = typeof Notification === 'undefined' ? null : Notification.permission;
   return (
     <details
+      ref={panel}
       className="feature-panel notification-settings"
       onChange={() => setModified(true)}
       onToggle={(e) => {
@@ -438,9 +478,11 @@ export default function NotificationSettings({ userId }) {
                   </fieldset>
                 </div>
               </details>
-              <div className="notification-actions ux-notification-save">
-                <small className="muted" role="status">
-                  {modified ? 'Modifications à enregistrer' : 'Choix à jour'}
+              <div className={`notification-actions ux-notification-save${modified ? ' has-changes' : ''}`}>
+                <small className={modified ? 'notification-unsaved' : 'muted'} role="status">
+                  {modified
+                    ? '⚠️ Choix non enregistrés : ils ne s’appliquent qu’après « Enregistrer »'
+                    : 'Choix à jour'}
                 </small>
                 <button
                   disabled={busy || !modified || (!preferences.followAll && !tournaments.length && !events.length)}

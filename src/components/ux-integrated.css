@@ -491,3 +491,21 @@ html.club-arena details.notification-settings:not([open]) > summary {
   font-weight: 700;
   color: var(--eyebrow, #a87a0c);
 }
+
+/* Choix de notification modifiés : barre d'enregistrement visible en bas de l'écran, message d'alerte. */
+html.club-arena .notification-settings .ux-notification-save.has-changes {
+  z-index: 5;
+  border: 2px solid var(--gold, #e2b33c);
+  border-radius: 14px;
+  background: var(--surface, #fff);
+  padding: 0.6rem 0.8rem;
+  box-shadow: 0 6px 18px rgb(0 0 0 / 0.12);
+}
+.notification-settings .notification-unsaved {
+  color: var(--eyebrow, #a87a0c);
+  font-weight: 700;
+}
+.fencer-notif-prompt > strong {
+  display: block;
+  margin-bottom: 0.3rem;
+}

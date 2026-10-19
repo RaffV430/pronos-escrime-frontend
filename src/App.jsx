@@ -2,6 +2,7 @@ import GlobalSearch from './components/GlobalSearch';
 import GainAlerts from './components/GainAlerts';
 import AfterPredictionInstall from './components/AfterPredictionInstall';
 import TeamFollows from './components/TeamFollows';
+import FencerNotifPrompt from './components/FencerNotifPrompt';
 import { UxRoot } from './components/UxSettings';
 import { scopeLabels, predictionTabs } from './lib/delegationScope';
 import { RESULT_REFRESH_MS } from './lib/resultSync';
@@ -960,6 +961,11 @@ export default function App() {
           <UxRoot key={`ux:${user.id}`} userId={user.id} />
           <GainAlerts key={`gains:${user.id}`} userId={user.id} />
           <AfterPredictionInstall key={`install:${user.id}`} userId={user.id} />
+          <FencerNotifPrompt
+            key={`fencer-notif:${user.id}`}
+            userId={user.id}
+            onOpenSettings={() => navigate('account')}
+          />
           {globalSearch && (
             <GlobalSearch
               onClose={() => setGlobalSearch(false)}
