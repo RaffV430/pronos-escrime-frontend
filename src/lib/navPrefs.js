@@ -11,13 +11,16 @@ export const NAV_CATALOG = [
   ['community', 'Délégations'],
 ];
 export const NAV_DEFAULT = ['home', 'play', 'mine', 'leaderboard', 'me'];
+// Maquette navigation 2 : « Mon espace » peut aussi être mis dans la barre ; préférence gardée à part.
+export const NAV2_CATALOG = [...NAV_CATALOG, ['hub', 'Mon espace']];
+export const NAV2_KEY = 'pronos:nav-tabs-2';
 export const NAV_MIN = 3;
 export const NAV_MAX = 5;
-const known = new Set(NAV_CATALOG.map(([id]) => id));
 
-export function readNav() {
+export function readNav(fallback = NAV_DEFAULT, catalog = NAV_CATALOG, key = KEY) {
+  const known = new Set(catalog.map(([id]) => id));
   try {
-    const list = JSON.parse(localStorage.getItem(KEY) || 'null');
+    const list = JSON.parse(localStorage.getItem(key) || 'null');
     if (Array.isArray(list)) {
       // Accueil est obligatoire et toujours en tête (en haut sur ordinateur, au centre sur mobile).
       const clean = ['home', ...new Set(list.filter((id) => known.has(id) && id !== 'home'))].slice(0, NAV_MAX);
@@ -26,13 +29,13 @@ export function readNav() {
   } catch {
     /* préférence illisible : barre par défaut */
   }
-  return NAV_DEFAULT;
+  return fallback;
 }
 
-export function saveNav(list) {
+export function saveNav(list, key = KEY) {
   try {
-    if (list) localStorage.setItem(KEY, JSON.stringify(list));
-    else localStorage.removeItem(KEY);
+    if (list) localStorage.setItem(key, JSON.stringify(list));
+    else localStorage.removeItem(key);
   } catch {
     /* préférence non gardée */
   }

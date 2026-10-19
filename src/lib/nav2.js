@@ -25,8 +25,8 @@ export function setNav2(on) {
   location.replace(url.pathname + url.search + url.hash);
 }
 
-// Barre du bas : cinq destinations fixes, chacune avec une seule mission.
-export const NAV2_TABS = ['home', 'play', 'live', 'leaderboard', 'hub'];
+// Barre du bas par défaut (personnalisable) ; « Mon espace » s'ouvre depuis le nom du joueur, en haut.
+export const NAV2_TABS = ['home', 'play', 'live', 'leaderboard', 'me'];
 // Sections rangées dans « Mon espace » (l'onglet reste allumé quand on y est).
 export const HUB_SECTIONS = [
   ['mine', 'Mes pronostics', 'Tous vos pronostics, épreuve par épreuve'],
@@ -37,8 +37,10 @@ export const HUB_SECTIONS = [
 ];
 const HUB_IDS = new Set(['hub', ...HUB_SECTIONS.map(([id]) => id)]);
 // Onglet de la barre à allumer pour une section.
-export function nav2Active(tab) {
-  if (HUB_IDS.has(tab)) return 'hub';
+// Une section présente dans la barre s'allume elle-même ; sinon « Mon espace » si le joueur l'a mis dans la barre.
+export function nav2Active(tab, tabs = NAV2_TABS) {
   if (tab === 'results') return 'live';
+  if (tabs.includes(tab)) return tab;
+  if (HUB_IDS.has(tab)) return 'hub';
   return tab;
 }

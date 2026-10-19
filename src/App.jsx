@@ -39,7 +39,7 @@ import { ForgotPassword, ResetPassword } from './components/AccountRecovery';
 import { LegalPage, LegalLinks } from './components/LegalPages';
 import { legalPageFor } from './lib/legal.js';
 import { refonteOn, setRefonte } from './lib/refonte';
-import { NAV_CATALOG, mobileSlots, readNav, saveNav } from './lib/navPrefs';
+import { NAV_CATALOG, NAV2_CATALOG, NAV2_KEY, mobileSlots, readNav, saveNav } from './lib/navPrefs';
 import NavEditor from './components/NavEditor';
 import { nav2On, setNav2, NAV2_TABS, nav2Active } from './lib/nav2';
 import MySpace, { HubTrail } from './components/MySpace';
@@ -195,7 +195,7 @@ export default function App() {
       /[?&](tournament|event)=/.test(window.location.search),
   );
   const { t, lang, setLang } = useI18n();
-  const [navTabs, setNavTabs] = useState(readNav);
+  const [navTabs, setNavTabs] = useState(() => (NAV2 ? readNav(NAV2_TABS, NAV2_CATALOG, NAV2_KEY) : readNav()));
   const [navEditor, setNavEditor] = useState(false);
   const [accountOpen, setAccountOpen] = useState(false);
   const [supportOpen, setSupportOpen] = useState(false);
@@ -736,9 +736,10 @@ export default function App() {
           {navEditor && (
             <NavEditor
               value={navTabs}
+              {...(NAV2 ? { catalog: NAV2_CATALOG, defaults: NAV2_TABS } : {})}
               onClose={() => setNavEditor(false)}
               onSave={(list) => {
-                saveNav(list);
+                saveNav(list, NAV2 ? NAV2_KEY : undefined);
                 setNavTabs(list);
                 setNavEditor(false);
               }}
@@ -786,7 +787,7 @@ export default function App() {
                 className="user-menu"
                 ref={accountMenu}
                 onMouseEnter={() => {
-                  if (matchMedia('(hover: hover)').matches) setAccountOpen(true);
+                  if (!NAV2 && matchMedia('(hover: hover)').matches) setAccountOpen(true);
                 }}
                 onMouseLeave={() => {
                   if (matchMedia('(hover: hover)').matches) setAccountOpen(false);
@@ -800,11 +801,14 @@ export default function App() {
                   aria-expanded={accountOpen}
                   aria-controls="user-options"
                   onClick={(e) => {
+                    // Maquette navigation 2 : le nom du joueur ouvre « Mon espace ».
+                    if (NAV2) return navigate('hub');
                     if (e.detail > 0 && matchMedia('(hover: hover)').matches) setAccountOpen(true);
                     else setAccountOpen((v) => !v);
                   }}
                 >
-                  {user.name || user.username} ⌄
+                  {user.name || user.username}
+                  {NAV2 ? '' : ' ⌄'}
                 </button>
                 {accountOpen && (
                   <nav id="user-options" className="user-menu-panel" aria-label={t('menu.space')}>
@@ -998,8 +1002,8 @@ export default function App() {
                   ? i
                     ? []
                     : [
-                        ...customNav(items, NAV2 ? NAV2_TABS : navTabs),
-                        ...(!NAV2 && 'more' in mobileSlots(navTabs) ? [['more', MORE_ICON, 'Plus']] : []),
+                        ...customNav(items, navTabs),
+                        ...('more' in mobileSlots(navTabs) ? [['more', MORE_ICON, 'Plus']] : []),
                       ]
                   : [item],
               )
@@ -1008,14 +1012,14 @@ export default function App() {
                   key={id}
                   data-tab={id}
                   className={REFONTE && id === 'home' ? 'nav-home' : id === 'more' ? 'nav-more' : undefined}
-                  style={REFONTE ? { '--mobile-order': mobileSlots(NAV2 ? NAV2_TABS : navTabs)[id] } : undefined}
+                  style={REFONTE ? { '--mobile-order': mobileSlots(navTabs)[id] } : undefined}
                   aria-pressed={
-                    (NAV2 && nav2Active(mainTab) === id) ||
+                    (NAV2 && nav2Active(mainTab, navTabs) === id) ||
                     mainTab === id ||
                     (id === 'mine' && mainTab === 'season') ||
                     (id === 'live' && mainTab === 'results')
                   }
-                  onClick={() => (id === 'more' ? setAccountOpen(true) : navigate(id))}
+                  onClick={() => (id === 'more' ? (NAV2 ? navigate('hub') : setAccountOpen(true)) : navigate(id))}
                 >
                   <span aria-hidden="true">{icon}</span>
                   {t(`nav.${id}`)}
@@ -1111,6 +1115,8 @@ export default function App() {
                   user={user}
                   onNavigate={navigate}
                   actions={[
+                    ['Personnaliser la barre du bas', () => setNavEditor(true)],
+                    ...(user.isAdmin ? [['Administration', () => navigate('admin')]] : []),
                     ['Revoir le tutoriel', () => setTutorialRequest((v) => v + 1)],
                     ['Signaler un problème', () => setSupportOpen(true)],
                     [

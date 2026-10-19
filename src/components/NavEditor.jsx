@@ -3,9 +3,9 @@ import { useEffect, useRef, useState } from 'react';
 import { NAV_CATALOG, NAV_DEFAULT, NAV_MAX, NAV_MIN } from '../lib/navPrefs';
 import { useI18n } from '../i18n/context';
 
-export default function NavEditor({ value, onSave, onClose }) {
+export default function NavEditor({ value, onSave, onClose, catalog = NAV_CATALOG, defaults = NAV_DEFAULT }) {
   const { t } = useI18n();
-  const LABEL = Object.fromEntries(NAV_CATALOG.map(([id]) => [id, t(`nav.${id}`)]));
+  const LABEL = Object.fromEntries(catalog.map(([id]) => [id, t(`nav.${id}`)]));
   const [list, setList] = useState(value);
   const dialog = useRef(null);
   useEffect(() => {
@@ -22,7 +22,7 @@ export default function NavEditor({ value, onSave, onClose }) {
       [next[i], next[j]] = [next[j], next[i]];
       return next;
     });
-  const hidden = NAV_CATALOG.map(([id]) => id).filter((id) => !list.includes(id));
+  const hidden = catalog.map(([id]) => id).filter((id) => !list.includes(id));
   return (
     <dialog ref={dialog} className="nav-editor" aria-labelledby="nav-editor-title" onClose={onClose}>
       <h2 id="nav-editor-title">{t('navEditor.title')}</h2>
@@ -86,7 +86,7 @@ export default function NavEditor({ value, onSave, onClose }) {
         </>
       )}
       <div className="nav-editor-actions">
-        <button type="button" className="button-secondary" onClick={() => setList(NAV_DEFAULT)}>
+        <button type="button" className="button-secondary" onClick={() => setList(defaults)}>
           {t('navEditor.default')}
         </button>
         <button type="button" className="button-secondary" onClick={onClose}>
