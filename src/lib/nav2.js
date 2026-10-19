@@ -41,6 +41,13 @@ export const HUB_SECTIONS = [
   ['community', 'Délégations & club', 'Vos groupes, invitations et défis'],
   ['account', 'Compte & notifications', 'Profil, alertes, installation, sécurité'],
 ];
+// Sections générales : celles retirées de la barre restent accessibles depuis « Mon espace ».
+export const OTHER_SECTIONS = [
+  ['play', 'Pronostiquer', 'Les épreuves ouvertes aux pronostics'],
+  ['live', 'Direct', 'Suivre une épreuve et revoir les résultats'],
+  ['leaderboard', 'Classements', 'Joueurs et clubs'],
+];
+export const otherSections = (tabs = []) => OTHER_SECTIONS.filter(([id]) => !tabs.includes(id));
 const HUB_IDS = new Set(['hub', ...HUB_SECTIONS.map(([id]) => id)]);
 // Onglet de la barre à allumer pour une section.
 // Une section présente dans la barre s'allume elle-même ; sinon « Mon espace » si le joueur l'a mis dans la barre.
