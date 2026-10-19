@@ -3,6 +3,7 @@ import { useFencerFollows } from '../lib/fencerFollows';
 import { followedMatchTarget } from '../lib/followedMatch';
 import { followedPool, followedSchedule } from '../lib/followedSchedule';
 import ResultsPools from './ResultsPools';
+import OfficialStandings from './OfficialStandings';
 import ResultsBracket from './ResultsBracket';
 import PisteLive from './PisteLive';
 import { useEffect, useRef, useState } from 'react';
@@ -113,37 +114,7 @@ export function CompetitionFollow({ view, competition, matches, userId, ready, e
   }, [initialMatch?.id]);
   if (view === 'pools') return <section className="feature-panel competition-follow"><ResultsPools competitionId={competition.id} /></section>;
   if (view === 'ranking')
-    return (
-      <section>
-        <h2>Classement officiel</h2>
-        {competition.officialPodium?.finalConfirmed ? (
-          <ol>
-            {[
-              ['gold', 1],
-              ['silver', 2],
-              ['bronze1', 3],
-              ['bronze2', 3],
-            ].map(([key, place]) => {
-              const e = (competition.podiumRoster || []).find(
-                (e) => String(e.id) === String(competition.officialPodium[key]),
-              );
-              return e ? (
-                <li key={key}>
-                  {place} · {e.name}
-                </li>
-              ) : null;
-            })}
-          </ol>
-        ) : (
-          <p>Classement officiel pas encore publié.</p>
-        )}
-        {competition.resultsSourceUrl && (
-          <a href={competition.resultsSourceUrl} target="_blank" rel="noreferrer">
-            Consulter le classement complet sur le site officiel →
-          </a>
-        )}
-      </section>
-    );
+    return <section className="feature-panel competition-follow"><h2>Classements de l’épreuve</h2><OfficialStandings key={competition.id} competitionId={competition.id} /></section>;
   return (
     <section className="feature-panel competition-follow">
       {initialMatch && <section ref={initialDetail} className="followed-initial-detail" aria-label="Match de mon tireur">
