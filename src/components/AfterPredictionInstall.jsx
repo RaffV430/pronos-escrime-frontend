@@ -13,10 +13,16 @@ export default function AfterPredictionInstall({ userId }) {
       } catch {
         /* suggestion uniquement pour cette session */
       }
-      setOpen(true);
+      // Après le bandeau « Annuler » (5 s) : jamais deux messages empilés au même moment.
+      clearTimeout(timer);
+      timer = setTimeout(() => setOpen(true), 6000);
     };
+    let timer = null;
     window.addEventListener(UX_SAVE, saved);
-    return () => window.removeEventListener(UX_SAVE, saved);
+    return () => {
+      clearTimeout(timer);
+      window.removeEventListener(UX_SAVE, saved);
+    };
   }, [userId]);
   if (!open) return null;
   return (

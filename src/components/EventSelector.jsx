@@ -45,6 +45,11 @@ export default function EventSelector({
       ? linked
       : readSelection(storageKey),
   );
+  // Lien vers une épreuve (partage, notification) : si elle manque, on relit la liste à jour une fois,
+  // puis on prévient au lieu d'afficher le choix sans explication.
+  const fromLink = useRef(Number.isSafeInteger(linked.eventId) && linked.eventId > 0);
+  const refreshedOnce = useRef(false);
+  const [missing, setMissing] = useState(false);
   const onResetRef = useRef(onReset);
   useEffect(() => {
     onResetRef.current = onReset;
@@ -81,8 +86,9 @@ export default function EventSelector({
     const url = tournamentId
       ? `/podium/competitions/${tournamentId}`
       : `/tournaments${includeArchived ? '' : '?active=true'}`;
-    API.get(url, { signal: controller.signal })
+    API.get(url, { signal: controller.signal, forceRefresh: refreshedOnce.current === 'pending' })
       .then(({ data }) => {
+        if (refreshedOnce.current === 'pending') refreshedOnce.current = true;
         if (!Array.isArray(data)) throw new Error('Invalid list');
         if (!controller.signal.aborted) {
           const saved = pendingRestore.current;
@@ -105,6 +111,7 @@ export default function EventSelector({
                   tournamentsRef.current.find((t) => Number(t.id) === saved.tournamentId) || null,
                 );
               } else {
+                if (fromLink.current) setMissing(true);
                 try {
                   localStorage.removeItem(storageKey);
                 } catch {
@@ -116,7 +123,12 @@ export default function EventSelector({
             setTournaments(data);
             if (saved) {
               if (data.some((t) => Number(t.id) === saved.tournamentId)) setTournamentId(String(saved.tournamentId));
-              else {
+              else if (fromLink.current && !refreshedOnce.current) {
+                // Liste gardée sur l'appareil peut-être trop ancienne (épreuve créée depuis) : relecture au serveur.
+                refreshedOnce.current = 'pending';
+                setRetry((n) => n + 1);
+              } else {
+                if (fromLink.current) setMissing(true);
                 pendingRestore.current = null;
                 onResetRef.current();
                 try {
@@ -232,6 +244,15 @@ export default function EventSelector({
         marginBottom: '24px',
       }}
     >
+      {missing && (
+        <p role="status" className="event-link-missing">
+          L’épreuve du lien n’est plus ouverte aux pronostics (terminée, archivée ou introuvable). Ses résultats restent
+          consultables dans Direct, onglet « Tous les résultats ».{' '}
+          <button type="button" className="button-link" onClick={() => setMissing(false)}>
+            OK
+          </button>
+        </p>
+      )}
       <h2 id="event-choice" style={{ marginTop: 0 }}>
         {title}
       </h2>

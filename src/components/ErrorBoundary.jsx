@@ -1,5 +1,6 @@
 import { Component } from 'react';
 import { reportError } from '../lib/monitoring.js';
+import { isChunkError, reloadOnceForNewVersion } from '../lib/chunkReload.js';
 
 // Une erreur d'affichage dans une partie de la page ne doit plus laisser un écran blanc :
 // message, bouton pour réessayer, et le reste de l'application (navigation) reste utilisable.
@@ -12,6 +13,8 @@ export default class ErrorBoundary extends Component {
     return { failed: true, message: String(error?.message || error).slice(0, 200) };
   }
   componentDidCatch(error, info) {
+    // Ancienne version encore ouverte après une mise en ligne : rechargement automatique (une fois).
+    if (isChunkError(error) && reloadOnceForNewVersion()) return;
     reportError(error, { componentStack: info?.componentStack, zone: this.props.zone });
   }
   componentDidUpdate(previous) {
