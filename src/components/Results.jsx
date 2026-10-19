@@ -14,6 +14,7 @@ import {
   filterResults,
   flag,
   weaponsOf,
+  categoriesOf,
   playedMatches,
   resultText,
   seasonLabel,
@@ -287,6 +288,7 @@ export default function Results() {
   const [season, setSeason] = useState(() => (focus.tournamentId ? 'all' : null));
   const [country, setCountry] = useState('all');
   const [weapon, setWeapon] = useState('all');
+  const [category, setCategory] = useState('all');
   const [order, setOrder] = useState('desc');
   const [query, setQuery] = useState('');
 
@@ -302,10 +304,11 @@ export default function Results() {
   const seasons = useMemo(() => seasonsOf(data), [data]);
   const countries = useMemo(() => countriesOf(data), [data]);
   const weapons = useMemo(() => weaponsOf(data), [data]);
+  const categories = useMemo(() => categoriesOf(data), [data]);
   const shownSeason = season ?? (seasons[0] !== undefined ? String(seasons[0]) : 'all');
   const list = useMemo(
-    () => filterResults(data, { season: shownSeason, country, weapon, order, query }),
-    [data, shownSeason, country, weapon, order, query],
+    () => filterResults(data, { season: shownSeason, country, weapon, category, order, query }),
+    [data, shownSeason, country, weapon, category, order, query],
   );
 
   return (
@@ -351,6 +354,19 @@ export default function Results() {
                   {weapons.map((w) => (
                     <option key={w} value={w}>
                       {w}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            )}
+            {categories.length > 1 && (
+              <label>
+                Catégorie
+                <select value={category} onChange={(e) => setCategory(e.target.value)}>
+                  <option value="all">Toutes</option>
+                  {categories.map(([id, label]) => (
+                    <option key={id} value={id}>
+                      {label}
                     </option>
                   ))}
                 </select>

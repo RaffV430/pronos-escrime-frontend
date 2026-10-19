@@ -204,3 +204,65 @@ test('filtre par arme : épreuves de l’arme seulement, tournois sans cette arm
   );
   assert.equal(filterResults(list, {}).find((t) => t.id === 1).competitions.length, 3);
 });
+
+test('filtre par catégorie, seul ou combiné à l’arme', async () => {
+  const { filterResults, categoryOf, categoriesOf } = await import('../src/components/eventResults.js');
+  const cases = {
+    'Épée Dames M17': 'M17',
+    'Cadet Men’s Foil': 'M17',
+    'Fleuret cadettes dames — 24 septembre 2026': 'M17',
+    'Junior Women’s Foil': 'M20',
+    'Fleuret juniors hommes par équipes': 'M20',
+    'Épée Hommes M20': 'M20',
+    'Fleuret Dames senior': 'SENIOR',
+    'Senior Team Men’s Foil': 'SENIOR',
+    'Vet 40-59 Team Men’s Foil': 'VET',
+    'Épée Hommes M23': 'M23',
+    'Sabre M15 Dames': 'M15',
+    'Épreuve nationale': null,
+  };
+  for (const [name, cat] of Object.entries(cases)) assert.equal(categoryOf(name), cat, name);
+  const list = [
+    {
+      id: 1,
+      name: 'Rodez',
+      start: '2026-10-17',
+      season: 2026,
+      countries: ['FR'],
+      competitions: [
+        { id: 27, name: 'Épée Dames senior', podium: [] },
+        { id: 33, name: 'Épée Dames M17', podium: [] },
+        { id: 31, name: 'Épée Dames M20', podium: [] },
+      ],
+    },
+    {
+      id: 2,
+      name: 'Étampes',
+      start: '2026-10-10',
+      season: 2026,
+      countries: ['FR'],
+      competitions: [
+        { id: 14, name: 'Cadet Men’s Foil', podium: [] },
+        { id: 15, name: 'Junior Men’s Foil', podium: [] },
+      ],
+    },
+  ];
+  assert.deepEqual(
+    categoriesOf(list).map(([id]) => id),
+    ['SENIOR', 'M20', 'M17'],
+  );
+  const cadets = filterResults(list, { category: 'M17', order: 'asc' });
+  assert.deepEqual(
+    cadets.map((t) => [t.id, t.competitions.map((c) => c.id)]),
+    [
+      [2, [14]],
+      [1, [33]],
+    ],
+  );
+  const fleuretCadets = filterResults(list, { category: 'M17', weapon: 'Fleuret' });
+  assert.deepEqual(
+    fleuretCadets.map((t) => [t.id, t.competitions.map((c) => c.id)]),
+    [[2, [14]]],
+  );
+  assert.deepEqual(filterResults(list, { category: 'VET' }), []);
+});
