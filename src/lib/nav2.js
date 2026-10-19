@@ -27,6 +27,7 @@ export function setNav2(on) {
   }
   const url = new URL(location.href);
   url.searchParams.set('nav', on ? '2' : '1');
+  if (!on && /^\/mon-espace\/?$/.test(url.pathname)) url.pathname = '/compte';
   location.replace(url.pathname + url.search + url.hash);
 }
 

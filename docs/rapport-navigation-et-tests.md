@@ -66,3 +66,14 @@ Autres changements de la maquette : noms visibles sous les icônes d'affichage (
 1. Serveurs : « maquette-back » (port 5001) et « maquette-front » (port 5174) dans l'aperçu de Claude Code.
 2. Ouvrir http://localhost:5174/accueil?nav=2 (et ?nav=1 pour revenir à la navigation actuelle).
 3. Épreuves de test fictives dans la base locale : « TEST maquette navigation (à supprimer) » et « TEST lien récent (à supprimer) ».
+
+
+## Option A préparée le 19 octobre 2026
+
+Nouvelle navigation par défaut, retour temporaire via Mon espace ou `?nav=1`, réactivation dans le menu de l’ancienne navigation. Le retour depuis Mon espace ouvre Mon compte, disponible dans les deux versions. La barre personnalisée antérieure est reprise seulement en l’absence de préférence nouvelle. Le tutoriel décrit les cartes et Mon espace.
+
+Rechargement : refus automatique pendant une saisie et sans stockage de session fiable ; une seule relance par session, pas de boucle après 60 secondes. Une erreur interrompant une saisie conserve un blocage prudent même après démontage du composant. Le rechargement manuel demande confirmation si nécessaire, et la fermeture/recharge est protégée pendant une saisie. Il ne s’agit pas d’une sauvegarde serveur ni d’une restauration de mémoire après un plantage du composant.
+
+Installation et vérifications : 168 tests réussis, zéro échec, compilation réussie, deux avertissements hooks préexistants. Tests nouveaux : activation et retour, stockage indisponible, reprise/priorité des barres, onglets actifs et refus de rechargement dangereux. Test navigateur local avec API synthétique : carte vers l’épreuve99001, nom vers Mon espace, retrait/ajout/ordre d’onglet et enregistrement local, retour vers l’ancienne navigation. Aucune écriture de production ; l’API de démonstration refuse les écritures sportives. Affichage mobile contrôlé dans un cadre390×844 ; interactions mobiles complètes et essais connectés Vercel restent à terminer.
+
+PR186 ouverte, sans fusion. La première CI et le premier aperçu sont verts ; toute modification ultérieure nécessite leur revalidation. PR184 touche également ErrorBoundary : réconcilier en conservant ces protections, sans réintroduire un simple réessai React.lazy inefficace.
