@@ -148,7 +148,121 @@ test('multi-day Engarde pool labels retain all rounds and pool IDs', () => {
     { id: 31, name: 'Tour 3 · J1 · Poule 1' },
     { id: 41, name: 'Tour 4 · J2 · Poule 1' },
   ];
-  assert.deepEqual(poolRounds(pools).map(r => [r.round, r.pools.map(p => p.id)]), [
-    [1, [11]], [2, [21]], [3, [31]], [4, [41]],
-  ]);
+  assert.deepEqual(
+    poolRounds(pools).map((r) => [r.round, r.pools.map((p) => p.id)]),
+    [
+      [1, [11]],
+      [2, [21]],
+      [3, [31]],
+      [4, [41]],
+    ],
+  );
+});
+
+test('filtre par arme : épreuves de l’arme seulement, tournois sans cette arme écartés', async () => {
+  const { filterResults, weaponOf, weaponsOf } = await import('../src/components/eventResults.js');
+  assert.equal(weaponOf("Senior Men's Foil"), 'Fleuret');
+  assert.equal(weaponOf('Épée Dames M17'), 'Épée');
+  assert.equal(weaponOf('Senior Women’s Saber'), 'Sabre');
+  assert.equal(weaponOf('Fleuret juniors dames par équipes'), 'Fleuret');
+  assert.equal(weaponOf('Épreuve sans arme'), null);
+  const list = [
+    {
+      id: 1,
+      name: 'CISM',
+      start: '2026-09-28',
+      season: 2026,
+      countries: ['HU'],
+      competitions: [
+        { id: 7, name: "Senior Men's Épée", podium: [] },
+        { id: 9, name: "Senior Men's Foil", podium: [] },
+        { id: 8, name: "Senior Women's Saber", podium: [] },
+      ],
+    },
+    {
+      id: 2,
+      name: 'Rodez',
+      start: '2026-10-17',
+      season: 2026,
+      countries: ['FR'],
+      competitions: [{ id: 33, name: 'Épée Dames M17', podium: [] }],
+    },
+  ];
+  assert.deepEqual(weaponsOf(list), ['Fleuret', 'Épée', 'Sabre']);
+  const sabre = filterResults(list, { weapon: 'Sabre' });
+  assert.deepEqual(
+    sabre.map((t) => [t.id, t.competitions.map((c) => c.id)]),
+    [[1, [8]]],
+  );
+  const epee = filterResults(list, { weapon: 'Épée', order: 'asc' });
+  assert.deepEqual(
+    epee.map((t) => [t.id, t.competitions.map((c) => c.id)]),
+    [
+      [1, [7]],
+      [2, [33]],
+    ],
+  );
+  assert.equal(filterResults(list, {}).find((t) => t.id === 1).competitions.length, 3);
+});
+
+test('filtre par catégorie, seul ou combiné à l’arme', async () => {
+  const { filterResults, categoryOf, categoriesOf } = await import('../src/components/eventResults.js');
+  const cases = {
+    'Épée Dames M17': 'M17',
+    'Cadet Men’s Foil': 'M17',
+    'Fleuret cadettes dames — 24 septembre 2026': 'M17',
+    'Junior Women’s Foil': 'M20',
+    'Fleuret juniors hommes par équipes': 'M20',
+    'Épée Hommes M20': 'M20',
+    'Fleuret Dames senior': 'SENIOR',
+    'Senior Team Men’s Foil': 'SENIOR',
+    'Vet 40-59 Team Men’s Foil': 'VET',
+    'Épée Hommes M23': 'M23',
+    'Sabre M15 Dames': 'M15',
+    'Épreuve nationale': null,
+  };
+  for (const [name, cat] of Object.entries(cases)) assert.equal(categoryOf(name), cat, name);
+  const list = [
+    {
+      id: 1,
+      name: 'Rodez',
+      start: '2026-10-17',
+      season: 2026,
+      countries: ['FR'],
+      competitions: [
+        { id: 27, name: 'Épée Dames senior', podium: [] },
+        { id: 33, name: 'Épée Dames M17', podium: [] },
+        { id: 31, name: 'Épée Dames M20', podium: [] },
+      ],
+    },
+    {
+      id: 2,
+      name: 'Étampes',
+      start: '2026-10-10',
+      season: 2026,
+      countries: ['FR'],
+      competitions: [
+        { id: 14, name: 'Cadet Men’s Foil', podium: [] },
+        { id: 15, name: 'Junior Men’s Foil', podium: [] },
+      ],
+    },
+  ];
+  assert.deepEqual(
+    categoriesOf(list).map(([id]) => id),
+    ['SENIOR', 'M20', 'M17'],
+  );
+  const cadets = filterResults(list, { category: 'M17', order: 'asc' });
+  assert.deepEqual(
+    cadets.map((t) => [t.id, t.competitions.map((c) => c.id)]),
+    [
+      [2, [14]],
+      [1, [33]],
+    ],
+  );
+  const fleuretCadets = filterResults(list, { category: 'M17', weapon: 'Fleuret' });
+  assert.deepEqual(
+    fleuretCadets.map((t) => [t.id, t.competitions.map((c) => c.id)]),
+    [[2, [14]]],
+  );
+  assert.deepEqual(filterResults(list, { category: 'VET' }), []);
 });

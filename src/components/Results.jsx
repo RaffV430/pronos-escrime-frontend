@@ -13,6 +13,8 @@ import {
   dateRange,
   filterResults,
   flag,
+  weaponsOf,
+  categoriesOf,
   playedMatches,
   resultText,
   seasonLabel,
@@ -285,6 +287,8 @@ export default function Results() {
   const [revision, setRevision] = useState(0);
   const [season, setSeason] = useState(() => (focus.tournamentId ? 'all' : null));
   const [country, setCountry] = useState('all');
+  const [weapon, setWeapon] = useState('all');
+  const [category, setCategory] = useState('all');
   const [order, setOrder] = useState('desc');
   const [query, setQuery] = useState('');
 
@@ -299,10 +303,12 @@ export default function Results() {
 
   const seasons = useMemo(() => seasonsOf(data), [data]);
   const countries = useMemo(() => countriesOf(data), [data]);
+  const weapons = useMemo(() => weaponsOf(data), [data]);
+  const categories = useMemo(() => categoriesOf(data), [data]);
   const shownSeason = season ?? (seasons[0] !== undefined ? String(seasons[0]) : 'all');
   const list = useMemo(
-    () => filterResults(data, { season: shownSeason, country, order, query }),
-    [data, shownSeason, country, order, query],
+    () => filterResults(data, { season: shownSeason, country, weapon, category, order, query }),
+    [data, shownSeason, country, weapon, category, order, query],
   );
 
   return (
@@ -340,6 +346,32 @@ export default function Results() {
                 ))}
               </select>
             </label>
+            {weapons.length > 1 && (
+              <label>
+                Arme
+                <select value={weapon} onChange={(e) => setWeapon(e.target.value)}>
+                  <option value="all">Toutes</option>
+                  {weapons.map((w) => (
+                    <option key={w} value={w}>
+                      {w}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            )}
+            {categories.length > 1 && (
+              <label>
+                Catégorie
+                <select value={category} onChange={(e) => setCategory(e.target.value)}>
+                  <option value="all">Toutes</option>
+                  {categories.map(([id, label]) => (
+                    <option key={id} value={id}>
+                      {label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            )}
             <label>
               Pays
               <select value={country} onChange={(e) => setCountry(e.target.value)}>
