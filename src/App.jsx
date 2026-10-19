@@ -1,6 +1,7 @@
 import GlobalSearch from './components/GlobalSearch';
 import GainAlerts from './components/GainAlerts';
 import AfterPredictionInstall from './components/AfterPredictionInstall';
+import TeamFollows from './components/TeamFollows';
 import FencerNotifPrompt from './components/FencerNotifPrompt';
 import { UxRoot } from './components/UxSettings';
 import { scopeLabels, predictionTabs } from './lib/delegationScope';
@@ -1429,6 +1430,9 @@ export default function App() {
                     <>
                       <h1 className="visually-hidden">Pronostiquer</h1>
                       <StandingsAccess onOpen={openEventStandings} />
+                      {competition?.podiumFormat === 'TEAM' && (
+                        <TeamFollows key={selectedCompetitionId} competitionId={selectedCompetitionId} />
+                      )}
                       <ClosingCountdown
                         matches={matches}
                         userId={user.id}
