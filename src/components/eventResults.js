@@ -43,10 +43,34 @@ const fold = (s) =>
     .replace(/[̀-ͯ]/g, '')
     .toLowerCase();
 
-// Filtres : saison (« all » = toutes), pays du lieu, recherche (tournoi, épreuve, ville ou médaillé), tri par date.
-export function filterResults(list, { season = 'all', country = 'all', query = '', order = 'desc' } = {}) {
+// Arme d'une épreuve d'après son nom (« Fleuret Hommes », « Senior Men's Foil », « Épée Dames M17 »…).
+export const WEAPONS = ['Fleuret', 'Épée', 'Sabre'];
+export function weaponOf(name = '') {
+  const n = fold(name);
+  if (/\b(fleuret|foil)\b/.test(n)) return 'Fleuret';
+  if (/\b(sabre|saber)\b/.test(n)) return 'Sabre';
+  if (/\b(epee)\b/.test(n)) return 'Épée';
+  return null;
+}
+// Armes présentes dans les résultats (dans l'ordre fleuret, épée, sabre).
+export const weaponsOf = (list) => {
+  const found = new Set((list || []).flatMap((t) => (t.competitions || []).map((c) => weaponOf(c.name))));
+  return WEAPONS.filter((w) => found.has(w));
+};
+
+// Filtres : saison (« all » = toutes), pays du lieu, arme, recherche (tournoi, épreuve, ville ou médaillé), tri.
+// Avec une arme choisie, seules ses épreuves sont gardées dans chaque tournoi.
+export function filterResults(
+  list,
+  { season = 'all', country = 'all', weapon = 'all', query = '', order = 'desc' } = {},
+) {
   const q = fold(query).trim();
-  const rows = (list || []).filter(
+  const armed = (list || [])
+    .map((t) =>
+      weapon === 'all' ? t : { ...t, competitions: (t.competitions || []).filter((c) => weaponOf(c.name) === weapon) },
+    )
+    .filter((t) => weapon === 'all' || t.competitions.length);
+  const rows = armed.filter(
     (t) =>
       (season === 'all' || t.season === Number(season)) &&
       (country === 'all' || (t.countries || []).includes(country)) &&

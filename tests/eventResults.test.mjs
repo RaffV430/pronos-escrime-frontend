@@ -148,7 +148,59 @@ test('multi-day Engarde pool labels retain all rounds and pool IDs', () => {
     { id: 31, name: 'Tour 3 · J1 · Poule 1' },
     { id: 41, name: 'Tour 4 · J2 · Poule 1' },
   ];
-  assert.deepEqual(poolRounds(pools).map(r => [r.round, r.pools.map(p => p.id)]), [
-    [1, [11]], [2, [21]], [3, [31]], [4, [41]],
-  ]);
+  assert.deepEqual(
+    poolRounds(pools).map((r) => [r.round, r.pools.map((p) => p.id)]),
+    [
+      [1, [11]],
+      [2, [21]],
+      [3, [31]],
+      [4, [41]],
+    ],
+  );
+});
+
+test('filtre par arme : épreuves de l’arme seulement, tournois sans cette arme écartés', async () => {
+  const { filterResults, weaponOf, weaponsOf } = await import('../src/components/eventResults.js');
+  assert.equal(weaponOf("Senior Men's Foil"), 'Fleuret');
+  assert.equal(weaponOf('Épée Dames M17'), 'Épée');
+  assert.equal(weaponOf('Senior Women’s Saber'), 'Sabre');
+  assert.equal(weaponOf('Fleuret juniors dames par équipes'), 'Fleuret');
+  assert.equal(weaponOf('Épreuve sans arme'), null);
+  const list = [
+    {
+      id: 1,
+      name: 'CISM',
+      start: '2026-09-28',
+      season: 2026,
+      countries: ['HU'],
+      competitions: [
+        { id: 7, name: "Senior Men's Épée", podium: [] },
+        { id: 9, name: "Senior Men's Foil", podium: [] },
+        { id: 8, name: "Senior Women's Saber", podium: [] },
+      ],
+    },
+    {
+      id: 2,
+      name: 'Rodez',
+      start: '2026-10-17',
+      season: 2026,
+      countries: ['FR'],
+      competitions: [{ id: 33, name: 'Épée Dames M17', podium: [] }],
+    },
+  ];
+  assert.deepEqual(weaponsOf(list), ['Fleuret', 'Épée', 'Sabre']);
+  const sabre = filterResults(list, { weapon: 'Sabre' });
+  assert.deepEqual(
+    sabre.map((t) => [t.id, t.competitions.map((c) => c.id)]),
+    [[1, [8]]],
+  );
+  const epee = filterResults(list, { weapon: 'Épée', order: 'asc' });
+  assert.deepEqual(
+    epee.map((t) => [t.id, t.competitions.map((c) => c.id)]),
+    [
+      [1, [7]],
+      [2, [33]],
+    ],
+  );
+  assert.equal(filterResults(list, {}).find((t) => t.id === 1).competitions.length, 3);
 });
