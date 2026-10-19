@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import API from '../api';
 import { pollWhileVisible } from '../lib/polling';
 import { FencerFollowsContext as Context } from '../lib/fencerFollows';
+import { FOLLOWED_EVENT } from '../lib/fencerNotifPrompt';
 const empty = { favorites: [], links: [], ambiguousIds: [], matchNames: [] };
 export function FencerFollowsProvider({ userId, competitionId, children }) {
   const [data, setData] = useState(empty);
@@ -22,7 +23,10 @@ export function FencerFollowsProvider({ userId, competitionId, children }) {
       }
     } catch (e) {
       if (seq === sequence.current) {
-        if ([401, 403, 404].includes(e.response?.status)) { setData(empty); setReady(false); }
+        if ([401, 403, 404].includes(e.response?.status)) {
+          setData(empty);
+          setReady(false);
+        }
         setError(e.response?.data?.error || 'Impossible de charger vos tireurs suivis. Réessayez.');
       }
     }
@@ -54,6 +58,12 @@ export function FencerFollowsProvider({ userId, competitionId, children }) {
       setBusy(false);
     }
   };
+  // Tireur ajouté : signal pour l'invitation aux notifications « Mes tireurs ».
+  const followed = async (pending) => {
+    const result = await pending;
+    if (result) window.dispatchEvent(new Event(FOLLOWED_EVENT));
+    return result;
+  };
   const current = data.competitionId === competitionId && ready;
   const value = {
     favorites: data.favorites,
@@ -65,8 +75,8 @@ export function FencerFollowsProvider({ userId, competitionId, children }) {
     error,
     refresh,
     follow: (entryId, eventId = competitionId) =>
-      mutation(() => API.post('/me/fencers', { competitionId: eventId, entryId: String(entryId) })),
-    followProfile: (affiliationId) => mutation(() => API.post('/me/fencers', { affiliationId })),
+      followed(mutation(() => API.post('/me/fencers', { competitionId: eventId, entryId: String(entryId) }))),
+    followProfile: (affiliationId) => followed(mutation(() => API.post('/me/fencers', { affiliationId }))),
     remove: (id) => mutation(() => API.delete(`/me/fencers/${id}`)),
     importLocal: (items) => mutation(async () => (await API.post('/me/fencers/import', { items })).data),
   };
