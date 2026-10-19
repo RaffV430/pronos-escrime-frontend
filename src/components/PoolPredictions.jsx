@@ -841,8 +841,8 @@ function PoolList({ competitionId, user, onDirtyChange, refreshVersion }) {
       )}
       {!loading && !error && pools.length === 0 && (
         <p className="pool-empty">
-          Aucune poule disponible pour cette épreuve. Les tireurs apparaîtront dès la création des poules par
-          l’administrateur.
+          Aucune poule importée pour le moment. Vous pouvez consulter les résultats officiels depuis la fiche de
+          l’épreuve. Si les poules y sont déjà publiées, le suivi de cette épreuve doit être vérifié.
         </p>
       )}
       {!loading &&

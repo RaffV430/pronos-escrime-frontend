@@ -1,6 +1,7 @@
 import { Component } from 'react';
 import { reportError } from '../lib/monitoring.js';
 import { isChunkError, reloadOnceForNewVersion, requestPageReload } from '../lib/chunkReload.js';
+import { isModuleLoadFailure } from '../lib/loadFailure.js';
 
 // Une erreur d'affichage dans une partie de la page ne doit plus laisser un écran blanc :
 // message, bouton pour réessayer, et le reste de l'application (navigation) reste utilisable.
@@ -23,18 +24,29 @@ export default class ErrorBoundary extends Component {
   }
   render() {
     if (!this.state.failed) return this.props.children;
+    const moduleFailure = isModuleLoadFailure(this.state.message);
     return (
       <section className="feature-panel error-panel" role="alert">
-        <h2>Cette partie de la page n’a pas pu s’afficher</h2>
+        <h2>
+          {moduleFailure
+            ? 'Une partie de l’application n’a pas pu être chargée'
+            : 'Cette partie de la page n’a pas pu s’afficher'}
+        </h2>
         <p>
-          Vos pronostics enregistrés ne sont pas concernés. Une saisie en cours peut rester non enregistrée :
-          vérifiez-la avant de recharger.
+          {moduleFailure
+            ? 'Une nouvelle version peut être disponible ou la connexion a été interrompue. Vos pronostics déjà enregistrés sont conservés. Rechargez la page pour réessayer ; une saisie non enregistrée devra être reprise.'
+            : 'Vos pronostics enregistrés ne sont pas concernés. Réessayez, ou rechargez la page si le problème continue.'}
         </p>
-        <button onClick={() => this.setState({ failed: false })}>Réessayer</button>{' '}
+        {!moduleFailure && <button onClick={() => this.setState({ failed: false })}>Réessayer</button>}{' '}
         <button className="button-secondary" onClick={requestPageReload}>
           Recharger la page
         </button>
-        {this.state.message && <small className="error-detail">Détail technique : {this.state.message}</small>}
+        {this.state.message && (
+          <details className="error-detail">
+            <summary>Détails pour l’assistance</summary>
+            <small>{this.state.message}</small>
+          </details>
+        )}
       </section>
     );
   }
