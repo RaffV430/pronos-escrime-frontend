@@ -1,3 +1,4 @@
+import { StandingsDisclosure } from './OfficialStandings';
 import { createPortal } from 'react-dom';
 import { UX_SAVE } from '../lib/uxFeatures';
 import BoostBadge from './BoostBadge';
@@ -1051,6 +1052,9 @@ export default function PoolPredictions({ selectedCompetitionId, user, onDirtyCh
         Pour chaque tireur, prévoyez son nombre de victoires. L’indice (touches données − touches reçues) est facultatif
         : il rapporte des points en plus.
       </p>
+      {selectedCompetitionId && (
+        <StandingsDisclosure key={selectedCompetitionId} competitionId={selectedCompetitionId} />
+      )}
       {selectedCompetitionId ? (
         <PoolList
           refreshVersion={refreshVersion}

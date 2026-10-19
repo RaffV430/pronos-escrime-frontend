@@ -20,6 +20,7 @@ import {
   CLOSED_REFUSAL_MESSAGE,
   OUTBOX_EVENT,
   dropWrite,
+  isPending,
   isClosedRefusal,
   isNetworkError,
   queueWrite,
@@ -691,13 +692,15 @@ export default function MatchBoard({
           ? 'Résultat publié'
           : closed
             ? 'Clos'
-            : drafts[m.id]
-              ? 'Non enregistré'
-              : p
-                ? p.winnerOnly || (pickedSide(m, v) && v.score1 === '' && v.score2 === '')
-                  ? 'Vainqueur choisi'
-                  : 'Enregistré'
-                : 'À compléter';
+            : isPending(`match:${m.id}`)
+              ? 'En attente d’envoi'
+              : drafts[m.id]
+                ? 'Non enregistré'
+                : p
+                  ? p.winnerOnly || (pickedSide(m, v) && v.score1 === '' && v.score2 === '')
+                    ? 'Vainqueur choisi'
+                    : 'Enregistré'
+                  : 'À compléter';
     const picked = pickedSide(m, v);
     return (
       <article

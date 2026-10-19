@@ -4,13 +4,13 @@ export const TUTORIAL_STEPS = [
     tab: 'home',
     target: '.primary-nav',
     title: 'Les sections de l’application',
-    text: 'Cette barre donne accès à l’accueil, Pronostiquer, Mes pronos (avec Ma saison), Classements et Mes tireurs. Direct & résultats, Délégations et Mon compte sont dans le menu à votre nom.',
+    text: 'La barre donne accès aux sections que vous avez choisies. Avec la nouvelle navigation, retrouvez Accueil, Pronostiquer, Direct, Classements et Mes tireurs. Votre nom ouvre Mon espace, avec vos pronostics, votre saison et vos réglages.',
   },
   {
     tab: 'play',
     target: '[aria-labelledby="event-choice"], .compact-event',
     title: 'Choisir votre épreuve',
-    text: 'Choisissez un tournoi puis une épreuve. Sur une épreuve déjà ouverte, utilisez Changer pour retrouver ce choix.',
+    text: 'Touchez une carte d’épreuve ou choisissez un tournoi puis une épreuve dans la liste. Sur une épreuve déjà ouverte, utilisez Changer pour retrouver ce choix.',
   },
   {
     tab: 'play',
@@ -61,7 +61,7 @@ export const TUTORIAL_STEPS = [
     tab: 'account',
     target: '.user-menu-trigger',
     title: 'Mon compte et mon bilan',
-    text: 'Mon compte rassemble vos réglages, vos notifications et vos informations personnelles. Le menu à votre nom donne aussi accès à Direct & résultats, aux Délégations et, dans Aide, au tutoriel et au signalement d’un problème.',
+    text: 'Mon compte rassemble vos réglages, vos notifications et vos informations personnelles. Avec la nouvelle navigation, votre nom ouvre Mon espace : pronostics, saison, délégations et aide y sont regroupés.',
   },
   {
     tab: 'account',

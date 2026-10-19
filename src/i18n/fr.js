@@ -15,6 +15,7 @@ export default {
   'nav.leaderboard': 'Classements',
   'nav.me': 'Mes tireurs',
   'nav.community': 'Délégations',
+  'nav.hub': 'Mon espace',
   'nav.more': 'Plus',
   'nav.main': 'Navigation principale',
   'menu.account': 'Mon compte et notifications',

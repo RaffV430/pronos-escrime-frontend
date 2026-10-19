@@ -3,11 +3,13 @@ import { useEffect, useState } from 'react';
 import API from '../api';
 import { scoresForCompetition } from './liveScoreState';
 import { createLiveConnections } from './liveConnection';
+import { createLiveWireDecoder } from './liveWire';
 const subscribe = createLiveConnections({
   eventSource: typeof EventSource === 'undefined' ? null : EventSource,
   get: (url) => API.get(url),
   baseURL: API.defaults.baseURL,
   document,
+  decodeWire: createLiveWireDecoder(),
 });
 export function useLiveScores(competitionId, active = true) {
   const [snapshot, setSnapshot] = useState({ competitionId: null, scores: new Map() });

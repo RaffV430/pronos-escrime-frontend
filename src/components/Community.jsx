@@ -98,7 +98,7 @@ function Ranking({ rows, onDuel, userId }) {
 }
 // Communauté : mes groupes d'amis et clubs (permanents) avec leur lien d'invitation et leur classement
 // par tournoi ou sur la saison, création et adhésion, puis le classement des clubs et les défis d'un tournoi.
-export default function Community({ tournamentId: preferred = null, userId, onPronosticate }) {
+export default function Community({ tournamentId: preferred = null, userId, onPronosticate, hideClubRanking = false }) {
   const rankingSection = useRef(null);
   const [initialRanking] = useState(() => initialLeagueRanking(location.search));
   const [favoriteId, setFavoriteId] = useState(null);
@@ -565,7 +565,7 @@ export default function Community({ tournamentId: preferred = null, userId, onPr
           </form>
         </div>
       </details>
-      <h3>Classement des clubs et défis</h3>
+      <h3>{hideClubRanking ? 'Défis' : 'Classement des clubs et défis'}</h3>
       <label className="community-tournament">
         Tournoi
         <select value={selected} onChange={(e) => setSelected(e.target.value)}>
@@ -577,8 +577,14 @@ export default function Community({ tournamentId: preferred = null, userId, onPr
           ))}
         </select>
       </label>
-      <h4>Classement des clubs</h4>
-      {clubs.length ? <Ranking rows={clubs} /> : <p>Aucun club éligible pour ce tournoi.</p>}
+      {hideClubRanking ? (
+        <p className="muted">Le classement des clubs est dans l’onglet Classements.</p>
+      ) : (
+        <>
+          <h4>Classement des clubs</h4>
+          {clubs.length ? <Ranking rows={clubs} /> : <p>Aucun club éligible pour ce tournoi.</p>}
+        </>
+      )}
       {import.meta.env.DEV && (
         <section className="club-duel-preview" aria-labelledby="club-duel-title">
           <p className="arena-eyebrow">APERÇU · DONNÉES D’EXEMPLE</p>

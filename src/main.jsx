@@ -19,6 +19,9 @@ import './components/compact-layout.css';
 import './refonte.css';
 import './components/ux-integrated.css';
 import { refonteOn } from './lib/refonte';
+import { nav2On } from './lib/nav2';
+import { watchChunkErrors } from './lib/chunkReload';
+import './components/nav2.css';
 import ErrorBoundary from './components/ErrorBoundary.jsx';
 import { startMonitoring, reportError } from './lib/monitoring.js';
 import { initTheme } from './lib/theme.js';
@@ -29,6 +32,7 @@ if (loginDestination) history.replaceState(null, '', loginDestination);
 const renamed = currentPathFor(location.pathname);
 if (renamed) history.replaceState(null, '', renamed + location.search + location.hash);
 
+watchChunkErrors();
 initTheme();
 // Connexion faible : pas de polices de la charte ni de suivi d'erreurs à télécharger.
 applyMode();
@@ -37,6 +41,7 @@ if (!reducedData()) import('./brandFonts');
 
 document.documentElement.classList.add('club-arena');
 if (refonteOn()) document.documentElement.classList.add('refonte');
+if (nav2On()) document.documentElement.classList.add('nav2');
 if (!reducedData()) startMonitoring();
 
 // Adresse de référence de la page (sans paramètres) : une seule URL par contenu pour les moteurs de recherche.

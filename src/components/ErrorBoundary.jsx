@@ -1,5 +1,6 @@
 import { Component } from 'react';
 import { reportError } from '../lib/monitoring.js';
+import { isChunkError, reloadOnceForNewVersion, requestPageReload } from '../lib/chunkReload.js';
 import { isModuleLoadFailure } from '../lib/loadFailure.js';
 
 // Une erreur d'affichage dans une partie de la page ne doit plus laisser un écran blanc :
@@ -13,6 +14,8 @@ export default class ErrorBoundary extends Component {
     return { failed: true, message: String(error?.message || error).slice(0, 200) };
   }
   componentDidCatch(error, info) {
+    // Ancienne version encore ouverte après une mise en ligne : rechargement automatique (une fois).
+    if (isChunkError(error) && reloadOnceForNewVersion()) return;
     reportError(error, { componentStack: info?.componentStack, zone: this.props.zone });
   }
   componentDidUpdate(previous) {
@@ -35,7 +38,7 @@ export default class ErrorBoundary extends Component {
             : 'Vos pronostics enregistrés ne sont pas concernés. Réessayez, ou rechargez la page si le problème continue.'}
         </p>
         {!moduleFailure && <button onClick={() => this.setState({ failed: false })}>Réessayer</button>}{' '}
-        <button className="button-secondary" onClick={() => window.location.reload()}>
+        <button className="button-secondary" onClick={requestPageReload}>
           Recharger la page
         </button>
         {this.state.message && (
