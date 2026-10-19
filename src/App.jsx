@@ -43,7 +43,7 @@ import { refonteOn, setRefonte } from './lib/refonte';
 import { NAV_CATALOG, NAV2_CATALOG, NAV2_KEY, mobileSlots, readNav, saveNav } from './lib/navPrefs';
 import NavEditor from './components/NavEditor';
 import { setReloadBlocked } from './lib/chunkReload';
-import { nav2On, setNav2, NAV2_TABS, nav2Active } from './lib/nav2';
+import { nav2On, setNav2, NAV2_TABS, nav2Active, otherSections } from './lib/nav2';
 import MySpace, { HubTrail } from './components/MySpace';
 import EventCards from './components/EventCards';
 import ClubRanking from './components/ClubRanking';
@@ -1139,6 +1139,7 @@ export default function App() {
                 <MySpace
                   user={user}
                   onNavigate={navigate}
+                  others={otherSections(navTabs)}
                   actions={[
                     ['Personnaliser la barre du bas', () => setNavEditor(true)],
                     ...(user.isAdmin ? [['Administration', () => navigate('admin')]] : []),
