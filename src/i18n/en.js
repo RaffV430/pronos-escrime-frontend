@@ -18,6 +18,7 @@ export default {
   'nav.leaderboard': 'Rankings',
   'nav.me': 'My fencers',
   'nav.community': 'Leagues',
+  'nav.hub': 'My space',
   'nav.more': 'More',
   'nav.main': 'Main navigation',
   'menu.account': 'My account & notifications',

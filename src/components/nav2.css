@@ -1,0 +1,181 @@
+/* Maquette « navigation 2 » : ne s'applique que sous html.nav2 (activée par ?nav=2). */
+
+/* Cartes d'épreuves (Pronostiquer sans épreuve choisie). */
+.nav2 .nav2-events h1 {
+  margin: 0.2rem 0 0.4rem;
+}
+.nav2 .nav2-event-list,
+.nav2 .nav2-hub-grid,
+.nav2 .nav2-hub-links,
+.nav2 .nav2-club-list {
+  list-style: none;
+  margin: 1rem 0 0;
+  padding: 0;
+  display: grid;
+  gap: 0.75rem;
+}
+.nav2 .nav2-event-list {
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 240px), 1fr));
+}
+.nav2 .nav2-event-list button,
+.nav2 .nav2-hub-grid button {
+  width: 100%;
+  min-height: 0;
+  display: grid;
+  gap: 0.25rem;
+  text-align: left;
+  padding: 1rem 1.1rem;
+  border-radius: 16px;
+  border: 1px solid var(--border, #dbe2ee);
+  background: var(--surface, #fff);
+  color: var(--text, #13213a);
+  box-shadow: none;
+}
+.nav2 .nav2-event-list button:hover,
+.nav2 .nav2-hub-grid button:hover {
+  border-color: var(--accent, #1d5fd0);
+}
+.nav2 .nav2-event-list strong,
+.nav2 .nav2-hub-grid strong {
+  font-size: 1.15rem;
+  line-height: 1.2;
+}
+.nav2 .nav2-event-list small,
+.nav2 .nav2-hub-grid small {
+  color: var(--text-muted, #5a6880);
+  font-weight: 400;
+}
+.nav2 .nav2-event-when {
+  color: var(--eyebrow, #a87a0c);
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.nav2 .nav2-event-meta {
+  font-size: 0.85rem;
+  color: var(--text-muted, #5a6880);
+}
+.nav2 .nav2-event-go {
+  margin-top: 0.35rem;
+  font-weight: 700;
+  color: var(--accent, #1d5fd0);
+}
+
+/* Mon espace */
+.nav2 .nav2-hub-grid {
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 140px), 1fr));
+}
+.nav2 .nav2-hub-icon {
+  font-size: 1.5rem;
+}
+.nav2 .nav2-hub-sub {
+  margin-top: 1.6rem;
+  font-size: 1rem;
+}
+.nav2 .nav2-hub-links {
+  gap: 0;
+  border-top: 1px solid var(--divider, #e6ebf3);
+}
+.nav2 .nav2-hub-links button {
+  width: 100%;
+  min-height: 48px;
+  text-align: left;
+  background: none;
+  border: 0;
+  border-bottom: 1px solid var(--divider, #e6ebf3);
+  border-radius: 0;
+  color: var(--text, #13213a);
+  font-weight: 500;
+  box-shadow: none;
+  padding: 0 0.2rem;
+}
+.nav2 .nav2-hub-links .nav2-danger {
+  color: var(--sabre, #e5484d);
+}
+
+/* Fil d'Ariane des sections de Mon espace */
+.nav2 .nav2-trail {
+  display: grid;
+  gap: 0.5rem;
+  margin: 0 0 1rem;
+}
+.nav2 .nav2-back {
+  justify-self: start;
+  min-height: 36px;
+  padding: 0 0.2rem;
+  background: none;
+  border: 0;
+  color: var(--accent-link, #1d5fd0);
+  font-weight: 600;
+  box-shadow: none;
+}
+.nav2 .nav2-chips {
+  display: flex;
+  gap: 0.5rem;
+  overflow-x: auto;
+  scrollbar-width: none;
+  padding-bottom: 2px;
+}
+.nav2 .nav2-chips button {
+  flex: 0 0 auto;
+  min-height: 38px;
+  padding: 0 0.9rem;
+  border-radius: 999px;
+  border: 1px solid var(--border, #dbe2ee);
+  background: var(--surface, #fff);
+  color: var(--text, #13213a);
+  font-weight: 600;
+  box-shadow: none;
+}
+.nav2 .nav2-chips button[aria-pressed='true'] {
+  background: var(--frame, #0b1424);
+  border-color: var(--frame, #0b1424);
+  color: var(--frame-text, #f3f6fb);
+}
+
+/* Classement des clubs */
+.nav2 .nav2-club-list {
+  gap: 0;
+}
+.nav2 .nav2-club-list li {
+  display: grid;
+  grid-template-columns: 2.2rem 1fr auto;
+  grid-template-rows: auto auto;
+  column-gap: 0.6rem;
+  align-items: center;
+  padding: 0.7rem 0;
+  border-bottom: 1px solid var(--divider, #e6ebf3);
+}
+.nav2 .nav2-club-rank {
+  grid-row: span 2;
+  font-weight: 800;
+  font-size: 1.2rem;
+  text-align: center;
+}
+.nav2 .nav2-club-list small {
+  grid-column: 2;
+  color: var(--text-muted, #5a6880);
+}
+.nav2 .nav2-club-points {
+  grid-row: 1 / span 2;
+  grid-column: 3;
+  font-weight: 700;
+}
+
+/* Choix d'affichage des matchs : libellé visible aussi sur mobile (icône seule = incompréhensible). */
+@media (max-width: 760px) {
+  .nav2.club-arena .board-head .view-toggle-label {
+    position: static;
+    width: auto;
+    height: auto;
+    overflow: visible;
+    clip: auto;
+    font-size: 0.7rem;
+    line-height: 1;
+  }
+  .nav2.club-arena .board-head .view-toggle button {
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+}

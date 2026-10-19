@@ -10,6 +10,7 @@ export const TAB_PATHS = {
   leaderboard: '/classements',
   community: '/communaute',
   account: '/compte',
+  hub: '/mon-espace',
   admin: '/admin',
 };
 export const TAB_TITLES = {
@@ -23,6 +24,7 @@ export const TAB_TITLES = {
   leaderboard: 'Classements',
   community: 'Délégations',
   account: 'Mon compte',
+  hub: 'Mon espace',
   admin: 'Administration',
 };
 // « / » ouvre l’accueil personnel ; les anciens liens de notification gardent leur destination.

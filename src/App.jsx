@@ -39,8 +39,13 @@ import { ForgotPassword, ResetPassword } from './components/AccountRecovery';
 import { LegalPage, LegalLinks } from './components/LegalPages';
 import { legalPageFor } from './lib/legal.js';
 import { refonteOn, setRefonte } from './lib/refonte';
-import { NAV_CATALOG, mobileSlots, readNav, saveNav } from './lib/navPrefs';
+import { NAV_CATALOG, NAV2_CATALOG, NAV2_KEY, mobileSlots, readNav, saveNav } from './lib/navPrefs';
 import NavEditor from './components/NavEditor';
+import { setReloadBlocked } from './lib/chunkReload';
+import { nav2On, setNav2, NAV2_TABS, nav2Active } from './lib/nav2';
+import MySpace, { HubTrail } from './components/MySpace';
+import EventCards from './components/EventCards';
+import ClubRanking from './components/ClubRanking';
 import LiveFollowAlert from './components/LiveFollowAlert';
 import { useLiveScores } from './lib/useLiveScores';
 import { hasActiveLiveScore } from './lib/liveScoreState';
@@ -83,6 +88,7 @@ const PublicResults = lazy(() => import('./components/PublicResults'));
 const PublicCalendar = lazy(() => import('./components/PublicCalendar'));
 const RedesignHome = lazy(() => import('./components/RedesignHome'));
 const REFONTE = refonteOn();
+const NAV2 = nav2On();
 const LIVE_ICON = (
   <svg
     viewBox="0 0 24 24"
@@ -110,6 +116,20 @@ const HOME_ICON = (
     <path d="M4 10.5 12 4l8 6.5V20h-5.5v-5.5h-5V20H4Z" strokeLinejoin="round" />
   </svg>
 );
+const HUB_ICON = (
+  <svg
+    viewBox="0 0 24 24"
+    width="24"
+    height="24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="1.6"
+    aria-hidden="true"
+  >
+    <circle cx="12" cy="8" r="3.6" />
+    <path d="M4.5 20c.9-4 3.8-6.2 7.5-6.2s6.6 2.2 7.5 6.2" />
+  </svg>
+);
 const COMMUNITY_ICON = (
   <svg
     viewBox="0 0 24 24"
@@ -132,6 +152,7 @@ const customNav = (items, ids) => {
   if (byId.home) byId.home = ['home', HOME_ICON, byId.home[2]];
   byId.live = ['live', LIVE_ICON, 'Direct'];
   byId.community = ['community', COMMUNITY_ICON, 'Délégations'];
+  byId.hub = ['hub', HUB_ICON, 'Mon espace'];
   return ids.map((id) => byId[id]).filter(Boolean);
 };
 const MORE_ICON = (
@@ -144,6 +165,12 @@ const MORE_ICON = (
 // Bascule temporaire entre les deux designs, avec choix mémorisé sur cet appareil.
 function RefonteToggle() {
   const { t } = useI18n();
+  if (NAV2)
+    return (
+      <div className="floating-actions">
+        <div id="pool-save-action" />
+      </div>
+    );
   return (
     <div className="floating-actions">
       <div id="pool-save-action" />
@@ -169,7 +196,7 @@ export default function App() {
       /[?&](tournament|event)=/.test(window.location.search),
   );
   const { t, lang, setLang } = useI18n();
-  const [navTabs, setNavTabs] = useState(readNav);
+  const [navTabs, setNavTabs] = useState(() => (NAV2 ? readNav(NAV2_TABS, NAV2_CATALOG, NAV2_KEY) : readNav()));
   const [navEditor, setNavEditor] = useState(false);
   const [accountOpen, setAccountOpen] = useState(false);
   const [supportOpen, setSupportOpen] = useState(false);
@@ -325,10 +352,24 @@ export default function App() {
   }, []);
   // Direct & résultats : rencontres, poules, tableau ou classement de l'épreuve choisie.
   const [liveView, setLiveView] = useState('matches');
+  const [rankingView, setRankingView] = useState('players');
   const [liveMatchId, setLiveMatchId] = useState(null);
   const [landingPending, setLandingPending] = useState(false);
   const [landingFilter, setLandingFilter] = useState('Tous');
   const [dirty, setDirty] = useState(false);
+  useEffect(() => {
+    setReloadBlocked(dirty);
+    const protect = (event) => {
+      if (dirty) {
+        event.preventDefault();
+        event.returnValue = '';
+      }
+    };
+    window.addEventListener('beforeunload', protect);
+    return () => {
+      window.removeEventListener('beforeunload', protect);
+    };
+  }, [dirty]);
   const [matchesReady, setMatchesReady] = useState(false);
   const [matchesError, setMatchesError] = useState('');
   // Données déjà affichées mais dernier rafraîchissement raté (wifi de salle) : on prévient sans bloquer.
@@ -612,6 +653,19 @@ export default function App() {
     setSelectedCompetitionId(competitionId);
   };
 
+  // Maquette navigation 2 : ouverture d'une épreuve depuis sa carte (même chemin qu'un lien partagé).
+  const openEvent = (tournament, event) =>
+    runNavigation(() => {
+      setDirty(false);
+      setTournamentId(tournament.id);
+      setTournamentInfo({ id: tournament.id, name: tournament.name });
+      selectCompetition(event.id);
+      setCompetition(event);
+      setPlayTab('tableau');
+      history.pushState(null, '', pathFor('play', { tournament, event, view: 'tableau' }));
+      setEventListVersion((v) => v + 1);
+      setMainTab('play');
+    });
   // Ouvre l'épreuve d'un tireur suivi : pour pronostiquer (Pronostiquer) ou pour suivre (Direct & résultats).
   const openFollowedFencer = ({ event, match, mode, tournament }) =>
     runNavigation(() => {
@@ -696,9 +750,10 @@ export default function App() {
           {navEditor && (
             <NavEditor
               value={navTabs}
+              {...(NAV2 ? { catalog: NAV2_CATALOG, defaults: NAV2_TABS } : {})}
               onClose={() => setNavEditor(false)}
               onSave={(list) => {
-                saveNav(list);
+                saveNav(NAV2 ? list || NAV2_TABS : list, NAV2 ? NAV2_KEY : undefined);
                 setNavTabs(list);
                 setNavEditor(false);
               }}
@@ -746,7 +801,7 @@ export default function App() {
                 className="user-menu"
                 ref={accountMenu}
                 onMouseEnter={() => {
-                  if (matchMedia('(hover: hover)').matches) setAccountOpen(true);
+                  if (!NAV2 && matchMedia('(hover: hover)').matches) setAccountOpen(true);
                 }}
                 onMouseLeave={() => {
                   if (matchMedia('(hover: hover)').matches) setAccountOpen(false);
@@ -760,22 +815,27 @@ export default function App() {
                   aria-expanded={accountOpen}
                   aria-controls="user-options"
                   onClick={(e) => {
+                    // Maquette navigation 2 : le nom du joueur ouvre « Mon espace ».
+                    if (NAV2) return navigate('hub');
                     if (e.detail > 0 && matchMedia('(hover: hover)').matches) setAccountOpen(true);
                     else setAccountOpen((v) => !v);
                   }}
                 >
-                  {user.name || user.username} ⌄
+                  {user.name || user.username}
+                  {NAV2 ? '' : ' ⌄'}
                 </button>
                 {accountOpen && (
                   <nav id="user-options" className="user-menu-panel" aria-label={t('menu.space')}>
                     {/* Sections hors barre principale : chacune n'apparaît qu'ici (aucun doublon). */}
                     {[
-                      ...(REFONTE
-                        ? NAV_CATALOG.filter(([id]) => id !== 'live' && !navTabs.includes(id))
-                        : [
-                            ['live', 'Direct & résultats'],
-                            ['community', 'Délégations'],
-                          ]),
+                      ...(NAV2
+                        ? [['hub', 'Mon espace']]
+                        : REFONTE
+                          ? NAV_CATALOG.filter(([id]) => id !== 'live' && !navTabs.includes(id))
+                          : [
+                              ['live', 'Direct & résultats'],
+                              ['community', 'Délégations'],
+                            ]),
                       ['account', 'Mon compte et notifications'],
                       ...(user.isAdmin ? [['admin', 'Administration']] : []),
                     ].map(([id]) => (
@@ -787,16 +847,21 @@ export default function App() {
                           navigate(id);
                         }}
                       >
-                        {id === 'account'
-                          ? t('menu.account')
-                          : id === 'admin'
-                            ? t('menu.admin')
-                            : id === 'live' && !REFONTE
-                              ? t('menu.liveResults')
-                              : t(`nav.${id}`)}
+                        {id === 'hub'
+                          ? 'Mon espace'
+                          : id === 'account'
+                            ? t('menu.account')
+                            : id === 'admin'
+                              ? t('menu.admin')
+                              : id === 'live' && !REFONTE
+                                ? t('menu.liveResults')
+                                : t(`nav.${id}`)}
                       </button>
                     ))}
-                    {REFONTE && (
+                    {!NAV2 && (
+                      <button onClick={() => runNavigation(() => setNav2(true))}>Activer la nouvelle navigation</button>
+                    )}
+                    {REFONTE && !NAV2 && (
                       <button
                         onClick={() => {
                           setAccountOpen(false);
@@ -966,11 +1031,12 @@ export default function App() {
                   className={REFONTE && id === 'home' ? 'nav-home' : id === 'more' ? 'nav-more' : undefined}
                   style={REFONTE ? { '--mobile-order': mobileSlots(navTabs)[id] } : undefined}
                   aria-pressed={
+                    (NAV2 && nav2Active(mainTab, navTabs) === id) ||
                     mainTab === id ||
                     (id === 'mine' && mainTab === 'season') ||
                     (id === 'live' && mainTab === 'results')
                   }
-                  onClick={() => (id === 'more' ? setAccountOpen(true) : navigate(id))}
+                  onClick={() => (id === 'more' ? (NAV2 ? navigate('hub') : setAccountOpen(true)) : navigate(id))}
                 >
                   <span aria-hidden="true">{icon}</span>
                   {t(`nav.${id}`)}
@@ -1052,8 +1118,8 @@ export default function App() {
               {['live', 'results'].includes(mainTab) && (
                 <nav className="secondary-nav hub-nav" aria-label="Direct et résultats">
                   {[
-                    ['live', 'En direct'],
-                    ['results', 'Toutes les épreuves'],
+                    ['live', NAV2 ? 'Épreuve suivie' : 'En direct'],
+                    ['results', NAV2 ? 'Tous les résultats' : 'Toutes les épreuves'],
                   ].map(([id, label]) => (
                     <button key={id} aria-pressed={mainTab === id} onClick={() => navigate(id)}>
                       {label}
@@ -1061,7 +1127,29 @@ export default function App() {
                   ))}
                 </nav>
               )}
-              {['mine', 'season'].includes(mainTab) && (
+              {mainTab === 'hub' && (
+                <MySpace
+                  user={user}
+                  onNavigate={navigate}
+                  actions={[
+                    ['Personnaliser la barre du bas', () => setNavEditor(true)],
+                    ...(user.isAdmin ? [['Administration', () => navigate('admin')]] : []),
+                    ['Revoir le tutoriel', () => setTutorialRequest((v) => v + 1)],
+                    ['Signaler un problème', () => setSupportOpen(true)],
+                    [
+                      reducedData() ? 'Quitter le mode connexion faible' : 'Mode connexion faible',
+                      () => (reducedData() ? setDataMode('auto') : setDataMode('on')),
+                    ],
+                    [REFONTE ? 'Revenir à l’ancien design' : 'Essayer le nouveau design', () => setRefonte(!REFONTE)],
+                    ['Revenir temporairement à l’ancienne navigation', () => runNavigation(() => setNav2(false))],
+                    ['Déconnexion', () => runNavigation(handleLogout), 'danger'],
+                  ]}
+                />
+              )}
+              {NAV2 && ['mine', 'season', 'me', 'community', 'account'].includes(mainTab) && (
+                <HubTrail tab={mainTab} onNavigate={navigate} />
+              )}
+              {!NAV2 && ['mine', 'season'].includes(mainTab) && (
                 <nav className="secondary-nav hub-nav" aria-label="Mes pronos">
                   {[
                     ['mine', 'Mes pronostics'],
@@ -1104,7 +1192,10 @@ export default function App() {
                   </button>
                 </p>
               )}
-              {!['me', 'season', 'account', 'mine', 'results', 'leaderboard', 'community'].includes(mainTab) &&
+              {NAV2 && mainTab === 'play' && !selectedCompetitionId && !parseLocation(location.pathname).eventId && (
+                <EventCards onOpen={openEvent} />
+              )}
+              {!['me', 'season', 'account', 'mine', 'results', 'leaderboard', 'community', 'hub'].includes(mainTab) &&
                 !(REFONTE && mainTab === 'home') &&
                 !(mainTab === 'admin' && adminSection !== 'event') && (
                   <EventSelector
@@ -1140,6 +1231,18 @@ export default function App() {
                     }
                     key={`${user.id}:${eventListVersion}:${['play', 'home', 'live'].includes(mainTab) ? 'active' : 'history'}`}
                     includeArchived={!['play', 'home', 'live'].includes(mainTab)}
+                    {...(NAV2 && mainTab === 'live'
+                      ? {
+                          title: 'Quelle épreuve suivre ?',
+                          intro: 'Choisissez l’épreuve à suivre en direct ou à revoir.',
+                          submitLabel: 'Suivre',
+                        }
+                      : NAV2 && mainTab === 'play'
+                        ? {
+                            title: 'Ou choisissez dans la liste',
+                            intro: 'Toutes les épreuves ouvertes, par compétition.',
+                          }
+                        : {})}
                     {...(mainTab === 'admin'
                       ? {
                           title: 'Épreuve à administrer',
@@ -1238,6 +1341,7 @@ export default function App() {
               {/* Communauté : tous les groupes, sans choisir d'épreuve au préalable. */}
               {mainTab === 'community' && (
                 <Community
+                  hideClubRanking={NAV2}
                   tournamentId={tournamentId}
                   userId={user.id}
                   onPronosticate={(league) =>
@@ -1250,9 +1354,23 @@ export default function App() {
                   }
                 />
               )}
-              {mainTab === 'leaderboard' && (
+              {mainTab === 'leaderboard' && NAV2 && (
+                <nav className="secondary-nav hub-nav" aria-label="Type de classement">
+                  {[
+                    ['players', 'Joueurs'],
+                    ['clubs', 'Clubs'],
+                  ].map(([id, label]) => (
+                    <button key={id} aria-pressed={rankingView === id} onClick={() => setRankingView(id)}>
+                      {label}
+                    </button>
+                  ))}
+                  <button onClick={() => navigate('community')}>Mes délégations →</button>
+                </nav>
+              )}
+              {mainTab === 'leaderboard' && (!NAV2 || rankingView === 'players') && (
                 <GlobalLeaderboard userId={user.id} tournamentId={tournamentId} competitionId={selectedCompetitionId} />
               )}
+              {mainTab === 'leaderboard' && NAV2 && rankingView === 'clubs' && <ClubRanking preferred={tournamentId} />}
               {mainTab === 'mine' && (
                 <MyPredictions
                   userId={user.id}
