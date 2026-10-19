@@ -1,4 +1,5 @@
 import { applyLiveMessage } from './liveScoreState.js';
+import { LIVE_WIRE } from './liveWire.js';
 
 // Une seule connexion par épreuve dans la page, partagée par le bandeau, les cartes et le détail.
 export function createLiveConnections({
@@ -8,6 +9,7 @@ export function createLiveConnections({
   document,
   setTimer = setTimeout,
   clearTimer = clearTimeout,
+  decodeWire = null,
 }) {
   const connections = new Map();
   return (id, listener) => {
@@ -22,6 +24,7 @@ export function createLiveConnections({
         closed: false,
         polling: false,
         generation: 0,
+        packed: Boolean(decodeWire),
       };
       const publish = (scores) => {
         entry.scores = scores;
@@ -52,22 +55,53 @@ export function createLiveConnections({
       const open = () => {
         if (entry.closed || document.hidden || entry.source || entry.timer) return;
         if (!eventSource || entry.failures > 2) return poll();
-        const source = new eventSource(`${baseURL}/public/competitions/${id}/live/stream?delta=1`);
+        const source = new eventSource(
+          `${baseURL}/public/competitions/${id}/live/stream?delta=1${entry.packed ? `&wire=${LIVE_WIRE}` : ''}`,
+        );
         entry.source = source;
+        let queue = Promise.resolve();
+        let pending = 0;
+        const recover = () => {
+          if (entry.closed || entry.source !== source) return;
+          entry.packed = false;
+          entry.failures++;
+          close();
+          entry.timer = setTimer(() => {
+            entry.timer = null;
+            open();
+          }, 0);
+        };
+        const accept = (message) => {
+          if (entry.closed || entry.source !== source) return;
+          const next = applyLiveMessage(entry.scores, message);
+          entry.failures = 0;
+          publish(next);
+        };
         source.onmessage = (event) => {
           if (entry.closed || entry.source !== source) return;
-          try {
-            const next = applyLiveMessage(entry.scores, JSON.parse(event.data));
-            entry.failures = 0;
-            publish(next);
-          } catch {
-            // Une perte de séquence provoque un nouvel instantané, jamais des touches inventées.
-            close();
-            entry.timer = setTimer(() => {
-              entry.timer = null;
-              open();
-            }, 0);
+          if (!entry.packed) {
+            try {
+              accept(JSON.parse(event.data));
+            } catch {
+              recover();
+            }
+            return;
           }
+          if (++pending > 16) {
+            recover();
+            return;
+          }
+          // Préserver l’ordre des deltas malgré une décompression asynchrone.
+          queue = queue
+            .then(async () => {
+              if (entry.closed || entry.source !== source) return;
+              const message = await decodeWire(JSON.parse(event.data));
+              accept(message);
+            })
+            .catch(recover)
+            .finally(() => {
+              pending--;
+            });
         };
         source.onerror = () => {
           if (entry.source !== source) return;
