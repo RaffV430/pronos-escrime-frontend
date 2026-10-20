@@ -117,7 +117,7 @@ function PoolMatrix({ pool, onOpen }) {
             <tr key={f.id}>
               <td>
                 <button type="button" className="result-pool-name" onClick={() => onOpen(f)}>
-                  {isFollowedFencer(follows, f.name) && (
+                  {isFollowedFencer(follows, f.name, f.club) && (
                     <span className="favorite-star" aria-label="Tireur favori">
                       ★{' '}
                     </span>
@@ -237,7 +237,7 @@ export default function ResultsPools({ competitionId, poolsOverride }) {
                               className="result-pool-name"
                               onClick={() => setOpen({ fencer: f, pool })}
                             >
-                              {isFollowedFencer(follows, f.name) && (
+                              {isFollowedFencer(follows, f.name, f.club) && (
                                 <span className="favorite-star" aria-label="Tireur favori">
                                   ★{' '}
                                 </span>

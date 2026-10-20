@@ -623,7 +623,7 @@ export default function MatchBoard({
   };
   const visible = (m) =>
     filter === 'Mes tireurs'
-      ? isFollowedFencer(follows, m.player1) || isFollowedFencer(follows, m.player2)
+      ? isFollowedFencer(follows, m.player1, m.club1) || isFollowedFencer(follows, m.player2, m.club2)
       : filter === 'En cours'
         ? !!live.get(m.id) && !live.get(m.id).finished && !m.isFinished
         : filter === 'À compléter'
@@ -758,7 +758,7 @@ export default function MatchBoard({
                     .join('')}
                 </span>
               }
-              {isFollowedFencer(follows, name) && (
+              {isFollowedFencer(follows, name, m[`club${i + 1}`]) && (
                 <span className="club-star" title="Tireur suivi">
                   ★{' '}
                 </span>
@@ -1155,7 +1155,7 @@ export default function MatchBoard({
                 mine={mine}
                 isClosed={(m) => closedMatch(m, now)}
                 visible={visible}
-                isFollowed={(name) => isFollowedFencer(follows, name)}
+                isFollowed={(name, club) => isFollowedFencer(follows, name, club)}
                 onType={type}
                 onKey={keyDown}
                 onKeyUp={keyUp}

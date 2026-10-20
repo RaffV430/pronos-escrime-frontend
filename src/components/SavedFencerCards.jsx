@@ -8,18 +8,12 @@ import FencerSeason from './FencerSeason';
 import { pollWhileVisible } from '../lib/polling';
 import { useEffect, useState } from 'react';
 import API from '../api';
-import { useFencerFollows } from '../lib/fencerFollows';
+import { followedClub, followedMatches, useFencerFollows } from '../lib/fencerFollows';
 import { followedMatchTarget } from '../lib/followedMatch';
 import { followedPool, followedSchedule } from '../lib/followedSchedule';
 import { eventNameFr } from '../lib/eventName';
 import { prioritizeFencerGroups } from '../lib/fencerGroups';
 
-const normal = (name) =>
-  String(name || '')
-    .normalize('NFKC')
-    .trim()
-    .replace(/\s+/g, ' ')
-    .toUpperCase();
 // Keep every saved identity visible, even without a published entry or match.
 export default function SavedFencerCards({ tournaments, userId, onOpen }) {
   const follows = useFencerFollows();
@@ -63,11 +57,7 @@ export default function SavedFencerCards({ tournaments, userId, onOpen }) {
                     const fencer = (event.podiumRoster || []).find((entry) => String(entry.id) === link.entryId);
                     if (!fencer) return [];
                     // Use the server-resolved identity; ambiguous names never acquire a match.
-                    const matching = followed.matchNames?.includes(fencer.name)
-                      ? matches.filter(
-                          (m) => normal(m.player1) === normal(fencer.name) || normal(m.player2) === normal(fencer.name),
-                        )
-                      : [];
+                    const matching = followedMatches(followed, fencer, matches);
                     const scheduled = calendar
                       .find((t) => t.id === tournament.id)
                       ?.competitions.find((c) => c.id === event.id);
@@ -79,7 +69,7 @@ export default function SavedFencerCards({ tournaments, userId, onOpen }) {
                         event: { ...event, startsAt: scheduled?.startsAt },
                         tournament,
                         matches: matching,
-                        pool: followedPool(pools, fencer.name, followed.matchNames),
+                        pool: followedPool(pools, fencer.name, followed.matchNames, followedClub(followed, fencer)),
                       },
                     ];
                   });
