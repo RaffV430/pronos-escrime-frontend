@@ -85,16 +85,25 @@ export default function FencerProfile({ name, onClose, matchId = null, parentDia
   const ref = useRef(null);
   const [data, setData] = useState(null);
   const [error, setError] = useState('');
+  // Homonymes d'une même épreuve (clubs différents) : une fiche par club. Ouverte depuis un match, le
+  // serveur retrouve le club du tireur dans ce match ; sinon, choix du club.
+  // undefined : club déduit du match ; null : choix demandé ; texte : club choisi.
+  const [club, setClub] = useState(undefined);
   useEffect(() => {
     if (ref.current && !ref.current.open) ref.current.showModal?.();
   }, []);
   useEffect(() => {
     const c = new AbortController();
-    API.get('/public/fencer', { params: { name }, signal: c.signal })
+    setData(null);
+    setError('');
+    API.get('/public/fencer', {
+      params: { name, ...(club ? { club } : club === undefined && matchId ? { matchId } : {}) },
+      signal: c.signal,
+    })
       .then(({ data }) => setData(data))
       .catch((e) => !c.signal.aborted && setError(e.response?.data?.error || 'Fiche indisponible.'));
     return () => c.abort();
-  }, [name]);
+  }, [name, club, matchId]);
   const s = data?.summary;
   return (
     <dialog
@@ -126,7 +135,33 @@ export default function FencerProfile({ name, onClose, matchId = null, parentDia
       </h2>
       {error && <p className="muted">{error}</p>}
       {!data && !error && <p className="muted">Chargement…</p>}
-      {data && (
+      {data?.homonyms?.length > 0 && (
+        <div className="fp-homonyms">
+          <p className="muted">
+            Plusieurs tireurs portent ce nom dans une même épreuve. Choisissez son club pour voir son parcours :
+          </p>
+          <div className="fp-homonym-choices">
+            {data.homonyms.map((h) => (
+              <button key={h.club} type="button" className="button-secondary" onClick={() => setClub(h.club)}>
+                {h.club}
+                <small className="muted">
+                  {' '}
+                  · {h.competitions} épreuve{h.competitions > 1 ? 's' : ''}
+                </small>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+      {data?.homonymsSplit && (
+        <p className="muted">
+          Un homonyme d’un autre club a sa propre fiche.{' '}
+          <button type="button" className="fencer-link" onClick={() => setClub(null)}>
+            Voir les autres clubs
+          </button>
+        </p>
+      )}
+      {data && !data.homonyms?.length && (
         <>
           <p className="muted">
             {s.competitions
