@@ -43,3 +43,13 @@ test('données absentes ou invalides restent explicitement inconnues', () => {
   assert.deepEqual(followedSchedule(null, null), { time: 'Horaire à confirmer', strip: 'Piste à confirmer', poolName: undefined });
   assert.equal(followedSchedule(null, { startsAt: 'invalid' }).time, 'Horaire à confirmer');
 });
+
+test('homonyme suivi d’un autre club : sa poule, reconnue au nom et au club', () => {
+  const name = 'ROBERT Julien';
+  const p18 = { name: 'Poule 18', fencers: [{ name, club: 'DECINES TE' }] };
+  const p29 = { name: 'Poule 29', fencers: [{ name, club: 'PERPIGNAN RO' }] };
+  assert.equal(followedPool([p18, p29], name, [], 'PERPIGNAN RO'), p29);
+  assert.equal(followedPool([p18, p29], name, []), null);
+  const both = { name: 'Poule 3', fencers: [{ name, club: 'DECINES TE' }, { name, club: 'PERPIGNAN RO' }] };
+  assert.equal(followedPool([both], name, [], 'DECINES TE'), both);
+});

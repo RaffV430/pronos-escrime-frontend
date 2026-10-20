@@ -1,8 +1,9 @@
 // Pool times describe the whole pool, never an individual bout.
-export function followedPool(pools, name, allowedNames = []) {
-  if (!allowedNames.includes(name)) return null;
+// club : homonyme d'un autre club dans l'épreuve, reconnu au nom et au club.
+export function followedPool(pools, name, allowedNames = [], club = null) {
+  if (!allowedNames.includes(name) && !club) return null;
   const candidates = pools.filter(pool =>
-    pool.fencers?.filter(fencer => fencer.name === name).length === 1,
+    pool.fencers?.filter(fencer => fencer.name === name && (!club || fencer.club === club)).length === 1,
   );
   const round = pool => Number(/^Tour (\d+) · /.exec(pool.name)?.[1]) || 1;
   const latestRound = Math.max(0, ...candidates.map(round));

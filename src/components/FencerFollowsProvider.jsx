@@ -70,6 +70,7 @@ export function FencerFollowsProvider({ userId, competitionId, children }) {
     links: current ? data.links : [],
     ambiguousIds: current ? data.ambiguousIds : [],
     matchNames: current ? data.matchNames : [],
+    clubNames: current ? data.clubNames || [] : [],
     ready: current,
     busy,
     error,

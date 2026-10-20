@@ -16,7 +16,7 @@ const Box = ({ value }) => (
 );
 
 // Ligne d'un tireur (composant de module : identité stable, les champs gardent le focus pendant la frappe).
-function Row({ name, country, seed, win, extra = '', isFollowed, children }) {
+function Row({ name, country, club = null, seed, win, extra = '', isFollowed, children }) {
   return (
     <div className={`tree-row${win ? ' is-win' : ''}${extra}`}>
       <span className="tree-seed" title={seed ? `Classement d’entrée dans le tableau : ${seed}` : undefined}>
@@ -31,7 +31,7 @@ function Row({ name, country, seed, win, extra = '', isFollowed, children }) {
       </span>
       <span className="tree-country">{country}</span>
       <span className="tree-name" title={name}>
-        {isFollowed?.(name) && <span className="club-star">★ </span>}
+        {isFollowed?.(name, club) && <span className="club-star">★ </span>}
         <span className="tree-full">{name}</span>
         <span className="tree-short">{shortName(name)}</span>
       </span>
@@ -118,6 +118,7 @@ export default function BracketTree({
             key={i}
             name={m[`player${i}`]}
             country={m[`player${i}Country`]}
+            club={m[`club${i}`]}
             seed={seedOf(m, i)}
             win={w === m[`player${i}`]}
           >
@@ -174,6 +175,7 @@ export default function BracketTree({
             key={i}
             name={m[`player${i}`]}
             country={m[`player${i}Country`]}
+            club={m[`club${i}`]}
             seed={seedOf(m, i)}
           >
             {closed ? (

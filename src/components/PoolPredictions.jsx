@@ -233,7 +233,7 @@ function PredictionRow({
     <tr id={`pool-${fencer.id}`} className={closed ? 'pool-table-row is-closed' : 'pool-table-row'}>
       <th scope="row" className="pool-name-cell">
         <span className="pool-position">{fencer.position}</span>{' '}
-        {isFollowedFencer(follows, fencer.name) && (
+        {isFollowedFencer(follows, fencer.name, fencer.club) && (
           <span className="club-star" title="Tireur suivi">
             ★{' '}
           </span>
@@ -727,7 +727,7 @@ function PoolList({ competitionId, user, onDirtyChange, refreshVersion }) {
   // Filtre « Mes tireurs » : seulement les poules où figure un tireur suivi.
   const poolFollows = useFencerFollows();
   const [onlyMine, setOnlyMine] = useState(false);
-  const hasMine = (pool) => pool.fencers.some((f) => isFollowedFencer(poolFollows, f.name));
+  const hasMine = (pool) => pool.fencers.some((f) => isFollowedFencer(poolFollows, f.name, f.club));
   const reportDirty = useCallback(
     (id, value) =>
       setDirtyRows((old) => {

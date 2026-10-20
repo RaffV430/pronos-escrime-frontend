@@ -21,7 +21,7 @@ function Side({ m, n, won }) {
     <span className={`rb-side${won ? ' is-win' : ''}`}>
       <span className="rb-seed">{seed ? seed : ''}</span>
       <span className="rb-name">
-        {isFollowedFencer(follows, m[`player${n}`]) && (
+        {isFollowedFencer(follows, m[`player${n}`], m[`club${n}`]) && (
           <span className="favorite-star" aria-label="Tireur favori">
             ★{' '}
           </span>

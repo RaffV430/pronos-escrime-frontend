@@ -1,5 +1,5 @@
 import { eventNameFr } from '../lib/eventName';
-import { useFencerFollows } from '../lib/fencerFollows';
+import { followedClub, followedMatches, useFencerFollows } from '../lib/fencerFollows';
 import { followedMatchTarget } from '../lib/followedMatch';
 import { followedPool, followedSchedule } from '../lib/followedSchedule';
 import ResultsPools from './ResultsPools';
@@ -33,7 +33,7 @@ export function FollowedEventFencers({ competition, userId, onMatch, onLive, onE
             API.get('/matches', { params: { competitionId: event.id }, signal: controller.signal }),
             API.get('/pools', { params: { competitionId: event.id }, signal: controller.signal }),
           ]);
-          return { ...event, matches, pools, matchNames: followed.matchNames, followedRoster: (event.podiumRoster || []).filter(e => followed.links.some(l => l.entryId === String(e.id))) };
+          return { ...event, matches, pools, matchNames: followed.matchNames, clubNames: followed.clubNames || [], followedRoster: (event.podiumRoster || []).filter(e => followed.links.some(l => l.entryId === String(e.id))) };
         }));
         if (!controller.signal.aborted) setEvents(entries);
       })
@@ -58,8 +58,8 @@ export function FollowedEventFencers({ competition, userId, onMatch, onLive, onE
     setError('');
     try {
       const { data: matches } = await API.get('/matches', { params: { competitionId: event.id } });
-      if (!event.matchNames?.includes(fencer.name)) { setError('Identité du tireur à vérifier.'); return; }
-      const target = followedMatchTarget(matches.filter(m => m.player1 === fencer.name || m.player2 === fencer.name).map(match => ({ match })), userId);
+      if (!event.matchNames?.includes(fencer.name) && !followedClub(event, fencer)) { setError('Identité du tireur à vérifier.'); return; }
+      const target = followedMatchTarget(followedMatches(event, fencer, matches).map(match => ({ match })), userId);
       if (!target) { setError('Aucun match publié pour ce tireur pour le moment.'); return; }
       onEventChange(event);
       if (target.mode === 'predictions') onMatch(target.match.id); else onLive(target.match.id);
@@ -83,9 +83,9 @@ export function FollowedEventFencers({ competition, userId, onMatch, onLive, onE
           </header>
           <div className="followed-category-cards">
           {event.followedRoster.map(e => {
-            const target = followedMatchTarget((event.matchNames?.includes(e.name) ? event.matches || [] : []).filter(m => m.player1 === e.name || m.player2 === e.name).map(match => ({ match })), userId);
+            const target = followedMatchTarget(followedMatches(event, e, event.matches || []).map(match => ({ match })), userId);
             const match = target?.match;
-            const schedule = followedSchedule(match, followedPool(event.pools || [], e.name, event.matchNames));
+            const schedule = followedSchedule(match, followedPool(event.pools || [], e.name, event.matchNames, followedClub(event, e)));
             return (
         <article className="arena-home-match" key={`${event.id}:${e.id}`}>
           <span>
