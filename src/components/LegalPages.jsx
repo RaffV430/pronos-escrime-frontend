@@ -4,7 +4,7 @@ import RulesAndCharter from './RulesAndCharter';
 // aux adresses /mentions-legales et /confidentialite.
 const EDITOR = 'Raffaele Venturi';
 const CONTACT = 'contact@pronos-escrime.fr';
-const UPDATED = '10 octobre 2026';
+const UPDATED = '20 octobre 2026';
 
 export function LegalLinks() {
   return (
@@ -109,8 +109,13 @@ function Privacy() {
         </li>
         <li>
           <strong>Sur votre appareil</strong> : votre session, vos brouillons de pronostics et vos choix d’affichage
-          sont gardés dans le stockage local du navigateur. Aucun cookie publicitaire ni outil de mesure d’audience
-          n’est utilisé.
+          sont gardés dans le stockage local du navigateur. Aucun cookie n’est utilisé à des fins publicitaires ou de
+          mesure d’audience.
+        </li>
+        <li>
+          <strong>Mesure d’audience</strong> : Vercel Web Analytics compte les pages vues de façon anonyme (type
+          d’appareil, système, navigateur, pays, page visitée sans ses paramètres), sans cookie et sans vous identifier,
+          pour savoir comment l’application est utilisée.
         </li>
       </ul>
       <p>
@@ -121,9 +126,9 @@ function Privacy() {
       <h2>Destinataires et sous-traitants</h2>
       <p>
         Les données sont hébergées par Vercel, Render et Neon. Les e-mails de réinitialisation sont envoyés par Resend.
-        Les erreurs techniques peuvent être signalées à Sentry, sans vos données de compte. Certains de ces prestataires
-        sont situés aux États-Unis ; les transferts reposent sur leurs garanties contractuelles (clauses contractuelles
-        types ou Data Privacy Framework).
+        Les erreurs techniques peuvent être signalées à Sentry, sans vos données de compte. La mesure d’audience anonyme
+        est assurée par Vercel. Certains de ces prestataires sont situés aux États-Unis ; les transferts reposent sur
+        leurs garanties contractuelles (clauses contractuelles types ou Data Privacy Framework).
       </p>
       <h2>Durée de conservation</h2>
       <p>

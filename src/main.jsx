@@ -5,6 +5,7 @@ import { legacyLoginPath } from './lib/authNavigation';
 import { currentPathFor } from './lib/routes';
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
+import { Analytics } from '@vercel/analytics/react';
 import './index.css';
 import App from './App.jsx';
 import I18nProvider from './i18n/I18nProvider';
@@ -48,6 +49,10 @@ if (!reducedData()) startMonitoring();
 const canonical = document.querySelector('link[rel="canonical"]');
 if (canonical) canonical.href = `https://www.pronos-escrime.fr${location.pathname.replace(/\/+$/, '') || '/'}`;
 
+// Mesure d'audience Vercel (sans cookie, visiteurs non identifiés) : adresse de la page sans paramètres,
+// pour ne jamais transmettre un lien de réinitialisation ou une invitation.
+const anonymousPage = (event) => ({ ...event, url: event.url.split(/[?#]/)[0] });
+
 async function renderApp() {
   createRoot(document.getElementById('root'), {
     onUncaughtError: (error, info) => reportError(error, { componentStack: info.componentStack }),
@@ -59,6 +64,7 @@ async function renderApp() {
           <App />
         </I18nProvider>
       </ErrorBoundary>
+      <Analytics beforeSend={anonymousPage} />
     </StrictMode>,
   );
 }
