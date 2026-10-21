@@ -1,3 +1,5 @@
+import MatchSwipe from './MatchSwipe';
+import { swipeCandidates } from '../lib/matchSwipe';
 import { withLiveDetection } from '../lib/liveScoreState';
 import { createPortal } from 'react-dom';
 import MatchExtras from './MatchExtras';
@@ -1100,46 +1102,32 @@ export default function MatchBoard({
                 })}
             </div>
           ) : view === 'Arena' ? (
-            <div className="arena-dashboard">
-              <section className="arena-featured">
-                <p className="arena-eyebrow">LE PROCHAIN ASSAUT</p>
-                <h2>Qui passe au tour suivant ?</h2>
-                <p>
-                  {valid.filter((m) => mine(m)).length} / {valid.length} pronostics enregistrés
+            <>
+              <MatchSwipe
+                key={`${competitionId}:${selectedPhase}`}
+                competitionId={competitionId}
+                ready={ready}
+                busy={busy}
+                matches={swipeCandidates(valid.filter(visible), {
+                  closed: (m) => closedMatch(m, now),
+                  hasPrediction: mine,
+                  hasDraft: (m) =>
+                    Boolean(drafts[m.id]) || Boolean(localDraft.recoverable?.[m.id]) || queuedIds.has(m.id),
+                })}
+                onPick={expressPick}
+                onTableau={() => {
+                  setFilter('Tous');
+                  setView('Arbre');
+                }}
+              />
+              {Object.entries(messages).map(([id, status]) => (
+                <p key={id} role={status.failed ? 'alert' : 'status'} className={status.failed ? 'error' : 'muted'}>
+                  {allValid.find((m) => m.id === Number(id))?.player1} /{' '}
+                  {allValid.find((m) => m.id === Number(id))?.player2} : {status.text}
                 </p>
-                {(() => {
-                  const candidates = valid.filter(visible);
-                  const featured =
-                    candidates.find((m) => m.id === reveal?.id) ||
-                    candidates.find((m) => !mine(m) && !closedMatch(m, now)) ||
-                    candidates[0];
-                  return featured ? card(featured) : <p>Aucun match pour ce filtre.</p>;
-                })()}
-              </section>
-              <aside className="piste-card-guide">
-                <p className="arena-eyebrow">VOTRE PARCOURS</p>
-                <h2>Un assaut à la fois.</h2>
-                <p>Choisissez votre score puis enregistrez. Le prochain match sans pronostic vous sera proposé.</p>
-                <p>Retrouvez toutes les affiches dans « Tableau complet ».</p>
-              </aside>
-              <section className="arena-other-matches">
-                <h2>Toutes les rencontres</h2>
-                <div className="match-grid">
-                  {valid.filter(visible).map((m) => (
-                    <button
-                      className="button-secondary"
-                      key={m.id}
-                      onClick={() => {
-                        setView('Liste');
-                        setReveal({ id: m.id });
-                      }}
-                    >
-                      {roundLabel(m.round, multiphase)} · {m.player1} / {m.player2}
-                    </button>
-                  ))}
-                </div>
-              </section>
-            </div>
+              ))}
+              {dirty && <p role="status">Une saisie reste à enregistrer. Retrouvez-la dans le tableau.</p>}
+            </>
           ) : view === 'Arbre' && tree ? (
             <div className="piste-bracket-layout">
               <p className="muted">

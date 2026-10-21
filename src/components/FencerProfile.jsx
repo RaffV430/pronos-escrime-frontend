@@ -87,6 +87,7 @@ export default function FencerProfile({
   onClose,
   matchId = null,
   competitionId = null,
+  currentOnly = false,
   parentDialog = null,
   onPageBackdrop = null,
 }) {
@@ -169,36 +170,48 @@ export default function FencerProfile({
           </button>
         </p>
       )}
+      {currentOnly &&
+        data &&
+        !data.homonyms?.length &&
+        !data.competitions.some((c) => c.competitionId === competitionId) && (
+          <p className="muted">Aucun parcours publié et identifié pour ce tireur dans cette compétition.</p>
+        )}
       {data && !data.homonyms?.length && (
         <>
           <p className="muted">
-            {s.competitions
-              ? [
-                  `${s.competitions} épreuve${s.competitions > 1 ? 's' : ''} suivie${s.competitions > 1 ? 's' : ''}`,
-                  s.poolWins + s.poolLosses ? `poules ${bilan(s.poolWins, s.poolLosses)}` : null,
-                  s.tableauWins + s.tableauLosses ? `tableau ${bilan(s.tableauWins, s.tableauLosses)}` : null,
-                ]
-                  .filter(Boolean)
-                  .join(' · ')
-              : 'Aucune épreuve suivie pour ce tireur.'}
+            {currentOnly
+              ? 'Parcours dans cette compétition'
+              : s.competitions
+                ? [
+                    `${s.competitions} épreuve${s.competitions > 1 ? 's' : ''} suivie${s.competitions > 1 ? 's' : ''}`,
+                    s.poolWins + s.poolLosses ? `poules ${bilan(s.poolWins, s.poolLosses)}` : null,
+                    s.tableauWins + s.tableauLosses ? `tableau ${bilan(s.tableauWins, s.tableauLosses)}` : null,
+                  ]
+                    .filter(Boolean)
+                    .join(' · ')
+                : 'Aucune épreuve suivie pour ce tireur.'}
           </p>
-          {(competitionId
-            ? [
-                ...data.competitions.filter((c) => c.competitionId === competitionId),
-                ...data.competitions.filter((c) => c.competitionId !== competitionId),
-              ]
-            : data.competitions
+          {(currentOnly
+            ? data.competitions.filter((c) => c.competitionId === competitionId)
+            : competitionId
+              ? [
+                  ...data.competitions.filter((c) => c.competitionId === competitionId),
+                  ...data.competitions.filter((c) => c.competitionId !== competitionId),
+                ]
+              : data.competitions
           ).map((c, i) => (
             <Competition
               key={c.competitionId}
               c={c}
               matchId={matchId}
               open={
-                matchId
-                  ? c.tableau.some((m) => m.matchId === matchId)
-                  : competitionId
-                    ? c.competitionId === competitionId
-                    : i === 0
+                currentOnly
+                  ? c.competitionId === competitionId
+                  : matchId
+                    ? c.tableau.some((m) => m.matchId === matchId)
+                    : competitionId
+                      ? c.competitionId === competitionId
+                      : i === 0
               }
             />
           ))}

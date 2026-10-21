@@ -1,0 +1,145 @@
+.match-swipe {
+  max-width: 470px;
+  margin: auto;
+  min-width: 0;
+}
+.swipe-count {
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+.swipe-viewport {
+  overflow: clip;
+  padding: 18px 12px;
+}
+.swipe-stack {
+  position: relative;
+  isolation: isolate;
+}
+.swipe-behind {
+  position: absolute;
+  inset: 6px 8px -8px;
+  background: var(--soft, #f0f4f9);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  text-align: center;
+}
+.swipe-front {
+  position: relative;
+  background: white;
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 32px 14px 16px;
+  box-shadow: 0 10px 25px #20324a0c;
+  touch-action: pan-y;
+  user-select: none;
+  transition: transform 0.36s cubic-bezier(0.2, 0.9, 0.25, 1.2);
+  will-change: transform;
+}
+.swipe-front.is-dragging {
+  transition: none;
+}
+.swipe-front.is-leaving {
+  transition: transform 0.3s ease-in;
+  pointer-events: none;
+}
+.swipe-fencers {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 12px;
+}
+.swipe-fencer {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+  background: var(--soft, #f0f4f9);
+  color: var(--text);
+  border: 2px solid transparent;
+  border-radius: 14px;
+  min-height: 145px;
+  padding: 12px 7px;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+.swipe-fencer small {
+  font-size: 0.7rem;
+}
+.swipe-fencer strong {
+  font-size: 1rem;
+}
+.intent-left .side-1 {
+  background: #e2f5e8;
+  border-color: #42a46a;
+  color: #185b36;
+}
+.intent-right .side-2 {
+  background: #ffeaee;
+  border-color: #d65b6b;
+  color: #943044;
+}
+.swipe-choice {
+  position: absolute;
+  top: 10px;
+  left: 12px;
+  right: 12px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  opacity: 0;
+  pointer-events: none;
+}
+.intent-left .swipe-choice.left {
+  opacity: var(--intent, 1);
+  color: #216442;
+}
+.intent-right .swipe-choice.right {
+  text-align: right;
+  opacity: var(--intent, 1);
+  color: #a93042;
+}
+.swipe-front > p {
+  text-align: center;
+  font-size: 0.75rem;
+  margin-bottom: 0;
+}
+.swipe-controls {
+  display: flex;
+  gap: 8px;
+  margin: 15px 0;
+}
+.swipe-controls button {
+  flex: 1;
+  font-size: 0.8rem;
+}
+.swipe-finished {
+  background: var(--soft);
+  border-radius: 16px;
+  padding: 20px;
+}
+.swipe-finished button {
+  margin: 5px 0;
+}
+.match-swipe button {
+  min-height: 44px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .swipe-front {
+    transition: none !important;
+  }
+}
+.match-swipe .swipe-fencer:hover,
+.match-swipe .swipe-fencer:active {
+  background: var(--soft, #f0f4f9);
+  color: var(--text);
+}
+.match-swipe .intent-left .side-1:hover {
+  background: #e2f5e8;
+  color: #185b36;
+}
+.match-swipe .intent-right .side-2:hover {
+  background: #ffeaee;
+  color: #943044;
+}
