@@ -24,6 +24,19 @@ import { pollWhileVisible, useNow } from '../lib/polling';
 import { useFencerFollows, isFollowedFencer } from '../lib/fencerFollows';
 import { stripLabel } from './matchPresentation';
 import { poolRounds } from './eventResults';
+import PoolDeck from './PoolDeck';
+
+// Affichage des poules à pronostiquer : « une poule par écran » (par défaut sur téléphone) ou toutes les poules.
+const VIEW_KEY = 'pronos:pool-view';
+function initialView() {
+  try {
+    const saved = localStorage.getItem(VIEW_KEY);
+    if (saved === 'deck' || saved === 'list') return saved;
+  } catch {
+    /* stockage indisponible */
+  }
+  return typeof window !== 'undefined' && window.matchMedia?.('(max-width: 700px)').matches ? 'deck' : 'list';
+}
 
 const message = (error) => error.response?.data?.error || 'Connexion impossible. Réessayez.';
 const signed = (value) => (value == null ? '—' : value > 0 ? `+${value}` : String(value));
@@ -755,6 +768,15 @@ function PoolList({ competitionId, user, onDirtyChange, refreshVersion }) {
     };
   }, [dirty, onDirtyChange]);
   const [pools, setPools] = useState([]);
+  const [view, setViewState] = useState(initialView);
+  const setView = (next) => {
+    setViewState(next);
+    try {
+      localStorage.setItem(VIEW_KEY, next);
+    } catch {
+      /* stockage indisponible */
+    }
+  };
   const [selectedRound, setSelectedRound] = useState('all');
   useEffect(() => setSelectedRound('all'), [competitionId]);
   const [expandedGroups, setExpandedGroups] = useState({ pending: true, published: false });
@@ -818,6 +840,16 @@ function PoolList({ competitionId, user, onDirtyChange, refreshVersion }) {
           </div>
         )}
       </div>
+      {pools.some((p) => !p.isFinal) && (
+        <div className="filter-row pool-view-switch" role="group" aria-label="Affichage des poules">
+          <button aria-pressed={view === 'deck'} onClick={() => setView('deck')}>
+            Une poule par écran
+          </button>
+          <button aria-pressed={view === 'list'} onClick={() => setView('list')}>
+            Toutes les poules
+          </button>
+        </div>
+      )}
       {rounds.length > 1 && (
         <div className="filter-row" role="group" aria-label="Choisir le tour de poules">
           <button aria-pressed={selectedRound === 'all'} onClick={() => selectRound('all')}>
@@ -882,161 +914,166 @@ function PoolList({ competitionId, user, onDirtyChange, refreshVersion }) {
               </h3>
             </summary>
             {group.items.length === 0 && <p className="pool-empty">{group.empty}</p>}
-            <div className="pool-cards-grid">
-              {group.items.map((pool) => {
-                const closed =
-                  pool.isClosed || (pool.lockMode !== 'FIRST_RESULT' && new Date(pool.closesAt).getTime() <= now);
-                // Le serveur décide seul si la vérification FencingTimeLive est à jour (avant le début des
-                // poules, la saisie reste ouverte) : aucune règle de délai dupliquée ici.
-                const sourcePending = Boolean(pool.sourceUnavailable);
-                const live = poolIsLive(pool);
-                return (
-                  <article className="pool-card" key={pool.id}>
-                    <header>
-                      <h3>
-                        {pool.name} <BoostBadge multiplier={pool.pointsMultiplier} compact />{' '}
-                        <span className="pool-card-meta">
-                          {pool.fencers.length} tireurs · {pool.fencers.length - 1} matchs
-                          {pool.strip && ` · ${stripLabel(pool.strip).toLowerCase()}`}
-                          {pool.startsAt &&
-                            ` · ${new Date(pool.startsAt).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}`}
-                          {pool.lockMode === 'TIME' &&
-                            ` · clôture ${new Date(pool.closesAt).toLocaleString('fr-FR', { dateStyle: 'short', timeStyle: 'short' })}`}
-                        </span>
-                      </h3>
-                      <span
-                        className={`pool-badge ${closed ? 'closed' : ''}`}
-                        title={
-                          pool.lockMode === 'FIRST_RESULT'
-                            ? 'Clôture individuelle au premier résultat détecté sur le site officiel.'
-                            : pool.lockMode === 'START_OR_FIRST_RESULT'
-                              ? 'Clôture à l’heure de début annoncée, ou plus tôt pour un tireur dès son premier résultat publié.'
-                              : undefined
-                        }
-                      >
-                        {pool.isFinal
-                          ? 'Résultats publiés'
-                          : pool.lockMode === 'PROVISIONAL'
-                            ? 'Tirage provisoire'
-                            : closed
-                              ? 'Pronostics clos'
-                              : pool.lockMode === 'FIRST_RESULT'
-                                ? 'Blocage par tireur'
-                                : pool.lockMode === 'START_OR_FIRST_RESULT'
-                                  ? `Clôture à ${new Date(pool.closesAt).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}`
-                                  : 'Pronostics ouverts'}
-                      </span>
-                    </header>
-                    {pool.lockMode === 'PROVISIONAL' && (
-                      <p className="pool-pending" role="status">
-                        Tirage provisoire : les pronostics ouvriront après l’appel des tireurs, le jour de l’épreuve. La
-                        composition peut encore changer.
-                      </p>
-                    )}
-                    {pool.sourceUnavailable && !closed && !pool.isFinal && (
-                      <p className="pool-pending" role="status">
-                        ⏳ Saisie suspendue : vérification du site officiel en attente. Elle reprend automatiquement au
-                        prochain contrôle.
-                      </p>
-                    )}
-                    {pool.recomposedAt && !closed && (
-                      <p className="pool-recomposed" role="status">
-                        Poule modifiée sur le site officiel le{' '}
-                        {new Date(pool.recomposedAt).toLocaleString('fr-FR', {
-                          dateStyle: 'short',
-                          timeStyle: 'short',
-                        })}{' '}
-                        : pronostics à refaire.
-                      </p>
-                    )}
-                    {pool.rankingSourceUrl && (
-                      <p className="pool-deadline">
-                        <a href={pool.rankingSourceUrl} target="_blank" rel="noreferrer">
-                          Liste d’engagement · nationalités et classements
-                        </a>
-                      </p>
-                    )}
-                    {live && (
-                      <p className="pool-live-status" role="status">
-                        <span className="pool-live-dot" aria-hidden="true" /> Poule en cours · suivi en direct
-                        {pool.sourceCheckedAt &&
-                          ` · dernier contrôle du site officiel à ${new Date(pool.sourceCheckedAt).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}`}{' '}
-                        · mise à jour toutes les 2 minutes
-                      </p>
-                    )}
-                    <div
-                      className="pool-table-scroll"
-                      role="region"
-                      aria-label={`Tableau de ${pool.name}`}
-                      tabIndex={0}
-                    >
-                      <table className="pool-table">
-                        <caption className={pool.isFinal ? 'pool-caption' : 'visually-hidden'}>
+            {group.key === 'pending' && view === 'deck' && group.items.length > 0 && (
+              <PoolDeck pools={group.items} now={now} onRefresh={reload} />
+            )}
+            {!(group.key === 'pending' && view === 'deck') && (
+              <div className="pool-cards-grid">
+                {group.items.map((pool) => {
+                  const closed =
+                    pool.isClosed || (pool.lockMode !== 'FIRST_RESULT' && new Date(pool.closesAt).getTime() <= now);
+                  // Le serveur décide seul si la vérification FencingTimeLive est à jour (avant le début des
+                  // poules, la saisie reste ouverte) : aucune règle de délai dupliquée ici.
+                  const sourcePending = Boolean(pool.sourceUnavailable);
+                  const live = poolIsLive(pool);
+                  return (
+                    <article className="pool-card" key={pool.id}>
+                      <header>
+                        <h3>
+                          {pool.name} <BoostBadge multiplier={pool.pointsMultiplier} compact />{' '}
+                          <span className="pool-card-meta">
+                            {pool.fencers.length} tireurs · {pool.fencers.length - 1} matchs
+                            {pool.strip && ` · ${stripLabel(pool.strip).toLowerCase()}`}
+                            {pool.startsAt &&
+                              ` · ${new Date(pool.startsAt).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}`}
+                            {pool.lockMode === 'TIME' &&
+                              ` · clôture ${new Date(pool.closesAt).toLocaleString('fr-FR', { dateStyle: 'short', timeStyle: 'short' })}`}
+                          </span>
+                        </h3>
+                        <span
+                          className={`pool-badge ${closed ? 'closed' : ''}`}
+                          title={
+                            pool.lockMode === 'FIRST_RESULT'
+                              ? 'Clôture individuelle au premier résultat détecté sur le site officiel.'
+                              : pool.lockMode === 'START_OR_FIRST_RESULT'
+                                ? 'Clôture à l’heure de début annoncée, ou plus tôt pour un tireur dès son premier résultat publié.'
+                                : undefined
+                          }
+                        >
                           {pool.isFinal
-                            ? 'En petit : votre pronostic · en gras : le résultat réel.'
-                            : 'Saisissez les victoires et l’indice, puis enregistrez chaque ligne. Les défaites sont calculées automatiquement.'}
-                        </caption>
-                        <thead>
-                          <tr>
-                            <th scope="col">Tireur</th>
-                            {live && (
-                              <th scope="col" className="pool-live-head">
-                                <abbr title="En direct sur FencingTimeLive : matchs tirés, victoires et indice (contrôle toutes les 2 minutes)">
-                                  <span className="pool-live-dot" aria-hidden="true" />
-                                  Live
-                                </abbr>
-                              </th>
-                            )}
-                            <th scope="col" className="pool-number-head">
-                              <abbr title="Victoires">V</abbr>
-                            </th>
-                            <th scope="col" className="pool-number-head pool-losses-head">
-                              <abbr title="Défaites (calcul automatique)">D</abbr>
-                            </th>
-                            <th scope="col" className="pool-number-head">
-                              <abbr title="Indice (touches données − reçues)">Ind.</abbr>
-                            </th>
-                            {pool.isFinal && (
+                            ? 'Résultats publiés'
+                            : pool.lockMode === 'PROVISIONAL'
+                              ? 'Tirage provisoire'
+                              : closed
+                                ? 'Pronostics clos'
+                                : pool.lockMode === 'FIRST_RESULT'
+                                  ? 'Blocage par tireur'
+                                  : pool.lockMode === 'START_OR_FIRST_RESULT'
+                                    ? `Clôture à ${new Date(pool.closesAt).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}`
+                                    : 'Pronostics ouverts'}
+                        </span>
+                      </header>
+                      {pool.lockMode === 'PROVISIONAL' && (
+                        <p className="pool-pending" role="status">
+                          Tirage provisoire : les pronostics ouvriront après l’appel des tireurs, le jour de l’épreuve.
+                          La composition peut encore changer.
+                        </p>
+                      )}
+                      {pool.sourceUnavailable && !closed && !pool.isFinal && (
+                        <p className="pool-pending" role="status">
+                          ⏳ Saisie suspendue : vérification du site officiel en attente. Elle reprend automatiquement
+                          au prochain contrôle.
+                        </p>
+                      )}
+                      {pool.recomposedAt && !closed && (
+                        <p className="pool-recomposed" role="status">
+                          Poule modifiée sur le site officiel le{' '}
+                          {new Date(pool.recomposedAt).toLocaleString('fr-FR', {
+                            dateStyle: 'short',
+                            timeStyle: 'short',
+                          })}{' '}
+                          : pronostics à refaire.
+                        </p>
+                      )}
+                      {pool.rankingSourceUrl && (
+                        <p className="pool-deadline">
+                          <a href={pool.rankingSourceUrl} target="_blank" rel="noreferrer">
+                            Liste d’engagement · nationalités et classements
+                          </a>
+                        </p>
+                      )}
+                      {live && (
+                        <p className="pool-live-status" role="status">
+                          <span className="pool-live-dot" aria-hidden="true" /> Poule en cours · suivi en direct
+                          {pool.sourceCheckedAt &&
+                            ` · dernier contrôle du site officiel à ${new Date(pool.sourceCheckedAt).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}`}{' '}
+                          · mise à jour toutes les 2 minutes
+                        </p>
+                      )}
+                      <div
+                        className="pool-table-scroll"
+                        role="region"
+                        aria-label={`Tableau de ${pool.name}`}
+                        tabIndex={0}
+                      >
+                        <table className="pool-table">
+                          <caption className={pool.isFinal ? 'pool-caption' : 'visually-hidden'}>
+                            {pool.isFinal
+                              ? 'En petit : votre pronostic · en gras : le résultat réel.'
+                              : 'Saisissez les victoires et l’indice, puis enregistrez chaque ligne. Les défaites sont calculées automatiquement.'}
+                          </caption>
+                          <thead>
+                            <tr>
+                              <th scope="col">Tireur</th>
+                              {live && (
+                                <th scope="col" className="pool-live-head">
+                                  <abbr title="En direct sur FencingTimeLive : matchs tirés, victoires et indice (contrôle toutes les 2 minutes)">
+                                    <span className="pool-live-dot" aria-hidden="true" />
+                                    Live
+                                  </abbr>
+                                </th>
+                              )}
                               <th scope="col" className="pool-number-head">
-                                <abbr title="Points gagnés">Pts</abbr>
+                                <abbr title="Victoires">V</abbr>
                               </th>
-                            )}
-                            {!pool.isFinal && (
-                              <th scope="col">
-                                <span className="visually-hidden">Pronostic</span>
+                              <th scope="col" className="pool-number-head pool-losses-head">
+                                <abbr title="Défaites (calcul automatique)">D</abbr>
                               </th>
-                            )}
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {pool.fencers.map((fencer) => (
-                            <PredictionRow
-                              userId={user.id}
-                              key={`${fencer.id}-${fencer.prediction?.updatedAt || 'none'}`}
-                              reportDirty={reportDirty}
-                              registerSave={registerSave}
-                              batchBusy={batchBusy}
-                              pool={pool}
-                              fencer={fencer}
-                              closed={
-                                pool.isFinal ||
-                                closed ||
-                                Boolean(fencer.firstResultAt) ||
-                                Boolean(fencer.isClosed) ||
-                                sourcePending
-                              }
-                              onRefresh={reload}
-                              live={live}
-                            />
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                    {user.isAdmin && <PoolAdmin pool={pool} closed={closed} onRefresh={reload} />}
-                  </article>
-                );
-              })}
-            </div>
+                              <th scope="col" className="pool-number-head">
+                                <abbr title="Indice (touches données − reçues)">Ind.</abbr>
+                              </th>
+                              {pool.isFinal && (
+                                <th scope="col" className="pool-number-head">
+                                  <abbr title="Points gagnés">Pts</abbr>
+                                </th>
+                              )}
+                              {!pool.isFinal && (
+                                <th scope="col">
+                                  <span className="visually-hidden">Pronostic</span>
+                                </th>
+                              )}
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {pool.fencers.map((fencer) => (
+                              <PredictionRow
+                                userId={user.id}
+                                key={`${fencer.id}-${fencer.prediction?.updatedAt || 'none'}`}
+                                reportDirty={reportDirty}
+                                registerSave={registerSave}
+                                batchBusy={batchBusy}
+                                pool={pool}
+                                fencer={fencer}
+                                closed={
+                                  pool.isFinal ||
+                                  closed ||
+                                  Boolean(fencer.firstResultAt) ||
+                                  Boolean(fencer.isClosed) ||
+                                  sourcePending
+                                }
+                                onRefresh={reload}
+                                live={live}
+                              />
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                      {user.isAdmin && <PoolAdmin pool={pool} closed={closed} onRefresh={reload} />}
+                    </article>
+                  );
+                })}
+              </div>
+            )}
           </details>
         ))}
       {user.isAdmin && <CreatePool competitionId={competitionId} onRefresh={reload} />}

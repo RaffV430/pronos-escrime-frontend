@@ -1,0 +1,302 @@
+/* Pronostics de poule « une poule par écran » (téléphone d'abord). */
+.pool-deck {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 12px 14px;
+  margin: 12px 0;
+  touch-action: pan-y;
+}
+.pool-deck .deck-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 10px;
+}
+.pool-deck .deck-head h3 {
+  font-size: 1.15rem;
+}
+.pool-deck .deck-head small,
+.pool-deck .deck-meta,
+.pool-deck .deck-progress,
+.pool-deck .deck-help,
+.pool-deck .deck-name small {
+  color: var(--muted);
+  font-weight: 400;
+}
+.pool-deck .deck-meta {
+  margin: 2px 0 6px;
+  font-size: 0.85rem;
+}
+.pool-deck .deck-progress {
+  font-size: 0.85rem;
+  white-space: nowrap;
+}
+.pool-deck .deck-mine {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.85rem;
+  margin-bottom: 6px;
+}
+.pool-deck .deck-dots {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 6px 0 10px;
+}
+.pool-deck .deck-dot {
+  width: 14px;
+  height: 14px;
+  min-height: 0;
+  padding: 0;
+  border-radius: 50%;
+  border: 0;
+  background: var(--soft);
+  box-shadow: inset 0 0 0 1px var(--border);
+}
+.pool-deck .deck-dot.is-mine {
+  box-shadow: inset 0 0 0 2px var(--warning);
+}
+.pool-deck .deck-dot.is-done {
+  background: var(--success);
+}
+.pool-deck .deck-dot.is-current {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+.pool-deck .deck-fencers {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.pool-deck .deck-fencers li {
+  padding: 8px 0;
+  border-bottom: 1px solid var(--soft);
+}
+.pool-deck .deck-fencers li.is-closed .deck-name {
+  color: var(--muted);
+}
+.pool-deck .deck-fencer-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  align-items: baseline;
+}
+.pool-deck .deck-name {
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+.pool-deck .deck-summary {
+  display: inline-flex;
+  gap: 6px;
+  align-items: baseline;
+  font-size: 0.85rem;
+  white-space: nowrap;
+  color: var(--muted);
+}
+.pool-deck .deck-summary b {
+  color: var(--primary);
+}
+.pool-deck .deck-link {
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--primary);
+  font: inherit;
+  text-decoration: underline;
+}
+.pool-deck .deck-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-top: 6px;
+}
+/* Choix bien visibles, y compris au soleil : couleur pleine, coche et contour épais pour le choix retenu. */
+.pool-deck .deck-chip {
+  min-width: 38px;
+  min-height: 40px;
+  padding: 0 6px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  font-weight: 600;
+  font-size: 0.95rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  transition: none;
+}
+.pool-deck .deck-chip[aria-pressed='true'] {
+  background: var(--primary);
+  border: 2px solid var(--primary-hover);
+  color: #fff;
+}
+.pool-deck .deck-chip:disabled {
+  opacity: 0.45;
+}
+.pool-deck .deck-chip[aria-pressed='true']:disabled {
+  opacity: 0.8;
+}
+.pool-deck .deck-indicators .deck-chip {
+  min-width: 46px;
+  font-size: 0.88rem;
+}
+.pool-deck .deck-note {
+  margin: 4px 0 0;
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+.pool-deck .deck-total {
+  margin: 10px 0 0;
+  padding: 8px 10px;
+  border-radius: 8px;
+  font-size: 0.88rem;
+  background: var(--soft);
+  color: var(--muted);
+}
+.pool-deck .deck-total.is-ok {
+  background: var(--success-soft);
+  color: var(--success);
+}
+.pool-deck .deck-total.is-check {
+  background: var(--warning-soft);
+  color: var(--warning);
+}
+.pool-deck .deck-nav {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-top: 10px;
+}
+.pool-deck .deck-help {
+  margin: 8px 0 0;
+  font-size: 0.8rem;
+}
+.pool-view-switch {
+  margin: 4px 0 8px;
+}
+/* Le survol global des boutons (fond plein) ne doit ni faire croire à un choix, ni effacer le choix retenu. */
+.pool-deck .deck-chip:hover:not(:disabled):not([aria-pressed='true']) {
+  background: var(--surface);
+  border-color: var(--primary);
+  color: var(--text);
+}
+.pool-deck .deck-chip[aria-pressed='true']:hover:not(:disabled),
+.pool-deck .deck-chip[aria-pressed='true']:focus-visible {
+  background: var(--primary);
+  color: #fff;
+}
+.pool-deck .deck-link:hover:not(:disabled) {
+  background: none;
+  color: var(--primary);
+}
+.pool-deck .deck-dot:hover:not(:disabled):not(.is-done) {
+  background: var(--soft);
+}
+.pool-deck .deck-dot.is-done:hover:not(:disabled) {
+  background: var(--success);
+}
+.pool-deck .deck-chip[aria-pressed='true']:disabled {
+  background: var(--primary);
+  color: #fff;
+}
+.pool-deck .deck-remove,
+.pool-deck .deck-remove:hover:not(:disabled) {
+  color: var(--muted);
+  font-size: 0.8rem;
+  margin-right: 10px;
+}
+.pool-deck .deck-confirm {
+  min-height: 30px;
+  padding: 0 10px;
+  font-size: 0.8rem;
+}
+.pool-deck .deck-confirm.is-cancel,
+.pool-deck .deck-confirm.is-cancel:hover:not(:disabled) {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--text);
+}
+
+/* Compact : une poule de 7 tireurs tient sur un écran de téléphone. */
+.pool-deck {
+  padding: 8px 10px;
+  scroll-margin-top: 76px;
+}
+.pool-deck .deck-head {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+}
+.pool-deck .deck-title {
+  min-width: 0;
+  text-align: center;
+}
+.pool-deck .deck-head h3 {
+  font-size: 1.05rem;
+  line-height: 1.2;
+}
+.pool-deck .deck-meta {
+  margin: 0;
+  font-size: 0.78rem;
+}
+.pool-deck .deck-arrow {
+  min-width: 40px;
+  min-height: 36px;
+  padding: 0;
+  font-size: 1.4rem;
+  line-height: 1;
+  border-radius: 10px;
+}
+.pool-deck .deck-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  margin: 6px 0 2px;
+}
+.pool-deck .deck-bar .deck-dots {
+  margin: 0;
+  gap: 7px;
+}
+.pool-deck .deck-dot {
+  width: 12px;
+  height: 12px;
+}
+.pool-deck .deck-progress {
+  font-size: 0.78rem;
+}
+.pool-deck .deck-mine {
+  margin: 2px 0 0;
+  font-size: 0.8rem;
+}
+.pool-deck .deck-fencers li {
+  padding: 5px 0;
+}
+.pool-deck .deck-name {
+  font-size: 0.88rem;
+  line-height: 1.25;
+}
+.pool-deck .deck-summary {
+  font-size: 0.8rem;
+}
+.pool-deck .deck-chips {
+  gap: 4px;
+  margin-top: 3px;
+}
+.pool-deck .deck-chip {
+  min-width: 36px;
+  min-height: 34px;
+  border-radius: 9px;
+  font-size: 0.92rem;
+}
+.pool-deck .deck-total {
+  margin-top: 6px;
+  padding: 5px 8px;
+  font-size: 0.8rem;
+}
