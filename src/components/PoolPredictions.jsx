@@ -17,6 +17,8 @@ import {
   isClosedRefusal,
   isNetworkError,
   queueWrite,
+  pending as pendingWrites,
+  serializeWrite,
 } from '../lib/outbox';
 import './PoolPredictions.css';
 import { withCount } from '../lib/plural';
@@ -163,9 +165,10 @@ function PredictionRow({
       // Indice facultatif : victoires seules si le champ reste vide.
       indicator: String(indicator).trim() === '' ? null : parseIndicator(indicator),
     };
+    const queuedBefore = pendingWrites().find((item) => item.key === outboxKey);
     try {
-      await API.put(`/pools/${pool.id}/fencers/${fencer.id}/prediction`, body);
-      dropWrite(outboxKey);
+      await serializeWrite(outboxKey, () => API.put(`/pools/${pool.id}/fencers/${fencer.id}/prediction`, body));
+      dropWrite(outboxKey, queuedBefore?.revision ?? queuedBefore?.at ?? null);
       window.dispatchEvent(new Event(UX_SAVE));
       localDraft.discard();
       setDirty(false);
@@ -194,8 +197,10 @@ function PredictionRow({
   async function remove() {
     setBusy(true);
     setFeedback('');
+    const queuedBefore = pendingWrites().find((item) => item.key === outboxKey);
     try {
-      await API.delete(`/pools/${pool.id}/fencers/${fencer.id}/prediction`);
+      await serializeWrite(outboxKey, () => API.delete(`/pools/${pool.id}/fencers/${fencer.id}/prediction`));
+      dropWrite(outboxKey, queuedBefore?.revision ?? queuedBefore?.at ?? null);
       localDraft.discard();
       setDirty(false);
       setWins('');

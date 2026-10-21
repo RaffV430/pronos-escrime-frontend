@@ -67,3 +67,24 @@ test('classement affiché : celui de la poule s’il est saisi, sinon le rang d�
   assert.equal(fencerRank({}, { ranking: 3, entryRanking: 12 }), 12);
   assert.equal(fencerRank({}, { entryRanking: null }), null);
 });
+
+test('rechargement : reprendre choix et suppressions en attente sans altérer les autres tireurs', async () => {
+  const { overlayPendingPicks } = await import('../src/lib/poolDeck.js');
+  const pools = [
+    {
+      fencers: [
+        { id: 1, prediction: { wins: 0, indicator: null } },
+        { id: 2, prediction: { wins: 3, indicator: 0 } },
+        { id: 3, prediction: { wins: 4, indicator: 10 } },
+      ],
+    },
+  ];
+  const next = overlayPendingPicks(pools, [
+    { key: 'pool:1', method: 'put', data: { wins: 5, indicator: null } },
+    { key: 'pool:2', method: 'delete' },
+    { key: 'match:3', method: 'put', data: { wins: 1 } },
+    { key: 'pool:99', method: 'put', data: { wins: 1 } },
+  ]);
+  assert.deepEqual(next, { 1: { wins: 5, indicator: null }, 3: { wins: 4, indicator: 10 } });
+  assert.equal(pools[0].fencers[0].prediction.wins, 0);
+});

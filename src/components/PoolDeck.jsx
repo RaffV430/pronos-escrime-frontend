@@ -1,7 +1,15 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import API from '../api';
+import '../api';
 import { UX_SAVE } from '../lib/uxFeatures';
-import { CLOSED_REFUSAL_MESSAGE, dropWrite, isClosedRefusal, isNetworkError, queueWrite } from '../lib/outbox';
+import {
+  CLOSED_REFUSAL_MESSAGE,
+  OUTBOX_EVENT,
+  flush,
+  isClosedRefusal,
+  pending,
+  queueWrite,
+  takeDeliveries,
+} from '../lib/outbox';
 import { isFollowedFencer, useFencerFollows } from '../lib/fencerFollows';
 import { stripLabel } from './matchPresentation';
 import {
@@ -10,6 +18,7 @@ import {
   fencerRank,
   fitsIndicator,
   picksFrom,
+  overlayPendingPicks,
   poolDone,
   poolTotals,
   quickIndicators,
@@ -18,7 +27,6 @@ import './PoolDeck.css';
 
 const STATUS = { ABSENT: 'Absent', MEDICAL: 'Retrait médical', EXCLUDED: 'Exclu' };
 const signed = (v) => (v > 0 ? `+${v}` : String(v));
-const errorText = (error) => error.response?.data?.error || 'Connexion impossible. Réessayez.';
 const time = (d) => new Date(d).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
 
 // Pronostics de poule « une poule par écran » : un toucher par tireur pour ses victoires (enregistré tout de
@@ -32,25 +40,73 @@ export default function PoolDeck({ pools, now, onRefresh }) {
   const order = deckOrder(pools, { mineFirst: mineFirst && anyMine, hasMine });
   const [currentId, setCurrentId] = useState(null);
   const current = order.find((p) => p.id === currentId) || order[0];
-  const [picks, setPicks] = useState(() => picksFrom(pools));
-  const [saving, setSaving] = useState({});
+  const [picks, setPicks] = useState(() => overlayPendingPicks(pools, pending()));
   const [notes, setNotes] = useState({});
   const [openIndicator, setOpenIndicator] = useState(null);
   const [confirmRemove, setConfirmRemove] = useState(null);
-  const savingRef = useRef(saving);
-  savingRef.current = saving;
-  // Poules relues au serveur (pronostics modifiés) : pronostics enregistrés repris, sauf ceux en cours d'envoi.
+  const poolsRef = useRef(pools);
+  const refreshRef = useRef(onRefresh);
+  useEffect(() => {
+    poolsRef.current = pools;
+    refreshRef.current = onRefresh;
+  });
+  const idsKey = pools.flatMap((p) => p.fencers.map((f) => f.id)).join('|');
   const serverKey = pools
-    .flatMap((p) => p.fencers.map((f) => `${f.id}:${f.prediction?.updatedAt || ''}:${f.prediction?.wins ?? ''}`))
+    .flatMap((p) =>
+      p.fencers.map(
+        (f) => `${f.id}:${f.prediction?.updatedAt || ''}:${f.prediction?.wins ?? ''}:${f.prediction?.indicator ?? ''}`,
+      ),
+    )
     .join('|');
   useEffect(() => {
-    const fresh = picksFrom(pools);
-    setPicks((old) => {
-      const next = { ...fresh };
-      for (const id of Object.keys(savingRef.current)) if (old[id]) next[id] = old[id];
-      return next;
-    });
-  }, [serverKey]); // eslint-disable-line react-hooks/exhaustive-deps
+    setPicks(overlayPendingPicks(poolsRef.current, pending()));
+  }, [serverKey, idsKey]);
+  useEffect(() => {
+    const keys = poolsRef.current.flatMap((p) => p.fencers.map((f) => `pool:${f.id}`));
+    const pendingNote = 'En attente d’envoi : choix conservé sur cet appareil.';
+    const sync = (event) => {
+      if (event?.detail?.key && !keys.includes(event.detail.key)) return;
+      const entries = pending().filter((i) => keys.includes(i.key));
+      setPicks((old) => overlayPendingPicks(poolsRef.current, entries, old));
+      setNotes((old) => {
+        const next = { ...old };
+        for (const item of entries) next[item.key.slice(5)] = pendingNote;
+        return next;
+      });
+      const receipts = takeDeliveries(keys);
+      if (typeof event?.detail?.ok === 'boolean' && !receipts.some((r) => r.key === event.detail.key))
+        receipts.push(event.detail); // prévenir aussi si le stockage est devenu indisponible après la réponse
+      for (const receipt of receipts) {
+        const id = receipt.key.slice(5);
+        setPicks((old) => {
+          const next = { ...old };
+          const pick = receipt.ok
+            ? receipt.method === 'delete'
+              ? null
+              : receipt.data
+            : picksFrom(poolsRef.current)[id];
+          if (pick) next[id] = { wins: pick.wins, indicator: pick.indicator ?? null };
+          else delete next[id];
+          return overlayPendingPicks(poolsRef.current, pending(), next);
+        });
+        setNotes((old) => ({
+          ...old,
+          [id]: receipt.ok
+            ? ''
+            : isClosedRefusal(receipt.status)
+              ? CLOSED_REFUSAL_MESSAGE
+              : `${receipt.error} Ce choix n’a pas été enregistré.`,
+        }));
+      }
+      if (receipts.length) {
+        if (receipts.some((r) => r.ok)) window.dispatchEvent(new Event(UX_SAVE));
+        refreshRef.current({ force: true });
+      }
+    };
+    window.addEventListener(OUTBOX_EVENT, sync);
+    sync(); // reprend aussi les livraisons terminées pendant le rechargement
+    return () => window.removeEventListener(OUTBOX_EVENT, sync);
+  }, [idsKey]);
   useEffect(() => {
     setOpenIndicator(null);
     setConfirmRemove(null);
@@ -60,54 +116,33 @@ export default function PoolDeck({ pools, now, onRefresh }) {
     pool.isFinal || pool.isClosed || (pool.lockMode !== 'FIRST_RESULT' && new Date(pool.closesAt).getTime() <= now);
   const fencerOpen = (pool, f) =>
     !f.status && !poolClosed(pool) && !f.firstResultAt && !f.isClosed && !pool.sourceUnavailable;
-  const done = (pool) => poolDone(pool, picks, (f) => fencerOpen(pool, f));
+  const queuedKeys = new Set(pending().map((i) => i.key));
+  const done = (pool) =>
+    !pool.fencers.some((f) => queuedKeys.has(`pool:${f.id}`)) && poolDone(pool, picks, (f) => fencerOpen(pool, f));
 
-  async function send(pool, fencer, next) {
+  function send(pool, fencer, next) {
     const key = `pool:${fencer.id}`;
-    const url = `/pools/${pool.id}/fencers/${fencer.id}/prediction`;
-    const previous = picks[fencer.id];
-    setPicks((p) => {
-      const copy = { ...p };
-      if (next) copy[fencer.id] = next;
-      else delete copy[fencer.id];
-      return copy;
-    });
-    setSaving((s) => ({ ...s, [fencer.id]: true }));
-    setNotes((n) => ({ ...n, [fencer.id]: '' }));
     const bouts = pool.fencers.length - 1;
-    const body = next && { wins: next.wins, losses: bouts - next.wins, indicator: next.indicator ?? null };
-    try {
-      if (next) await API.put(url, body);
-      else await API.delete(url);
-      dropWrite(key);
-      window.dispatchEvent(new Event(UX_SAVE));
-    } catch (error) {
-      if (next && isNetworkError(error)) {
-        queueWrite({ key, method: 'put', url, data: body });
-        setNotes((n) => ({ ...n, [fencer.id]: 'Pas de réseau : envoyé automatiquement au retour de la connexion.' }));
-      } else {
-        setPicks((p) => {
-          const copy = { ...p };
-          if (previous) copy[fencer.id] = previous;
-          else delete copy[fencer.id];
-          return copy;
-        });
-        setNotes((n) => ({
-          ...n,
-          [fencer.id]: isClosedRefusal(error.response?.status) ? CLOSED_REFUSAL_MESSAGE : errorText(error),
-        }));
-        if (isClosedRefusal(error.response?.status)) onRefresh({ force: true });
-      }
-    } finally {
-      setSaving((s) => {
-        const copy = { ...s };
-        delete copy[fencer.id];
-        return copy;
-      });
+    const data = next && { wins: next.wins, losses: bouts - next.wins, indicator: next.indicator ?? null };
+    // Conserver l’intention AVANT le réseau : même un rechargement pendant l’envoi ne la perd pas.
+    if (
+      !queueWrite({
+        key,
+        method: next ? 'put' : 'delete',
+        url: `/pools/${pool.id}/fencers/${fencer.id}/prediction`,
+        data,
+      })
+    ) {
+      setNotes((old) => ({
+        ...old,
+        [fencer.id]: 'Stockage local indisponible : choix non envoyé. Gardez cette page ouverte et réessayez.',
+      }));
+      return;
     }
+    setPicks((old) => overlayPendingPicks(poolsRef.current, pending(), old));
+    void flush();
   }
   const chooseWins = (pool, fencer, wins) => {
-    if (saving[fencer.id]) return; // envoi en cours : le choix suivant attend la réponse
     const old = picks[fencer.id];
     // Nombre déjà choisi : rien ne change (un toucher maladroit ne retire jamais un pronostic).
     if (old?.wins === wins) return;
@@ -121,13 +156,13 @@ export default function PoolDeck({ pools, now, onRefresh }) {
   };
   const removePick = (pool, fencer) => {
     setConfirmRemove(null);
-    if (!picks[fencer.id] || saving[fencer.id]) return;
+    if (!picks[fencer.id]) return;
     setOpenIndicator(null);
     send(pool, fencer, null);
   };
   const chooseIndicator = (pool, fencer, indicator) => {
     const old = picks[fencer.id];
-    if (!old || saving[fencer.id]) return;
+    if (!old) return;
     setOpenIndicator(null);
     send(pool, fencer, { wins: old.wins, indicator: old.indicator === indicator ? null : indicator });
   };

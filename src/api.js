@@ -4,6 +4,7 @@ import axios from 'axios';
 import { handleAuthError } from './lib/session.js';
 import { observe } from './lib/connectionQuality.js';
 import { startOutbox } from './lib/outbox.js';
+import { accountScope } from './lib/fieldCache.js';
 export { SESSION_EXPIRED_EVENT } from './lib/session.js';
 
 const isLocal = ['localhost', '127.0.0.1'].includes(window.location.hostname);
@@ -41,6 +42,9 @@ API.defaults.adapter = fieldAdapter(timedNetwork, consultationCache);
 
 API.interceptors.request.use((config) => {
   const token = localStorage.getItem('token');
+  if (config.outboxScope && accountScope(token) !== config.outboxScope) {
+    throw Object.assign(new Error('Le compte de cet envoi a changé.'), { code: 'ERR_CANCELED' });
+  }
   if (token) config.headers.Authorization = `Bearer ${token}`;
   return config;
 });
