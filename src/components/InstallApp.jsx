@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { installationGuide, installationInstalled } from '../lib/installGuide';
+import { installationGuide, installationInstalled, externalBrowserGuide } from '../lib/installGuide';
 const consumed = 'pronos:install-prompt-consumed';
 export function InstallationHelp({ guide }) {
   return (
@@ -9,7 +9,7 @@ export function InstallationHelp({ guide }) {
       <ol>
         {guide.steps.map((step, index) => (
           <li key={step}>
-            {guide.device === 'ios' && index === 0 && (
+            {guide.device === 'ios' && !guide.embedded && index === 0 && (
               <svg
                 className="install-share-icon"
                 role="img"
@@ -43,9 +43,11 @@ export default function InstallApp({ expanded = false, onInstalled }) {
         standalone: navigator.standalone,
       }),
     ),
+    [external, setExternal] = useState(false),
     [busy, setBusy] = useState(false),
     [message, setMessage] = useState('');
-  const guide = installationGuide(navigator);
+  const detected = installationGuide(navigator);
+  const guide = external ? externalBrowserGuide(detected.device) : detected;
   useEffect(() => {
     const media = matchMedia('(display-mode: standalone)');
     const install = (e) => {
@@ -98,13 +100,29 @@ export default function InstallApp({ expanded = false, onInstalled }) {
   };
   const content = (
     <>
-      {prompt && (
+      {prompt && !guide.embedded && (
         <button type="button" disabled={busy} onClick={install}>
           Ajouter à mon écran d’accueil
         </button>
       )}
       {message && <p role="status">{message}</p>}
       <InstallationHelp guide={guide} />
+      {guide.embedded ? (
+        <label className="install-url-label">
+          Adresse à ouvrir dans votre navigateur
+          <input
+            readOnly
+            value={location.origin + location.pathname}
+            onFocus={(event) => event.target.select()}
+            aria-label="Adresse du site à copier"
+          />
+        </label>
+      ) : (
+        <button type="button" className="button-link" onClick={() => setExternal(true)}>
+          Je ne vois pas l’option dans ce navigateur
+        </button>
+      )}
+
       <p className="install-connection-note">
         Une connexion reste nécessaire pour les résultats et l’envoi des pronostics. L’installation n’active pas les
         notifications automatiquement.

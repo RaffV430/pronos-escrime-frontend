@@ -1,8 +1,26 @@
 export const INSTALL_REMINDER_KEY = 'pronos:install-reminder:v2';
 export const INSTALL_SNOOZE_MS = 12 * 60 * 60 * 1000;
+export function externalBrowserGuide(device) {
+  const browser = device === 'ios' ? 'Safari ou Chrome' : 'Chrome';
+  return {
+    device,
+    embedded: true,
+    title: 'Ouvrez le site dans votre navigateur',
+    intro: 'Dans Instagram et certaines autres applications, l’ajout à l’écran d’accueil n’est pas disponible ici.',
+    steps: [
+      'Ouvrez le menu « … » ou le menu de partage de cette application.',
+      `Si proposé, choisissez « Ouvrir dans le navigateur » ou « Ouvrir dans ${device === 'ios' ? 'Safari' : 'Chrome'} ».`,
+      `Sinon, copiez l’adresse ci-dessous et collez-la dans ${browser}.`,
+      'Une fois le site ouvert dans ce navigateur, suivez les étapes d’ajout à l’écran d’accueil.',
+    ],
+    extra:
+      'Le nom et la présence de cette commande dépendent de l’application. L’ouverture du navigateur ne peut pas être forcée depuis cette page.',
+  };
+}
 export function installationGuide({ userAgent = '', platform = '', maxTouchPoints = 0 } = {}) {
   const ios = /iPad|iPhone|iPod/i.test(userAgent) || (platform === 'MacIntel' && maxTouchPoints > 1);
   const embedded = /FBAN|FBAV|Instagram|; wv\)|\bwv\b|Line\//i.test(userAgent);
+  if (embedded && (ios || /Android/i.test(userAgent))) return externalBrowserGuide(ios ? 'ios' : 'android');
   if (ios)
     return {
       device: 'ios',

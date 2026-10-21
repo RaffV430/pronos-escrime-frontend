@@ -95,7 +95,11 @@ export default function AfterPredictionInstall() {
       </div>
       <div className="install-invitation-actions">
         <button type="button" aria-expanded={guideOpen} onClick={() => setGuideOpen(!guideOpen)}>
-          {guideOpen ? 'Masquer les étapes' : 'Ajouter à mon écran d’accueil'}
+          {guideOpen
+            ? 'Masquer les étapes'
+            : installationGuide(navigator).embedded
+              ? 'Ouvrir dans mon navigateur pour installer'
+              : 'Ajouter à mon écran d’accueil'}
         </button>
         <button type="button" className="button-link" onClick={later}>
           Plus tard

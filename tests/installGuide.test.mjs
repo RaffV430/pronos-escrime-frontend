@@ -16,8 +16,8 @@ test('Mac is not mistaken for iPad', () =>
   assert.equal(installationGuide({ platform: 'MacIntel', maxTouchPoints: 0 }).device, 'desktop'));
 test('Android receives Chrome steps; embedded browsers get a way out', () => {
   assert.equal(installationGuide({ userAgent: 'Android Chrome' }).device, 'android');
-  assert.match(installationGuide({ userAgent: 'Android Instagram' }).intro, /Chrome/);
-  assert.match(installationGuide({ userAgent: 'iPhone FBAN' }).intro, /Safari/);
+  assert.equal(installationGuide({ userAgent: 'Android Instagram' }).embedded, true);
+  assert.equal(installationGuide({ userAgent: 'iPhone FBAN' }).embedded, true);
 });
 test('installed iOS and standalone are both recognised', () => {
   assert.equal(installationInstalled({ standalone: true }), true);
@@ -38,4 +38,11 @@ test('iOS steps use the share icon without a verbose shape description', () => {
   assert.match(guide.steps[0], /Partager/);
   assert.doesNotMatch(guide.steps[0], /carré/);
   assert.equal(guide.steps[1], 'Choisissez « Sur l’écran d’accueil ».');
+});
+
+test('embedded iPhone guides leaving the app before installation', () => {
+  const guide = installationGuide({ userAgent: 'iPhone Instagram' });
+  assert.equal(guide.embedded, true);
+  assert.match(guide.steps[2], /copiez/);
+  assert.doesNotMatch(guide.steps[0], /Touchez Partager/);
 });
