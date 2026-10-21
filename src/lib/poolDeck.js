@@ -70,3 +70,9 @@ export const picksFrom = (pools) =>
         .map((f) => [f.id, { wins: f.prediction.wins, indicator: f.prediction.indicator ?? null }]),
     ),
   );
+
+// Classement d'un tireur : celui saisi pour la poule s'il existe, sinon son rang d'entrée dans l'épreuve.
+export function fencerRank(pool, fencer) {
+  if (pool.rankingSystem && Number.isInteger(fencer.ranking) && fencer.ranking > 0) return fencer.ranking;
+  return Number.isInteger(fencer.entryRanking) && fencer.entryRanking > 0 ? fencer.entryRanking : null;
+}

@@ -60,3 +60,10 @@ test('avancement et ordre des poules (mes tireurs d’abord)', () => {
     1: { wins: 2, indicator: -3 },
   });
 });
+
+test('classement affiché : celui de la poule s’il est saisi, sinon le rang d’entrée', async () => {
+  const { fencerRank } = await import('../src/lib/poolDeck.js');
+  assert.equal(fencerRank({ rankingSystem: 'FIE' }, { ranking: 3, entryRanking: 12 }), 3);
+  assert.equal(fencerRank({}, { ranking: 3, entryRanking: 12 }), 12);
+  assert.equal(fencerRank({}, { entryRanking: null }), null);
+});

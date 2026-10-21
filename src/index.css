@@ -776,3 +776,16 @@ button[aria-pressed='true'] {
   min-width: 12rem;
   margin-top: 0.35rem;
 }
+
+/* iPhone : un champ écrit en moins de 16 px déclenche un zoom automatique à la saisie (cases de score de la vue
+   Tableau, en 12 px), difficile à annuler ensuite. Sur écran tactile, les champs sont donc en 16 px au moins. */
+@media (pointer: coarse) {
+  input:not([type='checkbox']):not([type='radio']):not([type='range']),
+  select,
+  textarea {
+    font-size: max(16px, 1em);
+  }
+  .match-board input.tree-input {
+    height: 26px;
+  }
+}

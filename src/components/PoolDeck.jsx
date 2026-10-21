@@ -7,6 +7,7 @@ import { stripLabel } from './matchPresentation';
 import {
   activeFencers,
   deckOrder,
+  fencerRank,
   fitsIndicator,
   picksFrom,
   poolDone,
@@ -249,7 +250,14 @@ export default function PoolDeck({ pools, now, onRefresh }) {
               <div className="deck-fencer-head">
                 <span className="deck-name">
                   {mine && <span className="club-star">★ </span>}
-                  {f.name} {f.countryCode && <small>{f.countryCode}</small>}
+                  {f.name}{' '}
+                  {(f.countryCode || fencerRank(current, f)) && (
+                    <small title={fencerRank(current, f) ? 'Classement d’entrée dans l’épreuve' : undefined}>
+                      {[f.countryCode, fencerRank(current, f) && `n° ${fencerRank(current, f)}`]
+                        .filter(Boolean)
+                        .join(' · ')}
+                    </small>
+                  )}
                 </span>
                 <span className="deck-summary">
                   {f.status ? (
