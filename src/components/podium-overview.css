@@ -83,6 +83,7 @@
   color: var(--success);
 }
 .po-chip.is-podium {
+  background: transparent;
   border-style: dashed;
   border-color: var(--primary);
   color: var(--primary);
@@ -95,4 +96,22 @@
   flex-wrap: wrap;
   gap: 6px;
   font-size: 0.8rem;
+}
+
+/* Tireur cliquable : ouvre sa fiche. */
+.po-chip.po-chip-link {
+  min-height: 0;
+  font: inherit;
+  font-size: 0.78rem;
+  line-height: 1.5;
+  cursor: pointer;
+  background-clip: padding-box;
+}
+.po-chip.po-chip-link:not(.is-exact, .is-official) {
+  background: transparent;
+}
+.po-chip.po-chip-link:hover,
+.po-chip.po-chip-link:focus-visible {
+  border-color: var(--primary);
+  color: var(--primary);
 }
