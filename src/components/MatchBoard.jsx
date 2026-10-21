@@ -1,3 +1,4 @@
+import { handleAuthError } from '../lib/session';
 import { receiptMatchId, draftMatchesReceipt } from '../lib/matchReceipt';
 import MatchSwipe from './MatchSwipe';
 import { swipeCandidates } from '../lib/matchSwipe';
@@ -26,8 +27,7 @@ import {
   dropWrite,
   isPending,
   isClosedRefusal,
-  isNetworkError,
-  queueWrite,
+  sendPersistedWrite,
 } from '../lib/outbox';
 import HeadToHead from './HeadToHead';
 import LiveScore from './LiveScore';
@@ -167,14 +167,19 @@ export default function MatchBoard({
   };
   // Pronostic envoyé plus tard (retour du réseau) : brouillon effacé et tableau relu, ou refus affiché.
   const outboxRef = useRef(null);
+  const boardMounted = useRef(false);
   useEffect(() => {
     const done = (event) => {
       const id = Number(/^match:(\d+)$/.exec(event.detail?.key || '')?.[1]);
       if (!id || !('ok' in (event.detail || {}))) return;
       outboxRef.current?.(id, event.detail);
     };
+    boardMounted.current = true;
     window.addEventListener(OUTBOX_EVENT, done);
-    return () => window.removeEventListener(OUTBOX_EVENT, done);
+    return () => {
+      boardMounted.current = false;
+      window.removeEventListener(OUTBOX_EVENT, done);
+    };
   }, []);
   const localDraft = useLocalDraft(draftKey(userId, competitionId, 'matches'));
   // Scores en direct des pistes, tant qu'il reste des rencontres non terminées (affichage seulement).
@@ -204,12 +209,14 @@ export default function MatchBoard({
   // Copie synchrone des saisies : l'enregistrement en arrière-plan et le passage au match suivant
   // lisent toujours la dernière frappe, même avant le prochain rendu.
   const draftsRef = useRef({});
-  const saveDrafts = (update, removed = []) => {
+  const saveDrafts = (update, removed = [], requirePersistence = false) => {
     const next = typeof update === 'function' ? update(draftsRef.current) : update;
     const deleted = Object.keys(draftsRef.current).filter((id) => !(id in next));
+    const stored = localDraft.persistEntries(next, [...deleted, ...removed]);
+    if (requirePersistence && !stored) return false;
     draftsRef.current = next;
-    localDraft.persistEntries(next, [...deleted, ...removed]);
     setDrafts(next);
+    return stored;
   };
   const seenKey = `pronos:seen-matches:${userId}:${competitionId}`;
   const [seen, setSeen] = useState(() => {
@@ -438,27 +445,61 @@ export default function MatchBoard({
       const undoRecords = [];
       const results = await Promise.allSettled(
         ready_.map(([id, body]) =>
-          onPreviewSave ? onPreviewSave(id, body) : API.post(`/matches/${id}/predict`, body),
+          onPreviewSave
+            ? Promise.resolve(onPreviewSave(id, body)).then((response) => ({ kind: 'saved', response }))
+            : sendPersistedWrite({
+                key: `match:${id}`,
+                method: 'post',
+                url: `/matches/${id}/predict`,
+                data: body,
+                accountId: userId,
+              }),
         ),
       );
       results.forEach((r, i) => {
         const [id, body] = ready_[i];
-        if (r.status === 'fulfilled') {
+        if (!boardMounted.current) return; // durable receipt is handled by the board on return
+        const result = r.status === 'fulfilled' ? r.value : { kind: 'refused', error: r.reason };
+        if (result.kind === 'saved') {
+          takeDeliveries([`match:${id}`]);
+          if (!draftMatchesReceipt(draftsRef.current[id], body)) {
+            message(id, 'Un choix précédent a été envoyé. Votre saisie plus récente est conservée.');
+            onRefresh?.({ force: true });
+            return;
+          }
           saved.push(Number(id));
-          undoRecords.push({ id: Number(id), previous: ready_[i][2], saved: r.value?.data || null });
-          dropWrite(`match:${id}`);
-        } else if (!onPreviewSave && isNetworkError(r.reason)) {
-          // Pas de réseau : gardé sur l'appareil et envoyé tout seul dès que la connexion revient.
-          queueWrite({ key: `match:${id}`, method: 'post', url: `/matches/${id}/predict`, data: body });
+          undoRecords.push({ id: Number(id), previous: ready_[i][2], saved: result.response?.data || null });
+        } else if (result.kind === 'deferred') {
           setQueuedIds((old) => new Set([...old, Number(id)]));
-          message(id, 'Pas de réseau : pronostic gardé et envoyé automatiquement dès que la connexion revient.');
-        } else if (!onPreviewSave && isClosedRefusal(r.reason?.response?.status)) refused.push(Number(id));
-        else
           message(
             id,
-            r.reason?.response?.data?.error || 'Enregistrement impossible. Votre saisie est conservée.',
+            result.status === 401
+              ? 'Choix conservé sur cet appareil. Reconnectez-vous au même compte pour l’envoyer.'
+              : 'Choix conservé sur cet appareil. Nouvel envoi automatique dès que le service est disponible.',
+          );
+          // A locally expired JWT is detected before transport. Apply the normal session expiry UI.
+          if (result.status === 401 && localStorage.getItem('token')) {
+            void handleAuthError({
+              config: { url: `/matches/${id}/predict`, headers: { Authorization: 'expired' } },
+              response: { status: 401 },
+            }).catch(() => {});
+          }
+        } else if (result.kind === 'blocked') {
+          message(
+            id,
+            'Choix non enregistré : sauvegarde locale impossible ou compte non vérifié. Gardez cette page ouverte et réessayez.',
             true,
           );
+        } else if (result.kind === 'refused') {
+          if (!onPreviewSave) takeDeliveries([`match:${id}`]);
+          if (isClosedRefusal(result.error?.response?.status)) refused.push(Number(id));
+          else
+            message(
+              id,
+              result.error?.response?.data?.error || 'Enregistrement refusé. Votre saisie reste à corriger.',
+              true,
+            );
+        }
       });
       if (refused.length) refusedClosed(refused);
       if (saved.length) {
@@ -542,10 +583,26 @@ export default function MatchBoard({
   const pick = (m, side) => {
     if (!ready || closedMatch(m, now)) return;
     if (pickedSide(m, values(m, draftsRef.current)) === side && !draftsRef.current[m.id]) return;
-    saveDrafts((old) => ({
-      ...old,
-      [m.id]: { score1: side === 1 ? m.maxScore || 15 : '', score2: side === 2 ? m.maxScore || 15 : '', winner: side },
-    }));
+    const stored = saveDrafts(
+      (old) => ({
+        ...old,
+        [m.id]: {
+          score1: side === 1 ? m.maxScore || 15 : '',
+          score2: side === 2 ? m.maxScore || 15 : '',
+          winner: side,
+        },
+      }),
+      [],
+      true,
+    );
+    if (!stored) {
+      message(
+        m.id,
+        'Choix non enregistré : stockage indisponible. Réessayez après avoir rétabli la sauvegarde locale.',
+        true,
+      );
+      return false;
+    }
     save([m.id]);
     // Le joueur reste sur ce match : il peut ajouter le score (clavier ouvert), puis choisir
     // « Match suivant » dans la barre au-dessus du clavier.
@@ -556,13 +613,30 @@ export default function MatchBoard({
   // Mode express : un toucher = vainqueur enregistré, sans ouvrir le score ni changer de match.
   // Un pronostic déjà complet (score exact) n'est remplacé que si l'on choisit l'autre tireur.
   const expressPick = (m, side) => {
-    if (!ready || closedMatch(m, now)) return;
-    if (pickedSide(m, values(m, draftsRef.current)) === side && !draftsRef.current[m.id]) return;
-    saveDrafts((old) => ({
-      ...old,
-      [m.id]: { score1: side === 1 ? m.maxScore || 15 : '', score2: side === 2 ? m.maxScore || 15 : '', winner: side },
-    }));
+    if (!ready || closedMatch(m, now)) return false;
+    if (pickedSide(m, values(m, draftsRef.current)) === side && !draftsRef.current[m.id]) return false;
+    const stored = saveDrafts(
+      (old) => ({
+        ...old,
+        [m.id]: {
+          score1: side === 1 ? m.maxScore || 15 : '',
+          score2: side === 2 ? m.maxScore || 15 : '',
+          winner: side,
+        },
+      }),
+      [],
+      true,
+    );
+    if (!stored) {
+      message(
+        m.id,
+        'Choix non enregistré : stockage indisponible. Réessayez après avoir rétabli la sauvegarde locale.',
+        true,
+      );
+      return false;
+    }
     save([m.id]);
+    return true;
   };
   // Barre au-dessus du clavier (mobile) : match en cours de saisie.
   const [typingId, setTypingId] = useState(null);
