@@ -137,6 +137,16 @@ export default function PoolDeck({ pools, now, onRefresh }) {
     if (target) setCurrentId(target.id);
   };
   const touch = useRef(null);
+  // Changement de poule : la poule entière revient à l'écran (en-tête compris).
+  const deckRef = useRef(null);
+  const firstShown = useRef(true);
+  useEffect(() => {
+    if (firstShown.current) {
+      firstShown.current = false;
+      return;
+    }
+    deckRef.current?.scrollIntoView?.({ block: 'start', behavior: 'smooth' });
+  }, [current?.id]);
   const progress = useMemo(() => pools.filter(done).length, [pools, picks, now]); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (!current) return <p className="pool-empty">Aucune poule à pronostiquer pour le moment.</p>;
@@ -146,7 +156,8 @@ export default function PoolDeck({ pools, now, onRefresh }) {
   return (
     <section
       className="pool-deck"
-      aria-label={`Pronostic de la ${current.name}`}
+      ref={deckRef}
+      aria-label={`Pronostic de la ${current.name}. Enregistrement automatique à chaque choix ; balayez pour changer de poule.`}
       onTouchStart={(e) => (touch.current = e.touches[0].clientX)}
       onTouchEnd={(e) => {
         if (touch.current === null) return;
@@ -156,46 +167,68 @@ export default function PoolDeck({ pools, now, onRefresh }) {
       }}
     >
       <div className="deck-head">
-        <h3>
-          {current.name} <small>· {current.fencers.length} tireurs</small>
-        </h3>
+        <button
+          type="button"
+          className="deck-arrow"
+          aria-label="Poule précédente"
+          onClick={() => go(-1)}
+          disabled={index <= 0}
+        >
+          ‹
+        </button>
+        <div className="deck-title">
+          <h3>
+            {current.name} <small>· {current.fencers.length} tireurs</small>
+          </h3>
+          <p className="deck-meta">
+            {[
+              current.startsAt && `début ${time(current.startsAt)}`,
+              current.strip && stripLabel(current.strip).toLowerCase(),
+              closed
+                ? 'pronostics clos'
+                : current.lockMode === 'START_OR_FIRST_RESULT' && current.closesAt
+                  ? `clôture ${time(current.closesAt)}`
+                  : current.lockMode === 'FIRST_RESULT'
+                    ? 'clôture au 1er résultat'
+                    : null,
+            ]
+              .filter(Boolean)
+              .join(' · ')}
+          </p>
+        </div>
+        <button
+          type="button"
+          className="deck-arrow"
+          aria-label="Poule suivante"
+          onClick={() => go(1)}
+          disabled={index >= order.length - 1}
+        >
+          ›
+        </button>
+      </div>
+      <div className="deck-bar">
+        <div className="deck-dots" role="group" aria-label="Poules">
+          {order.map((p) => (
+            <button
+              key={p.id}
+              type="button"
+              className={`deck-dot${done(p) ? ' is-done' : ''}${p.id === current.id ? ' is-current' : ''}${hasMine(p) ? ' is-mine' : ''}`}
+              aria-label={`${p.name}${done(p) ? ', faite' : ''}${hasMine(p) ? ', avec un de vos tireurs' : ''}`}
+              aria-current={p.id === current.id ? 'true' : undefined}
+              onClick={() => setCurrentId(p.id)}
+            />
+          ))}
+        </div>
         <span className="deck-progress" role="status">
-          {progress}/{pools.length} poule{pools.length > 1 ? 's' : ''} faite{pools.length > 1 ? 's' : ''}
+          {progress}/{pools.length} faite{progress > 1 ? 's' : ''}
         </span>
       </div>
-      <p className="deck-meta">
-        {[
-          current.startsAt && `début ${time(current.startsAt)}`,
-          current.strip && stripLabel(current.strip).toLowerCase(),
-          closed
-            ? 'pronostics clos'
-            : current.lockMode === 'START_OR_FIRST_RESULT' && current.closesAt
-              ? `clôture ${time(current.closesAt)}`
-              : current.lockMode === 'FIRST_RESULT'
-                ? 'clôture par tireur au premier résultat'
-                : null,
-        ]
-          .filter(Boolean)
-          .join(' · ')}
-      </p>
       {anyMine && (
         <label className="deck-mine">
           <input type="checkbox" checked={mineFirst} onChange={(e) => setMineFirst(e.target.checked)} /> Mes tireurs
           d’abord
         </label>
       )}
-      <div className="deck-dots" role="group" aria-label="Poules">
-        {order.map((p) => (
-          <button
-            key={p.id}
-            type="button"
-            className={`deck-dot${done(p) ? ' is-done' : ''}${p.id === current.id ? ' is-current' : ''}${hasMine(p) ? ' is-mine' : ''}`}
-            aria-label={`${p.name}${done(p) ? ', faite' : ''}${hasMine(p) ? ', avec un de vos tireurs' : ''}`}
-            aria-current={p.id === current.id ? 'true' : undefined}
-            onClick={() => setCurrentId(p.id)}
-          />
-        ))}
-      </div>
       {current.sourceUnavailable && !closed && (
         <p className="pool-pending" role="status">
           ⏳ Saisie suspendue : vérification du site officiel en attente.
@@ -317,23 +350,14 @@ export default function PoolDeck({ pools, now, onRefresh }) {
       {activeFencers(current).length > 0 && (
         <p className={`deck-total is-${totals.status}`} role="status">
           {totals.status === 'partial'
-            ? `${totals.filled}/${totals.count} tireurs · ${totals.sum} victoire${totals.sum > 1 ? 's' : ''}${totals.expected ? ` sur ${totals.expected}` : ''}`
+            ? `${totals.filled}/${totals.count} tireurs · ${totals.sum}${totals.expected ? `/${totals.expected}` : ''} victoires`
             : totals.status === 'ok'
               ? totals.expected
-                ? `Poule complète et cohérente : ${totals.expected} victoires sur ${totals.expected}`
+                ? `✓ Poule complète : ${totals.expected}/${totals.expected} victoires`
                 : 'Poule complète'
-              : `${totals.sum} victoires au total : une poule de ${totals.count} en compte ${totals.expected}. À vérifier.`}
+              : `${totals.sum}/${totals.expected} victoires : à vérifier (${totals.expected} pour ${totals.count} tireurs)`}
         </p>
       )}
-      <div className="deck-nav">
-        <button type="button" className="button-secondary" onClick={() => go(-1)} disabled={index <= 0}>
-          ← Poule précédente
-        </button>
-        <button type="button" className="button-secondary" onClick={() => go(1)} disabled={index >= order.length - 1}>
-          Poule suivante →
-        </button>
-      </div>
-      <p className="deck-help">Enregistrement automatique à chaque choix. Balayez pour changer de poule.</p>
     </section>
   );
 }
