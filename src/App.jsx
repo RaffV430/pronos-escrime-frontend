@@ -12,7 +12,7 @@ import { boostedTab } from './lib/pointsBoost';
 import ConnectionStatus from './components/ConnectionStatus';
 import { reducedData } from './lib/fieldCache';
 import { applyMode, dataMode, detector, setDataMode } from './lib/connectionQuality';
-import { clearOutbox } from './lib/outbox';
+import { clearOutbox, flush as flushOutbox } from './lib/outbox';
 import AdminAlerts from './components/AdminAlerts';
 import AdminNav from './components/AdminNav';
 import { sectionForDestination, storedSection, storeSection } from './lib/adminSections';
@@ -620,6 +620,7 @@ export default function App() {
       verifiedUser.current = null;
       localStorage.setItem('token', token);
       setUser(res.data.user);
+      void flushOutbox(); // reprendre uniquement les attentes du compte qui vient de se reconnecter
       if (selectedCompetitionId) fetchMatches(selectedCompetitionId);
     } catch (err) {
       if (err.response?.data?.twoFactorRequired) {

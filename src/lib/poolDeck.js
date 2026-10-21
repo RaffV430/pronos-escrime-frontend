@@ -76,3 +76,18 @@ export function fencerRank(pool, fencer) {
   if (pool.rankingSystem && Number.isInteger(fencer.ranking) && fencer.ranking > 0) return fencer.ranking;
   return Number.isInteger(fencer.entryRanking) && fencer.entryRanking > 0 ? fencer.entryRanking : null;
 }
+
+// Reconstitue les choix visibles depuis les enregistrements serveur et la file du compte courant.
+// Les suppressions différées sont aussi conservées ; aucune règle de points n’est calculée ici.
+export function overlayPendingPicks(pools, entries, base = picksFrom(pools)) {
+  const next = { ...base };
+  const ids = new Set(pools.flatMap((p) => p.fencers.map((f) => String(f.id))));
+  for (const item of entries) {
+    const id = /^pool:(\d+)$/.exec(item.key)?.[1];
+    if (!ids.has(id)) continue;
+    if (item.method === 'delete') delete next[id];
+    else if (item.method === 'put' && Number.isInteger(item.data?.wins))
+      next[id] = { wins: item.data.wins, indicator: item.data.indicator ?? null };
+  }
+  return next;
+}
