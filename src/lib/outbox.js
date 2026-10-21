@@ -60,25 +60,90 @@ export function takeDeliveries(keys) {
   );
   return mine;
 }
-function delivered(detail, s) {
+function delivered(detail, s, announce = true) {
   const rows = read(RECEIPTS + s).filter((r) => r.key !== detail.key);
   save([...rows, { ...detail, at: Date.now() }].slice(-200), s, RECEIPTS);
-  if (scope() === s) emit(detail);
+  if (announce && scope() === s) emit(detail);
 }
-export function queueWrite({ key, method, url, data }) {
-  const s = scope();
+// A mounted, verified account may retain an intent even if its JWT just expired.
+// Sending still requires a valid token for exactly that account (scope()).
+function enqueueWrite({ key, method, url, data, accountId = null }) {
+  let s = scope();
+  if (accountId != null) {
+    try {
+      const token = localStorage.getItem('token') || '';
+      const identity = JSON.parse(atob(token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')));
+      if (String(identity.userId) !== String(accountId) || !Number.isFinite(identity.exp)) return null;
+      s = String(accountId);
+    } catch {
+      return null;
+    }
+  }
+  if (!s) return null;
   const item = { key, method, url, data, at: Date.now(), revision: `${Date.now()}:${++sequence}:${Math.random()}` };
   const stored = save([...load(s).filter((i) => i.key !== key), item], s);
-  if (stored) {
-    save(
-      read(RECEIPTS + s).filter((r) => r.key !== key),
+  if (!stored) return null;
+  save(
+    read(RECEIPTS + s).filter((r) => r.key !== key),
+    s,
+    RECEIPTS,
+  );
+  if (scope() === s) emit({ key, queued: true, count: load(s).length });
+  schedule();
+  return { item, s };
+}
+export function queueWrite(write) {
+  return Boolean(enqueueWrite(write));
+}
+
+// First attempts and deferred attempts share storage and the same per-account lock.
+// Persist BEFORE Axios can remove an expired token or unmount the board on a 401.
+export async function sendPersistedWrite(write) {
+  const queued = enqueueWrite(write);
+  if (!queued) return { kind: 'blocked' };
+  const { item, s } = queued;
+  try {
+    return await serializeWrite(
+      item.key,
+      async () => {
+        if (scope() !== s) return { kind: 'deferred', status: 401 };
+        if (!current(item, s)) return { kind: 'superseded' };
+        try {
+          const response = await api.request({ method: item.method, url: item.url, data: item.data, outboxScope: s });
+          if (!current(item, s)) return { kind: 'superseded' };
+          save(
+            load(s).filter((i) => !same(i, item)),
+            s,
+          );
+          delivered({ key: item.key, ok: true, method: item.method, data: item.data, count: load(s).length }, s, false);
+          return { kind: 'saved', response };
+        } catch (error) {
+          if (!current(item, s)) return { kind: 'superseded' };
+          if (isRetryable(error) || error.code === 'ERR_CANCELED' || error.response?.status === 401)
+            return { kind: 'deferred', status: error.response?.status, error };
+          save(
+            load(s).filter((i) => !same(i, item)),
+            s,
+          );
+          delivered(
+            {
+              key: item.key,
+              ok: false,
+              status: error.response?.status,
+              error: error.response?.data?.error || 'Pronostic refusé.',
+              count: load(s).length,
+            },
+            s,
+            false,
+          );
+          return { kind: 'refused', error };
+        }
+      },
       s,
-      RECEIPTS,
     );
-    emit({ key, queued: true, count: load(s).length });
+  } finally {
     schedule();
   }
-  return stored;
 }
 export function dropWrite(key, expectedRevision) {
   const s = scope(),

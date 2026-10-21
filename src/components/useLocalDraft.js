@@ -25,8 +25,11 @@ export default function useLocalDraft(key) {
       try {
         if (value === null) localStorage.removeItem(key);
         else localStorage.setItem(key, JSON.stringify({ version: 1, at: Date.now(), value }));
+        setWarning('');
+        return true;
       } catch {
         setWarning('La sauvegarde sur cet appareil est indisponible. Gardez cette page ouverte avant d’enregistrer.');
+        return false;
       }
     },
     [key],
@@ -34,8 +37,9 @@ export default function useLocalDraft(key) {
   const persistEntries = useCallback(
     (active, removed = []) => {
       const next = mergeDraftEntries({ stored: readDraft(key), active, removed });
-      persist(next.value);
+      if (!persist(next.value)) return false;
       setRecoverable((old) => mergeDraftEntries({ recoverable: old, active, removed }).recoverable);
+      return true;
     },
     [key, persist],
   );

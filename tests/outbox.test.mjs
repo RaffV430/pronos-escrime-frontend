@@ -365,3 +365,192 @@ test('audit : jeton expiré et durée de vie de 24 heures ne sont pas une repris
     e.restore();
   }
 });
+
+const matchWrite = (accountId = 9001, winner = 1) => ({
+  key: 'match:42',
+  method: 'post',
+  url: '/matches/42/predict',
+  data: { winner },
+  accountId,
+});
+
+test('premier envoi : stockage bloqué interdit toute requête réseau', async () => {
+  const e = await environment();
+  let calls = 0;
+  try {
+    e.box.startOutbox({
+      request: async () => {
+        calls++;
+      },
+    });
+    e.storage.setItem = () => {
+      throw Error('quota');
+    };
+    assert.equal((await e.box.sendPersistedWrite(matchWrite())).kind, 'blocked');
+    assert.equal(calls, 0);
+    assert.deepEqual(e.box.pending(), []);
+  } finally {
+    e.restore();
+  }
+});
+test('premier503 puis reconnexion : choix durable avant le POST et reprise unique', async () => {
+  const e = await environment();
+  let failed = true,
+    calls = 0;
+  try {
+    e.box.startOutbox({
+      request: async () => {
+        calls++;
+        assert.equal(e.box.pending().length, 1);
+        if (failed) throw { response: { status: 503 } };
+        return { data: { id: 42 } };
+      },
+    });
+    assert.equal((await e.box.sendPersistedWrite(matchWrite())).kind, 'deferred');
+    assert.equal(e.box.pending()[0].data.winner, 1);
+    failed = false;
+    await e.box.flush();
+    assert.equal(calls, 2);
+    assert.equal(e.box.pending().length, 0);
+    assert.equal(e.box.takeDeliveries(['match:42'])[0].ok, true);
+  } finally {
+    e.restore();
+  }
+});
+test('premier401 retirant le jeton : conservation sous le compte original, jamais sous un autre', async () => {
+  const e = await environment();
+  let calls = 0;
+  try {
+    e.box.startOutbox({
+      request: async () => {
+        calls++;
+        if (calls === 1) {
+          e.storage.removeItem('token');
+          throw { response: { status: 401 } };
+        }
+        return { data: { id: 42 } };
+      },
+    });
+    assert.equal((await e.box.sendPersistedWrite(matchWrite())).kind, 'deferred');
+    e.storage.setItem('token', e.auth(9002));
+    await e.box.flush();
+    assert.equal(calls, 1);
+    e.storage.setItem('token', e.auth(9001));
+    assert.equal(e.box.pending().length, 1);
+    await e.box.flush();
+    assert.equal(calls, 2);
+    assert.equal(e.box.pending().length, 0);
+  } finally {
+    e.restore();
+  }
+});
+test('JWT déjà expiré : attente conservée pour le compte vérifié, transport différé jusqu’à reconnexion', async () => {
+  const e = await environment();
+  let calls = 0;
+  try {
+    e.box.startOutbox({
+      request: async () => {
+        calls++;
+        return { data: { id: 42 } };
+      },
+    });
+    e.storage.setItem(
+      'token',
+      'fake.' +
+        Buffer.from(JSON.stringify({ userId: 9001, exp: Math.floor(Date.now() / 1000) - 1 })).toString('base64url') +
+        '.fake',
+    );
+    assert.deepEqual(await e.box.sendPersistedWrite(matchWrite()), { kind: 'deferred', status: 401 });
+    assert.equal(calls, 0);
+    e.storage.setItem('token', e.auth(9002));
+    await e.box.flush();
+    assert.equal(calls, 0);
+    assert.equal((await e.box.sendPersistedWrite(matchWrite())).kind, 'blocked');
+    e.storage.setItem('token', e.auth(9001));
+    assert.equal(e.box.pending().length, 1);
+    await e.box.flush();
+    assert.equal(calls, 1);
+  } finally {
+    e.restore();
+  }
+});
+test('premier envoi et réveil de file simultanés : un seul POST et reçu durable pour écran démonté', async () => {
+  const e = await environment();
+  let release, entered;
+  const started = new Promise((r) => (entered = r)),
+    gate = new Promise((r) => (release = r));
+  let calls = 0;
+  try {
+    e.box.startOutbox({
+      request: async () => {
+        calls++;
+        entered();
+        await gate;
+        return { data: { id: 42 } };
+      },
+    });
+    const first = e.box.sendPersistedWrite(matchWrite());
+    await started;
+    const retry = e.box.flush();
+    release();
+    assert.equal((await first).kind, 'saved');
+    await retry;
+    assert.equal(calls, 1);
+    const receipt = e.box.takeDeliveries(['match:42']);
+    assert.equal(receipt.length, 1);
+    assert.equal(receipt[0].ok, true);
+  } finally {
+    e.restore();
+  }
+});
+test('nouveau choix pendant le premier POST : ancien accusé ne retire pas la nouvelle attente', async () => {
+  const e = await environment();
+  let release, entered;
+  const started = new Promise((r) => (entered = r)),
+    gate = new Promise((r) => (release = r));
+  const sent = [];
+  try {
+    e.box.startOutbox({
+      request: async (c) => {
+        sent.push(c.data.winner);
+        if (sent.length === 1) {
+          entered();
+          await gate;
+        }
+        return { data: { id: 42 } };
+      },
+    });
+    const first = e.box.sendPersistedWrite(matchWrite());
+    await started;
+    e.box.queueWrite(matchWrite(9001, 2));
+    release();
+    assert.equal((await first).kind, 'superseded');
+    assert.equal(e.box.pending()[0].data.winner, 2);
+    await e.box.flush();
+    assert.deepEqual(sent, [1, 2]);
+    assert.equal(e.box.pending().length, 0);
+  } finally {
+    e.restore();
+  }
+});
+test('refus définitif au premier envoi : pas de renvoi, reçu de refus préservé', async () => {
+  for (const status of [400, 403, 409, 422]) {
+    const e = await environment();
+    let calls = 0;
+    try {
+      e.box.startOutbox({
+        request: async () => {
+          calls++;
+          throw { response: { status, data: { error: 'refus fictif' } } };
+        },
+      });
+      assert.equal((await e.box.sendPersistedWrite(matchWrite())).kind, 'refused');
+      assert.equal(e.box.pending().length, 0);
+      await e.box.flush();
+      assert.equal(calls, 1);
+      assert.equal(e.box.takeDeliveries(['match:42'])[0].status, status);
+    } finally {
+      e.restore();
+    }
+  }
+});

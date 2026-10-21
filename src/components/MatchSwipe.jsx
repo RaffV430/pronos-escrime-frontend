@@ -30,8 +30,13 @@ export default function MatchSwipe({ matches, competitionId, ready, busy, onPick
     if (!match || !ready || busy || moving) return;
     // Persist synchronously through the existing express path BEFORE the animation.
     // Closure is checked again by MatchBoard and then by the server.
+    const accepted = onPick(match, side);
+    if (accepted === false) {
+      reset();
+      setNote('Choix non enregistré. Consultez le message de sauvegarde et réessayez.');
+      return;
+    }
     setExiting(match);
-    onPick(match, side);
     setNote(`${match[`player${side}`]} choisi. Vérifiez l’état d’enregistrement ci-dessous.`);
     setMoving(true);
     if (card.current && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
