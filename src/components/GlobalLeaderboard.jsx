@@ -2,6 +2,8 @@ import { PistePodium } from './PisteExperience';
 import { useEffect, useState } from 'react';
 import API from '../api';
 import DuelView from './DuelView';
+import PodiumOverview from './PodiumOverview';
+import { roundOptionLabel, roundOptions } from '../lib/duelSummary';
 import { parseLocation, pathFor } from '../lib/routes';
 // /classements/<tournoi>[/<épreuve>] : la sélection se lit et s'écrit dans l'adresse.
 const fromUrl = () => parseLocation(location.pathname);
@@ -20,7 +22,34 @@ export default function GlobalLeaderboard({ userId, tournamentId, competitionId 
     [selectedCircuit, setCircuit] = useState(''),
     [circuitInfo, setCircuitInfo] = useState(null),
     [duel, setDuel] = useState(null),
-    [duelError, setDuelError] = useState('');
+    [duelError, setDuelError] = useState(''),
+    // Tour d'une épreuve (« où s'est fait l'écart ») : '' = toute l'épreuve.
+    [round, setRound] = useState(''),
+    [rounds, setRounds] = useState([]);
+  // Tours disponibles de l'épreuve choisie : poules, tableau, podium.
+  useEffect(() => {
+    const c = new AbortController();
+    setRound('');
+    setRounds([]);
+    if (!selectedEvent) return () => c.abort();
+    Promise.all([
+      API.get(`/public/competitions/${selectedEvent}/matches`, { signal: c.signal }),
+      API.get(`/public/competitions/${selectedEvent}/pools`, { signal: c.signal }),
+    ])
+      .then(([{ data: matches }, { data: pools }]) => {
+        if (c.signal.aborted) return;
+        const list = Array.isArray(matches) ? matches : matches?.matches || [];
+        const poolList = Array.isArray(pools) ? pools : pools?.pools || [];
+        setRounds(
+          roundOptions(
+            list.filter((m) => m.resultType !== 'CANCELLED'),
+            poolList.length > 0,
+          ),
+        );
+      })
+      .catch(() => {});
+    return () => c.abort();
+  }, [selectedEvent]);
   // Circuits définis par l'administrateur (classements cumulés sur plusieurs tournois).
   useEffect(() => {
     const c = new AbortController();
@@ -64,6 +93,7 @@ export default function GlobalLeaderboard({ userId, tournamentId, competitionId 
     setRows(null);
     setError('');
     if ((scope === 'Épreuve' && !selectedEvent) || (scope === 'Tournoi' && !selectedTournament)) return () => c.abort();
+    if (scope === 'Podium') return () => c.abort();
     if (scope === 'Circuit') {
       if (!selectedCircuit) return () => c.abort();
       API.get(`/community/circuits/${selectedCircuit}`, { signal: c.signal })
@@ -81,7 +111,7 @@ export default function GlobalLeaderboard({ userId, tournamentId, competitionId 
       scope === 'Tournoi'
         ? `?tournamentId=${selectedTournament}`
         : scope === 'Épreuve'
-          ? `?competitionId=${selectedEvent}`
+          ? `?competitionId=${selectedEvent}${round ? `&round=${encodeURIComponent(round)}` : ''}`
           : '';
     API.get(`/matches/leaderboard${params}`, { signal: c.signal })
       .then(({ data }) => {
@@ -91,7 +121,7 @@ export default function GlobalLeaderboard({ userId, tournamentId, competitionId 
         if (!c.signal.aborted) setError(e.response?.data?.error || 'Classement indisponible. Réessayez.');
       });
     return () => c.abort();
-  }, [scope, selectedTournament, selectedEvent, selectedCircuit, revision]);
+  }, [scope, selectedTournament, selectedEvent, selectedCircuit, revision, round]);
   // Comparaison avec un autre joueur, sur la sélection affichée (épreuve, tournoi ou toute la saison).
   const scopeParams =
     scope === 'Tournoi'
@@ -119,7 +149,7 @@ export default function GlobalLeaderboard({ userId, tournamentId, competitionId 
         ? pathFor('leaderboard', { tournament })
         : scope === 'Épreuve' && tournament && event
           ? pathFor('leaderboard', { tournament, event })
-          : scope === 'Général' || scope === 'Circuit'
+          : scope === 'Général' || scope === 'Circuit' || scope === 'Podium'
             ? '/classements'
             : null;
     if (path && path !== location.pathname) history.replaceState(null, '', path);
@@ -137,12 +167,14 @@ export default function GlobalLeaderboard({ userId, tournamentId, competitionId 
               ? tournaments.find((t) => String(t.id) === selectedTournament)?.name
               : scope === 'Circuit'
                 ? circuits.find((c) => String(c.id) === selectedCircuit)?.name
-                : events.find((e) => String(e.id) === selectedEvent)?.name}
+                : scope === 'Podium'
+                  ? 'pronostics de podium'
+                  : events.find((e) => String(e.id) === selectedEvent)?.name}
         </small>
       </h1>
       <div className="feature-heading">
         <div className="filter-row">
-          {['Général', 'Tournoi', 'Épreuve', ...(circuits.length ? ['Circuit'] : [])].map((s) => (
+          {['Général', 'Tournoi', 'Épreuve', 'Podium', ...(circuits.length ? ['Circuit'] : [])].map((s) => (
             <button key={s} aria-pressed={scope === s} onClick={() => setScope(s)}>
               {s}
             </button>
@@ -173,7 +205,8 @@ export default function GlobalLeaderboard({ userId, tournamentId, competitionId 
           )}
         </div>
       )}
-      {scope !== 'Général' && scope !== 'Circuit' && (
+      {scope === 'Podium' && <PodiumOverview userId={userId} revision={revision} />}
+      {scope !== 'Général' && scope !== 'Circuit' && scope !== 'Podium' && (
         <div className="ranking-selectors">
           <label>
             Tournoi
@@ -204,11 +237,27 @@ export default function GlobalLeaderboard({ userId, tournamentId, competitionId 
               </select>
             </label>
           )}
+          {scope === 'Épreuve' && selectedEvent && rounds.length > 1 && (
+            <label>
+              Tour
+              <select value={round} onChange={(e) => setRound(e.target.value)}>
+                <option value="">Toute l’épreuve</option>
+                {rounds.map((r) => (
+                  <option key={r} value={r}>
+                    {roundOptionLabel(r)}
+                  </option>
+                ))}
+              </select>
+            </label>
+          )}
         </div>
+      )}
+      {scope === 'Épreuve' && round && (
+        <p className="muted">Points gagnés sur ce tour seulement : {roundOptionLabel(round).toLowerCase()}.</p>
       )}
       {error && <p role="alert">{error}</p>}
       {duelError && <p role="alert">{duelError}</p>}
-      {!rows && !error && (
+      {!rows && !error && scope !== 'Podium' && (
         <p role="status">
           {scope === 'Épreuve' && !selectedEvent ? 'Choisissez une épreuve.' : 'Chargement du classement…'}
         </p>
@@ -278,11 +327,13 @@ export default function GlobalLeaderboard({ userId, tournamentId, competitionId 
                 {duel?.forId === r.id ? 'Masquer la comparaison' : 'Comparer nos pronostics'}
               </button>
             )}
-            {duel?.forId === r.id && <DuelView duel={duel.data} onClose={() => setDuel(null)} />}
+            {duel?.forId === r.id && (
+              <DuelView duel={duel.data} round={scope === 'Épreuve' ? round : ''} onClose={() => setDuel(null)} />
+            )}
           </article>
         ))}
       </div>
-      {rows?.length === 0 && <p>Aucun point attribué pour cette sélection.</p>}
+      {rows?.length === 0 && scope !== 'Podium' && <p>Aucun point attribué pour cette sélection.</p>}
     </section>
   );
 }

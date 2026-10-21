@@ -1,0 +1,98 @@
+/* Onglet « Podium » des Classements (octobre 2026). */
+.podium-overview {
+  display: grid;
+  gap: 12px;
+  margin-top: 12px;
+}
+.po-tournament,
+.po-event {
+  border: 1px solid var(--soft);
+  border-radius: 12px;
+  padding: 10px 12px;
+  background: var(--surface, #fff);
+}
+.po-event {
+  margin-top: 10px;
+  border-radius: 10px;
+}
+.po-tournament > summary,
+.po-event > summary {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 10px;
+  cursor: pointer;
+}
+.po-tournament > summary small,
+.po-event > summary small {
+  color: var(--muted);
+  white-space: nowrap;
+}
+.po-official {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin: 10px 0 4px;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+.po-players {
+  list-style: none;
+  padding: 0;
+  margin: 6px 0 0;
+}
+.po-players li {
+  padding: 8px 0;
+  border-bottom: 1px solid var(--soft);
+}
+.po-players li.is-me {
+  background: var(--soft);
+  margin: 0 -8px;
+  padding: 8px;
+  border-radius: 8px;
+}
+.po-player-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+}
+.po-picks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 4px;
+}
+.po-chip {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  border: 1px solid var(--soft);
+  color: var(--muted);
+}
+.po-chip.is-official {
+  background: var(--soft);
+  border-color: transparent;
+  color: inherit;
+  font-weight: 600;
+}
+.po-chip.is-exact {
+  background: var(--success-soft);
+  border-color: var(--success);
+  color: var(--success);
+}
+.po-chip.is-podium {
+  border-style: dashed;
+  border-color: var(--primary);
+  color: var(--primary);
+}
+.po-chip.is-miss {
+  text-decoration: line-through;
+}
+.po-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  font-size: 0.8rem;
+}
