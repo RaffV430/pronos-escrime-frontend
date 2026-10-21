@@ -81,7 +81,15 @@ export function Competition({ c, open, matchId }) {
 }
 
 // Fiche d'un tireur : son parcours dans toutes les épreuves suivies par l'application.
-export default function FencerProfile({ name, onClose, matchId = null, parentDialog = null, onPageBackdrop = null }) {
+// competitionId : épreuve d'où la fiche est ouverte (onglet Podium) — affichée en premier et dépliée.
+export default function FencerProfile({
+  name,
+  onClose,
+  matchId = null,
+  competitionId = null,
+  parentDialog = null,
+  onPageBackdrop = null,
+}) {
   const ref = useRef(null);
   const [data, setData] = useState(null);
   const [error, setError] = useState('');
@@ -174,12 +182,24 @@ export default function FencerProfile({ name, onClose, matchId = null, parentDia
                   .join(' · ')
               : 'Aucune épreuve suivie pour ce tireur.'}
           </p>
-          {data.competitions.map((c, i) => (
+          {(competitionId
+            ? [
+                ...data.competitions.filter((c) => c.competitionId === competitionId),
+                ...data.competitions.filter((c) => c.competitionId !== competitionId),
+              ]
+            : data.competitions
+          ).map((c, i) => (
             <Competition
               key={c.competitionId}
               c={c}
               matchId={matchId}
-              open={matchId ? c.tableau.some((m) => m.matchId === matchId) : i === 0}
+              open={
+                matchId
+                  ? c.tableau.some((m) => m.matchId === matchId)
+                  : competitionId
+                    ? c.competitionId === competitionId
+                    : i === 0
+              }
             />
           ))}
         </>
@@ -192,7 +212,7 @@ export default function FencerProfile({ name, onClose, matchId = null, parentDia
 }
 
 // Nom cliquable qui ouvre la fiche du tireur.
-export function FencerLink({ name, children, className = '', matchId = null }) {
+export function FencerLink({ name, children, className = '', matchId = null, competitionId = null }) {
   const [open, setOpen] = useState(false);
   if (!name?.trim()) return children || null;
   return (
@@ -210,7 +230,10 @@ export function FencerLink({ name, children, className = '', matchId = null }) {
       </button>
       {/* Fenêtre attachée à la page, pas au texte cliqué : elle n'hérite d'aucun style (gras du vainqueur…). */}
       {open &&
-        createPortal(<FencerProfile name={name} matchId={matchId} onClose={() => setOpen(false)} />, document.body)}
+        createPortal(
+          <FencerProfile name={name} matchId={matchId} competitionId={competitionId} onClose={() => setOpen(false)} />,
+          document.body,
+        )}
     </>
   );
 }

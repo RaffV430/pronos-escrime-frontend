@@ -1,10 +1,28 @@
 import { useEffect, useState } from 'react';
 import API from '../api';
 import { plural } from './resultPresentation';
+import { FencerLink } from './FencerProfile';
 import './podium-overview.css';
 
 const PLACE = { gold: '1er', silver: '2e', bronze1: '3e', bronze2: '3e' };
 const STATUS = { exact: 'bonne place', podium: 'sur le podium, autre place', miss: 'hors podium' };
+
+// Tireur d'un podium : ouvre sa fiche, l'épreuve consultée en premier (épreuves individuelles ; par équipes,
+// le nom est celui de l'équipe et n'a pas de fiche).
+function Chip({ c, name, className = '', title, children }) {
+  const classes = `po-chip${className ? ` ${className}` : ''}`;
+  if (c.format !== 'INDIVIDUAL' || !name)
+    return (
+      <span className={classes} title={title}>
+        {children}
+      </span>
+    );
+  return (
+    <FencerLink name={name} competitionId={c.id} className={`${classes} po-chip-link`}>
+      {children}
+    </FencerLink>
+  );
+}
 
 // Onglet « Podium » des Classements : pronostics de podium de chacun, épreuve par épreuve, rangés par tournoi.
 // Ceux des autres joueurs ne sont visibles qu'une fois les pronostics de podium clos (le serveur y veille).
@@ -46,9 +64,9 @@ export default function PodiumOverview({ userId, revision = 0 }) {
                 <p className="po-official">
                   <span>Podium officiel</span>
                   {c.official.map((o, i) => (
-                    <span key={i} className="po-chip is-official">
+                    <Chip key={i} c={c} name={o.name} className="is-official">
                       {PLACE[o.slot]} {o.name}
-                    </span>
+                    </Chip>
                   ))}
                 </p>
               ) : (
@@ -74,13 +92,15 @@ export default function PodiumOverview({ userId, revision = 0 }) {
                     </div>
                     <div className="po-picks">
                       {p.picks.map((k) => (
-                        <span
+                        <Chip
                           key={k.slot}
-                          className={`po-chip${k.status ? ` is-${k.status}` : ''}`}
+                          c={c}
+                          name={k.name}
+                          className={k.status ? `is-${k.status}` : ''}
                           title={k.status ? STATUS[k.status] : undefined}
                         >
                           {PLACE[k.slot]} {k.name}
-                        </span>
+                        </Chip>
                       ))}
                     </div>
                   </li>
