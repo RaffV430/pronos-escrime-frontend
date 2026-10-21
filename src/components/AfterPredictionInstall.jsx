@@ -14,7 +14,7 @@ export default function AfterPredictionInstall() {
   useEffect(() => {
     let timer,
       dismissed = false,
-      dueAt = Date.now() + 20000;
+      dueAt = Date.now() + 10000;
     const show = () => {
       if (dismissed) return;
       let until = 0;
@@ -55,7 +55,7 @@ export default function AfterPredictionInstall() {
       setOpen(false);
       clearTimeout(timer);
     };
-    timer = setTimeout(show, 20000);
+    timer = setTimeout(show, 10000);
     const visible = () => {
       if (!document.hidden && Date.now() >= dueAt) show();
     };
