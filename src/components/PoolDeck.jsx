@@ -221,8 +221,29 @@ export default function PoolDeck({ pools, now, onRefresh }) {
                 <span className="deck-summary">
                   {f.status ? (
                     STATUS[f.status] || 'Hors poule'
+                  ) : pick && open && confirmRemove === f.id ? (
+                    // Retrait confirmé : un toucher involontaire n'efface jamais un pronostic.
+                    <>
+                      <span>Retirer ?</span>
+                      <button type="button" className="deck-confirm" onClick={() => removePick(current, f)}>
+                        Oui
+                      </button>
+                      <button type="button" className="deck-confirm is-cancel" onClick={() => setConfirmRemove(null)}>
+                        Non
+                      </button>
+                    </>
                   ) : (
                     <>
+                      {pick && open && (
+                        <button
+                          type="button"
+                          className="deck-link deck-remove"
+                          aria-label={`Retirer le pronostic de ${f.name}`}
+                          onClick={() => setConfirmRemove(f.id)}
+                        >
+                          retirer
+                        </button>
+                      )}
                       {pick && <b>{pick.wins} V</b>}
                       {pick && open && (
                         <button
@@ -256,31 +277,6 @@ export default function PoolDeck({ pools, now, onRefresh }) {
                       {w}
                     </button>
                   ))}
-                </div>
-              )}
-              {pick && open && (
-                // Retrait loin de l'indice et confirmé : un toucher involontaire n'efface jamais un pronostic.
-                <div className="deck-remove-row">
-                  {confirmRemove === f.id ? (
-                    <>
-                      <span>Retirer ce pronostic ?</span>
-                      <button type="button" className="deck-confirm" onClick={() => removePick(current, f)}>
-                        Oui, retirer
-                      </button>
-                      <button type="button" className="deck-confirm is-cancel" onClick={() => setConfirmRemove(null)}>
-                        Non
-                      </button>
-                    </>
-                  ) : (
-                    <button
-                      type="button"
-                      className="deck-link deck-remove"
-                      aria-label={`Retirer le pronostic de ${f.name}`}
-                      onClick={() => setConfirmRemove(f.id)}
-                    >
-                      Retirer le pronostic
-                    </button>
-                  )}
                 </div>
               )}
               {openIndicator === f.id && pick && open && (
