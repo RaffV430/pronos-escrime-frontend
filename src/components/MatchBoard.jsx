@@ -353,11 +353,11 @@ export default function MatchBoard({
         return next;
       });
       if (detail.ok) {
-        saveDrafts((old) => {
-          const next = { ...old };
-          delete next[id];
-          return next;
-        });
+        const next = { ...draftsRef.current };
+        delete next[id];
+        draftsRef.current = next;
+        setDrafts(next);
+        localDraft.acknowledge([id], next);
         message(id, 'Pronostic envoyé.');
         setKept((old) => new Set([...old, id]));
         onRefresh?.();
