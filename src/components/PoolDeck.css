@@ -204,7 +204,28 @@
   background: var(--primary);
   color: #fff;
 }
+.pool-deck .deck-remove-row {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 8px;
+  margin-top: 6px;
+  font-size: 0.8rem;
+  color: var(--muted);
+}
 .pool-deck .deck-remove,
 .pool-deck .deck-remove:hover:not(:disabled) {
   color: var(--muted);
+  font-size: 0.8rem;
+}
+.pool-deck .deck-confirm {
+  min-height: 32px;
+  padding: 0 10px;
+  font-size: 0.8rem;
+}
+.pool-deck .deck-confirm.is-cancel,
+.pool-deck .deck-confirm.is-cancel:hover:not(:disabled) {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--text);
 }

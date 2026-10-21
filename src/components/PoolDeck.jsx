@@ -35,6 +35,7 @@ export default function PoolDeck({ pools, now, onRefresh }) {
   const [saving, setSaving] = useState({});
   const [notes, setNotes] = useState({});
   const [openIndicator, setOpenIndicator] = useState(null);
+  const [confirmRemove, setConfirmRemove] = useState(null);
   const savingRef = useRef(saving);
   savingRef.current = saving;
   // Poules relues au serveur (pronostics modifiés) : pronostics enregistrés repris, sauf ceux en cours d'envoi.
@@ -49,7 +50,10 @@ export default function PoolDeck({ pools, now, onRefresh }) {
       return next;
     });
   }, [serverKey]); // eslint-disable-line react-hooks/exhaustive-deps
-  useEffect(() => setOpenIndicator(null), [current?.id]);
+  useEffect(() => {
+    setOpenIndicator(null);
+    setConfirmRemove(null);
+  }, [current?.id]);
 
   const poolClosed = (pool) =>
     pool.isFinal || pool.isClosed || (pool.lockMode !== 'FIRST_RESULT' && new Date(pool.closesAt).getTime() <= now);
@@ -115,6 +119,7 @@ export default function PoolDeck({ pools, now, onRefresh }) {
     return send(pool, fencer, { wins, indicator });
   };
   const removePick = (pool, fencer) => {
+    setConfirmRemove(null);
     if (!picks[fencer.id] || saving[fencer.id]) return;
     setOpenIndicator(null);
     send(pool, fencer, null);
@@ -229,16 +234,6 @@ export default function PoolDeck({ pools, now, onRefresh }) {
                           {pick.indicator == null ? '+ indice' : `ind. ${signed(pick.indicator)}`}
                         </button>
                       )}
-                      {pick && open && (
-                        <button
-                          type="button"
-                          className="deck-link deck-remove"
-                          aria-label={`Retirer le pronostic de ${f.name}`}
-                          onClick={() => removePick(current, f)}
-                        >
-                          retirer
-                        </button>
-                      )}
                       {pick && !open && pick.indicator != null && <span> · ind. {signed(pick.indicator)}</span>}
                       {!open && !pick && <span>{f.firstResultAt ? 'premier résultat publié' : 'clos'}</span>}
                     </>
@@ -261,6 +256,31 @@ export default function PoolDeck({ pools, now, onRefresh }) {
                       {w}
                     </button>
                   ))}
+                </div>
+              )}
+              {pick && open && (
+                // Retrait loin de l'indice et confirmé : un toucher involontaire n'efface jamais un pronostic.
+                <div className="deck-remove-row">
+                  {confirmRemove === f.id ? (
+                    <>
+                      <span>Retirer ce pronostic ?</span>
+                      <button type="button" className="deck-confirm" onClick={() => removePick(current, f)}>
+                        Oui, retirer
+                      </button>
+                      <button type="button" className="deck-confirm is-cancel" onClick={() => setConfirmRemove(null)}>
+                        Non
+                      </button>
+                    </>
+                  ) : (
+                    <button
+                      type="button"
+                      className="deck-link deck-remove"
+                      aria-label={`Retirer le pronostic de ${f.name}`}
+                      onClick={() => setConfirmRemove(f.id)}
+                    >
+                      Retirer le pronostic
+                    </button>
+                  )}
                 </div>
               )}
               {openIndicator === f.id && pick && open && (
