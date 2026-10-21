@@ -1,5 +1,5 @@
 export const INSTALL_REMINDER_KEY = 'pronos:install-reminder:v2';
-export const INSTALL_SNOOZE_MS = 7 * 24 * 60 * 60 * 1000;
+export const INSTALL_SNOOZE_MS = 12 * 60 * 60 * 1000;
 export function installationGuide({ userAgent = '', platform = '', maxTouchPoints = 0 } = {}) {
   const ios = /iPad|iPhone|iPod/i.test(userAgent) || (platform === 'MacIntel' && maxTouchPoints > 1);
   const embedded = /FBAN|FBAV|Instagram|; wv\)|\bwv\b|Line\//i.test(userAgent);
@@ -9,10 +9,10 @@ export function installationGuide({ userAgent = '', platform = '', maxTouchPoint
       title: 'Sur votre iPhone ou iPad',
       intro: embedded
         ? 'Ouvrez d’abord ce site dans Safari depuis le menu de ce navigateur.'
-        : 'Dans Safari, ajoutez Pronos Escrime à votre écran d’accueil.',
+        : 'Ajoutez Pronos Escrime à votre écran d’accueil depuis Safari ou Chrome.',
       steps: [
-        'Touchez Partager (carré avec une flèche vers le haut). Selon Safari, ouvrez d’abord le menu « … ».',
-        'Choisissez « Sur l’écran d’accueil ». Si cette option manque, cherchez « Modifier les actions ».',
+        'Touchez Partager. Selon la présentation de Safari, ouvrez d’abord le menu « … ».',
+        'Choisissez « Sur l’écran d’accueil ».',
         'Si « Ouvrir comme app web » apparaît, laissez-le activé, puis touchez « Ajouter ».',
       ],
       extra: 'Si votre navigateur ne propose pas cette option, ouvrez ce site dans Safari.',

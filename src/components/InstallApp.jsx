@@ -7,8 +7,27 @@ export function InstallationHelp({ guide }) {
       <strong>{guide.title}</strong>
       <p>{guide.intro}</p>
       <ol>
-        {guide.steps.map((step) => (
-          <li key={step}>{step}</li>
+        {guide.steps.map((step, index) => (
+          <li key={step}>
+            {guide.device === 'ios' && index === 0 && (
+              <svg
+                className="install-share-icon"
+                role="img"
+                aria-label="Partager"
+                width="28"
+                height="28"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.8"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M12 16V2m-4 4 4-4 4 4M7 10H4v12h16V10h-3" />
+              </svg>
+            )}
+            {step}
+          </li>
         ))}
       </ol>
       <small>{guide.extra}</small>

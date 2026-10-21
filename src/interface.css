@@ -2976,3 +2976,4 @@
 .install-guide ol { padding-left: 24px; }
 .install-guide li { margin: 10px 0; }
 .install-connection-note { font-size: .85rem; color: var(--muted); }
+.install-share-icon { display: inline-block; vertical-align: middle; margin: 0 8px 4px 0; color: var(--primary); }
