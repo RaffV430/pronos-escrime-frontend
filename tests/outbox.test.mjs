@@ -304,3 +304,64 @@ test('suppression confirmée dans la vue détaillée : un ancien PUT encore en a
     e.restore();
   }
 });
+
+test('accusés de deux épreuves absentes : une seule consommation par épreuve et par compte', async () => {
+  const e = await environment();
+  try {
+    e.box.startOutbox({ request: async () => {} });
+    for (const id of [42, 43])
+      e.box.queueWrite({ key: `match:${id}`, method: 'post', url: `/matches/${id}/predict`, data: { winner: 2 } });
+    await e.box.flush();
+    assert.deepEqual(e.box.pending(), []);
+    assert.equal(e.box.takeDeliveries(['match:99']).length, 0);
+    assert.equal(e.box.takeDeliveries(['match:42']).length, 1);
+    assert.equal(e.box.takeDeliveries(['match:42']).length, 0);
+    e.storage.setItem('token', e.auth(9002));
+    assert.equal(e.box.takeDeliveries(['match:43']).length, 0);
+    e.storage.setItem('token', e.auth(9001));
+    assert.equal(e.box.takeDeliveries(['match:43']).length, 1);
+  } finally {
+    e.restore();
+  }
+});
+
+test('audit : matrice des erreurs transitoires et des refus définitifs', async () => {
+  for (const status of [400, 403, 404, 408, 409, 422, 429, 500, 502, 503, 504]) {
+    const e = await environment();
+    try {
+      e.box.startOutbox({
+        request: async () => {
+          throw { response: { status, data: { error: 'fictif' } } };
+        },
+      });
+      e.box.queueWrite({ key: 'match:42', method: 'post', url: '/matches/42/predict', data: { winner: 1 } });
+      await e.box.flush();
+      const retry = [408, 429, 500, 502, 503, 504].includes(status);
+      assert.equal(e.box.pending().length, retry ? 1 : 0, String(status));
+      assert.equal(e.box.takeDeliveries(['match:42']).length, retry ? 0 : 1, String(status));
+    } finally {
+      e.restore();
+    }
+  }
+});
+test('audit : jeton expiré et durée de vie de 24 heures ne sont pas une reprise illimitée', async () => {
+  const e = await environment(),
+    now = Date.now;
+  try {
+    e.box.startOutbox({ request: async () => {} });
+    e.storage.setItem(
+      'token',
+      'fake.' +
+        Buffer.from(JSON.stringify({ userId: 9001, exp: Math.floor(now() / 1000) - 1 })).toString('base64url') +
+        '.fake',
+    );
+    assert.equal(e.box.queueWrite(write(3)), false);
+    e.storage.setItem('token', e.auth(9001));
+    e.box.queueWrite(write(3));
+    Date.now = () => now() + 25 * 3600000;
+    assert.equal(e.box.pending().length, 0);
+  } finally {
+    Date.now = now;
+    e.restore();
+  }
+});

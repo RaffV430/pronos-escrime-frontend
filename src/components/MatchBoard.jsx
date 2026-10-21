@@ -1,3 +1,4 @@
+import { receiptMatchId, draftMatchesReceipt } from '../lib/matchReceipt';
 import MatchSwipe from './MatchSwipe';
 import { swipeCandidates } from '../lib/matchSwipe';
 import { withLiveDetection } from '../lib/liveScoreState';
@@ -11,7 +12,7 @@ import { matchTotal } from './resultPresentation';
 import { roundLabel, stripLabel } from './matchPresentation';
 import { useEffect, useRef, useState } from 'react';
 import API from '../api';
-import useLocalDraft, { draftKey } from './useLocalDraft';
+import useLocalDraft, { draftKey, readDraft } from './useLocalDraft';
 import DraftNotice from './DraftNotice';
 import { withCount } from '../lib/plural';
 import MatchTiming from './MatchTiming';
@@ -21,6 +22,7 @@ import { reducedData } from '../lib/fieldCache';
 import {
   CLOSED_REFUSAL_MESSAGE,
   OUTBOX_EVENT,
+  takeDeliveries,
   dropWrite,
   isPending,
   isClosedRefusal,
@@ -347,12 +349,31 @@ export default function MatchBoard({
     onRefresh?.({ force: true });
   };
   useEffect(() => {
-    outboxRef.current = (id, detail) => {
-      setQueuedIds((old) => {
-        const next = new Set(old);
-        next.delete(id);
-        return next;
-      });
+    outboxRef.current = (id, detail, refresh = true) => {
+      if (!ready || receiptMatchId(detail, allValid) !== id) return false;
+      // Consume only this board's receipt; other events remain available at their next mount.
+      takeDeliveries([detail.key]);
+      const pendingNow = isPending(detail.key);
+      if (!pendingNow)
+        setQueuedIds((old) => {
+          const next = new Set(old);
+          next.delete(id);
+          return next;
+        });
+      const newer =
+        pendingNow ||
+        (detail.ok &&
+          (!draftMatchesReceipt(draftsRef.current[id], detail.data) ||
+            !draftMatchesReceipt(readDraft(draftKey(userId, competitionId, 'matches'))?.[id], detail.data)));
+      if (newer) {
+        message(
+          id,
+          detail.ok ? 'Un choix précédent a été envoyé. Votre saisie plus récente est conservée.' : detail.error,
+          !detail.ok,
+        );
+        if (refresh) onRefresh?.({ force: true });
+        return true;
+      }
       if (detail.ok) {
         const next = { ...draftsRef.current };
         delete next[id];
@@ -361,10 +382,21 @@ export default function MatchBoard({
         localDraft.acknowledge([id], next);
         message(id, 'Pronostic envoyé.');
         setKept((old) => new Set([...old, id]));
-        onRefresh?.();
+        if (refresh) onRefresh?.({ force: true });
       } else if (isClosedRefusal(detail.status)) refusedClosed([id]);
       else message(id, `${detail.error} Votre saisie est conservée.`, true);
+      return true;
     };
+  });
+  useEffect(() => {
+    if (!ready) return;
+    const receipts = takeDeliveries(allValid.map((m) => `match:${m.id}`));
+    let refresh = false;
+    for (const receipt of receipts) {
+      const id = receiptMatchId(receipt, allValid);
+      if (id) refresh = outboxRef.current?.(id, receipt, false) || refresh;
+    }
+    if (refresh) onRefresh?.({ force: true });
   });
   const save = async (ids) => {
     if (saving.current) {
