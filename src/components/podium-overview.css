@@ -110,6 +110,29 @@
 .po-chip.po-chip-link:not(.is-exact, .is-official) {
   background: transparent;
 }
+/* Le style global des boutons ne doit pas écraser la couleur des pastilles. */
+.podium-overview .po-chip.po-chip-link {
+  color: var(--muted);
+  border-color: var(--soft);
+  font-weight: 400;
+}
+.podium-overview .po-chip.po-chip-link.is-official {
+  border-color: transparent;
+  color: inherit;
+  font-weight: 600;
+}
+.podium-overview .po-chip.po-chip-link.is-exact {
+  border-color: var(--success);
+  color: var(--success);
+}
+.podium-overview .po-chip.po-chip-link.is-podium {
+  border-color: var(--primary);
+}
+.podium-overview .po-chip.po-chip-link.is-podium,
+.podium-overview .po-chip.po-chip-link:hover,
+.podium-overview .po-chip.po-chip-link:focus-visible {
+  color: var(--primary);
+}
 .po-chip.po-chip-link:hover,
 .po-chip.po-chip-link:focus-visible {
   border-color: var(--primary);
