@@ -202,10 +202,11 @@ export default function MatchBoard({
   // Copie synchrone des saisies : l'enregistrement en arrière-plan et le passage au match suivant
   // lisent toujours la dernière frappe, même avant le prochain rendu.
   const draftsRef = useRef({});
-  const saveDrafts = (update) => {
+  const saveDrafts = (update, removed = []) => {
     const next = typeof update === 'function' ? update(draftsRef.current) : update;
+    const deleted = Object.keys(draftsRef.current).filter((id) => !(id in next));
     draftsRef.current = next;
-    localDraft.persist(Object.keys(next).length ? next : null);
+    localDraft.persistEntries(next, [...deleted, ...removed]);
     setDrafts(next);
   };
   const seenKey = `pronos:seen-matches:${userId}:${competitionId}`;
@@ -341,7 +342,7 @@ export default function MatchBoard({
       const next = { ...old };
       for (const id of ids) delete next[id];
       return next;
-    });
+    }, ids);
     setKept((old) => new Set([...old, ...ids.map(Number)]));
     onRefresh?.({ force: true });
   };
@@ -610,11 +611,14 @@ export default function MatchBoard({
       if (onPreviewRemove) await onPreviewRemove(m.id);
       else await API.delete(`/matches/${m.id}/predict`);
       await onRefresh();
-      saveDrafts((old) => {
-        const next = { ...old };
-        delete next[m.id];
-        return next;
-      });
+      saveDrafts(
+        (old) => {
+          const next = { ...old };
+          delete next[m.id];
+          return next;
+        },
+        [m.id],
+      );
       message(m.id, 'Pronostic supprimé.');
     } catch (e) {
       message(m.id, e.response?.data?.error || 'Suppression impossible.', true);
@@ -672,11 +676,14 @@ export default function MatchBoard({
         records.forEach((r) => delete next[r.id]);
         return next;
       });
-      saveDrafts((old) => {
-        const next = { ...old };
-        records.forEach((r) => delete next[r.id]);
-        return next;
-      });
+      saveDrafts(
+        (old) => {
+          const next = { ...old };
+          records.forEach((r) => delete next[r.id]);
+          return next;
+        },
+        records.map((r) => r.id),
+      );
     } catch (error) {
       setUndoMessage(error.response?.data?.error || error.message || 'Annulation non confirmée.');
     } finally {
@@ -913,16 +920,22 @@ export default function MatchBoard({
       </>
       {ready && (
         <DraftNotice
-          draft={localDraft}
-          onRestore={(value) =>
+          draft={{
+            ...localDraft,
+            discard: () => {
+              localDraft.persistEntries(draftsRef.current, Object.keys(localDraft.recoverable || {}));
+              localDraft.restored();
+            },
+          }}
+          onRestore={(value) => {
+            const allowed = Object.fromEntries(
+              Object.entries(value).filter(([id]) => allValid.some((m) => String(m.id) === id && !closedMatch(m, now))),
+            );
             saveDrafts(
-              Object.fromEntries(
-                Object.entries(value).filter(([id]) =>
-                  allValid.some((m) => String(m.id) === id && !closedMatch(m, now)),
-                ),
-              ),
-            )
-          }
+              (active) => ({ ...allowed, ...active }),
+              Object.keys(value).filter((id) => !(id in allowed)),
+            );
+          }}
         />
       )}
       {!ready && <p role="status">Vérification des matchs…</p>}
