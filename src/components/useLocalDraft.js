@@ -1,3 +1,4 @@
+import { settleDraftEntries } from '../lib/draftReceipt';
 import { useState, useEffect, useCallback } from 'react';
 export const draftKey = (user, event, type) => `pronos:draft:v1:${user}:${event}:${type}`;
 export function readDraft(key) {
@@ -30,6 +31,16 @@ export default function useLocalDraft(key) {
     },
     [key],
   );
+  const acknowledge = useCallback(
+    (ids, active) => {
+      // Read the latest persisted map: after reload, unrelated entries may not be restored yet.
+      const stored = readDraft(key);
+      const next = settleDraftEntries({ stored, active }, ids);
+      persist(next.value);
+      setRecoverable((old) => settleDraftEntries({ recoverable: old }, ids).recoverable);
+    },
+    [key, persist],
+  );
   const discard = useCallback(() => {
     persist(null);
     setRecoverable(null);
@@ -41,5 +52,5 @@ export default function useLocalDraft(key) {
     window.addEventListener('storage', sync);
     return () => window.removeEventListener('storage', sync);
   }, [key]);
-  return { recoverable, persist, discard, warning, restored: () => setRecoverable(null) };
+  return { recoverable, persist, acknowledge, discard, warning, restored: () => setRecoverable(null) };
 }
