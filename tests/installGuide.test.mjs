@@ -46,3 +46,12 @@ test('embedded iPhone guides leaving the app before installation', () => {
   assert.match(guide.steps[2], /copiez/);
   assert.doesNotMatch(guide.steps[0], /Touchez Partager/);
 });
+
+test('a twelve-hour dismissal survives visits until the expiry boundary', () => {
+  const dismissedAt = Date.UTC(2026, 9, 22, 8);
+  const snoozedUntil = dismissedAt + INSTALL_SNOOZE_MS;
+  const visit = { device: 'ios', installed: false, snoozedUntil };
+  assert.equal(maySuggestInstallation({ ...visit, now: dismissedAt + 11 * 3600000 }), false);
+  assert.equal(maySuggestInstallation({ ...visit, now: snoozedUntil - 1 }), false);
+  assert.equal(maySuggestInstallation({ ...visit, now: snoozedUntil }), true);
+});
