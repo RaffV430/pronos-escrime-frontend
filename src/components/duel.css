@@ -1,0 +1,129 @@
+/* Duel lisible : écart, catégories, épreuves décisives, lignes filtrées (octobre 2026). */
+.duel-v2 .is-up {
+  color: var(--success);
+}
+.duel-v2 .is-down {
+  color: var(--danger);
+}
+.duel-gap {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 8px;
+  margin: 6px 0 2px;
+}
+.duel-gap strong {
+  font-size: 1.6rem;
+}
+.duel-gap span {
+  color: var(--muted);
+}
+.duel-block {
+  margin: 14px 0;
+}
+.duel-block h4 {
+  margin: 0 0 8px;
+  font-size: 0.95rem;
+}
+.duel-cat {
+  margin-bottom: 10px;
+}
+.duel-cat-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 0.9rem;
+}
+.duel-bars {
+  display: grid;
+  gap: 3px;
+  margin-top: 4px;
+}
+.duel-bar {
+  display: block;
+  height: 7px;
+  min-width: 2px;
+  border-radius: 4px;
+}
+.duel-bar.is-me,
+.duel-dot.is-me {
+  background: var(--primary);
+}
+.duel-bar.is-them,
+.duel-dot.is-them {
+  background: var(--muted);
+  opacity: 0.55;
+}
+.duel-legend {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.8rem;
+  margin: 2px 0 0;
+}
+.duel-dot {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+.duel-events {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.duel-events li {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 7px 0;
+  border-bottom: 1px solid var(--soft);
+}
+.duel-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 14px 0 8px;
+}
+.duel-filters button {
+  min-height: 0;
+  border-radius: 999px;
+  padding: 6px 12px;
+  font-size: 0.85rem;
+}
+.duel-filters button[aria-pressed='true'] {
+  background: var(--primary);
+  color: #fff;
+  border-color: var(--primary);
+}
+.duel-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.duel-line {
+  display: grid;
+  gap: 2px;
+  padding: 8px 0 8px 10px;
+  border-left: 3px solid var(--soft);
+  border-bottom: 1px solid var(--soft);
+}
+.duel-line.line-up {
+  border-left-color: var(--success);
+}
+.duel-line.line-down {
+  border-left-color: var(--danger);
+}
+.duel-line-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+}
+.duel-line small {
+  color: var(--muted);
+  overflow-wrap: anywhere;
+}
+.duel-more {
+  margin-top: 10px;
+  width: 100%;
+}
