@@ -27,6 +27,7 @@ import { useFencerFollows, isFollowedFencer } from '../lib/fencerFollows';
 import { stripLabel } from './matchPresentation';
 import { poolRounds } from './eventResults';
 import PoolDeck from './PoolDeck';
+import { activeFencers, poolBouts } from '../lib/poolDeck';
 
 // Affichage des poules à pronostiquer : « une poule par écran » (par défaut sur téléphone) ou toutes les poules.
 const VIEW_KEY = 'pronos:pool-view';
@@ -150,7 +151,7 @@ function PredictionRow({
     reportDirty(fencer.id, dirty);
     return () => reportDirty(fencer.id, false);
   }, [dirty, fencer.id, reportDirty]);
-  const bouts = pool.fencers.length - 1;
+  const bouts = poolBouts(pool);
   const losses = wins === '' ? '' : bouts - Number(wins);
   const minimum = wins === '' ? -5 * bouts : Number(wins) - 5 * losses;
   const maximum = wins === '' ? 5 * bouts : 5 * Number(wins) - losses;
@@ -937,7 +938,7 @@ function PoolList({ competitionId, user, onDirtyChange, refreshVersion }) {
                         <h3>
                           {pool.name} <BoostBadge multiplier={pool.pointsMultiplier} compact />{' '}
                           <span className="pool-card-meta">
-                            {pool.fencers.length} tireurs · {pool.fencers.length - 1} matchs
+                            {activeFencers(pool).length} tireurs · {poolBouts(pool)} matchs
                             {pool.strip && ` · ${stripLabel(pool.strip).toLowerCase()}`}
                             {pool.startsAt &&
                               ` · ${new Date(pool.startsAt).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}`}

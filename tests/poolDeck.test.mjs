@@ -2,6 +2,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   deckOrder,
+  poolBouts,
+  validPoolWins,
   fitsIndicator,
   indicatorBounds,
   picksFrom,
@@ -87,4 +89,28 @@ test('rechargement : reprendre choix et suppressions en attente sans altérer le
   ]);
   assert.deepEqual(next, { 1: { wins: 5, indicator: null }, 3: { wins: 4, indicator: 10 } });
   assert.equal(pools[0].fencers[0].prediction.wins, 0);
+});
+
+for (const name of ['Poule 9', 'Poule 10']) {
+  test(`${name}: six présents et deux retraits médicaux limitent à cinq victoires sans effacer les choix`, () => {
+    const p = pool(name, 8, { 6: { status: 'MEDICAL' }, 7: { status: 'MEDICAL' } });
+    const picks = Object.fromEntries(p.fencers.map((f, i) => [f.id, { wins: i < 6 ? 5 - i : 7, indicator: null }]));
+    const before = structuredClone(picks);
+    assert.equal(poolBouts(p), 5);
+    assert.equal(validPoolWins(p, 5), true);
+    assert.equal(validPoolWins(p, 6), false);
+    assert.equal(poolDone(p, picks), true);
+    picks[p.fencers[0].id].wins = 7;
+    assert.equal(poolDone(p, picks), false);
+    assert.equal(poolTotals(p, picks).complete, false);
+    assert.deepEqual(picks[p.fencers[6].id], before[p.fencers[6].id]);
+    assert.equal(p.fencers.length, 8);
+  });
+}
+test('plafond sans retrait et avec différents statuts', () => {
+  assert.equal(poolBouts(pool('Standard', 8)), 7);
+  assert.equal(
+    poolBouts(pool('Retraits', 8, { 5: { status: 'ABSENT' }, 6: { status: 'EXCLUDED' }, 7: { status: 'MEDICAL' } })),
+    4,
+  );
 });
