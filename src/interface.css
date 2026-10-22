@@ -2979,3 +2979,7 @@
 .install-share-icon { display: inline-block; vertical-align: middle; margin: 0 8px 4px 0; color: var(--primary); }
 .install-url-label { display: grid; gap: 6px; margin: 12px 0; font-size: .9rem; }
 .install-url-label input { width: 100%; min-width: 0; box-sizing: border-box; }
+
+.event-choice-card .status-pill.saved {
+  color: #28714f;
+}

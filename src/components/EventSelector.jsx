@@ -1,3 +1,4 @@
+import { unseenMatchCount } from '../lib/seenMatches';
 import { eventNameFr } from '../lib/eventName';
 import { useEffect, useRef, useState } from 'react';
 import API from '../api';
@@ -431,9 +432,13 @@ function EventChooser({ userId, tournaments, currentTournamentId, currentEventId
                       label={event.pointsBoosts.some((b) => b.scope === 'EVENT') ? 'Points ×2' : 'Points ×2 en partie'}
                     />
                   )}
-                  {newCount(event, userId) > 0 && (
+                  {unseenMatchCount(event, userId, currentEventId) > 0 && (
                     <span className="status-pill saved">
-                      {withCount(newCount(event, userId), 'nouvelle rencontre', 'nouvelles rencontres')}
+                      {withCount(
+                        unseenMatchCount(event, userId, currentEventId),
+                        'nouvelle rencontre',
+                        'nouvelles rencontres',
+                      )}
                     </span>
                   )}
                   <span>
@@ -474,13 +479,4 @@ function EventChooser({ userId, tournaments, currentTournamentId, currentEventId
       )}
     </dialog>
   );
-}
-
-function newCount(event, userId) {
-  try {
-    const seen = JSON.parse(localStorage.getItem(`pronos:seen-matches:${userId}:${event.id}`) || 'null');
-    return Array.isArray(seen) ? (event.matches || []).filter((m) => !seen.includes(m.id)).length : 0;
-  } catch {
-    return 0;
-  }
 }
