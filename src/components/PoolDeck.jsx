@@ -14,6 +14,7 @@ import { isFollowedFencer, useFencerFollows } from '../lib/fencerFollows';
 import { stripLabel } from './matchPresentation';
 import {
   activeFencers,
+  poolBouts,
   deckOrder,
   fencerRank,
   fitsIndicator,
@@ -122,7 +123,7 @@ export default function PoolDeck({ pools, now, onRefresh }) {
 
   function send(pool, fencer, next) {
     const key = `pool:${fencer.id}`;
-    const bouts = pool.fencers.length - 1;
+    const bouts = poolBouts(pool);
     const data = next && { wins: next.wins, losses: bouts - next.wins, indicator: next.indicator ?? null };
     // Conserver l’intention AVANT le réseau : même un rechargement pendant l’envoi ne la perd pas.
     if (
@@ -146,7 +147,7 @@ export default function PoolDeck({ pools, now, onRefresh }) {
     const old = picks[fencer.id];
     // Nombre déjà choisi : rien ne change (un toucher maladroit ne retire jamais un pronostic).
     if (old?.wins === wins) return;
-    const bouts = pool.fencers.length - 1;
+    const bouts = poolBouts(pool);
     const indicator = fitsIndicator(old?.indicator, wins, bouts) ? (old?.indicator ?? null) : null;
     if (old?.indicator != null && indicator === null)
       setTimeout(() =>
@@ -186,7 +187,7 @@ export default function PoolDeck({ pools, now, onRefresh }) {
   const progress = useMemo(() => pools.filter(done).length, [pools, picks, now]); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (!current) return <p className="pool-empty">Aucune poule à pronostiquer pour le moment.</p>;
-  const bouts = current.fencers.length - 1;
+  const bouts = poolBouts(current);
   const totals = poolTotals(current, picks);
   const closed = poolClosed(current);
   return (
@@ -214,7 +215,7 @@ export default function PoolDeck({ pools, now, onRefresh }) {
         </button>
         <div className="deck-title">
           <h3>
-            {current.name} <small>· {current.fencers.length} tireurs</small>
+            {current.name} <small>· {activeFencers(current).length} tireurs</small>
           </h3>
           <p className="deck-meta">
             {[

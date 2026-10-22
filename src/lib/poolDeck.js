@@ -30,12 +30,14 @@ export const fitsIndicator = (indicator, wins, bouts) => {
 
 // Tireurs pronostiquables (hors absents, retirés ou exclus).
 export const activeFencers = (pool) => pool.fencers.filter((f) => !f.status);
+export const poolBouts = (pool) => Math.max(0, activeFencers(pool).length - 1);
+export const validPoolWins = (pool, wins) => Number.isInteger(wins) && wins >= 0 && wins <= poolBouts(pool);
 
 // Contrôle du total : une poule complète de n tireurs compte n(n−1)/2 victoires. Avec un tireur sorti, le total
 // officiel change : pas de contrôle.
 export function poolTotals(pool, picks) {
   const active = activeFencers(pool);
-  const filled = active.filter((f) => Number.isInteger(picks[f.id]?.wins));
+  const filled = active.filter((f) => validPoolWins(pool, picks[f.id]?.wins));
   const sum = filled.reduce((s, f) => s + picks[f.id].wins, 0);
   const expected = active.length === pool.fencers.length ? (active.length * (active.length - 1)) / 2 : null;
   const complete = active.length > 0 && filled.length === active.length;
@@ -53,7 +55,7 @@ export function poolTotals(pool, picks) {
 export const poolDone = (pool, picks, isOpen = () => true) =>
   activeFencers(pool)
     .filter(isOpen)
-    .every((f) => Number.isInteger(picks[f.id]?.wins));
+    .every((f) => validPoolWins(pool, picks[f.id]?.wins));
 
 // Ordre des poules : mes tireurs d'abord si demandé, sinon l'ordre des poules (1, 2… 10).
 export function deckOrder(pools, { mineFirst = false, hasMine = () => false } = {}) {
