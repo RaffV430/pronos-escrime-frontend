@@ -1,3 +1,4 @@
+import { rememberLoadedMatches } from './lib/seenMatches';
 import useTableauByes from './components/useTableauByes';
 import GlobalSearch from './components/GlobalSearch';
 import GainAlerts from './components/GainAlerts';
@@ -380,6 +381,18 @@ export default function App() {
   // Données déjà affichées mais dernier rafraîchissement raté (wifi de salle) : on prévient sans bloquer.
   const [matchesStale, setMatchesStale] = useState(false);
   const [matchesAttempt, setMatchesAttempt] = useState(0);
+  useEffect(() => {
+    rememberLoadedMatches({
+      userId: user?.id,
+      competitionId: selectedCompetitionId,
+      matches,
+      ready: matchesReady,
+      stale: matchesStale,
+      error: matchesError,
+      visible: mainTab === 'play' || mainTab === 'live',
+    });
+  }, [user?.id, selectedCompetitionId, matches, matchesReady, matchesStale, matchesError, mainTab]);
+
   const matchesLoaded = useRef(false);
   const [accountClub, setAccountClub] = useState(null);
   useEffect(() => {

@@ -1,3 +1,4 @@
+import { readSeenMatches, rememberSeenMatches } from '../lib/seenMatches';
 import { handleAuthError } from '../lib/session';
 import { receiptMatchId, draftMatchesReceipt } from '../lib/matchReceipt';
 import MatchSwipe from './MatchSwipe';
@@ -218,25 +219,14 @@ export default function MatchBoard({
     setDrafts(next);
     return stored;
   };
-  const seenKey = `pronos:seen-matches:${userId}:${competitionId}`;
-  const [seen, setSeen] = useState(() => {
-    try {
-      return JSON.parse(localStorage.getItem(seenKey) || 'null');
-    } catch {
-      return null;
-    }
-  });
+  const [seen, setSeen] = useState(() => readSeenMatches(userId, competitionId));
   useEffect(() => {
-    if (ready && seen === null) {
-      const ids = matches.map((m) => m.id);
-      setSeen(ids);
-      try {
-        localStorage.setItem(seenKey, JSON.stringify(ids));
-      } catch {
-        /* Optional device preference. */
-      }
-    }
-  }, [ready, seen, matches, seenKey]);
+    if (!ready) return;
+    // Persist the current visit for the chooser/next visit. Keep this visit's baseline
+    // so a match arriving while the page is open still gets its in-page announcement.
+    const ids = rememberSeenMatches(userId, competitionId, matches);
+    if (seen === null) setSeen(ids);
+  }, [ready, seen, matches, userId, competitionId]);
   // Nouvelles rencontres = apparues depuis la dernière visite ET encore à pronostiquer : une rencontre déjà
   // pronostiquée, terminée ou close ne compte plus (le bouton mène toujours à un pronostic à faire).
   const newMatches = matches.filter(
@@ -265,13 +255,7 @@ export default function MatchBoard({
   };
   const markSeen = () => {
     setLinkedNew([]);
-    const ids = matches.map((m) => m.id);
-    setSeen(ids);
-    try {
-      localStorage.setItem(seenKey, JSON.stringify(ids));
-    } catch {
-      /* Optional device preference. */
-    }
+    setSeen(rememberSeenMatches(userId, competitionId, matches));
     setFilter('Tous');
   };
   const focusedPhase = matches.find((m) => m.id === focusTarget?.id);
