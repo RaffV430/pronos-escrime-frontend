@@ -1,3 +1,4 @@
+import { poolEarnedPoints } from '../lib/poolEarnedPoints';
 import { StandingsDisclosure } from './OfficialStandings';
 import { createPortal } from 'react-dom';
 import { UX_SAVE } from '../lib/uxFeatures';
@@ -932,6 +933,7 @@ function PoolList({ competitionId, user, onDirtyChange, refreshVersion }) {
                   // poules, la saisie reste ouverte) : aucune règle de délai dupliquée ici.
                   const sourcePending = Boolean(pool.sourceUnavailable);
                   const live = poolIsLive(pool);
+                  const earnedPoints = poolEarnedPoints(pool);
                   return (
                     <article className="pool-card" key={pool.id}>
                       <header>
@@ -968,6 +970,14 @@ function PoolList({ competitionId, user, onDirtyChange, refreshVersion }) {
                                     ? `Clôture à ${new Date(pool.closesAt).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}`
                                     : 'Pronostics ouverts'}
                         </span>
+                        {earnedPoints !== null && (
+                          <span
+                            className="pool-earned-total"
+                            aria-label={`Total gagné dans ${pool.name} : ${earnedPoints} points`}
+                          >
+                            {withCount(earnedPoints, 'point gagné', 'points gagnés')}
+                          </span>
+                        )}
                       </header>
                       {pool.lockMode === 'PROVISIONAL' && (
                         <p className="pool-pending" role="status">
