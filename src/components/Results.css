@@ -341,7 +341,10 @@
     --rb-unit: 60px;
     --rb-gap: 14px;
   }
-  .rb-country,
+  .rb-country {
+    font-size: 0.65rem;
+    white-space: nowrap;
+  }
   .rb-full {
     display: none;
   }
@@ -349,7 +352,7 @@
     display: inline;
   }
   .rb-side {
-    grid-template-columns: 1.4em minmax(0, 1fr) 1.6em;
+    grid-template-columns: 1.4em minmax(0, 1fr) 2.4em 1.6em;
     font-size: 0.78rem;
   }
 }

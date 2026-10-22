@@ -2352,17 +2352,20 @@
   margin-bottom: 16px;
 }
 @media (max-width: 600px) {
-  /* Téléphone : un tour et le suivant, cartes resserrées (sans nation, prénom abrégé). */
+  /* Téléphone : un tour et le suivant, cartes resserrées (nation conservée, prénom abrégé). */
   .match-board {
     --tree-gap: 14px;
     --tree-slot: 82px;
   }
   .tree-row {
-    grid-template-columns: 18px minmax(0, 1fr) 30px;
+    grid-template-columns: 16px 23px minmax(0, 1fr) 30px;
     gap: 4px;
     padding: 0 5px;
   }
-  .tree-country,
+  .tree-country {
+    font-size: 9px;
+    white-space: nowrap;
+  }
   .tree-full {
     display: none;
   }
