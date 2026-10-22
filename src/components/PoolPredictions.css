@@ -546,3 +546,10 @@
 .pool-status-admin { display: grid; gap: 8px; margin: 8px 0 12px; border: 1px solid var(--border, #d7dde5); border-radius: 10px; padding: 10px 12px; }
 .pool-status-admin label { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
 .pool-status-admin select { min-height: 40px; }
+
+.pool-earned-total {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--text);
+  white-space: nowrap;
+}
