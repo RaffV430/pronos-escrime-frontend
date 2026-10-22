@@ -1,3 +1,4 @@
+import useTableauByes from './components/useTableauByes';
 import GlobalSearch from './components/GlobalSearch';
 import GainAlerts from './components/GainAlerts';
 import AfterPredictionInstall from './components/AfterPredictionInstall';
@@ -313,6 +314,7 @@ export default function App() {
   const showHeaderLive = hasActiveLiveScore(headerScores, matches, selectedCompetitionId);
   const [resultsVersion, setResultsVersion] = useState(0);
   const [competition, setCompetition] = useState(null);
+  const tableauByes = useTableauByes(user ? selectedCompetitionId : null, competition?.tableauByes);
   const [playTab, setPlayTab] = useState('tableau');
   const [delegationContext, setDelegationContext] = useState(null);
   useEffect(() => {
@@ -1344,7 +1346,7 @@ export default function App() {
                         key={`${selectedCompetitionId}:${liveMatchId}`}
                         initialMatchId={liveMatchId}
                         view={liveView}
-                        competition={competition}
+                        competition={{ ...competition, tableauByes }}
                         matches={matches}
                         userId={user.id}
                         ready={matchesReady}
@@ -1523,7 +1525,7 @@ export default function App() {
                             competitionId={selectedCompetitionId}
                             key={selectedCompetitionId}
                             matches={matches}
-                            byes={competition?.tableauByes}
+                            byes={tableauByes}
                             userId={user.id}
                             isAdmin={!!user.isAdmin}
                             ready={matchesReady}
