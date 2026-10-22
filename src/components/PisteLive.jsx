@@ -201,7 +201,7 @@ export default function PisteLive({
               </section>
               <section>
                 <p className="arena-eyebrow">{t('live.crowd')}</p>
-                {match.crowd?.total ? <CrowdTrend match={match} /> : <p>{t('live.crowdLater')}</p>}
+                {match.crowd?.total ? <CrowdTrend match={displayMatch} /> : <p>{t('live.crowdLater')}</p>}
               </section>
             </div>
             {onFollow && (
