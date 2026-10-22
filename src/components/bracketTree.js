@@ -78,7 +78,7 @@ export function buildTree(matches, byes = []) {
         return {
           pos,
           match,
-          advance: match ? null : advanceFor(rounds, index, pos) || exemptAt(byes, r.round, pos),
+          advance: match ? null : mergeAdvance(exemptAt(byes, r.round, pos), advanceFor(rounds, index, pos)),
         };
       }),
     })),
@@ -86,10 +86,21 @@ export function buildTree(matches, byes = []) {
   };
 }
 
+function mergeAdvance(bye, next) {
+  if (!bye) return next;
+  return next?.name === bye.name ? { ...next, ...bye } : bye;
+}
+
 // Exempt publié par le site officiel pour cette case, avant que son match du tour suivant n'existe.
 function exemptAt(byes, round, pos) {
   const bye = (Array.isArray(byes) ? byes : []).find((b) => b?.round === round && b?.pos === pos && b?.name);
-  return bye ? { name: bye.name } : null;
+  return bye
+    ? {
+        name: bye.name,
+        ...(bye.country ? { country: bye.country } : {}),
+        ...(Number.isInteger(bye.seed) && bye.seed > 0 ? { seed: bye.seed } : {}),
+      }
+    : null;
 }
 
 // Case vide dont le tireur est déjà connu au tour suivant (exempt au premier tour, qualifié ensuite).

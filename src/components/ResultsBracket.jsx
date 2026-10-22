@@ -41,8 +41,9 @@ function Card({ slot, onOpen }) {
     return (
       <div className="rb-card is-empty">
         <span className="rb-side">
-          <span className="rb-seed" />
+          <span className="rb-seed">{slot.advance?.seed || ''}</span>
           <span className="rb-name">{slot.advance?.name || '—'}</span>
+          <span className="rb-country">{slot.advance?.country || ''}</span>
         </span>
         <span className="rb-side">
           <span className="rb-seed" />

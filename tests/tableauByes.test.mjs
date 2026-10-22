@@ -95,3 +95,28 @@ for (const competitionId of [42, 43, 44, 7001]) {
     watcher.stop();
   });
 }
+
+test('exempt sans prochain match : numéro et pays officiels conservés', () => {
+  const byes = [{ round: 'T64', pos: 1, name: 'Synthetic A', seed: 1, country: 'FRA' }];
+  const tree = buildTree(
+    [{ id: 7, round: 'T64', sourceKey: 'fixture:2', player1: 'Synthetic B', player2: 'Synthetic C' }],
+    byes,
+  );
+  assert.deepEqual(tree.rounds[0].slots[0].advance, { name: 'Synthetic A', seed: 1, country: 'FRA' });
+});
+test('ancien exempt : détails du tour suivant repris seulement pour la même identité', () => {
+  const matches = [
+    {
+      id: 1,
+      round: 'T32',
+      sourceKey: 'fixture:1',
+      player1: 'Synthetic A',
+      player2: 'Synthetic B',
+      seed1: 1,
+      player1Country: 'FRA',
+    },
+  ];
+  matches.push({ id: 9, round: 'T64', sourceKey: 'fixture:3', player1: 'Synthetic C', player2: 'Synthetic D' });
+  const tree = buildTree(matches, [{ round: 'T64', pos: 1, name: 'Synthetic A' }]);
+  assert.deepEqual(tree.rounds[0].slots[0].advance, { name: 'Synthetic A', seed: 1, country: 'FRA' });
+});
