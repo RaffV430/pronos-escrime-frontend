@@ -20,14 +20,24 @@ export function challengeFor(match, prediction, pageUrl, revealPrediction = fals
   };
 }
 // Les images ne transportent pas de lien cliquable : il reste dans le message ou le sticker.
-export function challengeSharePayload(challenge, file, channel, supportsFiles) {
-  if (channel === 'instagram' && file && supportsFiles) return { title: challenge.title, files: [file] };
-  const text = `${challenge.text}\nFais ton pronostic sur Pronos Escrime 👇\n${challenge.url}`;
+export function challengeSharePayload(challenge, file, _channel, supportsFiles) {
+  const text = `${challenge.text}\nViens jouer sur Pronos Escrime 👇\n${challenge.url}`;
   return file && supportsFiles ? { title: challenge.title, text, files: [file] } : { title: challenge.title, text };
+}
+// Priorité à l’image ; un lien rejeté ne doit pas bloquer son partage.
+export async function shareSocialCard(file, summary, nav = navigator) {
+  if (!nav.share || !nav.canShare?.({ files: [file] })) return 'download';
+  try {
+    await nav.share(challengeSharePayload(summary, file, null, true));
+  } catch (error) {
+    if (!['TypeError', 'DataError'].includes(error.name)) throw error;
+    await nav.share({ title: summary.title, files: [file] });
+  }
+  return 'shared';
 }
 
 // Visuel de communication seulement ; aucune écriture de pronostic ou de points.
-export async function renderChallengeCard(match, prediction, challenge, channel = 'instagram') {
+export async function renderChallengeCard(match, prediction, challenge) {
   if (!challenge.revealPrediction) prediction = null;
   const canvas = document.createElement('canvas');
   canvas.width = 1080;
@@ -104,23 +114,17 @@ export async function renderChallengeCard(match, prediction, challenge, channel 
     text(prediction ? 'MON CHOIX' : 'LE DUEL EST LANCÉ', 540, 1150, 32, '#afc3e1', false, 'center');
     wrap(prediction ? challenge.winner : 'ET TOI, TU MISES SUR QUI ?', 100, 1270, 76, 880, 2, '#ffc531');
   }
-  text('À TOI DE JOUER.', 540, 1540, 88, '#f3f6fd', true, 'center');
+  text('TU FERAIS MIEUX ?', 540, 1540, 88, '#f3f6fd', true, 'center');
   text('Pronostique les matchs. Marque des points.', 540, 1608, 33, '#c4d4eb', false, 'center');
   text('Défie tes amis.', 540, 1655, 33, '#c4d4eb', false, 'center');
-  ctx.strokeStyle = '#7eb2ff';
-  ctx.lineWidth = 3;
-  ctx.setLineDash(channel === 'instagram' ? [16, 12] : []);
-  ctx.strokeRect(76, 1715, 928, 112);
-  text(
-    channel === 'instagram' ? 'ESPACE POUR TON STICKER LIEN' : 'LE LIEN EST DANS LE MESSAGE ↓',
-    540,
-    1787,
-    37,
-    '#bcd6ff',
-    false,
-    'center',
-  );
-  text(challenge.local ? 'APERÇU LOCAL' : 'pronos-escrime.fr', 540, 1880, 30, '#adc3e2', false, 'center');
+  ctx.strokeStyle = '#52739a';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(76, 1685);
+  ctx.lineTo(1004, 1685);
+  ctx.stroke();
+  text(challenge.local ? 'APERÇU LOCAL' : 'pronos-escrime.fr', 540, 1790, 96, '#7eb2ff', true, 'center');
+  text('Le jeu de pronostics des passionnés d’escrime', 540, 1860, 31, '#d8e4f5', false, 'center');
   return new Promise((resolve, reject) =>
     canvas.toBlob(
       (blob) => (blob ? resolve(blob) : reject(new Error('Création de la carte impossible.'))),
