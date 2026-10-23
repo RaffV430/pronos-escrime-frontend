@@ -94,7 +94,7 @@ export default function MySeason({ userId, playerName = '' }) {
             {totals.podium} · Défis {totals.challenge}
             {totals.adjustment !== 0 && ` · Ajustements ${signedPoints(totals.adjustment)}`}
           </p>
-          <SeasonCurve tournaments={data.tournaments} />
+          <SeasonCurve tournaments={data.tournaments} playerName={playerName} seasonLabel={data.label} />
           <SeasonBadges badges={data.badges} />
           <SeasonAnalysis analysis={data.analysis} />
 

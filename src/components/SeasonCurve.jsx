@@ -1,8 +1,10 @@
+import SeasonStory from './SeasonStory';
+import { seasonStory } from '../lib/seasonStory';
 import { useState } from 'react';
 import { seasonCurve } from '../lib/uxFeatures';
-export default function SeasonCurve({ tournaments }) {
+export default function SeasonCurve({ tournaments, playerName, seasonLabel }) {
   const [index, setIndex] = useState(null),
-    [message, setMessage] = useState('');
+    [sharing, setSharing] = useState(false);
   const rows = seasonCurve(tournaments);
   if (!rows.length) return null;
   const selected = rows[Math.min(index ?? rows.length - 1, rows.length - 1)];
@@ -10,18 +12,6 @@ export default function SeasonCurve({ tournaments }) {
     high = Math.max(1, ...rows.map((t) => t.cumulative));
   const x = (i) => 35 + (i * 530) / Math.max(1, rows.length - 1),
     y = (value) => 175 - ((value - low) * 135) / (high - low);
-  const share = async () => {
-    const text = `Ma saison sur Pronos Escrime : ${selected.cumulative} points après ${selected.name}.`;
-    try {
-      if (navigator.share) await navigator.share({ title: 'Ma saison', text, url: 'https://www.pronos-escrime.fr/' });
-      else {
-        await navigator.clipboard.writeText(text);
-        setMessage('Progression copiée.');
-      }
-    } catch (e) {
-      if (e.name !== 'AbortError') setMessage('Partage indisponible.');
-    }
-  };
   return (
     <details className="ux-season-curve" open>
       <summary>Ma progression · points cumulés</summary>
@@ -61,10 +51,15 @@ export default function SeasonCurve({ tournaments }) {
         <strong>{selected.cumulative} points</strong> après {selected.name} · {selected.points >= 0 ? '+' : ''}
         {selected.points} sur ce tournoi.
       </p>
-      <button className="button-link" onClick={share}>
+      <button className="button-link" onClick={() => setSharing(true)}>
         Partager ma progression ↗
       </button>
-      {message && <p role="status">{message}</p>}
+      {sharing && (
+        <SeasonStory
+          summary={seasonStory(rows, selected.id, playerName, seasonLabel)}
+          onClose={() => setSharing(false)}
+        />
+      )}
     </details>
   );
 }
