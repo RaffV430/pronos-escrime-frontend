@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { recentMatchDetails } from '../src/lib/recentMatchDetails.js';
+import { recentMatchDetails, chronologicalRecentMatches } from '../src/lib/recentMatchDetails.js';
 test('une défaite garde le score du tireur en premier, y compris zéro, sans muter la réponse', () => {
   const row = {
     won: false,
@@ -29,4 +29,30 @@ test('dates et scores manquants restent explicitement inconnus', () => {
   assert.equal(d.score, 'Score non renseigné');
   assert.equal(d.opponent, 'Adversaire non renseigné');
   assert.equal(d.context, 'Épreuve non renseignée');
+});
+
+test('les cinq matchs vont de l’ancien à gauche au récent à droite sans modifier la réponse', () => {
+  const rows = Object.freeze([5, 4, 3, 2, 1].map((matchId) => Object.freeze({ matchId })));
+  const displayed = chronologicalRecentMatches(rows);
+  assert.deepEqual(
+    displayed.map((row) => row.matchId),
+    [1, 2, 3, 4, 5],
+  );
+  assert.deepEqual(
+    rows.map((row) => row.matchId),
+    [5, 4, 3, 2, 1],
+  );
+  assert.equal(displayed[4], rows[0]);
+});
+test('l’ordre serveur départage les dates égales ou inconnues sans nouveau tri', () => {
+  const rows = [
+    { matchId: 9, date: null },
+    { matchId: 8, date: null },
+  ];
+  assert.deepEqual(
+    chronologicalRecentMatches(rows).map((row) => row.matchId),
+    [8, 9],
+  );
+  assert.deepEqual(chronologicalRecentMatches([]), []);
+  assert.equal(chronologicalRecentMatches([rows[0]])[0], rows[0]);
 });

@@ -1,8 +1,9 @@
 import { useState } from 'react';
-import { recentMatchDetails } from '../lib/recentMatchDetails';
+import { recentMatchDetails, chronologicalRecentMatches } from '../lib/recentMatchDetails';
 import { roundLabel } from './matchPresentation';
 export default function RecentMatches({ name, rows = [] }) {
   const [selectedId, setSelectedId] = useState(null);
+  const displayedRows = chronologicalRecentMatches(rows);
   const selected = rows.find((row) => row.matchId === selectedId);
   const details = selected && recentMatchDetails(selected);
   if (!rows.length) return null;
@@ -12,20 +13,18 @@ export default function RecentMatches({ name, rows = [] }) {
       {rows.length > 0 && (
         <>
           <div className="h2h-recent-buttons" role="group" aria-label={`Résultats de ${name}`}>
-            {rows.map((row, index) => {
+            {displayedRows.map((row, index) => {
               const d = recentMatchDetails(row);
               return (
                 <button
                   type="button"
                   key={row.matchId}
-                  className="h2h-result-button"
+                  className={`h2h-result-button ${row.won ? 'won' : 'lost'}`}
                   aria-pressed={selectedId === row.matchId}
-                  aria-label={`${index === 0 ? 'Le plus récent. ' : ''}${d.outcome} contre ${d.opponent}, ${d.score}. Afficher le détail.`}
+                  aria-label={`${index === displayedRows.length - 1 ? 'Le plus récent. ' : ''}${d.outcome} contre ${d.opponent}, ${d.score}. Afficher le détail.`}
                   onClick={() => setSelectedId(selectedId === row.matchId ? null : row.matchId)}
                 >
-                  <span className={`h2h-pill ${row.won ? 'won' : 'lost'}`} aria-hidden="true">
-                    {row.won ? 'V' : 'D'}
-                  </span>
+                  <span aria-hidden="true">{row.won ? 'V' : 'D'}</span>
                 </button>
               );
             })}
