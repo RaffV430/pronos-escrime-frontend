@@ -34,6 +34,7 @@ import HeadToHead from './HeadToHead';
 import LiveScore from './LiveScore';
 import TouchStrip from './TouchStrip';
 import './express.css';
+import { focusBlockedMatch } from './focusBlockedMatch.js';
 import { useLiveScores } from '../lib/useLiveScores';
 import MatchSocial from './MatchSocial';
 import BracketTree from './BracketTree.jsx';
@@ -389,7 +390,12 @@ export default function MatchBoard({
     }
     if (refresh) onRefresh?.({ force: true });
   });
-  const save = async (ids) => {
+  const [blockedTarget, setBlockedTarget] = useState(null);
+  useEffect(() => {
+    if (!blockedTarget) return;
+    return focusBlockedMatch(document, blockedTarget.id, view === 'Arbre');
+  }, [blockedTarget, view]);
+  const save = async (ids, revealErrors = false) => {
     if (saving.current) {
       for (const id of ids) queued.current.add(Number(id));
       return [];
@@ -397,7 +403,8 @@ export default function MatchBoard({
     saving.current = true;
     setBusy(true);
     const saved = [],
-      refused = [];
+      refused = [],
+      failed = [];
     try {
       const ready_ = [];
       for (const id of ids) {
@@ -407,10 +414,12 @@ export default function MatchBoard({
           winnerOnly = [1, 2].includes(v.winner) && v[`score${v.winner === 1 ? 2 : 1}`] === '',
           invalid = winnerOnly ? null : validateScores(v, m.maxScore || 15);
         if (invalid) {
+          failed.push(Number(id));
           message(id, `${invalid} Ou touchez simplement le nom du vainqueur.`, true);
           continue;
         }
         if (!ready || closedMatch(m, Date.now())) {
+          failed.push(Number(id));
           message(
             id,
             'Le match est clos ou sa disponibilité ne peut pas être vérifiée. Votre saisie est conservée.',
@@ -469,12 +478,14 @@ export default function MatchBoard({
             }).catch(() => {});
           }
         } else if (result.kind === 'blocked') {
+          failed.push(Number(id));
           message(
             id,
             'Choix non enregistré : sauvegarde locale impossible ou compte non vérifié. Gardez cette page ouverte et réessayez.',
             true,
           );
         } else if (result.kind === 'refused') {
+          failed.push(Number(id));
           if (!onPreviewSave) takeDeliveries([`match:${id}`]);
           if (isClosedRefusal(result.error?.response?.status)) refused.push(Number(id));
           else
@@ -504,6 +515,16 @@ export default function MatchBoard({
     } finally {
       saving.current = false;
       setBusy(false);
+    }
+    if (revealErrors && failed.length && boardMounted.current) {
+      const id = failed[0];
+      const match = allValid.find((m) => m.id === id);
+      if (multiphase && match) choosePhase(tableauPhase(match));
+      setFilter('Tous');
+      if (view === 'Arena' || view === 'Express') setView('Liste');
+      setOpenId(id);
+      setReveal({ id });
+      setBlockedTarget({ id });
     }
     // Saisies terminées pendant l'envoi : enregistrées à la suite, avec la version la plus récente du code.
     const later = [...queued.current].filter((id) => draftsRef.current[id]);
@@ -558,6 +579,10 @@ export default function MatchBoard({
     const value = String(raw).replace(/\D/g, '').slice(0, 2);
     const v = { ...values(m, draftsRef.current), [`score${side}`]: value, winner: null };
     saveDrafts((old) => ({ ...old, [m.id]: v }));
+    if (messages[m.id]?.failed) {
+      const invalid = validateScores(v, m.maxScore || 15);
+      if (!invalid) message(m.id, 'Score corrigé. Prêt à enregistrer.');
+    }
     if (!el || !value || !complete(value, m.maxScore || 15)) return;
     const prefix = el.id.startsWith('detail-') ? 'detail-' : '';
     if (side === 1 && v.score2 === '') document.getElementById(`${prefix}input-${m.id}-2`)?.focus();
@@ -805,7 +830,7 @@ export default function MatchBoard({
       <article
         id={view === 'Arbre' ? `match-detail-${m.id}` : `match-${m.id}`}
         tabIndex={-1}
-        className={`match-card ${focusTarget?.id === m.id || flashId === m.id ? 'match-target' : ''}`}
+        className={`match-card ${messages[m.id]?.failed ? 'match-save-error' : ''} ${focusTarget?.id === m.id || flashId === m.id ? 'match-target' : ''}`}
         key={m.id}
         onBlur={(e) => {
           if (!e.currentTarget.contains(e.relatedTarget)) leave(m);
@@ -895,6 +920,8 @@ export default function MatchBoard({
             <input
               id={`${view === 'Arbre' ? 'detail-' : ''}input-${m.id}-${i + 1}`}
               aria-label={`Score prévu de ${name}`}
+              aria-invalid={messages[m.id]?.failed || undefined}
+              aria-describedby={messages[m.id]?.failed ? `save-error-${m.id}` : undefined}
               inputMode="numeric"
               type="text"
               pattern="[0-9]*"
@@ -981,6 +1008,8 @@ export default function MatchBoard({
         )}
         {messages[m.id] && (
           <p
+            id={`save-error-${m.id}`}
+            tabIndex={-1}
             role={messages[m.id].failed ? 'alert' : 'status'}
             className={messages[m.id].failed ? 'pool-error' : 'pool-saved'}
           >
@@ -1323,7 +1352,7 @@ export default function MatchBoard({
           <button
             className="tableau-floating-save"
             disabled={busy || !ready}
-            onClick={() => save(Object.keys(drafts))}
+            onClick={() => save(Object.keys(draftsRef.current), true)}
             title={withCount(Object.keys(drafts).length, 'saisie non enregistrée', 'saisies non enregistrées')}
           >
             {busy ? 'Enregistrement…' : 'Tout enregistrer'}
