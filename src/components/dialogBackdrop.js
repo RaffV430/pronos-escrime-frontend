@@ -12,3 +12,6 @@ export function nestedDialogLayer(point, child, parent) {
   const inside = (r) => point.x >= r.left && point.x <= r.right && point.y >= r.top && point.y <= r.bottom;
   return inside(child) ? 'child' : parent && inside(parent) ? 'parent' : 'page';
 }
+
+// Une fenêtre au premier plan consomme le clic/Escape avant le détail du tableau.
+export const hasOpenModal = (doc) => Boolean(doc.querySelector('dialog[open]'));

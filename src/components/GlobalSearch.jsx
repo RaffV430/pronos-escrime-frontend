@@ -68,9 +68,9 @@ export default function GlobalSearch({ onClose, onNavigate, onOpenEvent }) {
           failed: false,
           items: (data?.results || []).map((a) => ({
             kind: 'fencer',
-            key: `f:${a.affiliationId || `${a.competitionId}:${a.id}`}`,
+            key: `f:${a.key || a.affiliationId || `${a.competitionId}:${a.id}`}`,
             name: a.name,
-            detail: [a.country || 'Pays non renseigné', a.club, a.ageCategory].filter(Boolean).join(' · '),
+            detail: [a.country || 'Pays non renseigné', a.club, a.ageCategory, a.events?.length ? `${a.events.length} épreuve${a.events.length > 1 ? 's' : ''}` : null].filter(Boolean).join(' · '),
             athlete: a,
           })),
         });
@@ -189,8 +189,7 @@ export default function GlobalSearch({ onClose, onNavigate, onOpenEvent }) {
                   <strong>{group[0].name}</strong> · {group.length} fiches à distinguer
                 </summary>
                 <p className="muted">
-                  Plusieurs identités portent ce nom. Vérifiez le pays, le club et la catégorie avant de suivre une
-                  fiche.
+                  Ces fiches restent séparées car les informations disponibles ne permettent pas de les regrouper sans ambiguïté.
                 </p>
                 <ul>{group.map(renderItem)}</ul>
               </details>
@@ -201,6 +200,7 @@ export default function GlobalSearch({ onClose, onNavigate, onOpenEvent }) {
       {athlete && (
         <FencerProfile
           name={athlete.name}
+          affiliationId={athlete.affiliationId}
           parentDialog={ref}
           onPageBackdrop={onClose}
           onClose={() => setAthlete(null)}

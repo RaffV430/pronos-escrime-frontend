@@ -39,3 +39,11 @@ test('fiche tireur, recherche et page principale sont trois niveaux distincts', 
   assert.equal(nestedDialogLayer({ x: 20, y: 200 }, parent, null), 'page');
   assert.equal(nestedDialogLayer({ x: 200, y: 300 }, child, parent), 'child');
 });
+
+test('une fenêtre ouverte protège le détail du tableau jusqu’à sa fermeture', async () => {
+  const { hasOpenModal } = await import('../src/components/dialogBackdrop.js');
+  const doc = { open: true, querySelector(selector) { assert.equal(selector, 'dialog[open]'); return this.open ? {} : null; } };
+  assert.equal(hasOpenModal(doc), true);
+  doc.open = false;
+  assert.equal(hasOpenModal(doc), false);
+});

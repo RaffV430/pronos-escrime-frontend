@@ -1,3 +1,4 @@
+import { hasOpenModal } from './dialogBackdrop';
 import { useFencerFollows, isFollowedFencer } from '../lib/fencerFollows';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { usePerView } from './usePerView';
@@ -76,10 +77,11 @@ export default function ResultsBracket({ matches, byes = null, onOpen, selectedI
   useEffect(() => {
     if (!selectedId || !onCloseDetail) return;
     const closeOutside = (event) => {
+      if (hasOpenModal(document)) return;
       if (!event.target.closest('.rb-inline-detail, .rb-card')) onCloseDetail();
     };
     const closeEscape = (event) => {
-      if (event.key === 'Escape') onCloseDetail();
+      if (event.key === 'Escape' && !hasOpenModal(document)) onCloseDetail();
     };
     document.addEventListener('pointerdown', closeOutside);
     document.addEventListener('keydown', closeEscape);

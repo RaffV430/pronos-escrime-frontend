@@ -1,3 +1,4 @@
+import { hasOpenModal } from './dialogBackdrop';
 import { useEffect, useRef, useState } from 'react';
 import { entrantFrom, officialWinner, seedOf } from './bracketTree';
 import { shortName, shortRoundName } from './eventResults';
@@ -64,10 +65,11 @@ export default function BracketTree({
   useEffect(() => {
     if (!openId) return;
     const close = (e) => {
+      if (hasOpenModal(document)) return;
       if (!detailRef.current?.contains(e.target) && !e.target.closest('.tree-card')) onCloseDetail?.();
     };
     const escape = (e) => {
-      if (e.key === 'Escape') onCloseDetail?.();
+      if (e.key === 'Escape' && !hasOpenModal(document)) onCloseDetail?.();
     };
     document.addEventListener('pointerdown', close);
     document.addEventListener('keydown', escape);

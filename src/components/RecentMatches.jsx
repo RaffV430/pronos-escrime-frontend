@@ -5,12 +5,10 @@ export default function RecentMatches({ name, rows = [] }) {
   const [selectedId, setSelectedId] = useState(null);
   const selected = rows.find((row) => row.matchId === selectedId);
   const details = selected && recentMatchDetails(selected);
+  if (!rows.length) return null;
   return (
     <section className="h2h-recent" aria-label={`Derniers matchs de tableau connus de ${name}`}>
-      <h4>Derniers matchs de tableau connus · {name}</h4>
-      <p className="muted">
-        {rows.length ? 'Du plus récent au plus ancien → · Touchez une pastille.' : 'Aucun résultat de tableau connu.'}
-      </p>
+      <h4>Forme · {name}</h4>
       {rows.length > 0 && (
         <>
           <div className="h2h-recent-buttons" role="group" aria-label={`Résultats de ${name}`}>
@@ -32,10 +30,6 @@ export default function RecentMatches({ name, rows = [] }) {
               );
             })}
           </div>
-          <p className="muted h2h-recent-hint">
-            V = victoire · D = défaite. Jusqu’à 5 résultats issus des épreuves suivies par l’app, hors poules.
-            Historique partiel ; les retraits et forfaits peuvent être inclus.
-          </p>
         </>
       )}
       {details && (

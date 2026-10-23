@@ -23,7 +23,7 @@ export default function HeadToHead({ matchId, player1, player2 }) {
   if (!player1?.trim() || !player2?.trim()) return null;
   return (
     <details className="h2h" onToggle={load}>
-      <summary>Face-à-face et derniers résultats</summary>
+      <summary>Face-à-face et forme</summary>
       {!data && !error && <p className="muted">Chargement…</p>}
       {error && <p className="muted">{error}</p>}
       {data && (
