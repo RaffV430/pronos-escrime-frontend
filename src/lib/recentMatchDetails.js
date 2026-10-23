@@ -18,3 +18,9 @@ export function recentMatchDetails(row) {
     context: [row.tournament, row.competition].filter(Boolean).join(' · ') || 'Épreuve non renseignée',
   };
 }
+
+// Le serveur fournit les cinq derniers matchs du plus récent au plus ancien.
+// Inverser une copie conserve son ordre métier, y compris les dates égales ou absentes.
+export function chronologicalRecentMatches(rows) {
+  return [...rows].reverse();
+}
