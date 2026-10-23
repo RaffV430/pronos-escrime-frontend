@@ -84,6 +84,7 @@ export function Competition({ c, open, matchId }) {
 // competitionId : épreuve d'où la fiche est ouverte (onglet Podium) — affichée en premier et dépliée.
 export default function FencerProfile({
   name,
+  affiliationId = null,
   onClose,
   matchId = null,
   competitionId = null,
@@ -106,13 +107,13 @@ export default function FencerProfile({
     setData(null);
     setError('');
     API.get('/public/fencer', {
-      params: { name, ...(club ? { club } : club === undefined && matchId ? { matchId } : {}) },
+      params: { name, ...(affiliationId ? { affiliationId } : {}), ...(club ? { club } : club === undefined && matchId ? { matchId } : {}) },
       signal: c.signal,
     })
       .then(({ data }) => setData(data))
       .catch((e) => !c.signal.aborted && setError(e.response?.data?.error || 'Fiche indisponible.'));
     return () => c.abort();
-  }, [name, club, matchId]);
+  }, [name, affiliationId, club, matchId]);
   const s = data?.summary;
   return (
     <dialog
