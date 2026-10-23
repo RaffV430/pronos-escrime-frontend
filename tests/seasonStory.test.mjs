@@ -82,10 +82,14 @@ test('export story vertical réel avec total et gain fournis, variante de lien a
     assert.equal(canvas.height, 1920);
     assert.ok(seen.includes((1765).toLocaleString('fr-FR')));
     assert.ok(seen.includes('+42 pts · Tournoi fictif très long'));
-    assert.ok(seen.includes('ESPACE POUR TON STICKER LIEN'));
+    assert.ok(seen.includes('pronos-escrime.fr'));
+    assert.equal(
+      seen.some((t) => t.includes('STICKER')),
+      false,
+    );
     seen.length = 0;
     await renderSeasonStory(s, 'whatsapp');
-    assert.ok(seen.includes('LE LIEN EST DANS LE MESSAGE ↓'));
+    assert.ok(seen.includes('TU ME RATTRAPES ?'));
     assert.deepEqual(s, before);
   } finally {
     globalThis.document = oldDocument;

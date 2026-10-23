@@ -46,7 +46,7 @@ test('challenge hides the winner and score unless explicitly requested', () => {
   assert.equal(new URL(c.url).search, '?match=1');
 });
 
-test('WhatsApp joint le lien au texte avec image, Instagram garde une image pour sticker manuel', async () => {
+test('le lien accompagne automatiquement les images pour toutes les destinations', async () => {
   const { challengeSharePayload } = await import('../src/lib/challengeCard.js');
   const c = challengeFor(
     { id: 9, player1: 'A', player2: 'B' },
@@ -59,7 +59,7 @@ test('WhatsApp joint le lien au texte avec image, Instagram garde une image pour
   assert.match(whatsapp.text, /\?match=9/);
   assert.equal(whatsapp.text.includes('secret'), false);
   const instagram = challengeSharePayload(c, file, 'instagram', true);
-  assert.equal(instagram.text, undefined);
+  assert.ok(instagram.text.includes(c.url));
   assert.deepEqual(instagram.files, [file]);
   for (const channel of ['instagram', 'whatsapp']) {
     const fallback = challengeSharePayload(c, file, channel, false);
@@ -81,6 +81,9 @@ test('la story est verticale, ne révèle rien par défaut et ne transforme pas 
       fill() {},
       setLineDash() {},
       strokeRect() {},
+      moveTo() {},
+      lineTo() {},
+      stroke() {},
       measureText: (s) => ({ width: s.length * 20 }),
       fillText: (s) => texts.push(s),
     }),
@@ -100,11 +103,15 @@ test('la story est verticale, ne révèle rien par défaut et ne transforme pas 
     assert.equal(canvas.width, 1080);
     assert.equal(canvas.height, 1920);
     assert.equal(texts.includes('14 – 15'), false);
-    assert.ok(texts.includes('ESPACE POUR TON STICKER LIEN'));
+    assert.ok(texts.includes('pronos-escrime.fr'));
+    assert.equal(
+      texts.some((t) => t.includes('STICKER')),
+      false,
+    );
     texts.length = 0;
     await renderChallengeCard(m, p, challengeFor(m, p, 'https://www.pronos-escrime.fr/test', true), 'whatsapp');
     assert.ok(texts.includes('14 – 15'));
-    assert.ok(texts.includes('LE LIEN EST DANS LE MESSAGE ↓'));
+    assert.ok(texts.includes('TU FERAIS MIEUX ?'));
     texts.length = 0;
     const quick = { ...p, winnerOnly: true, predictedScore1: 0, predictedScore2: 1 };
     await renderChallengeCard(m, quick, challengeFor(m, quick, 'https://www.pronos-escrime.fr/test', true));

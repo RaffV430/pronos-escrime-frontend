@@ -25,7 +25,7 @@ export function seasonStoryChart(values) {
     1355 - ((v - low) / (high - low)) * 145,
   ]);
 }
-export async function renderSeasonStory(summary, channel = 'instagram') {
+export async function renderSeasonStory(summary) {
   const c = document.createElement('canvas');
   c.width = 1080;
   c.height = 1920;
@@ -101,22 +101,16 @@ export async function renderSeasonStory(summary, channel = 'instagram') {
   x.fill();
   text('Début de saison', 110, 1405, 26, '#9fb8da', false);
   text('Étape choisie', 960, 1405, 26, '#9fb8da', false, 'right');
-  text('ET TOI, TU EN ES OÙ ?', 540, 1570, 84, '#f3f6fd', true, 'center');
+  text('TU ME RATTRAPES ?', 540, 1550, 86, '#f3f6fd', true, 'center');
   text('Pronostique. Marque des points. Défie tes amis.', 540, 1640, 32, '#c4d4eb', false, 'center');
-  x.strokeStyle = '#7eb2ff';
-  x.lineWidth = 3;
-  x.setLineDash(channel === 'instagram' ? [16, 12] : []);
-  x.strokeRect(76, 1715, 928, 112);
-  text(
-    channel === 'instagram' ? 'ESPACE POUR TON STICKER LIEN' : 'LE LIEN EST DANS LE MESSAGE ↓',
-    540,
-    1785,
-    37,
-    '#bcd6ff',
-    false,
-    'center',
-  );
-  text('pronos-escrime.fr', 540, 1880, 30, '#adc3e2', false, 'center');
+  x.strokeStyle = '#52739a';
+  x.lineWidth = 2;
+  x.beginPath();
+  x.moveTo(76, 1685);
+  x.lineTo(1004, 1685);
+  x.stroke();
+  text('pronos-escrime.fr', 540, 1790, 96, '#7eb2ff', true, 'center');
+  text('Le jeu de pronostics des passionnés d’escrime', 540, 1860, 31, '#d8e4f5', false, 'center');
   return new Promise((resolve, reject) =>
     c.toBlob((blob) => (blob ? resolve(blob) : reject(new Error('Création de la carte impossible.'))), 'image/png'),
   );
