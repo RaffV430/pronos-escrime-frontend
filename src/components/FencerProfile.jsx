@@ -44,7 +44,8 @@ export function Competition({ c, open, matchId }) {
             <ul className="fp-bouts">
               {p.bouts.map((b, i) => (
                 <li key={i} className={b.won ? 'is-win' : 'is-loss'}>
-                  <span className="fp-mark">{b.won ? 'V' : 'D'}</span> {touches(b)}{' '}
+                  <span className="fp-mark">{b.won ? 'V' : 'D'}</span>
+                  <span className="fp-score">{touches(b)}</span>
                   <span className="fp-opponent">
                     {b.opponent}
                     {b.country && <small className="muted"> {b.country}</small>}
@@ -65,12 +66,12 @@ export function Competition({ c, open, matchId }) {
                 className={`${m.won ? 'is-win' : 'is-loss'}${m.matchId === matchId ? ' is-current' : ''}`}
               >
                 <span className="fp-mark">{m.won ? 'V' : 'D'}</span>{' '}
-                {m.medical ? 'abandon' : m.score ? `${m.score[0]}–${m.score[1]}` : ''}{' '}
+                <span className="fp-score">{m.medical ? 'abandon' : m.score ? `${m.score[0]}–${m.score[1]}` : ''}</span>
                 <span className="fp-opponent">
                   {m.opponent}
                   {m.opponentCountry && <small className="muted"> {m.opponentCountry}</small>}
                 </span>{' '}
-                <small className="muted">{roundName(m.round)}</small>
+                <small className="muted fp-round">{roundName(m.round)}</small>
               </li>
             ))}
           </ul>

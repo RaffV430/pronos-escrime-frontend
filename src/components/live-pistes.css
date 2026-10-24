@@ -41,8 +41,9 @@
   margin: 14px 0;
 }
 .live-pistes-duel > span {
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-rows: subgrid;
+  grid-row: span 3;
   min-width: 0;
 }
 .live-pistes-duel > span:last-child {
@@ -57,7 +58,7 @@
 }
 
 .live-pistes-number {
-  align-self: flex-start;
+  justify-self: start;
   display: inline-block;
   min-width: 1.7em;
   padding: 2px 8px;
@@ -66,7 +67,7 @@
   font-variant-numeric: tabular-nums;
 }
 .live-pistes-duel > span:last-child .live-pistes-number {
-  align-self: flex-end;
+  justify-self: end;
 }
 .live-pistes-number.lamp-1.is-lit {
   background: var(--touch-red, #e11d2e);

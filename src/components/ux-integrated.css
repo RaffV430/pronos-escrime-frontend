@@ -87,7 +87,8 @@ html.refonte .match-board .board-head .board-summary {
   list-style: none;
   padding: 0;
 }
-.ux-global-search li {
+.ux-global-search > ul > li,
+.ux-global-search .ux-search-group > details > ul > li {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -237,7 +238,8 @@ html.club-arena.adapted-colors .piste-live-athlete.lamp-2.is-lit {
   .ux-search-trigger {
     min-width: 32px;
   }
-  .ux-global-search li {
+  .ux-global-search > ul > li,
+  .ux-global-search .ux-search-group > details > ul > li {
     flex-wrap: wrap;
   }
 }
