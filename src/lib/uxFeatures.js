@@ -28,6 +28,7 @@ export function writeUx(id, values) {
 export const PROFILE_KEYS = [
   'fencerResults',
   'fencerEntries',
+  'fencerSchedule',
   'newMatches',
   'reminders',
   'roundResults',
@@ -42,6 +43,7 @@ export function notificationProfile(profile, current) {
     ...current,
     fencerResults: follow,
     fencerEntries: follow,
+    fencerSchedule: follow,
     newMatches: predict,
     reminders: predict,
     roundResults: predict,

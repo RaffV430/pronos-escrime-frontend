@@ -53,6 +53,7 @@ export default function NotificationSettings({ userId }) {
       followAll: true,
       fencersOnly: false,
       fencerEntries: false,
+      fencerSchedule: false,
       newMatches: true,
       reminders: true,
       roundResults: false,
@@ -437,6 +438,7 @@ export default function NotificationSettings({ userId }) {
 
                   <fieldset>
                     <legend>Mes tireurs</legend>
+                    {check('fencerSchedule', 'Leurs prochains matchs et poules', '(adversaire ou numéro de poule, piste et heure dès publication)')}
                     {check('fencerResults', 'Leurs résultats', '(chaque match terminé, bilan de poule)')}
                     {check('fencerEntries', 'Quand l’un d’eux est engagé dans une prochaine épreuve')}
                   </fieldset>

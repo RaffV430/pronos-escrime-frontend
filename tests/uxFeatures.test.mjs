@@ -18,6 +18,8 @@ test('les profils gardent les horaires silencieux et la portée du compte', () =
   assert.equal(p.followAll, false);
   assert.equal(p.newMatches, false);
   assert.equal(p.fencerEntries, true);
+  assert.equal(p.fencerSchedule, true);
+  assert.equal(notificationProfile('predict', p).fencerSchedule, false);
   assert.equal(inferredProfile(notificationProfile('both', p)), 'both');
   assert.equal(inferredProfile({ ...p, newMatches: true }), 'custom');
 });
