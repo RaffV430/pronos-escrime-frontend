@@ -31,6 +31,9 @@ test('admin push updates badge and opens exact validation destination without di
   await pending;
   assert.deepEqual(calls[0], ['badge', 3]);
   const notification = calls.find((c) => c[0] === 'notification')[1];
+  assert.equal(notification.icon, '/app-icon-192.png');
+  assert.equal(notification.badge, '/notification-badge-96.png');
+  assert.equal(notification.data.url, 'https://app.test/admin?panel=clubs&request=6');
   handlers.notificationclick({
     notification: { data: notification.data, close() {} },
     waitUntil: (p) => (pending = p),

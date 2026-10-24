@@ -87,7 +87,7 @@ self.addEventListener('push', (event) => {
       self.registration.showNotification(data.title.slice(0, 120), {
         body: notificationBody(data).slice(0, 200),
         icon: '/app-icon-192.png',
-        badge: '/app-icon-192.png',
+        badge: '/notification-badge-96.png',
         tag: String(data.tag || 'pronos'),
         renotify: false,
         data: { url: url.href },
