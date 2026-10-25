@@ -168,6 +168,9 @@ export default function ResultsBracket({ matches, byes = null, onOpen, selectedI
         <div className="rb-bronze">
           <h4>{roundName('Bronze')}</h4>
           <Card slot={{ match: tree.bronze }} onOpen={onOpen} />
+          {tree.bronze.id === selectedId && renderDetail && (
+            <div className="rb-inline-detail">{renderDetail(tree.bronze)}</div>
+          )}
         </div>
       )}
     </div>

@@ -3874,3 +3874,12 @@
     min-height: 40px;
   }
 }
+
+.club-arena .rb-bronze {
+  position: relative;
+}
+.club-arena .rb-bronze > .rb-inline-detail {
+  top: 100%;
+  left: auto;
+  right: 0;
+}
