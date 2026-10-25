@@ -1333,6 +1333,15 @@ export default function App() {
                       initialMatchId={liveMatchId}
                       embedded
                       showLiveOverview
+                      onSelectTeam={(row, match) =>
+                        runNavigation(() => {
+                          selectCompetition(row.competitionId);
+                          setCompetition({ id: row.competitionId, name: row.competitionName, podiumFormat: 'TEAM' });
+                          setLandingPending(false);
+                          setLiveView('matches');
+                          setLiveMatchId(match.id);
+                        })
+                      }
                       matches={matches}
                       competition={competition}
                       userId={user.id}
