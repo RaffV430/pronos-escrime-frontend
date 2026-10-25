@@ -23,6 +23,7 @@ const readSelection = (key) => {
 
 export default function EventSelector({
   userId,
+  selectedEventId = null,
   hideCompact = false,
   status = null,
   actions = null,
@@ -79,6 +80,21 @@ export default function EventSelector({
   const [retry, setRetry] = useState(0);
   const [confirmed, setConfirmed] = useState(false);
   const [chooserOpen, setChooserOpen] = useState(false);
+
+  // Navigation from a live card can select a sibling event without using this chooser.
+  useEffect(() => {
+    if (!selectedEventId || !events.some((event) => Number(event.id) === selectedEventId)) return;
+    setEventId(String(selectedEventId));
+    setConfirmed(true);
+    try {
+      localStorage.setItem(
+        storageKey,
+        JSON.stringify({ tournamentId: Number(tournamentId), eventId: selectedEventId }),
+      );
+    } catch {
+      /* Optional navigation preference. */
+    }
+  }, [selectedEventId, events, tournamentId, storageKey]);
 
   useEffect(() => {
     const controller = new AbortController();

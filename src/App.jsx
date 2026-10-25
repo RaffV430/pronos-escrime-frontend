@@ -1231,6 +1231,7 @@ export default function App() {
                 !(REFONTE && mainTab === 'home') &&
                 !(mainTab === 'admin' && adminSection !== 'event') && (
                   <EventSelector
+                    selectedEventId={selectedCompetitionId}
                     hideCompact={mainTab === 'home'}
                     status={
                       ['play', 'live'].includes(mainTab) && selectedCompetitionId ? (
