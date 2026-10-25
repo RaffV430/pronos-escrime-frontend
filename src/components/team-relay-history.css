@@ -1,0 +1,98 @@
+.team-relay-history {
+  margin: 12px 24px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: var(--surface-2, #eef2f8);
+}
+.team-relay-history h3 {
+  margin: 0 0 4px;
+  font-size: 0.85rem;
+}
+.team-relay-history h3 small {
+  font-weight: 400;
+  font-size: 0.75rem;
+}
+.relay-visual-groups {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+}
+.relay-visual-group,
+.relay-visual-cells {
+  display: contents;
+}
+.relay-visual-divider {
+  display: inline-flex;
+  align-items: center;
+  align-self: stretch;
+  border-left: 2px solid var(--border, #b6c2d6);
+  margin: 0 3px;
+  padding-left: 5px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--muted, #59677d);
+}
+.relay-visual-group:first-child .relay-visual-divider {
+  border-left: 0;
+  margin-left: 0;
+  padding-left: 0;
+}
+.club-arena button.relay-visual-hit {
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  min-width: 0;
+  min-height: 0;
+  padding: 0;
+  margin: 0;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: inherit;
+}
+.relay-visual-hit > span {
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 5px;
+  background: var(--soft, #e9edf4);
+  font-weight: 700;
+}
+.relay-visual-hit.by-1 > span {
+  background: var(--touch-red, #e52235);
+  color: #fff;
+}
+.relay-visual-hit.by-2 > span {
+  background: var(--touch-green, #0f9d58);
+  color: #fff;
+}
+.relay-visual-hit.by-double > span {
+  background: #b47c09;
+  color: #fff;
+}
+.relay-visual-hit.by-gap > span {
+  border: 1px dashed currentColor;
+  box-sizing: border-box;
+}
+.relay-visual-hit[aria-pressed='true'] > span {
+  outline: 2px solid var(--accent, #2462cc);
+  outline-offset: 2px;
+}
+.relay-visual-caption {
+  overflow-wrap: anywhere;
+  margin: 4px 0 0;
+  font-size: 0.85rem;
+}
+.relay-visual-note {
+  font-size: 0.7rem;
+  color: var(--muted, #59677d);
+  margin: 4px 0 0;
+}
+@media (max-width: 420px) {
+  .team-relay-history {
+    margin: 12px;
+  }
+}

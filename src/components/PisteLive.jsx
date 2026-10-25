@@ -6,6 +6,7 @@ import CrowdTrend from './CrowdTrend';
 import { roundLabel, groupMatches } from './matchPresentation';
 import { officialLink, pisteMatches, pistePrediction, pisteStatus, ftlPresentation } from '../lib/pisteLive';
 import TouchStrip from './TouchStrip';
+import TeamRelayHistory from './TeamRelayHistory';
 import LiveScore from './LiveScore';
 import LivePistes from './LivePistes';
 import TeamLiveOverview from './TeamLiveOverview';
@@ -214,13 +215,21 @@ export default function PisteLive({
                 </div>
               ))}
             </div>
-            <TouchStrip
-              history={displayLive?.history}
-              issue={displayLive?.historyIssue}
-              player1={displayMatch.player1}
-              player2={displayMatch.player2}
-              live={isLive(match.id)}
-            />
+            {team ? (
+              <TeamRelayHistory
+                history={displayLive?.history}
+                issue={displayLive?.historyIssue}
+                live={isLive(match.id)}
+              />
+            ) : (
+              <TouchStrip
+                history={displayLive?.history}
+                issue={displayLive?.historyIssue}
+                player1={displayMatch.player1}
+                player2={displayMatch.player2}
+                live={isLive(match.id)}
+              />
+            )}
             <div className="piste-live-panels">
               <section>
                 <p className="arena-eyebrow">{t('live.yourPrediction')}</p>
