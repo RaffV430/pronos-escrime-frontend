@@ -132,7 +132,7 @@
   font-size: 0.9rem;
   overflow-wrap: anywhere;
 }
-.team-live-overview .live-pistes-card {
+.team-live-overview article.live-pistes-card {
   cursor: default;
 }
 

@@ -62,3 +62,17 @@ test('aucun nom d’une autre épreuve, d’un ancien signal, d’une rencontre 
     null,
   );
 });
+
+import { teamMatchForRow } from '../src/lib/teamLiveOverview.js';
+import { livePredictionLabel } from '../src/lib/livePistes.js';
+test('la carte retrouve uniquement son match importé et remet le pronostic dans le sens des équipes', () => {
+  const m = { ...match, competitionId: 45, predictions: [{ userId: 7, predictedScore1: 45, predictedScore2: 36 }] };
+  const linked = teamMatchForRow(signal, [m]);
+  assert.equal(linked.match.id, 10);
+  assert.equal(livePredictionLabel(linked.match, linked.live, 7), 'Votre prono : 36 – 45');
+  assert.equal(livePredictionLabel(linked.match, linked.live, 8), 'Votre prono : non renseigné');
+  assert.equal(teamMatchForRow({ ...signal, competitionId: 46 }, [m]), null);
+  assert.equal(teamMatchForRow({ ...signal, officialMatchId: null }, [m]), null);
+  assert.equal(teamMatchForRow({ ...signal, player2: 'ITALY' }, [m]), null);
+  assert.deepEqual(m.predictions, [{ userId: 7, predictedScore1: 45, predictedScore2: 36 }]);
+});

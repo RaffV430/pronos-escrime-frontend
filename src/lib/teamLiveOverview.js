@@ -34,3 +34,13 @@ export function relayNamesForMatch(scores, match, competitionId, now = Date.now(
     ? [row.fencer2?.name || null, row.fencer1?.name || null]
     : [row.fencer1?.name || null, row.fencer2?.name || null];
 }
+
+// Link only an imported match whose event and both teams agree with the live signal.
+export function teamMatchForRow(row, matches) {
+  const found = matches.filter((m) => m.id === row.officialMatchId && m.competitionId === row.competitionId);
+  if (found.length !== 1) return null;
+  const m = found[0];
+  const forward = teamKey(m.player1) === teamKey(row.player1) && teamKey(m.player2) === teamKey(row.player2);
+  const reverse = teamKey(m.player1) === teamKey(row.player2) && teamKey(m.player2) === teamKey(row.player1);
+  return forward || reverse ? { match: m, live: { ftlLeftPlayer: reverse ? 2 : 1 } } : null;
+}

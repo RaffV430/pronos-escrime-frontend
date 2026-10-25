@@ -1,7 +1,7 @@
 import AdaptiveFencerName from './AdaptiveFencerName';
 import { eventNameFor } from '../lib/eventName';
 import { useI18n } from '../i18n/context';
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import CrowdTrend from './CrowdTrend';
 import { roundLabel, groupMatches } from './matchPresentation';
 import { officialLink, pisteMatches, pistePrediction, pisteStatus, ftlPresentation } from '../lib/pisteLive';
@@ -25,6 +25,7 @@ export default function PisteLive({
   initialMatchId = null,
   embedded = false,
   showLiveOverview = false,
+  onSelectTeam,
 }) {
   const { t, lang } = useI18n();
   const STATUS = {
@@ -68,6 +69,26 @@ export default function PisteLive({
     .filter((m) => m.isFinished)
     .slice(-6)
     .reverse();
+  useEffect(() => {
+    if (initialMatchId && ready) {
+      scoreRef.current?.focus({ preventScroll: true });
+      scoreRef.current?.scrollIntoView({ block: 'start' });
+    }
+  }, [initialMatchId, ready]);
+  const selectMatch = (id) => {
+    setRound('');
+    setStrip('');
+    setMine(false);
+    setSelectedId(id);
+    requestAnimationFrame(() => {
+      const target = scoreRef.current;
+      target?.focus({ preventScroll: true });
+      target?.scrollIntoView({
+        behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth',
+        block: 'start',
+      });
+    });
+  };
   return (
     <section className="piste-live" aria-label="Rencontres en direct">
       {!embedded && (
@@ -82,10 +103,24 @@ export default function PisteLive({
           </button>
         </header>
       )}
-      <p className="piste-live-notice">{competition?.podiumFormat === 'TEAM' && `${eventNameFor(lang, competition.name)} : `}{liveCount ? t('live.noticeLive', { n: liveCount }) : t('live.noticeIdle')}</p>
+      <p className="piste-live-notice">
+        {competition?.podiumFormat === 'TEAM' && `${eventNameFor(lang, competition.name)} : `}
+        {liveCount ? t('live.noticeLive', { n: liveCount }) : t('live.noticeIdle')}
+      </p>
       {stale && <p role="status">{t('live.stale')}</p>}
       {error && <p role="alert">{error}</p>}
-      {showLiveOverview && competition?.podiumFormat === 'TEAM' && <TeamLiveOverview competition={competition} />}
+      {showLiveOverview && competition?.podiumFormat === 'TEAM' && (
+        <TeamLiveOverview
+          competition={competition}
+          matches={matches}
+          userId={userId}
+          selectedId={match?.id}
+          onSelect={(row, selectedMatch) => {
+            if (row.competitionId === competition.id) selectMatch(selectedMatch.id);
+            else onSelectTeam?.(row, selectedMatch);
+          }}
+        />
+      )}
       {showLiveOverview && competition?.podiumFormat !== 'TEAM' && (
         <LivePistes
           matches={matches}
@@ -94,20 +129,7 @@ export default function PisteLive({
           ready={ready}
           error={error}
           userId={userId}
-          onSelect={(id) => {
-            setRound('');
-            setStrip('');
-            setMine(false);
-            setSelectedId(id);
-            requestAnimationFrame(() => {
-              const target = scoreRef.current;
-              target?.focus({ preventScroll: true });
-              target?.scrollIntoView({
-                behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth',
-                block: 'start',
-              });
-            });
-          }}
+          onSelect={selectMatch}
         />
       )}
       <div className="piste-live-filters">
@@ -178,11 +200,9 @@ export default function PisteLive({
                   {team && !match.isFinished && (
                     <span className="piste-team-relay">En piste : {relayNames?.[i - 1] || 'non transmis'}</span>
                   )}
-                  {isLive(match.id) &&
-                    !displayLive[`fencer${i}`]?.lamp &&
-                    displayLive[`fencer${i}`]?.white && (
-                      <span className="white-lamp-badge">{t('live.invalidTouch')}</span>
-                    )}
+                  {isLive(match.id) && !displayLive[`fencer${i}`]?.lamp && displayLive[`fencer${i}`]?.white && (
+                    <span className="white-lamp-badge">{t('live.invalidTouch')}</span>
+                  )}
                   <strong className="piste-live-score-number">
                     {match.isFinished && Number.isInteger(displayMatch[`score${i}`])
                       ? displayMatch[`score${i}`]
@@ -204,9 +224,11 @@ export default function PisteLive({
               <section>
                 <p className="arena-eyebrow">{t('live.yourPrediction')}</p>
                 <h3>
-                  {prediction ? (displayLive?.ftlLeftPlayer === 2 && !displayLive.finished
-                    ? `${prediction.predictedScore2} – ${prediction.predictedScore1}`
-                    : `${prediction.predictedScore1} – ${prediction.predictedScore2}`) : t('live.notSet')}
+                  {prediction
+                    ? displayLive?.ftlLeftPlayer === 2 && !displayLive.finished
+                      ? `${prediction.predictedScore2} – ${prediction.predictedScore1}`
+                      : `${prediction.predictedScore1} – ${prediction.predictedScore2}`
+                    : t('live.notSet')}
                 </h3>
                 <p>{points === null ? t('live.pointsLater') : t('live.pointsWon', { n: points })}</p>
               </section>
