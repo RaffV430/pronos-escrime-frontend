@@ -109,29 +109,6 @@ export default function PisteLive({
       </p>
       {stale && <p role="status">{t('live.stale')}</p>}
       {error && <p role="alert">{error}</p>}
-      {showLiveOverview && competition?.podiumFormat === 'TEAM' && (
-        <TeamLiveOverview
-          competition={competition}
-          matches={matches}
-          userId={userId}
-          selectedId={match?.id}
-          onSelect={(row, selectedMatch) => {
-            if (row.competitionId === competition.id) selectMatch(selectedMatch.id);
-            else onSelectTeam?.(row, selectedMatch);
-          }}
-        />
-      )}
-      {showLiveOverview && competition?.podiumFormat !== 'TEAM' && (
-        <LivePistes
-          matches={matches}
-          live={live}
-          selectedId={match?.id}
-          ready={ready}
-          error={error}
-          userId={userId}
-          onSelect={selectMatch}
-        />
-      )}
       <div className="piste-live-filters">
         <label>
           {t('live.round')}
@@ -159,6 +136,30 @@ export default function PisteLive({
           {t('live.mineOnly')}
         </button>
       </div>
+      {showLiveOverview && competition?.podiumFormat === 'TEAM' && (
+        <TeamLiveOverview
+          competition={competition}
+          matches={matches}
+          userId={userId}
+          selectedId={match?.id}
+          onSelect={(row, selectedMatch) => {
+            if (row.competitionId === competition.id) selectMatch(selectedMatch.id);
+            else onSelectTeam?.(row, selectedMatch);
+          }}
+        />
+      )}
+      {showLiveOverview && competition?.podiumFormat !== 'TEAM' && (
+        <LivePistes
+          matches={matches}
+          live={live}
+          selectedId={match?.id}
+          ready={ready}
+          error={error}
+          userId={userId}
+          onSelect={selectMatch}
+        />
+      )}
+
       {!ready ? (
         <p>{t('live.loading')}</p>
       ) : !match ? (
