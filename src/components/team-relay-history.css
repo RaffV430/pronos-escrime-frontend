@@ -2,41 +2,82 @@
   margin: 16px 24px;
 }
 .team-relay-history h3 {
-  margin-bottom: 6px;
+  margin: 0 0 10px;
+  font-size: 1rem;
 }
-.team-relay-history details {
-  border-top: 2px solid var(--border, #ced8e8);
+.team-relay-history h3 small {
+  font-weight: 400;
+  font-size: 0.8rem;
+}
+.relay-visual-group {
   padding: 8px 0;
+  border-top: 2px solid var(--border, #ced8e8);
 }
-.team-relay-history summary {
-  cursor: pointer;
+.relay-visual-heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  margin: 0 0 2px;
+  font-size: 0.85rem;
+}
+.relay-visual-heading small {
+  color: var(--muted, #59677d);
+}
+.relay-visual-cells {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+}
+.club-arena button.relay-visual-hit {
+  display: grid;
+  place-items: center;
+  min-width: 44px;
   min-height: 44px;
-  padding: 10px 0;
+  padding: 6px;
+  margin: 0;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: inherit;
+}
+.relay-visual-hit > span {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 5px;
+  background: var(--soft, #e9edf4);
+  font-weight: 700;
+}
+.relay-visual-hit.by-1 > span {
+  background: var(--touch-red, #e52235);
+  color: #fff;
+}
+.relay-visual-hit.by-2 > span {
+  background: var(--touch-green, #0f9d58);
+  color: #fff;
+}
+.relay-visual-hit.by-double > span {
+  background: #b47c09;
+  color: #fff;
+}
+.relay-visual-hit.by-gap > span {
+  border: 1px dashed currentColor;
   box-sizing: border-box;
 }
-.team-relay-history summary span,
-.team-relay-history summary small {
-  margin-left: 12px;
+.relay-visual-hit[aria-pressed='true'] > span {
+  outline: 2px solid var(--accent, #2462cc);
+  outline-offset: 2px;
 }
-.team-relay-names {
+.relay-visual-caption {
   overflow-wrap: anywhere;
-}
-.team-relay-history ol {
-  list-style: none;
-  padding: 0;
   margin: 8px 0;
 }
-.team-relay-history li {
-  display: grid;
-  grid-template-columns: 56px minmax(0, 1fr) auto;
-  gap: 10px;
-  padding: 8px 0;
-  border-bottom: 1px solid var(--border, #ced8e8);
-  overflow-wrap: anywhere;
-}
-.team-relay-history .relay-event-gap,
-.team-relay-history .relay-event-correction {
-  font-style: italic;
+.relay-visual-note {
+  font-size: 0.75rem;
+  color: var(--muted, #59677d);
+  margin: 6px 0 0;
 }
 @media (max-width: 420px) {
   .team-relay-history {

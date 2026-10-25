@@ -1,59 +1,82 @@
+import { useState } from 'react';
 import { relayGroups } from '../lib/teamRelayHistory';
 import { clockLabel } from '../lib/useLiveScores';
 import './team-relay-history.css';
+const describe = (event) =>
+  event.by === 'gap'
+    ? 'Touches intermédiaires non enregistrées'
+    : event.by === 'correction'
+      ? 'Correction de score reçue'
+      : event.by === 'double'
+        ? 'Évolution des deux scores reçue'
+        : event.by === 1
+          ? event.fencer1Name || 'Équipe gauche'
+          : event.fencer2Name || 'Équipe droite';
 export default function TeamRelayHistory({ history, issue, live }) {
+  const [picked, setPicked] = useState(null);
   if (issue) return <p role="status">{issue}</p>;
   const groups = relayGroups(history);
   if (!groups.length) return <p className="muted">Historique des relais non disponible pour le moment.</p>;
+  const selected = groups.flatMap((g) => g.events).find((e) => e.at === picked);
+  const start = groups[0].events[0];
   return (
     <section className="team-relay-history" aria-label="Historique par relais">
-      <h3>Historique par relais</h3>
-      <p className="muted">
-        Séquences réellement enregistrées. Une interruption du suivi peut laisser des touches manquantes.
-      </p>
-      {groups.map((group, index) => {
-        const first = group.events[0],
-          last = group.events.at(-1);
-        return (
-          <details key={`${first.at}:${index}`} open={index === groups.length - 1}>
-            <summary>
-              <strong>{group.period > 0 ? `Relais ${group.period}` : 'Relais non identifié'}</strong>
-              <span>
-                {first.score1}–{first.score2} → {last.score1}–{last.score2}
-              </span>
-              {live && index === groups.length - 1 && <small>Dernier relais observé</small>}
-            </summary>
-            <p className="team-relay-names">
-              {group.fencer1Name || 'Tireur non transmis'} · {group.fencer2Name || 'Tireur non transmis'}
-            </p>
-            <ol>
-              {group.events.map((event, i) => (
-                <li key={`${event.at}:${i}`} className={`relay-event-${event.by}`}>
-                  <b>
-                    {event.score1}–{event.score2}
-                  </b>
-                  <span>
-                    {event.by === 'start'
-                      ? event.truncated
-                        ? 'Début de l’historique conservé'
-                        : 'Premier score observé'
-                      : event.by === 'relay'
-                        ? 'Changement de relais observé'
-                        : event.by === 'gap'
-                          ? 'Score reçu · touches intermédiaires non enregistrées'
-                          : event.by === 'correction'
-                            ? 'Correction de score reçue'
-                            : event.by === 'double'
-                              ? 'Évolution des deux scores reçue'
-                              : `Touche · ${event.by === 1 ? group.fencer1Name || 'équipe gauche' : group.fencer2Name || 'équipe droite'}`}
-                  </span>
-                  <time>{clockLabel(event.clock)}</time>
-                </li>
-              ))}
-            </ol>
-          </details>
-        );
-      })}
+      <h3>
+        Fil des touches{' '}
+        <small>
+          · depuis {start.score1}–{start.score2}
+        </small>
+      </h3>
+      <div className="relay-visual-groups">
+        {groups.map((group, index) => {
+          const first = group.events[0],
+            last = group.events.at(-1);
+          const events = group.events.filter((e) => !['start', 'relay'].includes(e.by));
+          return (
+            <div className="relay-visual-group" key={`${first.at}:${index}`}>
+              <p
+                className="relay-visual-heading"
+                title={`${group.fencer1Name || 'Tireur non transmis'} · ${group.fencer2Name || 'Tireur non transmis'}`}
+              >
+                <strong>{group.period > 0 ? `Relais ${group.period}` : 'Relais non identifié'}</strong>
+                <span>
+                  {last.score1}–{last.score2}
+                </span>
+                {live && index === groups.length - 1 && <small>Dernier observé</small>}
+              </p>
+              <div
+                className="relay-visual-cells"
+                role="group"
+                aria-label={group.period > 0 ? `Touches du relais ${group.period}` : 'Touches du relais non identifié'}
+              >
+                {events.map((event, i) => (
+                  <button
+                    type="button"
+                    key={`${event.at}:${i}`}
+                    className={`relay-visual-hit by-${event.by}`}
+                    aria-pressed={picked === event.at}
+                    aria-label={`${event.score1}–${event.score2} · ${describe(event)} · ${clockLabel(event.clock)}`}
+                    onClick={() => setPicked(picked === event.at ? null : event.at)}
+                  >
+                    <span aria-hidden="true">{event.by === 'gap' ? '…' : event.by === 'correction' ? '↺' : ''}</span>
+                  </button>
+                ))}
+                {!events.length && <small className="muted">Aucune touche enregistrée</small>}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+      {selected && (
+        <p className="relay-visual-caption" role="status">
+          <b>
+            {selected.score1}–{selected.score2}
+          </b>{' '}
+          · {describe(selected)}
+          {clockLabel(selected.clock) && ` · ${clockLabel(selected.clock)}`}
+        </p>
+      )}
+      <p className="relay-visual-note">Suivi partiel · … touches manquantes · ↺ correction</p>
     </section>
   );
 }
