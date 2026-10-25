@@ -1,5 +1,5 @@
 // Keep source order: corrections and missing periods must never be inferred from scores.
-export function relayGroups(history = []) {
+export function relayGroups(history = [], officialRelays = []) {
   const groups = [];
   for (const event of history || []) {
     let group = groups.at(-1);
@@ -15,5 +15,17 @@ export function relayGroups(history = []) {
     }
     group.events.push(event);
   }
-  return groups;
+  for (const official of officialRelays || []) {
+    const existing = groups.filter((g) => g.period === official.period).at(-1);
+    if (existing) existing.official = official;
+    else
+      groups.push({
+        period: official.period,
+        fencer1Name: official.fencer1Name,
+        fencer2Name: official.fencer2Name,
+        events: [],
+        official,
+      });
+  }
+  return groups.sort((a, b) => (a.period || 99) - (b.period || 99));
 }

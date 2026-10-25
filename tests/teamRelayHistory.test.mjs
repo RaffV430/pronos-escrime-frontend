@@ -26,3 +26,20 @@ test('recorded fencers and scores follow side inversion without changing source 
   assert.equal(result.live.history[0].score1, 4);
   assert.equal(event.fencer1Name, 'SYNTH A');
 });
+test('missing relay touch histories use official totals without inventing colored events', () => {
+  const official = [
+    { period: 1, score1: 5, score2: 3, fencer1Name: 'SYNTH A', fencer2Name: 'SYNTH B' },
+    { period: 2, score1: 8, score2: 10 },
+  ];
+  const history = [{ at: 'a', period: 2, by: 1, score1: 7, score2: 9 }];
+  const snapshot = structuredClone({ official, history });
+  const groups = relayGroups(history, official);
+  assert.equal(groups.length, 2);
+  assert.deepEqual(groups[0].events, []);
+  assert.equal(groups[0].official.score1, 5);
+  assert.equal(groups[1].events.length, 1);
+  assert.deepEqual({ official, history }, snapshot);
+  const inverted = ftlPresentation({ player1: 'A', player2: 'B', officialRelays: official }, { ftlLeftPlayer: 2 });
+  assert.equal(inverted.match.officialRelays[0].score1, 3);
+  assert.equal(inverted.match.officialRelays[0].fencer1Name, 'SYNTH B');
+});
