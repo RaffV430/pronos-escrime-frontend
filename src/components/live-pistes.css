@@ -187,11 +187,12 @@
 .team-live-toolbar {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  align-items: start;
+  align-items: end;
   gap: 12px;
   margin-bottom: 12px;
 }
 .team-live-toolbar > label {
+  margin: 0;
   display: grid;
   gap: 4px;
   min-width: 0;
@@ -205,6 +206,7 @@
   min-width: 0;
 }
 .team-live-toolbar summary {
+  line-height: 20px;
   min-height: 44px;
   box-sizing: border-box;
   padding: 12px 0;
