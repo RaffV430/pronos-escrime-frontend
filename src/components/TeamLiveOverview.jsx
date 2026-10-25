@@ -51,44 +51,42 @@ export default function TeamLiveOverview({ competition, matches = [], userId, se
       <h2 id="team-live-title">
         Direct par équipes <span>({rows.length})</span>
       </h2>
-      <p className="muted">
-        Choisissez les rencontres à suivre parmi les pistes identifiées du tournoi. Les tireurs gardent leur côté
-        officiel.
-      </p>
-      <label>
-        Épreuves{' '}
-        <select value={gender} onChange={(e) => setGender(e.target.value)}>
-          <option value="">Hommes et Femmes</option>
-          <option value="men">Hommes</option>
-          <option value="women">Femmes</option>
-        </select>
-      </label>
-      <details className="team-live-choices">
-        <summary>Choisir les matchs à afficher</summary>
-        <button
-          type="button"
-          className="button-secondary"
-          onClick={() => {
-            setSelected(null);
-            setGender('');
-          }}
-        >
-          Tout afficher
-        </button>
-        {!all.length && <p>Aucune piste identifiée pour le moment.</p>}
-        {all.map((r) => (
-          <label className="check-row" key={r.matchId}>
-            <input
-              type="checkbox"
-              checked={!selected || selected.has(r.matchId)}
-              onChange={(e) => toggle(r.matchId, e.target.checked)}
-            />
-            <span>
-              {label(r)} · {r.player1} – {r.player2} · Piste {r.strip}
-            </span>
-          </label>
-        ))}
-      </details>
+      <div className="team-live-toolbar">
+        <label>
+          Épreuves{' '}
+          <select value={gender} onChange={(e) => setGender(e.target.value)}>
+            <option value="">Hommes et Femmes</option>
+            <option value="men">Hommes</option>
+            <option value="women">Femmes</option>
+          </select>
+        </label>
+        <details className="team-live-choices">
+          <summary>Choisir les matchs à afficher</summary>
+          <button
+            type="button"
+            className="button-secondary"
+            onClick={() => {
+              setSelected(null);
+              setGender('');
+            }}
+          >
+            Tout afficher
+          </button>
+          {!all.length && <p>Aucune piste identifiée pour le moment.</p>}
+          {all.map((r) => (
+            <label className="check-row" key={r.matchId}>
+              <input
+                type="checkbox"
+                checked={!selected || selected.has(r.matchId)}
+                onChange={(e) => toggle(r.matchId, e.target.checked)}
+              />
+              <span>
+                {label(r)} · {r.player1} – {r.player2} · Piste {r.strip}
+              </span>
+            </label>
+          ))}
+        </details>
+      </div>
       {!rows.length && (
         <p role="status">
           {all.length
