@@ -1,33 +1,42 @@
 .team-relay-history {
-  margin: 16px 24px;
+  margin: 12px 24px;
+  padding: 12px;
+  border-radius: 12px;
+  background: var(--soft, #e9edf4);
 }
 .team-relay-history h3 {
-  margin: 0 0 10px;
-  font-size: 1rem;
+  margin: 0 0 4px;
+  font-size: 0.85rem;
 }
 .team-relay-history h3 small {
   font-weight: 400;
-  font-size: 0.8rem;
+  font-size: 0.75rem;
 }
-.relay-visual-group {
-  padding: 8px 0;
-  border-top: 2px solid var(--border, #ced8e8);
-}
-.relay-visual-heading {
+.relay-visual-groups {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 8px 12px;
-  margin: 0 0 2px;
-  font-size: 0.85rem;
+  gap: 0;
 }
-.relay-visual-heading small {
+.relay-visual-group,
+.relay-visual-cells {
+  display: contents;
+}
+.relay-visual-divider {
+  display: inline-flex;
+  align-items: center;
+  align-self: stretch;
+  border-left: 2px solid var(--border, #b6c2d6);
+  margin: 6px 3px;
+  padding-left: 5px;
+  font-size: 0.7rem;
+  font-weight: 700;
   color: var(--muted, #59677d);
 }
-.relay-visual-cells {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
+.relay-visual-group:first-child .relay-visual-divider {
+  border-left: 0;
+  margin-left: 0;
+  padding-left: 0;
 }
 .club-arena button.relay-visual-hit {
   display: grid;
@@ -72,12 +81,13 @@
 }
 .relay-visual-caption {
   overflow-wrap: anywhere;
-  margin: 8px 0;
+  margin: 4px 0 0;
+  font-size: 0.85rem;
 }
 .relay-visual-note {
-  font-size: 0.75rem;
+  font-size: 0.7rem;
   color: var(--muted, #59677d);
-  margin: 6px 0 0;
+  margin: 4px 0 0;
 }
 @media (max-width: 420px) {
   .team-relay-history {
