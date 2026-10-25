@@ -41,18 +41,39 @@ export function pisteStatus(match) {
 export function ftlPresentation(match, live) {
   if (!match || !live || live.finished || live.ftlLeftPlayer !== 2) return { match, live };
   return {
-    match: { ...match, player1: match.player2, player2: match.player1,
-      player1Country: match.player2Country, player2Country: match.player1Country,
-      score1: match.score2, score2: match.score1,
-      crowd: match.crowd ? { ...match.crowd,
-        player1Pct: match.crowd.player2Pct, player2Pct: match.crowd.player1Pct,
-        topScore: match.crowd.topScore ? { ...match.crowd.topScore,
-          score1: match.crowd.topScore.score2, score2: match.crowd.topScore.score1,
-        } : match.crowd.topScore,
-      } : match.crowd },
-    live: { ...live, score1: live.score2, score2: live.score1,
-      fencer1: live.fencer2, fencer2: live.fencer1,
-      history: live.history?.map(t => ({ ...t, score1: t.score2, score2: t.score1,
-        by: t.by === 1 ? 2 : t.by === 2 ? 1 : t.by })) },
+    match: {
+      ...match,
+      player1: match.player2,
+      player2: match.player1,
+      player1Country: match.player2Country,
+      player2Country: match.player1Country,
+      score1: match.score2,
+      score2: match.score1,
+      crowd: match.crowd
+        ? {
+            ...match.crowd,
+            player1Pct: match.crowd.player2Pct,
+            player2Pct: match.crowd.player1Pct,
+            topScore: match.crowd.topScore
+              ? { ...match.crowd.topScore, score1: match.crowd.topScore.score2, score2: match.crowd.topScore.score1 }
+              : match.crowd.topScore,
+          }
+        : match.crowd,
+    },
+    live: {
+      ...live,
+      score1: live.score2,
+      score2: live.score1,
+      fencer1: live.fencer2,
+      fencer2: live.fencer1,
+      history: live.history?.map((t) => ({
+        ...t,
+        score1: t.score2,
+        score2: t.score1,
+        by: t.by === 1 ? 2 : t.by === 2 ? 1 : t.by,
+        fencer1Name: t.fencer2Name,
+        fencer2Name: t.fencer1Name,
+      })),
+    },
   };
 }
