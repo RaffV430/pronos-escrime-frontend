@@ -4,7 +4,7 @@ import { clockLabel } from '../lib/useLiveScores';
 import './team-relay-history.css';
 const describe = (event) =>
   event.by === 'gap'
-    ? 'Touches intermédiaires non enregistrées'
+    ? 'Repère de score · ordre des touches non enregistré'
     : event.by === 'correction'
       ? 'Correction de score reçue'
       : event.by === 'double'
@@ -24,14 +24,14 @@ export default function TeamRelayHistory({ history, issue, officialRelays }) {
     );
   const recorded = groups.flatMap((g) => g.events).filter((e) => !['start', 'relay'].includes(e.by));
   const selected = recorded.find((e) => e.at === picked) || recorded.at(-1);
-  const start = issue ? null : (history || [])[0];
+  const start = issue ? null : groups.flatMap((g) => g.events)[0];
   return (
     <section className="team-relay-history" aria-label="Historique par relais">
       <h3>
-        Fil des relais{' '}
+        Fil du suivi live{' '}
         {start && (
           <small>
-            · touches suivies dès {start.score1}–{start.score2}
+            · depuis {start.score1}–{start.score2}
           </small>
         )}
       </h3>
@@ -67,7 +67,9 @@ export default function TeamRelayHistory({ history, issue, officialRelays }) {
                     aria-label={`${event.score1}–${event.score2} · ${describe(event)} · ${clockLabel(event.clock)}`}
                     onClick={() => setPicked(picked === event.at ? null : event.at)}
                   >
-                    <span aria-hidden="true">{event.by === 'gap' ? '…' : event.by === 'correction' ? '↺' : ''}</span>
+                    <span aria-hidden="true">
+                      {event.by === 'gap' || event.by === 'double' ? '…' : event.by === 'correction' ? '↺' : ''}
+                    </span>
                   </button>
                 ))}
                 {group.official && !events.some((e) => [1, 2, 'double'].includes(e.by)) && (
@@ -99,7 +101,7 @@ export default function TeamRelayHistory({ history, issue, officialRelays }) {
         </p>
       )}
       {recorded.some((e) => ['gap', 'correction'].includes(e.by)) && (
-        <p className="relay-visual-note">… touches manquantes · ↺ correction</p>
+        <p className="relay-visual-note">… repère de score, ordre des touches inconnu · ↺ correction</p>
       )}
     </section>
   );
