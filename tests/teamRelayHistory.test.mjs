@@ -43,3 +43,25 @@ test('missing relay touch histories use official totals without inventing colore
   assert.equal(inverted.match.officialRelays[0].score1, 3);
   assert.equal(inverted.match.officialRelays[0].fencer1Name, 'SYNTH B');
 });
+
+test('ambiguous combined score updates stay neutral and zero placeholders do not create a false first relay', () => {
+  const groups = relayGroups([
+    { at: 'a', by: 'start', period: 2, score1: 0, score2: 0 },
+    { at: 'b', by: 1, period: 1, score1: 1, score2: 0 },
+    { at: 'c', by: 'double', period: 1, score1: 2, score2: 1 },
+  ]);
+  assert.equal(groups.length, 1);
+  assert.equal(groups[0].period, 1);
+  assert.equal(groups[0].events.at(-1).by, 'gap');
+});
+
+test('a real period correction never reorders observed score events', () => {
+  const h = [
+    { period: 2, by: 1, score1: 3, score2: 1 },
+    { period: 1, by: 'correction', score1: 2, score2: 1 },
+  ];
+  assert.deepEqual(
+    relayGroups(h).flatMap((g) => g.events),
+    h,
+  );
+});

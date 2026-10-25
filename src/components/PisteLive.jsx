@@ -1,3 +1,4 @@
+import { useRecordedHistory } from '../lib/useRecordedHistory';
 import AdaptiveFencerName from './AdaptiveFencerName';
 import { eventNameFor } from '../lib/eventName';
 import { useI18n } from '../i18n/context';
@@ -60,7 +61,13 @@ export default function PisteLive({
     filtered.filter((m) => m.isFinished).at(-1) ||
     filtered[0];
   const { prediction, points } = pistePrediction(match, userId);
-  const { match: displayMatch, live: displayLive } = ftlPresentation(match, live.get(match?.id));
+  const recorded = useRecordedHistory(match?.id, Boolean(match?.isFinished));
+  const { match: displayMatch, live: displayLive } = ftlPresentation(
+    match,
+    match?.isFinished && recorded.data && !recorded.data.error
+      ? { ...recorded.data, finished: true }
+      : live.get(match?.id),
+  );
   const relayNames = team ? relayNamesForMatch(teamLive, displayMatch, competition?.id, now) : null;
   const source = officialLink(match?.sourceUrl || competition?.sourceUrl);
   const strips = [...new Set(matches.map((m) => String(m.strip || '')).filter(Boolean))].sort((a, b) =>
@@ -215,22 +222,47 @@ export default function PisteLive({
                 </div>
               ))}
             </div>
-            {team ? (
-              <TeamRelayHistory
-                officialRelays={displayMatch.officialRelays}
-                history={displayLive?.history}
-                issue={displayLive?.historyIssue}
-                live={isLive(match.id)}
-              />
-            ) : (
-              <TouchStrip
-                history={displayLive?.history}
-                issue={displayLive?.historyIssue}
-                player1={displayMatch.player1}
-                player2={displayMatch.player2}
-                live={isLive(match.id)}
-              />
+            {match?.isFinished && recorded.data?.error && (
+              <p role="status">
+                {recorded.data.error}{' '}
+                <button type="button" onClick={recorded.retry}>
+                  Réessayer
+                </button>
+              </p>
             )}
+            {match?.isFinished &&
+              recorded.data &&
+              !recorded.data.error &&
+              !recorded.data.history?.length &&
+              !recorded.data.historyIssue && <p className="muted">Aucune touche enregistrée pour cette rencontre.</p>}
+            {match?.isFinished && displayLive?.history?.length > 0 && (
+              <p className="muted recorded-history-note">
+                Observations réellement reçues ; des séquences peuvent manquer.
+                {(displayLive.history.at(-1).score1 !== displayMatch.score1 ||
+                  displayLive.history.at(-1).score2 !== displayMatch.score2) &&
+                  ` Dernier score suivi : ${displayLive.history.at(-1).score1}–${displayLive.history.at(-1).score2}.`}
+              </p>
+            )}
+            {(!match?.isFinished ||
+              displayLive?.history?.length > 0 ||
+              displayLive?.historyIssue ||
+              displayMatch.officialRelays?.length > 0) &&
+              (team ? (
+                <TeamRelayHistory
+                  officialRelays={displayMatch.officialRelays}
+                  history={displayLive?.history}
+                  issue={displayLive?.historyIssue}
+                  live={isLive(match.id)}
+                />
+              ) : (
+                <TouchStrip
+                  history={displayLive?.history}
+                  issue={displayLive?.historyIssue}
+                  player1={displayMatch.player1}
+                  player2={displayMatch.player2}
+                  live={isLive(match.id)}
+                />
+              ))}
             <div className="piste-live-panels">
               <section>
                 <p className="arena-eyebrow">{t('live.yourPrediction')}</p>

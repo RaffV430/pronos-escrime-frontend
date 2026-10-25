@@ -105,3 +105,9 @@
   font-size: 0.65rem;
   font-weight: 400;
 }
+
+.touch-cell.by-checkpoint {
+  background: var(--surface-2, #eef2f8);
+  color: var(--muted, #59677d);
+  border: 1px dashed currentColor;
+}
