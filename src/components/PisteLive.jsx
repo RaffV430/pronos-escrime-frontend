@@ -217,6 +217,7 @@ export default function PisteLive({
             </div>
             {team ? (
               <TeamRelayHistory
+                officialRelays={displayMatch.officialRelays}
                 history={displayLive?.history}
                 issue={displayLive?.historyIssue}
                 live={isLive(match.id)}

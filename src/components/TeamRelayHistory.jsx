@@ -12,28 +12,40 @@ const describe = (event) =>
         : event.by === 1
           ? event.fencer1Name || 'Équipe gauche'
           : event.fencer2Name || 'Équipe droite';
-export default function TeamRelayHistory({ history, issue }) {
+export default function TeamRelayHistory({ history, issue, officialRelays }) {
   const [picked, setPicked] = useState(null);
-  if (issue) return <p role="status">{issue}</p>;
-  const groups = relayGroups(history);
-  if (!groups.length) return <p className="muted">Historique des relais non disponible pour le moment.</p>;
+
+  const groups = relayGroups(issue ? [] : history, officialRelays);
+  if (!groups.length)
+    return (
+      <p className="muted" role="status">
+        {issue || 'Historique des relais non disponible pour le moment.'}
+      </p>
+    );
   const recorded = groups.flatMap((g) => g.events).filter((e) => !['start', 'relay'].includes(e.by));
   const selected = recorded.find((e) => e.at === picked) || recorded.at(-1);
-  const start = groups[0].events[0];
+  const start = issue ? null : (history || [])[0];
   return (
     <section className="team-relay-history" aria-label="Historique par relais">
       <h3>
-        Fil des touches{' '}
-        <small>
-          · depuis {start.score1}–{start.score2}
-        </small>
+        Fil des relais{' '}
+        {start && (
+          <small>
+            · touches suivies dès {start.score1}–{start.score2}
+          </small>
+        )}
       </h3>
+      {issue && (
+        <p role="status" className="relay-visual-note">
+          {issue}
+        </p>
+      )}
       <div className="relay-visual-groups">
         {groups.map((group, index) => {
           const first = group.events[0];
           const events = group.events.filter((e) => !['start', 'relay'].includes(e.by));
           return (
-            <div className="relay-visual-group" key={`${first.at}:${index}`}>
+            <div className="relay-visual-group" key={`${first?.at || group.period}:${index}`}>
               <span
                 className="relay-visual-divider"
                 title={`Relais ${group.period || '?'} · ${group.fencer1Name || 'Tireur non transmis'} · ${group.fencer2Name || 'Tireur non transmis'}`}
@@ -58,7 +70,16 @@ export default function TeamRelayHistory({ history, issue }) {
                     <span aria-hidden="true">{event.by === 'gap' ? '…' : event.by === 'correction' ? '↺' : ''}</span>
                   </button>
                 ))}
-                {!events.length && (
+                {group.official && !events.some((e) => [1, 2, 'double'].includes(e.by)) && (
+                  <span
+                    className="relay-official-total"
+                    title={`${group.official.fencer1Name} · ${group.official.fencer2Name}`}
+                  >
+                    {group.official.score1}–{group.official.score2}
+                    <small> officiel</small>
+                  </span>
+                )}
+                {!events.length && !group.official && (
                   <small className="muted" title="Aucune touche enregistrée">
                     —
                   </small>

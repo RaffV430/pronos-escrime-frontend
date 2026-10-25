@@ -49,6 +49,13 @@ export function ftlPresentation(match, live) {
       player2Country: match.player1Country,
       score1: match.score2,
       score2: match.score1,
+      officialRelays: match.officialRelays?.map((r) => ({
+        ...r,
+        score1: r.score2,
+        score2: r.score1,
+        fencer1Name: r.fencer2Name,
+        fencer2Name: r.fencer1Name,
+      })),
       crowd: match.crowd
         ? {
             ...match.crowd,

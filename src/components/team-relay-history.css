@@ -96,3 +96,12 @@
     margin: 12px;
   }
 }
+.relay-official-total {
+  font-size: 0.8rem;
+  padding: 2px 4px;
+  border-bottom: 1px dotted currentColor;
+}
+.relay-official-total small {
+  font-size: 0.65rem;
+  font-weight: 400;
+}
