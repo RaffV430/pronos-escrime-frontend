@@ -103,3 +103,35 @@
   font-size: 0.85rem;
   overflow-wrap: anywhere;
 }
+
+.team-live-event {
+  font-weight: 700;
+  margin: 0 0 10px;
+}
+.team-live-choices {
+  margin: 12px 0;
+}
+.team-live-choices summary {
+  padding: 10px 0;
+  cursor: pointer;
+}
+.team-live-choices .check-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+}
+.team-live-choices .check-row input {
+  flex: none;
+}
+.team-live-duel > span {
+  grid-row: span 4;
+}
+.team-live-fencer {
+  display: block;
+  font-size: 0.9rem;
+  overflow-wrap: anywhere;
+}
+.team-live-overview .live-pistes-card {
+  cursor: default;
+}

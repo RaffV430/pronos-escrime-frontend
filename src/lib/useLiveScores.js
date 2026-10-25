@@ -11,13 +11,14 @@ const subscribe = createLiveConnections({
   document,
   decodeWire: createLiveWireDecoder(),
 });
-export function useLiveScores(competitionId, active = true) {
+export function useLiveScores(competitionId, active = true, teams = false) {
+  const scope = teams ? `${competitionId}:teams` : competitionId;
   const [snapshot, setSnapshot] = useState({ competitionId: null, scores: new Map() });
   useEffect(() => {
     if (!competitionId || !active) return undefined;
-    return subscribe(competitionId, (scores) => setSnapshot({ competitionId, scores }));
-  }, [competitionId, active]);
-  return scoresForCompetition(snapshot, competitionId, active);
+    return subscribe(competitionId, (scores) => setSnapshot({ competitionId: scope, scores }), { teams });
+  }, [competitionId, active, scope, teams]);
+  return scoresForCompetition(snapshot, scope, active);
 }
 
 export const clockLabel = (seconds) =>

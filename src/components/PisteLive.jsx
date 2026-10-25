@@ -8,6 +8,7 @@ import { officialLink, pisteMatches, pistePrediction, pisteStatus, ftlPresentati
 import TouchStrip from './TouchStrip';
 import LiveScore from './LiveScore';
 import LivePistes from './LivePistes';
+import TeamLiveOverview from './TeamLiveOverview';
 import { useLiveScores } from '../lib/useLiveScores';
 
 export default function PisteLive({
@@ -75,10 +76,11 @@ export default function PisteLive({
           </button>
         </header>
       )}
-      <p className="piste-live-notice">{liveCount ? t('live.noticeLive', { n: liveCount }) : t('live.noticeIdle')}</p>
+      <p className="piste-live-notice">{competition?.podiumFormat === 'TEAM' && `${eventNameFor(lang, competition.name)} : `}{liveCount ? t('live.noticeLive', { n: liveCount }) : t('live.noticeIdle')}</p>
       {stale && <p role="status">{t('live.stale')}</p>}
       {error && <p role="alert">{error}</p>}
-      {showLiveOverview && (
+      {showLiveOverview && competition?.podiumFormat === 'TEAM' && <TeamLiveOverview competition={competition} />}
+      {showLiveOverview && competition?.podiumFormat !== 'TEAM' && (
         <LivePistes
           matches={matches}
           live={live}

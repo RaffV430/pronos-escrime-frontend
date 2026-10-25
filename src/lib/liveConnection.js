@@ -12,8 +12,9 @@ export function createLiveConnections({
   decodeWire = null,
 }) {
   const connections = new Map();
-  return (id, listener) => {
-    let entry = connections.get(id);
+  return (id, listener, { teams = false } = {}) => {
+    const key = teams ? `${id}:teams` : id;
+    let entry = connections.get(key);
     if (!entry) {
       entry = {
         listeners: new Set(),
@@ -35,7 +36,7 @@ export function createLiveConnections({
         entry.polling = true;
         const generation = entry.generation;
         try {
-          const { data } = await get(`/matches/live/${id}`);
+          const { data } = await get(`/matches/live/${id}${teams ? '?teams=1' : ''}`);
           if (!entry.closed && !document.hidden && generation === entry.generation)
             publish(applyLiveMessage(new Map(), data));
         } catch {
@@ -56,7 +57,7 @@ export function createLiveConnections({
         if (entry.closed || document.hidden || entry.source || entry.timer) return;
         if (!eventSource || entry.failures > 2) return poll();
         const source = new eventSource(
-          `${baseURL}/public/competitions/${id}/live/stream?delta=1${entry.packed ? `&wire=${LIVE_WIRE}` : ''}`,
+          `${baseURL}/public/competitions/${id}/live/stream?delta=1${teams ? '&teams=1' : ''}${entry.packed ? `&wire=${LIVE_WIRE}` : ''}`,
         );
         entry.source = source;
         let queue = Promise.resolve();
@@ -117,7 +118,7 @@ export function createLiveConnections({
         close();
         document.removeEventListener('visibilitychange', entry.visibility);
       };
-      connections.set(id, entry);
+      connections.set(key, entry);
       document.addEventListener('visibilitychange', entry.visibility);
       entry.listeners.add(listener);
       listener(entry.scores);
@@ -130,7 +131,7 @@ export function createLiveConnections({
       entry.listeners.delete(listener);
       if (!entry.listeners.size) {
         entry.stop();
-        connections.delete(id);
+        connections.delete(key);
       }
     };
   };
