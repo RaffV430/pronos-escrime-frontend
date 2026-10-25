@@ -9,6 +9,8 @@ import TouchStrip from './TouchStrip';
 import LiveScore from './LiveScore';
 import LivePistes from './LivePistes';
 import TeamLiveOverview from './TeamLiveOverview';
+import { relayNamesForMatch } from '../lib/teamLiveOverview';
+import { useNow } from '../lib/polling';
 import { useLiveScores } from '../lib/useLiveScores';
 
 export default function PisteLive({
@@ -44,6 +46,9 @@ export default function PisteLive({
     competition?.id ?? matches[0]?.competitionId,
     matches.some((m) => !m.isFinished),
   );
+  const team = competition?.podiumFormat === 'TEAM';
+  const teamLive = useLiveScores(competition?.id, team && matches.some((m) => !m.isFinished), true);
+  const now = useNow(5000);
   const isLive = (id) => Boolean(live.get(id) && !live.get(id).finished);
   const liveCount = [...live.values()].filter((x) => !x.finished).length;
   const match =
@@ -54,6 +59,7 @@ export default function PisteLive({
     filtered[0];
   const { prediction, points } = pistePrediction(match, userId);
   const { match: displayMatch, live: displayLive } = ftlPresentation(match, live.get(match?.id));
+  const relayNames = team ? relayNamesForMatch(teamLive, displayMatch, competition?.id, now) : null;
   const source = officialLink(match?.sourceUrl || competition?.sourceUrl);
   const strips = [...new Set(matches.map((m) => String(m.strip || '')).filter(Boolean))].sort((a, b) =>
     a.localeCompare(b, 'fr', { numeric: true }),
@@ -149,7 +155,7 @@ export default function PisteLive({
               <span>{statusLabel(match)}</span>
             </div>
             <LiveScore live={displayLive} />
-            <div className="piste-live-duel">
+            <div className={`piste-live-duel${team ? ' is-team' : ''}`}>
               {[1, 2].map((i) => (
                 <div
                   className={`piste-live-athlete lamp-${i}${
@@ -169,6 +175,9 @@ export default function PisteLive({
                       .join('')}
                   </span>
                   <AdaptiveFencerName name={displayMatch[`player${i}`]} country={displayMatch[`player${i}Country`]} />
+                  {team && !match.isFinished && (
+                    <span className="piste-team-relay">En piste : {relayNames?.[i - 1] || 'non transmis'}</span>
+                  )}
                   {isLive(match.id) &&
                     !displayLive[`fencer${i}`]?.lamp &&
                     displayLive[`fencer${i}`]?.white && (

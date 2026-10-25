@@ -135,3 +135,44 @@
 .team-live-overview .live-pistes-card {
   cursor: default;
 }
+
+/* Align the relay labels and scores across both teams, including wrapped names. */
+.club-arena .piste-live-duel.is-team > .piste-live-athlete {
+  grid-template-rows: subgrid;
+  grid-row: span 4;
+}
+.piste-live-duel.is-team .piste-team-relay {
+  grid-column: 1 / -1;
+  grid-row: 2;
+  align-self: start;
+  font-size: 0.95rem;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+.piste-live-duel.is-team .white-lamp-badge {
+  grid-row: 3;
+  white-space: normal;
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+.piste-live-duel.is-team .piste-live-score-number {
+  grid-row: 4;
+}
+@media (max-width: 700px) {
+  .club-arena .piste-live-duel.is-team > .piste-live-athlete {
+    grid-row: span 5;
+  }
+  .piste-live-duel.is-team .adaptive-fencer-name {
+    grid-row: 2;
+  }
+  .piste-live-duel.is-team .piste-team-relay {
+    grid-row: 3;
+  }
+  .piste-live-duel.is-team .white-lamp-badge {
+    grid-row: 4;
+  }
+  .piste-live-duel.is-team .piste-live-score-number {
+    grid-row: 5;
+  }
+}

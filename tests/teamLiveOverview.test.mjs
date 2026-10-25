@@ -27,3 +27,38 @@ test('une nouvelle rencontre sur la même piste ne remplace pas un match choisi 
   assert.deepEqual(teamLiveRows(rows, { now: now + 180001 }), []);
   assert.equal(rows.size, 2);
 });
+
+import { relayNamesForMatch } from '../src/lib/teamLiveOverview.js';
+const match = { id: 10, player1: 'FRANCE', player2: 'HUNGARY' };
+const signal = {
+  matchId: 'team-live:match:10',
+  officialMatchId: 10,
+  competitionId: 45,
+  player1: 'HUNGARY',
+  player2: 'FRANCE',
+  fencer1: { name: 'NOM Hongrie' },
+  fencer2: { name: 'NOM France long' },
+  updatedAt: new Date(now).toISOString(),
+};
+const scores = new Map([[signal.matchId, signal]]);
+test('les noms du détail suivent les équipes affichées après inversion du côté officiel', () => {
+  assert.deepEqual(relayNamesForMatch(scores, match, 45, now), ['NOM France long', 'NOM Hongrie']);
+  assert.deepEqual(relayNamesForMatch(scores, { ...match, player1: 'HUNGARY', player2: 'FRANCE' }, 45, now), [
+    'NOM Hongrie',
+    'NOM France long',
+  ]);
+  const relay = new Map([[signal.matchId, { ...signal, fencer2: { name: 'RELAYEUR suivant' } }]]);
+  assert.deepEqual(relayNamesForMatch(relay, match, 45, now), ['RELAYEUR suivant', 'NOM Hongrie']);
+  assert.equal(signal.fencer2.name, 'NOM France long');
+});
+test('aucun nom d’une autre épreuve, d’un ancien signal, d’une rencontre terminée ou d’équipes modifiées', () => {
+  assert.equal(relayNamesForMatch(scores, match, 46, now), null);
+  assert.equal(relayNamesForMatch(scores, match, 45, now + 180001), null);
+  assert.equal(relayNamesForMatch(scores, { ...match, isFinished: true }, 45, now), null);
+  assert.equal(relayNamesForMatch(scores, { ...match, player2: 'ITALY' }, 45, now), null);
+  assert.equal(relayNamesForMatch(scores, { ...match, id: 11 }, 45, now), null);
+  assert.equal(
+    relayNamesForMatch(new Map([...scores, ['duplicate', { ...signal, matchId: 'duplicate' }]]), match, 45, now),
+    null,
+  );
+});
