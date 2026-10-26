@@ -1,40 +1,22 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { nav2On, nav2Active, setNav2, NAV2_TABS } from '../src/lib/nav2.js';
+import { nav2On, nav2Active, NAV2_TABS } from '../src/lib/nav2.js';
 import { readNav, NAV2_CATALOG, NAV2_KEY } from '../src/lib/navPrefs.js';
 const store = () => {
   const m = new Map();
   return { getItem: (k) => m.get(k) ?? null, setItem: (k, v) => m.set(k, v), removeItem: (k) => m.delete(k) };
 };
-test('navigation par défaut, retour temporaire et URL prioritaire sans stockage', () => {
+test('nouvelle navigation pour tous : l’ancien choix est effacé et ?nav=1 n’a plus d’effet', () => {
   globalThis.localStorage = store();
-  globalThis.location = {
-    search: '',
-    href: 'https://example.test/pronos?event=23#poules',
-    replace: (v) => {
-      globalThis.destination = v;
-    },
-  };
+  localStorage.setItem('pronos:navigation-choice', '1');
+  globalThis.location = { search: '?nav=1', href: 'https://example.test/pronos?event=23#poules' };
   assert.equal(nav2On(), true);
-  location.search = '?nav=1';
-  assert.equal(nav2On(), false);
-  location.search = '';
-  assert.equal(nav2On(), false);
-  location.search = '?nav=2';
-  assert.equal(nav2On(), true);
-  setNav2(false);
-  assert.match(globalThis.destination, /event=23&nav=1#poules/);
+  assert.equal(localStorage.getItem('pronos:navigation-choice'), null);
   globalThis.localStorage = {
     getItem() {
       throw Error();
     },
-    setItem() {
-      throw Error();
-    },
   };
-  location.search = '?nav=1';
-  assert.equal(nav2On(), false);
-  location.search = '';
   assert.equal(nav2On(), true);
 });
 test('barre existante migrée sans écraser une préférence nouvelle, ordre et valeurs par défaut', () => {

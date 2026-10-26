@@ -1,29 +1,19 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { refonteOn, setRefonte } from '../src/lib/refonte.js';
+import { refonteOn } from '../src/lib/refonte.js';
 
-test('nouveau design par défaut, ancien conservé après navigation, retour possible', () => {
-  const values = new Map();
+test('nouveau design pour tous : l’ancien choix est effacé et ?refonte=0 n’a plus d’effet', () => {
+  const values = new Map([['pronos:refonte', '0']]);
   const previous = { location: globalThis.location, localStorage: globalThis.localStorage };
   try {
-    globalThis.localStorage = { getItem: (k) => values.get(k), setItem: (k, v) => values.set(k, v) };
-    globalThis.location = {
-      search: '',
-      href: 'https://example.test/moi?test=1#fiche',
-      replace: (url) => {
-        globalThis.location.replaced = url;
-      },
+    globalThis.localStorage = {
+      getItem: (k) => values.get(k) ?? null,
+      setItem: (k, v) => values.set(k, v),
+      removeItem: (k) => values.delete(k),
     };
+    globalThis.location = { search: '?refonte=0', href: 'https://example.test/moi' };
     assert.equal(refonteOn(), true);
-    setRefonte(false);
-    assert.equal(refonteOn(), false);
-    assert.equal(location.replaced, '/moi?test=1#fiche');
-    setRefonte(true);
-    assert.equal(refonteOn(), true);
-    location.search = '?refonte=0';
-    assert.equal(refonteOn(), false);
-    location.search = '';
-    assert.equal(refonteOn(), false);
+    assert.equal(values.has('pronos:refonte'), false, 'ancien choix effacé');
     localStorage.getItem = () => {
       throw new Error('stockage bloqué');
     };
