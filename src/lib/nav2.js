@@ -1,34 +1,14 @@
-// Navigation par défaut ; ?nav=1 permet un retour temporaire à l’ancienne.
-// Le choix reste propre à cet appareil.
+// Nouvelle navigation : seule navigation de l'application (octobre 2026). L'ancien choix « ancienne navigation »
+// gardé sur certains appareils est effacé ; ?nav=1 n'a plus d'effet.
 const KEY = 'pronos:navigation-choice';
 
 export function nav2On() {
-  const asked = new URLSearchParams(location.search).get('nav');
-  if (asked === '1' || asked === '2') {
-    try {
-      localStorage.setItem(KEY, asked);
-    } catch {
-      /* URL reste prioritaire */
-    }
-    return asked === '2';
-  }
   try {
-    return localStorage.getItem(KEY) !== '1';
+    if (localStorage.getItem(KEY) !== null) localStorage.removeItem(KEY);
   } catch {
-    return true;
+    /* stockage indisponible : rien à effacer */
   }
-}
-
-export function setNav2(on) {
-  try {
-    localStorage.setItem(KEY, on ? '2' : '1');
-  } catch {
-    /* URL reste utilisable */
-  }
-  const url = new URL(location.href);
-  url.searchParams.set('nav', on ? '2' : '1');
-  if (!on && /^\/mon-espace\/?$/.test(url.pathname)) url.pathname = '/compte';
-  location.replace(url.pathname + url.search + url.hash);
+  return true;
 }
 
 // Barre du bas par défaut (personnalisable) ; « Mon espace » s'ouvre depuis le nom du joueur, en haut.

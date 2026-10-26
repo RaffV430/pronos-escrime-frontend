@@ -43,11 +43,11 @@ import NotificationBanner from './components/NotificationBanner';
 import { ForgotPassword, ResetPassword } from './components/AccountRecovery';
 import { LegalPage, LegalLinks } from './components/LegalPages';
 import { legalPageFor } from './lib/legal.js';
-import { refonteOn, setRefonte } from './lib/refonte';
+import { refonteOn } from './lib/refonte';
 import { NAV_CATALOG, NAV2_CATALOG, NAV2_KEY, mobileSlots, readNav, saveNav } from './lib/navPrefs';
 import NavEditor from './components/NavEditor';
 import { setReloadBlocked } from './lib/chunkReload';
-import { nav2On, setNav2, NAV2_TABS, nav2Active, otherSections } from './lib/nav2';
+import { nav2On, NAV2_TABS, nav2Active, otherSections } from './lib/nav2';
 import MySpace, { HubTrail } from './components/MySpace';
 import EventCards from './components/EventCards';
 import ClubRanking from './components/ClubRanking';
@@ -167,21 +167,11 @@ const MORE_ICON = (
     <circle cx="18" cy="12" r="1.8" />
   </svg>
 );
-// Bascule temporaire entre les deux designs, avec choix mémorisé sur cet appareil.
+// Emplacement du bouton flottant « Tout enregistrer » des poules (il n'y a plus de bascule de design).
 function RefonteToggle() {
-  const { t } = useI18n();
-  if (NAV2)
-    return (
-      <div className="floating-actions">
-        <div id="pool-save-action" />
-      </div>
-    );
   return (
     <div className="floating-actions">
       <div id="pool-save-action" />
-      <button type="button" className="refonte-toggle" onClick={() => setRefonte(!REFONTE)}>
-        {REFONTE ? t('refonte.toOld') : t('refonte.toNew')}
-      </button>
     </div>
   );
 }
@@ -884,9 +874,6 @@ export default function App() {
                                 : t(`nav.${id}`)}
                       </button>
                     ))}
-                    {!NAV2 && (
-                      <button onClick={() => runNavigation(() => setNav2(true))}>Activer la nouvelle navigation</button>
-                    )}
                     {REFONTE && !NAV2 && (
                       <button
                         onClick={() => {
@@ -1172,8 +1159,6 @@ export default function App() {
                       reducedData() ? 'Quitter le mode connexion faible' : 'Mode connexion faible',
                       () => (reducedData() ? setDataMode('auto') : setDataMode('on')),
                     ],
-                    [REFONTE ? 'Revenir à l’ancien design' : 'Essayer le nouveau design', () => setRefonte(!REFONTE)],
-                    ['Revenir temporairement à l’ancienne navigation', () => runNavigation(() => setNav2(false))],
                     ['Déconnexion', () => runNavigation(handleLogout), 'danger'],
                   ]}
                 />
