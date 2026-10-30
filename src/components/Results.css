@@ -673,3 +673,18 @@
     display: none;
   }
 }
+
+.result-dialog .recorded-match-history {
+  margin: 16px 0;
+  border-top: 1px solid var(--border);
+  padding-top: 12px;
+  overflow-wrap: anywhere;
+}
+.result-dialog .recorded-match-history > summary {
+  cursor: pointer;
+  font-weight: 700;
+}
+.result-dialog .recorded-match-history .team-relay-history,
+.result-dialog .recorded-match-history .touch-strip {
+  margin: 10px 0;
+}

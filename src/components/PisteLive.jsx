@@ -222,6 +222,11 @@ export default function PisteLive({
                 </div>
               ))}
             </div>
+            {displayLive?.historyNotice && (
+              <p className="muted" role="status">
+                {displayLive.historyNotice}
+              </p>
+            )}
             {match?.isFinished && recorded.data?.error && (
               <p role="status">
                 {recorded.data.error}{' '}
