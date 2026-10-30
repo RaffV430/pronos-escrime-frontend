@@ -21,6 +21,7 @@ import {
   seasonsOf,
 } from './eventResults';
 import ResultsBracket from './ResultsBracket';
+import RecordedMatchHistory from './RecordedMatchHistory';
 import ResultsPools from './ResultsPools';
 import OfficialStandings from './OfficialStandings';
 import { FencerLink } from './FencerProfile';
@@ -32,7 +33,7 @@ import { closeOnBackdrop } from './dialogBackdrop';
 const place = (codes) => (codes || []).map((c) => `${flag(c)} ${countryName(c)}`.trim()).join(' · ');
 
 // Fenêtre d'un match : résultat officiel, puis, à la demande, le pronostic du joueur et ses points.
-function MatchDialog({ match, onClose }) {
+export function MatchDialog({ match, onClose }) {
   const publicMode = usePublicMode();
   const ref = useRef(null);
   useEffect(() => {
@@ -120,6 +121,7 @@ function MatchDialog({ match, onClose }) {
           )}
         </section>
       )}
+      <RecordedMatchHistory key={match.id} match={match} />
       <button type="button" className="button-secondary" onClick={() => ref.current?.close()}>
         Fermer
       </button>
