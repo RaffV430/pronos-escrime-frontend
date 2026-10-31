@@ -1,5 +1,5 @@
 /* Only the public SPA shell and immutable assets are cached here. Account data uses the scoped consultation cache. */
-const CACHE = 'pronos-public-v4';
+const CACHE = 'pronos-public-v5'; // v5 : purge les pages HTML gardées à tort à la place d'un fichier /assets/.
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches
@@ -27,7 +27,9 @@ self.addEventListener('fetch', (event) => {
         const known = await cache.match(event.request);
         if (known) return known;
         const response = await fetch(event.request);
-        if (response.ok) await cache.put(event.request, response.clone());
+        // Fichier disparu après une mise en ligne : jamais de page HTML gardée à sa place, sinon le blocage dure.
+        if (response.ok && !response.headers.get('content-type')?.includes('text/html'))
+          await cache.put(event.request, response.clone());
         return response;
       }),
     );

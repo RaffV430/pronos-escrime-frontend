@@ -58,3 +58,22 @@ test('service worker never intercepts private API data or mutations', () => {
   ])
     assert.equal(w.invoke(request).response, undefined);
 });
+test('a missing asset answered with the HTML page is never kept in the cache', async () => {
+  const asset = { url: 'https://app.test/assets/Old-abc.js', method: 'GET', mode: 'cors' };
+  const headers = (type) => ({ get: () => type });
+  const html = { ok: true, headers: headers('text/html; charset=utf-8'), clone: () => 'html' };
+  const missing = worker(null, async () => html);
+  assert.equal(await missing.invoke(asset).response, html);
+  assert.equal(missing.saved.length, 0);
+  const js = { ok: true, headers: headers('application/javascript'), clone: () => 'js' };
+  const found = worker(null, async () => js);
+  assert.equal(await found.invoke(asset).response, js);
+  assert.equal(found.saved.length, 1);
+});
+test('the cache version changes so that previously stored HTML assets are purged', () => {
+  assert.match(source, /const CACHE = 'pronos-public-v5'/);
+});
+test('missing assets are real 404s, not the application page', () => {
+  const { rewrites } = JSON.parse(fs.readFileSync(new URL('../vercel.json', import.meta.url), 'utf8'));
+  assert.equal(rewrites.at(-1).source, '/((?!assets/).*)');
+});
