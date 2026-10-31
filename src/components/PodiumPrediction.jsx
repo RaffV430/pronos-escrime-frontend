@@ -174,17 +174,24 @@ export default function PodiumPrediction({ selectedCompetitionId, user, adminOnl
     }
   };
 
+  const sectionStyle = {
+    background: 'var(--surface)',
+    padding: 20,
+    borderRadius: 'var(--radius)',
+    margin: '20px 0',
+    border: '1px solid var(--border)',
+  };
+  // Journée qualificative (tableau arrêté aux qualifiés du lendemain) : aucun podium à pronostiquer.
+  if (opening.noPodium && !adminOnly)
+    return (
+      <section id="podium" style={sectionStyle}>
+        <h3>Pas de podium sur cette épreuve</h3>
+        <p role="status">{opening.reason}</p>
+      </section>
+    );
+
   return (
-    <section
-      id="podium"
-      style={{
-        background: 'var(--surface)',
-        padding: 20,
-        borderRadius: 'var(--radius)',
-        margin: '20px 0',
-        border: '1px solid var(--border)',
-      }}
-    >
+    <section id="podium" style={sectionStyle}>
       <h3>{adminOnly ? 'Administration du podium' : 'Qui montera sur le podium ?'}</h3>
       {error && <p role="alert">{error}</p>}
       {
