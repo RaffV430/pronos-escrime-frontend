@@ -51,7 +51,7 @@
       "destination": "https://pronos-escrime.onrender.com/api/public/tournaments/:id/share"
     },
     {
-      "source": "/(.*)",
+      "source": "/((?!assets/).*)",
       "destination": "/"
     }
   ],
